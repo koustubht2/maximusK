@@ -12322,14 +12322,23 @@ function switchTab(tab) {
   });
   setInterval(() => { if (fsPending && !fisEditing()) { fapplyRemote(fsPending); fsPending = null; } }, 2000);
 
+  function fsRawPush(s, keepalive) {
+    return fetch(fS_URL + '/rest/v1/app_state?on_conflict=key', {
+      method: 'POST',
+      headers: { 'apikey': fS_KEY, 'Authorization': 'Bearer ' + fS_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: fA_KEY, data: s, updated_at: new Date().toISOString() }),
+      keepalive: !!keepalive
+    });
+  }
+
   async function fpushNow() {
-    if (!fsClient || !fsReady) return;
+    if (!fsReady) return;
     const s = fcollect();
     const json = JSON.stringify(s);
     if (json === fsLastJson) return;
     try {
-      const { error } = await fsClient.from('app_state').upsert({ key: fA_KEY, data: s, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-      if (!error) fsLastJson = json;
+      await fsRawPush(s, false);
+      fsLastJson = json;
     } catch (_) {}
   }
 
@@ -12340,17 +12349,12 @@ function switchTab(tab) {
   }
 
   function fflushPush() {
-    if (!fsClient || !fsReady) return;
+    if (!fsReady) return;
     const s = fcollect();
     const json = JSON.stringify(s);
     if (json === fsLastJson) return;
     try {
-      fetch(fS_URL + '/rest/v1/app_state?on_conflict=key', {
-        method: 'POST',
-        headers: { 'apikey': fS_KEY, 'Authorization': 'Bearer ' + fS_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({ key: fA_KEY, data: s, updated_at: new Date().toISOString() }),
-        keepalive: true
-      }).catch(()=>{});
+      fsRawPush(s, true).catch(() => {});
       fsLastJson = json;
     } catch (_) {}
   }
@@ -12360,14 +12364,17 @@ function switchTab(tab) {
 
   // Pull latest from Supabase and apply if newer — used as polling fallback
   async function fpollRemote() {
-    if (!fsClient || !fsReady) return;
+    if (!fsReady) return;
     try {
-      const { data, error } = await fsClient.from('app_state').select('data').eq('key', fA_KEY).maybeSingle();
-      if (!error && data && data.data) {
-        const incomingJson = JSON.stringify(data.data);
+      const res = await fetch(fS_URL + '/rest/v1/app_state?select=data&key=eq.' + fA_KEY, {
+        headers: { 'apikey': fS_KEY, 'Authorization': 'Bearer ' + fS_KEY }
+      });
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length && rows[0].data) {
+        const incomingJson = JSON.stringify(rows[0].data);
         if (incomingJson !== fsLastJson) {
           fsLastJson = incomingJson;
-          fmaybeApply(data.data);
+          fmaybeApply(rows[0].data);
         }
       }
     } catch (_) {}
