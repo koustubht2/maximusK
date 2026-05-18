@@ -9898,6 +9898,7 @@ setInterval(updateDayBar, 60 * 1000);
   let wtrSuppressSync = false;
   let wtrPendingRemote = null;
   let wtrLastSyncedJson = null;
+  let wtrReady = false;
 
   const wtrOrigSet = localStorage.setItem.bind(localStorage);
   const wtrOrigRemove = localStorage.removeItem.bind(localStorage);
@@ -9979,46 +9980,59 @@ setInterval(updateDayBar, 60 * 1000);
     setTimeout(wtrApplyPendingIfReady, 50);
   });
 
-  async function wtrPushNow() {
-    if (!wtrSupa) return;
+  function wtrRawPush(s, keepalive) {
+    return fetch(WTR_SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
+      method: 'POST',
+      headers: {
+        'apikey': WTR_SUPABASE_KEY,
+        'Authorization': 'Bearer ' + WTR_SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key: WTR_APP_KEY, data: s, updated_at: new Date().toISOString() }),
+      keepalive: !!keepalive
+    });
+  }
+
+  function wtrPushNow() {
+    if (!wtrReady) return;
     const s = wtrCollectState();
     const json = JSON.stringify(s);
     if (json === wtrLastSyncedJson) return;
-    try {
-      const { error } = await wtrSupa
-        .from('app_state')
-        .upsert(
-          { key: WTR_APP_KEY, data: s, updated_at: new Date().toISOString() },
-          { onConflict: 'key' }
-        );
-      if (!error) wtrLastSyncedJson = json;
-    } catch (_) {}
+    wtrLastSyncedJson = json;
+    wtrRawPush(s, true).catch(() => { wtrLastSyncedJson = null; });
   }
 
   function wtrSchedulePush() {
     if (wtrSuppressSync) return;
     clearTimeout(wtrPushTimer);
-    wtrPushTimer = setTimeout(wtrPushNow, 250);
+    wtrPushTimer = setTimeout(wtrPushNow, 100);
   }
 
   function wtrFlushPushOnUnload() {
-    if (!wtrSupa) return;
+    if (!wtrReady) return;
     const s = wtrCollectState();
     const json = JSON.stringify(s);
     if (json === wtrLastSyncedJson) return;
+    wtrRawPush(s, true).catch(() => {});
+    wtrLastSyncedJson = json;
+  }
+
+  async function wtrPollRemote() {
+    if (!wtrReady) return;
     try {
-      fetch(WTR_SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
-        method: 'POST',
-        headers: {
-          'apikey': WTR_SUPABASE_KEY,
-          'Authorization': 'Bearer ' + WTR_SUPABASE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify({ key: WTR_APP_KEY, data: s, updated_at: new Date().toISOString() }),
+      const res = await fetch(WTR_SUPABASE_URL + '/rest/v1/app_state?select=data&key=eq.' + WTR_APP_KEY, {
+        headers: { 'apikey': WTR_SUPABASE_KEY, 'Authorization': 'Bearer ' + WTR_SUPABASE_KEY },
         keepalive: true
-      }).catch(() => {});
-      wtrLastSyncedJson = json;
+      });
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length && rows[0].data) {
+        const incomingJson = JSON.stringify(rows[0].data);
+        if (incomingJson !== wtrLastSyncedJson) {
+          wtrLastSyncedJson = incomingJson;
+          wtrMaybeApplyRemote(rows[0].data);
+        }
+      }
     } catch (_) {}
   }
 
@@ -10026,10 +10040,12 @@ setInterval(updateDayBar, 60 * 1000);
   window.addEventListener('pagehide', wtrFlushPushOnUnload);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') wtrFlushPushOnUnload();
+    else { wtrPollRemote(); if (wtrPendingRemote && !wtrIsUserEditing()) { wtrApplyRemoteState(wtrPendingRemote); wtrPendingRemote = null; } }
   });
+  setInterval(() => { if (wtrPendingRemote && !wtrIsUserEditing()) { wtrApplyRemoteState(wtrPendingRemote); wtrPendingRemote = null; } }, 2000);
 
   (async function wtrInitCloudSync() {
-    if (!window.supabase) return;
+    if (!window.supabase) { wtrReady = true; return; }
     wtrSupa = window.supabase.createClient(WTR_SUPABASE_URL, WTR_SUPABASE_KEY);
     try {
       const { data, error } = await wtrSupa
@@ -10037,10 +10053,9 @@ setInterval(updateDayBar, 60 * 1000);
       if (!error && data && data.data) {
         wtrApplyRemoteState(data.data);
         wtrLastSyncedJson = JSON.stringify(data.data);
-      } else {
-        wtrPushNow();
       }
-      
+      wtrReady = true;
+      wtrPushNow();
       wtrSupa.channel('public:app_state:water')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + WTR_APP_KEY }, payload => {
           if (payload.new && payload.new.data) {
@@ -10050,7 +10065,8 @@ setInterval(updateDayBar, 60 * 1000);
             wtrMaybeApplyRemote(payload.new.data);
           }
         }).subscribe();
-    } catch (e) {}
+      setInterval(wtrPollRemote, 3000);
+    } catch (e) { wtrReady = true; }
   })();
 
   // BOOT
