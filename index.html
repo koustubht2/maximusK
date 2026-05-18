@@ -9463,8 +9463,178 @@ setInterval(updateDayBar, 60 * 1000);
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+
+  // ============================================================
+  // SUPABASE CLOUD SYNC
+  // ============================================================
+  const WTR_SUPABASE_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  const WTR_SUPABASE_KEY = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+  const WTR_APP_KEY = 'po-water';
+  const WTR_SYNCED_KEYS = [LS_KEY];
+
+  let wtrSupa = null;
+  let wtrPushTimer = null;
+  let wtrSuppressSync = false;
+  let wtrPendingRemote = null;
+  let wtrLastSyncedJson = null;
+
+  const wtrOrigSet = localStorage.setItem.bind(localStorage);
+  const wtrOrigRemove = localStorage.removeItem.bind(localStorage);
+
+  localStorage.setItem = function(k, v) {
+    wtrOrigSet(k, v);
+    try {
+      if (!wtrSuppressSync && WTR_SYNCED_KEYS.indexOf(k) !== -1) wtrSchedulePush();
+    } catch (e) {}
+  };
+  localStorage.removeItem = function(k) {
+    wtrOrigRemove(k);
+    try {
+      if (!wtrSuppressSync && WTR_SYNCED_KEYS.indexOf(k) !== -1) wtrSchedulePush();
+    } catch (e) {}
+  };
+
+  function wtrCollectState() {
+    const out = {};
+    for (const k of WTR_SYNCED_KEYS) {
+      const v = localStorage.getItem(k);
+      if (v != null) {
+        try { out[k] = JSON.parse(v); } catch {}
+      }
+    }
+    return out;
+  }
+
+  function wtrIsUserEditing() {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = ae.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (ae.getAttribute && ae.getAttribute('contenteditable') === 'true') return true;
+    return false;
+  }
+
+  function wtrDoRerender() {
+    try { state = loadState(); } catch {}
+    try { renderAll(); } catch {}
+    try { if (typeof renderTopbar === 'function') renderTopbar(); } catch {}
+  }
+
+  function wtrApplyRemoteState(remote) {
+    if (!remote || typeof remote !== 'object') return false;
+    wtrSuppressSync = true;
+    let changed = false;
+    try {
+      for (const k of WTR_SYNCED_KEYS) {
+        if (k in remote) {
+          const incoming = JSON.stringify(remote[k]);
+          const local = localStorage.getItem(k);
+          if (local !== incoming) { try { wtrOrigSet(k, incoming); changed = true; } catch {} }
+        } else if (localStorage.getItem(k) != null) {
+          try { wtrOrigRemove(k); changed = true; } catch {}
+        }
+      }
+    } finally {
+      wtrSuppressSync = false;
+    }
+    if (changed) { try { wtrDoRerender(); } catch {} }
+    return changed;
+  }
+
+  function wtrMaybeApplyRemote(remote) {
+    if (wtrIsUserEditing()) { wtrPendingRemote = remote; return; }
+    wtrApplyRemoteState(remote);
+  }
+
+  function wtrApplyPendingIfReady() {
+    if (wtrPendingRemote && !wtrIsUserEditing()) {
+      const r = wtrPendingRemote;
+      wtrPendingRemote = null;
+      wtrApplyRemoteState(r);
+    }
+  }
+
+  document.addEventListener('focusout', () => {
+    setTimeout(wtrApplyPendingIfReady, 50);
+  });
+
+  async function wtrPushNow() {
+    if (!wtrSupa) return;
+    const s = wtrCollectState();
+    const json = JSON.stringify(s);
+    if (json === wtrLastSyncedJson) return;
+    try {
+      const { error } = await wtrSupa
+        .from('app_state')
+        .upsert(
+          { key: WTR_APP_KEY, data: s, updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        );
+      if (!error) wtrLastSyncedJson = json;
+    } catch (_) {}
+  }
+
+  function wtrSchedulePush() {
+    if (wtrSuppressSync) return;
+    clearTimeout(wtrPushTimer);
+    wtrPushTimer = setTimeout(wtrPushNow, 250);
+  }
+
+  function wtrFlushPushOnUnload() {
+    if (!wtrSupa) return;
+    const s = wtrCollectState();
+    const json = JSON.stringify(s);
+    if (json === wtrLastSyncedJson) return;
+    try {
+      fetch(WTR_SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
+        method: 'POST',
+        headers: {
+          'apikey': WTR_SUPABASE_KEY,
+          'Authorization': 'Bearer ' + WTR_SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({ key: WTR_APP_KEY, data: s, updated_at: new Date().toISOString() }),
+        keepalive: true
+      }).catch(() => {});
+      wtrLastSyncedJson = json;
+    } catch (_) {}
+  }
+
+  window.addEventListener('beforeunload', wtrFlushPushOnUnload);
+  window.addEventListener('pagehide', wtrFlushPushOnUnload);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') wtrFlushPushOnUnload();
+  });
+
+  (async function wtrInitCloudSync() {
+    if (!window.supabase) return;
+    wtrSupa = window.supabase.createClient(WTR_SUPABASE_URL, WTR_SUPABASE_KEY);
+    try {
+      const { data, error } = await wtrSupa
+        .from('app_state').select('data').eq('key', WTR_APP_KEY).maybeSingle();
+      if (!error && data && data.data) {
+        wtrApplyRemoteState(data.data);
+        wtrLastSyncedJson = JSON.stringify(data.data);
+      } else {
+        wtrPushNow();
+      }
+      
+      wtrSupa.channel('public:app_state:water')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + WTR_APP_KEY }, payload => {
+          if (payload.new && payload.new.data) {
+            const incomingJson = JSON.stringify(payload.new.data);
+            if (incomingJson === wtrLastSyncedJson) return;
+            wtrLastSyncedJson = incomingJson;
+            wtrMaybeApplyRemote(payload.new.data);
+          }
+        }).subscribe();
+    } catch (e) {}
+  })();
+
   // BOOT
   renderAll();
+
 })();
 
 </script>
