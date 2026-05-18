@@ -12331,15 +12331,13 @@ function switchTab(tab) {
     });
   }
 
-  async function fpushNow() {
+  function fpushNow() {
     if (!fsReady) return;
     const s = fcollect();
     const json = JSON.stringify(s);
     if (json === fsLastJson) return;
-    try {
-      await fsRawPush(s, false);
-      fsLastJson = json;
-    } catch (_) {}
+    fsLastJson = json;
+    fsRawPush(s, true).catch(() => { fsLastJson = null; });
   }
 
   function fsSchedule() {
@@ -12367,7 +12365,8 @@ function switchTab(tab) {
     if (!fsReady) return;
     try {
       const res = await fetch(fS_URL + '/rest/v1/app_state?select=data&key=eq.' + fA_KEY, {
-        headers: { 'apikey': fS_KEY, 'Authorization': 'Bearer ' + fS_KEY }
+        headers: { 'apikey': fS_KEY, 'Authorization': 'Bearer ' + fS_KEY },
+        keepalive: true
       });
       const rows = await res.json();
       if (Array.isArray(rows) && rows.length && rows[0].data) {
