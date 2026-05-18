@@ -8645,10 +8645,10 @@ setInterval(updateDayBar, 60 * 1000);
   // ── CONFIG ──────────────────────────────────────────────
   const OURA = {
     clientId: 'c90143af-0a79-478d-97a5-76ba08c2e76d',
-    redirectUri: 'https://maximusk.netlify.app/',
+    redirectUri: 'https://maximusk.vercel.app/',
     scopes: 'email personal daily heartrate tag workout session spo2 ring_configuration stress heart_health',
     authUrl: 'https://cloud.ouraring.com/oauth/authorize',
-    proxyUrl: '/.netlify/functions/oura-token',
+    proxyUrl: '/api/oura-token',
     tokenKey: 'oura_tokens',
     cacheKey: 'oura_cache',
     cacheTTL: 15 * 60 * 1000, // 15 min
