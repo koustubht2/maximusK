@@ -4675,11 +4675,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       </div>
     </div>
 
-    <div class="water-actions">
+    <div class="water-actions" style="display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;">
       <button class="water-minus-btn" id="wtrMinusBtn" type="button" aria-label="Undo last">−</button>
-      <button class="water-plus-btn" id="wtrPlusBtn" type="button">
-        <span id="wtrPlusLabel">Drank a bottle</span>
-        <span>↑</span>
+      <button class="water-plus-btn" id="wtrPlusGlassBtn" type="button" style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;">
+        <span style="font-size:14px;">+ Glass</span>
+        <span style="font-size:11px;opacity:0.7" id="wtrGlassLabel">250ml</span>
+      </button>
+      <button class="water-plus-btn" id="wtrPlusBottleBtn" type="button" style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;">
+        <span style="font-size:14px;">+ Bottle</span>
+        <span style="font-size:11px;opacity:0.7" id="wtrBottleLabel">500ml</span>
       </button>
     </div>
     <div class="water-helper" id="wtrHelper">Start the day — first one in.</div>
@@ -5530,6 +5534,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <input type="number" id="addAssetAmt" placeholder="Amount" step="0.01" class="ord-input ord-input-cost">
       <select id="addAssetCcy" class="ord-input ord-input-ccy">
         <option value="CHF">CHF</option><option value="INR">INR</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option>
+      </select>
+      <select id="addAssetPeriod" class="ord-input ord-input-ccy">
+        <option value="monthly">Monthly</option>
+        <option value="weekly">Weekly</option>
+        <option value="yearly">Yearly</option>
+        <option value="one-off">One-off</option>
       </select>
       <select id="addAssetDest" class="ord-input ord-input-from" title="Credit to account">
         <option value="">🏦 Credit to...</option>
@@ -7919,7 +7929,7 @@ setInterval(updateDayBar, 60 * 1000);
   // If you leave the placeholders unchanged the app still works,
   // just only on this device (data stays in your browser).
   // ============================================================
-  const SUPABASE_URL = 'PASTE-YOUR-SUPABASE-PROJECT-URL-HERE';
+  const SUPABASE_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
   const SUPABASE_KEY = 'PASTE-YOUR-SUPABASE-PUBLISHABLE-KEY-HERE';
   const APP_KEY = 'po-coach';
   const PC_SYNCED_KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
@@ -9061,7 +9071,11 @@ setInterval(updateDayBar, 60 * 1000);
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
   function todayKey() { return dateKey(new Date()); }
-  function todayCount() { return state.logs[todayKey()] || 0; }
+  function todayCount() { 
+    let v = state.logs[todayKey()] || 0; 
+    if (v > 0 && v < 100) v *= 500; 
+    return v; 
+  }
   function setTodayCount(n) {
     const k = todayKey();
     if (n <= 0) delete state.logs[k];
@@ -9129,41 +9143,42 @@ setInterval(updateDayBar, 60 * 1000);
 
   function renderWater() {
     const calc = computeTargetMl();
-    const targetUnits = Math.ceil(calc.total / unitVolMl());
-    const count = todayCount();
-    const unitName = unitLabelPlural();
+    const targetMl = calc.total;
+    const countMl = todayCount();
 
-    w$('wtrUnitLabel').textContent = unitName.toUpperCase() + ' DRANK TODAY';
-    w$('wtrNum').textContent = count;
-    w$('wtrTarget').textContent = '/ ' + targetUnits;
-    w$('wtrPlusLabel').textContent = 'Drank a ' + unitLabelSingular();
+    w$('wtrUnitLabel').textContent = 'ML DRANK TODAY';
+    w$('wtrNum').textContent = countMl.toLocaleString('en-US');
+    w$('wtrTarget').textContent = '/ ' + targetMl.toLocaleString('en-US') + ' ml';
 
     // Progress bar with three zones: low (0-65%), healthy (65-100%), over (100-150%)
-    const pctRaw = (count / targetUnits) * 100;
+    const pctRaw = (countMl / targetMl) * 100;
     const fillPct = Math.min(150, pctRaw) / 1.5;   // bar represents 0-150%
     const fill = w$('wtrBarFill');
     fill.style.width = fillPct + '%';
     fill.classList.toggle('over', pctRaw > 100);
     w$('wtrBarMin').textContent = '0';
-    w$('wtrBarMax').textContent = (Math.ceil(targetUnits * 1.5)) + '+';
+    w$('wtrBarMax').textContent = Math.ceil(targetMl * 1.5).toLocaleString('en-US') + '+';
     // Healthy zone bands at 65% and 100%
     w$('wtrBarZoneStart').style.left = (65 / 1.5) + '%';
     w$('wtrBarZoneEnd').style.left   = (100 / 1.5) + '%';
 
     // Helper text
     const helper = w$('wtrHelper');
-    if (count === 0) { helper.textContent = 'Start the day — first one in.'; helper.classList.remove('good'); }
-    else if (pctRaw < 50) { helper.textContent = 'Behind pace — drink one in the next hour.'; helper.classList.remove('good'); }
-    else if (pctRaw < 100) { helper.textContent = (targetUnits - count) + ' to go. Pacing well.'; helper.classList.remove('good'); }
+    if (countMl === 0) { helper.textContent = 'Start the day — first one in.'; helper.classList.remove('good'); }
+    else if (pctRaw < 50) { helper.textContent = 'Behind pace — drink water in the next hour.'; helper.classList.remove('good'); }
+    else if (pctRaw < 100) { helper.textContent = (targetMl - countMl).toLocaleString('en-US') + ' ml to go. Pacing well.'; helper.classList.remove('good'); }
     else if (pctRaw < 130) { helper.textContent = '✓ Target hit — top up if you train this evening.'; helper.classList.add('good'); }
     else { helper.textContent = 'Strong — way past target.'; helper.classList.add('good'); }
 
     // Disable minus when at zero
-    w$('wtrMinusBtn').disabled = count <= 0;
+    w$('wtrMinusBtn').disabled = countMl <= 0;
 
-    renderWhy(calc, targetUnits);
-    renderHistory();
-    renderSparkline(targetUnits);
+    if (w$('wtrGlassLabel')) w$('wtrGlassLabel').textContent = (state.glassMl || 250) + 'ml';
+    if (w$('wtrBottleLabel')) w$('wtrBottleLabel').textContent = (state.bottleMl || 500) + 'ml';
+
+    renderWhy(calc);
+    renderHistory(targetMl);
+    renderSparkline(targetMl);
   }
 
   function renderWhy(calc, targetUnits) {
@@ -9194,7 +9209,8 @@ setInterval(updateDayBar, 60 * 1000);
       const d = new Date();
       d.setDate(d.getDate() - i);
       const k = dateKey(d);
-      const n = state.logs[k] || 0;
+      let n = state.logs[k] || 0;
+      if (n > 0 && n < 100) n *= 500;
       days.push({ date: d, key: k, count: n });
     }
     list.innerHTML = days.map(({date, count}) => {
@@ -9243,15 +9259,27 @@ setInterval(updateDayBar, 60 * 1000);
   // ============================================================
   // EVENT WIRING
   // ============================================================
-  w$('wtrPlusBtn').addEventListener('click', () => {
-    setTodayCount(todayCount() + 1);
+  let lastAddedMl = 250;
+  w$('wtrPlusGlassBtn').addEventListener('click', () => {
+    const amt = state.glassMl || 250;
+    lastAddedMl = amt;
+    setTodayCount(todayCount() + amt);
     renderWater();
-    const btn = w$('wtrPlusBtn');
+    const btn = w$('wtrPlusGlassBtn');
+    btn.style.transform = 'scale(0.97)';
+    setTimeout(() => { btn.style.transform = ''; }, 120);
+  });
+  w$('wtrPlusBottleBtn').addEventListener('click', () => {
+    const amt = state.bottleMl || 500;
+    lastAddedMl = amt;
+    setTodayCount(todayCount() + amt);
+    renderWater();
+    const btn = w$('wtrPlusBottleBtn');
     btn.style.transform = 'scale(0.97)';
     setTimeout(() => { btn.style.transform = ''; }, 120);
   });
   w$('wtrMinusBtn').addEventListener('click', () => {
-    setTodayCount(Math.max(0, todayCount() - 1));
+    setTodayCount(Math.max(0, todayCount() - lastAddedMl));
     renderWater();
   });
 
@@ -9659,7 +9687,8 @@ function switchTab(tab) {
           CHF: 1,
           USD: data.rates.USD || 1,
           EUR: data.rates.EUR || 1,
-          GBP: data.rates.GBP || 1
+          GBP: data.rates.GBP || 1,
+          INR: data.rates.INR || 96
         };
         renderAllNetWorth();
         if (typeof renderSubs === 'function') renderSubs();
@@ -10212,18 +10241,35 @@ function switchTab(tab) {
           const enteredAmt = it.entered_amount != null ? it.entered_amount : it.amount;
           const enteredCcy = it.entered_currency || 'CHF';
           const originalIdx = items.indexOf(it);
+          const periodStr = it.period && it.period !== 'one-off' ? '<div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;text-transform:capitalize">' + escapeHtml(it.period) + '</div>' : '';
+          const m = Number(it.amount) || 0;
+          
+          let costHtml = '<div style="text-align:right;line-height:1.1">';
+          costHtml += '<div style="font-weight:700;font-size:18px;letter-spacing:-0.5px;color:var(--text-up)">+' + enteredCcy + ' ' + Number(enteredAmt).toLocaleString('en-US', {maximumFractionDigits:2}) + '</div>';
+          if (it.period && it.period !== 'one-off') {
+            costHtml += '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">/ ' + (it.period === 'monthly' ? 'month' : (it.period === 'yearly' ? 'year' : 'week')) + '</div>';
+          }
+          
+          if (enteredCcy !== 'USD') {
+            let usdAmt = enteredAmt;
+            if (enteredCcy === 'INR') usdAmt = enteredAmt / 96;
+            else if (exchangeRates['USD'] && exchangeRates[enteredCcy]) {
+              usdAmt = enteredAmt / exchangeRates[enteredCcy] * exchangeRates['USD'];
+            }
+            costHtml += '<div style="font-size:10px;color:var(--text-tertiary);margin-top:2px">credits USD ' + Math.round(usdAmt).toLocaleString('en-US') + (it.period && it.period !== 'one-off' ? ' / ' + it.period : '') + '</div>';
+          }
+          costHtml += '</div>';
           
           li.innerHTML = `
             <div style="min-width:0">
               <div style="font-weight:600;color:var(--text-primary);font-size:14px">${escapeHtml(it.name)}</div>
+              ${periodStr}
+              <div class="sub-renew-line" style="font-size:10px;color:#F2C063;margin-top:3px">↻ Logged ${fmtActivityDate(it.ts)}</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
                 <span class="sub-from-pill">to &middot; ${escapeHtml(it.toAccount)}</span>
-                <span class="sub-from-pill" style="color:var(--text-tertiary)">${fmtActivityDate(it.ts)}</span>
               </div>
             </div>
-            <div style="text-align:right;line-height:1.1">
-              <div style="font-weight:700;font-size:18px;letter-spacing:-0.5px;color:var(--text-up)">+${enteredCcy} ${Number(enteredAmt).toLocaleString('en-US', {maximumFractionDigits:2})}</div>
-            </div>
+            ${costHtml}
             <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
               <button title="Edit" onclick="editIncome(${originalIdx})" style="background:transparent;border:1px solid rgba(255,255,255,0.10);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1">✏</button>
               <button title="Undo/Delete" onclick="undoIncome(${originalIdx})" style="background:transparent;border:1px solid rgba(255,255,255,0.10);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1">×</button>
@@ -10412,6 +10458,7 @@ function switchTab(tab) {
       const name = document.getElementById('addAssetName').value.trim();
       const aRaw = parseFloat(document.getElementById('addAssetAmt').value);
       const ccy = document.getElementById('addAssetCcy').value;
+      const period = document.getElementById('addAssetPeriod').value;
       const dest = document.getElementById('addAssetDest').value;
       const dateVal = document.getElementById('addAssetDate').value;
       
@@ -10441,6 +10488,7 @@ function switchTab(tab) {
         amount: amountCHF,
         entered_amount: aRaw,
         entered_currency: ccy,
+        period,
         toCat,
         toAccount,
         ts
