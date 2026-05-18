@@ -12247,6 +12247,7 @@ function switchTab(tab) {
   let fsSuppress = false;
   let fsPending = null;
   let fsLastJson = null;
+  let fsReady = false;  // blocks all outgoing pushes until initial fetch completes
 
   function fisSyncKey(k) {
     if (k === 'finance_active_tab' || k === 'activeTab') return false;
@@ -12319,9 +12320,10 @@ function switchTab(tab) {
   document.addEventListener('focusout', () => {
     setTimeout(() => { if (fsPending && !fisEditing()) { fapplyRemote(fsPending); fsPending = null; } }, 50);
   });
+  setInterval(() => { if (fsPending && !fisEditing()) { fapplyRemote(fsPending); fsPending = null; } }, 2000);
 
   async function fpushNow() {
-    if (!fsClient) return;
+    if (!fsClient || !fsReady) return;
     const s = fcollect();
     const json = JSON.stringify(s);
     if (json === fsLastJson) return;
@@ -12334,11 +12336,11 @@ function switchTab(tab) {
   function fsSchedule() {
     if (fsSuppress) return;
     clearTimeout(fsTimer);
-    fsTimer = setTimeout(fpushNow, 250);
+    fsTimer = setTimeout(fpushNow, 100);
   }
 
   function fflushPush() {
-    if (!fsClient) return;
+    if (!fsClient || !fsReady) return;
     const s = fcollect();
     const json = JSON.stringify(s);
     if (json === fsLastJson) return;
@@ -12355,15 +12357,23 @@ function switchTab(tab) {
 
   window.addEventListener('beforeunload', fflushPush);
   window.addEventListener('pagehide', fflushPush);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') fflushPush(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') fflushPush();
+    if (document.visibilityState === 'visible' && fsPending) { fapplyRemote(fsPending); fsPending = null; }
+  });
 
   (async function finitSync() {
-    if (!window.supabase) return;
+    if (!window.supabase) { fsReady = true; return; }
     fsClient = window.supabase.createClient(fS_URL, fS_KEY);
     try {
       const { data, error } = await fsClient.from('app_state').select('data').eq('key', fA_KEY).maybeSingle();
-      if (!error && data && data.data) { fapplyRemote(data.data); fsLastJson = JSON.stringify(data.data); }
-      else fpushNow();
+      if (!error && data && data.data) {
+        fapplyRemote(data.data);
+        fsLastJson = JSON.stringify(data.data);
+      }
+      fsReady = true;
+      // Flush any writes that queued during the fetch (user-triggered, not stale local data)
+      fpushNow();
       fsClient.channel('public:app_state:finance')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + fA_KEY }, p => {
           if (p.new && p.new.data) {
@@ -12373,7 +12383,7 @@ function switchTab(tab) {
             fmaybeApply(p.new.data);
           }
         }).subscribe();
-    } catch (e) {}
+    } catch (e) { fsReady = true; }
   })();
 
 })();
