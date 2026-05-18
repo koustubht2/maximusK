@@ -6336,6 +6336,149 @@ loadTomorrow();
 updateDayBar();
 setInterval(updateDayBar, 60 * 1000);
 
+// ============================================================
+// SUPABASE CLOUD SYNC: GOALS
+// ============================================================
+(function() {
+  const S_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  const S_KEY = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+  const A_KEY = 'po-goals';
+
+  let sClient = null;
+  let sTimer = null;
+  let sSuppress = false;
+  let sPending = null;
+  let sLastJson = null;
+
+  function isSyncKey(k) {
+    return k.startsWith('goals:') || k.startsWith('goal_') || k.startsWith('goals_');
+  }
+
+  const origSet = localStorage.setItem.bind(localStorage);
+  const origRemove = localStorage.removeItem.bind(localStorage);
+
+  localStorage.setItem = function(k, v) {
+    origSet(k, v);
+    try { if (!sSuppress && isSyncKey(k)) sSchedule(); } catch(e) {}
+  };
+  localStorage.removeItem = function(k) {
+    origRemove(k);
+    try { if (!sSuppress && isSyncKey(k)) sSchedule(); } catch(e) {}
+  };
+
+  function collect() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (isSyncKey(k)) {
+        try { out[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+      }
+    }
+    return out;
+  }
+
+  function isEditing() {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = ae.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (ae.getAttribute && ae.getAttribute('contenteditable') === 'true') return true;
+    return false;
+  }
+
+  function doRender() {
+    try { if (typeof loadToday === 'function') loadToday(); } catch(e) {}
+    try { if (typeof loadTomorrow === 'function') loadTomorrow(); } catch(e) {}
+    try { if (typeof loadSomeday === 'function') loadSomeday(); } catch(e) {}
+    try { if (typeof renderStreak === 'function') renderStreak(); } catch(e) {}
+  }
+
+  function applyRemote(remote) {
+    if (!remote || typeof remote !== 'object') return false;
+    sSuppress = true;
+    let changed = false;
+    try {
+      // Set new/updated keys
+      for (const k in remote) {
+        const incoming = JSON.stringify(remote[k]);
+        if (localStorage.getItem(k) !== incoming) { origSet(k, incoming); changed = true; }
+      }
+      // Remove deleted keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (isSyncKey(k) && !(k in remote)) { origRemove(k); changed = true; i--; }
+      }
+    } finally { sSuppress = false; }
+    if (changed) doRender();
+    return changed;
+  }
+
+  function maybeApply(remote) {
+    if (isEditing()) { sPending = remote; return; }
+    applyRemote(remote);
+  }
+
+  document.addEventListener('focusout', () => {
+    setTimeout(() => { if (sPending && !isEditing()) { applyRemote(sPending); sPending = null; } }, 50);
+  });
+
+  async function pushNow() {
+    if (!sClient) return;
+    const s = collect();
+    const json = JSON.stringify(s);
+    if (json === sLastJson) return;
+    try {
+      const { error } = await sClient.from('app_state').upsert({ key: A_KEY, data: s, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (!error) sLastJson = json;
+    } catch (_) {}
+  }
+
+  function sSchedule() {
+    if (sSuppress) return;
+    clearTimeout(sTimer);
+    sTimer = setTimeout(pushNow, 250);
+  }
+
+  function flushPush() {
+    if (!sClient) return;
+    const s = collect();
+    const json = JSON.stringify(s);
+    if (json === sLastJson) return;
+    try {
+      fetch(S_URL + '/rest/v1/app_state?on_conflict=key', {
+        method: 'POST',
+        headers: { 'apikey': S_KEY, 'Authorization': 'Bearer ' + S_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ key: A_KEY, data: s, updated_at: new Date().toISOString() }),
+        keepalive: true
+      }).catch(()=>{});
+      sLastJson = json;
+    } catch (_) {}
+  }
+
+  window.addEventListener('beforeunload', flushPush);
+  window.addEventListener('pagehide', flushPush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushPush(); });
+
+  (async function initSync() {
+    if (!window.supabase) return;
+    sClient = window.supabase.createClient(S_URL, S_KEY);
+    try {
+      const { data, error } = await sClient.from('app_state').select('data').eq('key', A_KEY).maybeSingle();
+      if (!error && data && data.data) { applyRemote(data.data); sLastJson = JSON.stringify(data.data); }
+      else pushNow();
+      sClient.channel('public:app_state:goals')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + A_KEY }, p => {
+          if (p.new && p.new.data) {
+            const incomingJson = JSON.stringify(p.new.data);
+            if (incomingJson === sLastJson) return;
+            sLastJson = incomingJson;
+            maybeApply(p.new.data);
+          }
+        }).subscribe();
+    } catch (e) {}
+  })();
+})();
+
 </script>
 
 <!-- Gym JS -->
@@ -8632,6 +8775,143 @@ setInterval(updateDayBar, 60 * 1000);
 
   render();
   startTicker();
+
+// ============================================================
+// SUPABASE CLOUD SYNC: HEALTH
+// ============================================================
+  const hS_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  const hS_KEY = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+  const hA_KEY = 'po-health';
+
+  let hsClient = null;
+  let hsTimer = null;
+  let hsSuppress = false;
+  let hsPending = null;
+  let hsLastJson = null;
+
+  function hisSyncKey(k) {
+    return k.startsWith('stack:');
+  }
+
+  const horigSet = localStorage.setItem.bind(localStorage);
+  const horigRemove = localStorage.removeItem.bind(localStorage);
+
+  localStorage.setItem = function(k, v) {
+    horigSet(k, v);
+    try { if (!hsSuppress && hisSyncKey(k)) hsSchedule(); } catch(e) {}
+  };
+  localStorage.removeItem = function(k) {
+    horigRemove(k);
+    try { if (!hsSuppress && hisSyncKey(k)) hsSchedule(); } catch(e) {}
+  };
+
+  function hcollect() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (hisSyncKey(k)) {
+        try { out[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+      }
+    }
+    return out;
+  }
+
+  function hisEditing() {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = ae.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (ae.getAttribute && ae.getAttribute('contenteditable') === 'true') return true;
+    return false;
+  }
+
+  function hdoRender() {
+    try { if (typeof render === 'function') render(); } catch(e) {}
+  }
+
+  function happlyRemote(remote) {
+    if (!remote || typeof remote !== 'object') return false;
+    hsSuppress = true;
+    let changed = false;
+    try {
+      for (const k in remote) {
+        const incoming = JSON.stringify(remote[k]);
+        if (localStorage.getItem(k) !== incoming) { horigSet(k, incoming); changed = true; }
+      }
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (hisSyncKey(k) && !(k in remote)) { horigRemove(k); changed = true; i--; }
+      }
+    } finally { hsSuppress = false; }
+    if (changed) hdoRender();
+    return changed;
+  }
+
+  function hmaybeApply(remote) {
+    if (hisEditing()) { hsPending = remote; return; }
+    happlyRemote(remote);
+  }
+
+  document.addEventListener('focusout', () => {
+    setTimeout(() => { if (hsPending && !hisEditing()) { happlyRemote(hsPending); hsPending = null; } }, 50);
+  });
+
+  async function hpushNow() {
+    if (!hsClient) return;
+    const s = hcollect();
+    const json = JSON.stringify(s);
+    if (json === hsLastJson) return;
+    try {
+      const { error } = await hsClient.from('app_state').upsert({ key: hA_KEY, data: s, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (!error) hsLastJson = json;
+    } catch (_) {}
+  }
+
+  function hsSchedule() {
+    if (hsSuppress) return;
+    clearTimeout(hsTimer);
+    hsTimer = setTimeout(hpushNow, 250);
+  }
+
+  function hflushPush() {
+    if (!hsClient) return;
+    const s = hcollect();
+    const json = JSON.stringify(s);
+    if (json === hsLastJson) return;
+    try {
+      fetch(hS_URL + '/rest/v1/app_state?on_conflict=key', {
+        method: 'POST',
+        headers: { 'apikey': hS_KEY, 'Authorization': 'Bearer ' + hS_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ key: hA_KEY, data: s, updated_at: new Date().toISOString() }),
+        keepalive: true
+      }).catch(()=>{});
+      hsLastJson = json;
+    } catch (_) {}
+  }
+
+  window.addEventListener('beforeunload', hflushPush);
+  window.addEventListener('pagehide', hflushPush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') hflushPush(); });
+
+  (async function hinitSync() {
+    if (!window.supabase) return;
+    hsClient = window.supabase.createClient(hS_URL, hS_KEY);
+    try {
+      const { data, error } = await hsClient.from('app_state').select('data').eq('key', hA_KEY).maybeSingle();
+      if (!error && data && data.data) { happlyRemote(data.data); hsLastJson = JSON.stringify(data.data); }
+      else hpushNow();
+      hsClient.channel('public:app_state:health')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + hA_KEY }, p => {
+          if (p.new && p.new.data) {
+            const incomingJson = JSON.stringify(p.new.data);
+            if (incomingJson === hsLastJson) return;
+            hsLastJson = incomingJson;
+            hmaybeApply(p.new.data);
+          }
+        }).subscribe();
+    } catch (e) {}
+  })();
+
 })();
 
 </script>
@@ -11653,6 +11933,147 @@ function switchTab(tab) {
   setupAssetsLiabilities();
   safeRenderTicker();
   setInterval(safeRenderTicker, 1500);
+
+// ============================================================
+// SUPABASE CLOUD SYNC: FINANCE
+// ============================================================
+  const fS_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  const fS_KEY = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+  const fA_KEY = 'po-finance';
+
+  let fsClient = null;
+  let fsTimer = null;
+  let fsSuppress = false;
+  let fsPending = null;
+  let fsLastJson = null;
+
+  function fisSyncKey(k) {
+    if (k === 'finance_active_tab' || k === 'activeTab') return false;
+    if (k.startsWith('nw:')) return true;
+    if (['incomes', 'expenses', 'subs', 'wishlist', 'incoming_orders', 'nw_currency_v1'].includes(k)) return true;
+    return false;
+  }
+
+  const forigSet = localStorage.setItem.bind(localStorage);
+  const forigRemove = localStorage.removeItem.bind(localStorage);
+
+  localStorage.setItem = function(k, v) {
+    forigSet(k, v);
+    try { if (!fsSuppress && fisSyncKey(k)) fsSchedule(); } catch(e) {}
+  };
+  localStorage.removeItem = function(k) {
+    forigRemove(k);
+    try { if (!fsSuppress && fisSyncKey(k)) fsSchedule(); } catch(e) {}
+  };
+
+  function fcollect() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (fisSyncKey(k)) {
+        try { out[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+      }
+    }
+    return out;
+  }
+
+  function fisEditing() {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = ae.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (ae.getAttribute && ae.getAttribute('contenteditable') === 'true') return true;
+    return false;
+  }
+
+  function fdoRender() {
+    try { if (typeof renderAllNetWorth === 'function') renderAllNetWorth(); } catch(e) {}
+    try { if (typeof renderAssetsLiabilities === 'function') renderAssetsLiabilities(); } catch(e) {}
+    try { if (typeof renderSubs === 'function') renderSubs(); } catch(e) {}
+  }
+
+  function fapplyRemote(remote) {
+    if (!remote || typeof remote !== 'object') return false;
+    fsSuppress = true;
+    let changed = false;
+    try {
+      for (const k in remote) {
+        const incoming = JSON.stringify(remote[k]);
+        if (localStorage.getItem(k) !== incoming) { forigSet(k, incoming); changed = true; }
+      }
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (fisSyncKey(k) && !(k in remote)) { forigRemove(k); changed = true; i--; }
+      }
+    } finally { fsSuppress = false; }
+    if (changed) fdoRender();
+    return changed;
+  }
+
+  function fmaybeApply(remote) {
+    if (fisEditing()) { fsPending = remote; return; }
+    fapplyRemote(remote);
+  }
+
+  document.addEventListener('focusout', () => {
+    setTimeout(() => { if (fsPending && !fisEditing()) { fapplyRemote(fsPending); fsPending = null; } }, 50);
+  });
+
+  async function fpushNow() {
+    if (!fsClient) return;
+    const s = fcollect();
+    const json = JSON.stringify(s);
+    if (json === fsLastJson) return;
+    try {
+      const { error } = await fsClient.from('app_state').upsert({ key: fA_KEY, data: s, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (!error) fsLastJson = json;
+    } catch (_) {}
+  }
+
+  function fsSchedule() {
+    if (fsSuppress) return;
+    clearTimeout(fsTimer);
+    fsTimer = setTimeout(fpushNow, 250);
+  }
+
+  function fflushPush() {
+    if (!fsClient) return;
+    const s = fcollect();
+    const json = JSON.stringify(s);
+    if (json === fsLastJson) return;
+    try {
+      fetch(fS_URL + '/rest/v1/app_state?on_conflict=key', {
+        method: 'POST',
+        headers: { 'apikey': fS_KEY, 'Authorization': 'Bearer ' + fS_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ key: fA_KEY, data: s, updated_at: new Date().toISOString() }),
+        keepalive: true
+      }).catch(()=>{});
+      fsLastJson = json;
+    } catch (_) {}
+  }
+
+  window.addEventListener('beforeunload', fflushPush);
+  window.addEventListener('pagehide', fflushPush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') fflushPush(); });
+
+  (async function finitSync() {
+    if (!window.supabase) return;
+    fsClient = window.supabase.createClient(fS_URL, fS_KEY);
+    try {
+      const { data, error } = await fsClient.from('app_state').select('data').eq('key', fA_KEY).maybeSingle();
+      if (!error && data && data.data) { fapplyRemote(data.data); fsLastJson = JSON.stringify(data.data); }
+      else fpushNow();
+      fsClient.channel('public:app_state:finance')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + fA_KEY }, p => {
+          if (p.new && p.new.data) {
+            const incomingJson = JSON.stringify(p.new.data);
+            if (incomingJson === fsLastJson) return;
+            fsLastJson = incomingJson;
+            fmaybeApply(p.new.data);
+          }
+        }).subscribe();
+    } catch (e) {}
+  })();
 
 })();
 </script>
