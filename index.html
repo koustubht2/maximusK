@@ -12357,9 +12357,30 @@ function switchTab(tab) {
 
   window.addEventListener('beforeunload', fflushPush);
   window.addEventListener('pagehide', fflushPush);
+
+  // Pull latest from Supabase and apply if newer — used as polling fallback
+  async function fpollRemote() {
+    if (!fsClient || !fsReady) return;
+    try {
+      const { data, error } = await fsClient.from('app_state').select('data').eq('key', fA_KEY).maybeSingle();
+      if (!error && data && data.data) {
+        const incomingJson = JSON.stringify(data.data);
+        if (incomingJson !== fsLastJson) {
+          fsLastJson = incomingJson;
+          fmaybeApply(data.data);
+        }
+      }
+    } catch (_) {}
+  }
+
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') fflushPush();
-    if (document.visibilityState === 'visible' && fsPending) { fapplyRemote(fsPending); fsPending = null; }
+    if (document.visibilityState === 'hidden') {
+      fflushPush();
+    } else {
+      // Tab became visible — poll immediately to catch anything missed while hidden
+      fpollRemote();
+      if (fsPending && !fisEditing()) { fapplyRemote(fsPending); fsPending = null; }
+    }
   });
 
   (async function finitSync() {
@@ -12372,7 +12393,7 @@ function switchTab(tab) {
         fsLastJson = JSON.stringify(data.data);
       }
       fsReady = true;
-      // Flush any writes that queued during the fetch (user-triggered, not stale local data)
+      // Flush any writes that queued during the initial fetch
       fpushNow();
       fsClient.channel('public:app_state:finance')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + fA_KEY }, p => {
@@ -12383,6 +12404,8 @@ function switchTab(tab) {
             fmaybeApply(p.new.data);
           }
         }).subscribe();
+      // Poll every 3s as a backstop for dropped WebSocket connections
+      setInterval(fpollRemote, 3000);
     } catch (e) { fsReady = true; }
   })();
 
