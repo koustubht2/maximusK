@@ -5553,17 +5553,38 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <p style="font-size:12px; color:var(--text-3); margin-top:-10px; margin-bottom:16px;">
     Log single expenses. These immediately deduct from your Net Worth accounts.
   </p>
-  
+
+  <!-- Expense pie chart card — hidden until first expense is added -->
+  <div class="card" id="expPieCard" style="margin-bottom:24px; display:none; padding:20px;">
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:16px;">EXPENSES BY CATEGORY</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="position:relative;width:140px;height:140px;flex-shrink:0;">
+        <svg id="expPieSvg" viewBox="0 0 140 140" width="140" height="140"></svg>
+        <div id="expPieCenter" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+          <div id="expPieTotalAmt" style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-primary);line-height:1.1;text-align:center;"></div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px;">TOTAL</div>
+        </div>
+      </div>
+      <div id="expPieLegend" style="flex:1;min-width:160px;display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+
   <div class="card ord-add-card" style="margin-bottom:24px;">
     <div class="ord-add-eyebrow">+ NEW EXPENSE</div>
-    <div class="ord-add-grid">
+    <div class="ord-add-grid" style="grid-template-columns:1.4fr 0.8fr 0.55fr 0.9fr 0.9fr 0.9fr 1fr auto;">
       <input type="text" id="addExpName" placeholder="Expense (e.g. Dinner)" class="ord-input ord-input-name">
       <input type="number" id="addExpAmt" placeholder="Cost" step="0.01" class="ord-input ord-input-cost">
       <select id="addExpCcy" class="ord-input ord-input-ccy">
         <option value="CHF">CHF</option><option value="INR">INR</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option>
       </select>
+      <select id="addExpCat" class="ord-input ord-input-from" title="Category">
+        <option value="">Category…</option>
+      </select>
+      <select id="addExpSubCat" class="ord-input ord-input-from" title="Sub-category" disabled>
+        <option value="">Sub-category…</option>
+      </select>
       <select id="addExpDest" class="ord-input ord-input-from" title="Deduct from account">
-        <option value="">🏦 Deduct from...</option>
+        <option value="">🏦 Account…</option>
       </select>
       <label class="date-field ord-input-date"><span class="date-emoji" aria-hidden="true">📅</span><input type="date" id="addExpDate" /></label>
       <button class="ord-add-btn" id="addExpBtn">Log Expense</button>
@@ -10746,6 +10767,27 @@ function switchTab(tab) {
       renderSubs();
     });
   }
+  // ============================================================
+  // EXPENSE CATEGORIES — must be declared before renderAllNetWorth()
+  // because renderAssetsLiabilities (called inside it) references this.
+  // ============================================================
+  const EXP_CATEGORIES = [
+    { key: 'food',      label: 'Food & Dining',             icon: '🍽️', color: '#F97316', bg: 'rgba(249,115,22,0.15)',
+      sub: ['Groceries', 'Dining Out', 'Delivery & Takeout', 'Refreshments & Snacks'] },
+    { key: 'housing',   label: 'Housing & Utilities',        icon: '🏠', color: '#6EE7B7', bg: 'rgba(110,231,183,0.12)',
+      sub: ['Rent / Mortgage', 'Utilities', 'Telecom', 'Home Maintenance'] },
+    { key: 'lifestyle', label: 'Lifestyle & Shopping',       icon: '🛍️', color: '#C084FC', bg: 'rgba(192,132,252,0.13)',
+      sub: ['Apparel & Accessories', 'Personal Care', 'General Merchandise / Hobbies', 'Subscriptions'] },
+    { key: 'transport', label: 'Transportation',             icon: '🚗', color: '#60A5FA', bg: 'rgba(96,165,250,0.13)',
+      sub: ['Fuel / Gasoline', 'Public Transit & Ride-shares', 'Auto Maintenance'] },
+    { key: 'entertain', label: 'Entertainment & Recreation', icon: '🎉', color: '#FBBF24', bg: 'rgba(251,191,36,0.13)',
+      sub: ['Events & Outings', 'Travel / Vacation'] },
+    { key: 'health',    label: 'Health & Wellness',          icon: '💊', color: '#34D399', bg: 'rgba(52,211,153,0.13)',
+      sub: ['Medical Care', 'Fitness'] },
+    { key: 'financial', label: 'Financial Obligations',      icon: '💳', color: '#FB923C', bg: 'rgba(251,146,60,0.13)',
+      sub: ['Debt Repayment', 'Savings & Investments'] },
+  ];
+
   renderAllNetWorth();
 
   // ============================================================
@@ -10791,8 +10833,25 @@ function switchTab(tab) {
   
   // ============================================================
   // ASSETS & LIABILITIES (Recurring Assets & One-off Expenses)
-  // ============================================================
   function renderAssetsLiabilities() {
+    populateExpCategoryDropdowns();
+
+    // Always populate the expense "Deduct from" account dropdown
+    const fromSel = document.getElementById('addExpDest');
+    if (fromSel) {
+      const allAccs = listAllNwAccounts();
+      const prev = fromSel.value;
+      const ICONS = { bank: '🏦', stocks: '📈', crypto: '🪙', other: '💼' };
+      if (!allAccs.length) {
+        fromSel.innerHTML = '<option value="">No accounts yet</option>';
+      } else {
+        fromSel.innerHTML = '<option value="">🏦 Account…</option>' + allAccs.map(a =>
+          `<option value="${a.catKey}::${a.itemName}">${ICONS[a.catKey]||'🏦'} ${escapeHtml(a.itemName)}</option>`
+        ).join('');
+        if (prev && [...fromSel.options].some(o => o.value === prev)) fromSel.value = prev;
+      }
+    }
+
     // 1. Render Recurring Assets
     const assetsListEl = document.getElementById('assetsList');
     if (assetsListEl) {
@@ -10882,13 +10941,20 @@ function switchTab(tab) {
           const enteredAmt = it.entered_amount != null ? it.entered_amount : it.amount;
           const enteredCcy = it.entered_currency || 'CHF';
           
+          const catMeta = EXP_CATEGORIES.find(c => c.key === it.cat);
+          const catBadge = catMeta
+            ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:999px;background:${catMeta.bg};color:${catMeta.color};font-family:var(--font-mono);">${catMeta.icon} ${escapeHtml(it.subCat || catMeta.label)}</span>`
+            : '';
           li.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start">
-              <div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+              <div style="min-width:0;">
                 <div class="ord-name" style="font-size:14px">${escapeHtml(it.name)}</div>
-                <div class="ord-meta" style="margin-top:2px">From ${escapeHtml(it.fromAccount)} &middot; ${fmtActivityDate(it.ts)}</div>
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px;">
+                  ${catBadge}
+                  <span class="ord-meta" style="font-size:11px;">From ${escapeHtml(it.fromAccount)} &middot; ${fmtActivityDate(it.ts)}</span>
+                </div>
               </div>
-              <div style="text-align:right">
+              <div style="text-align:right;flex-shrink:0;">
                 <div class="ord-cost" style="color:var(--danger)">-${enteredCcy} ${Number(enteredAmt).toLocaleString('en-US', {maximumFractionDigits:2})}</div>
                 <button class="qa-btn" style="padding:2px 6px; font-size:10px; margin-top:4px;" data-undo="${it.id}">Undo</button>
               </div>
@@ -10902,21 +10968,9 @@ function switchTab(tab) {
         });
       }
       
-      const fromSel = document.getElementById('addExpDest');
-      if (fromSel) {
-        const allAccs = listAllNwAccounts();
-        const prev = fromSel.value;
-        const ICONS = { bank: '🏦', stocks: '📈', crypto: '🪙', other: '💼' };
-        if (!allAccs.length) {
-          fromSel.innerHTML = '<option value="">No accounts yet</option>';
-        } else {
-          fromSel.innerHTML = '<option value="">Deduct from...</option>' + allAccs.map(a => {
-            return '<option value="' + a.catKey + '::' + a.itemName + '">' + (ICONS[a.catKey]||'🏦') + ' ' + escapeHtml(a.itemName) + '</option>';
-          }).join('');
-        }
-        if (prev && [...fromSel.options].some(o => o.value === prev)) fromSel.value = prev;
-      }
     }
+
+    renderExpensePieChart();
   }
 
   window.editIncome = function(idx) {
@@ -11022,6 +11076,117 @@ function switchTab(tab) {
     renderAllNetWorth();
   }
 
+  function populateExpCategoryDropdowns() {
+    const catSel = document.getElementById('addExpCat');
+    const subSel = document.getElementById('addExpSubCat');
+    if (!catSel || !subSel) return;
+
+    // Preserve current selection before rebuilding
+    const prevCat = catSel.value;
+    const prevSub = subSel.value;
+
+    catSel.innerHTML = '<option value="">Category…</option>' +
+      EXP_CATEGORIES.map(c => `<option value="${c.key}">${c.icon} ${c.label}</option>`).join('');
+
+    // Restore category selection
+    if (prevCat) catSel.value = prevCat;
+
+    // Re-wire sub-category cascade (replace element to avoid stacking listeners)
+    const newCatSel = catSel.cloneNode(true);
+    catSel.parentNode.replaceChild(newCatSel, catSel);
+
+    function syncSubCat(cat, restoreVal) {
+      const found = EXP_CATEGORIES.find(c => c.key === cat);
+      if (found) {
+        subSel.innerHTML = '<option value="">Sub-category…</option>' +
+          found.sub.map(s => `<option value="${s}">${s}</option>`).join('');
+        subSel.disabled = false;
+        if (restoreVal) subSel.value = restoreVal;
+      } else {
+        subSel.innerHTML = '<option value="">Sub-category…</option>';
+        subSel.disabled = true;
+      }
+    }
+
+    // Restore sub-category if category was already selected
+    if (prevCat) syncSubCat(prevCat, prevSub);
+
+    newCatSel.addEventListener('change', () => syncSubCat(newCatSel.value, null));
+  }
+
+  function renderExpensePieChart() {
+    const card   = document.getElementById('expPieCard');
+    const svg    = document.getElementById('expPieSvg');
+    const legend = document.getElementById('expPieLegend');
+    const totalEl = document.getElementById('expPieTotalAmt');
+    if (!card || !svg || !legend || !totalEl) return;
+
+    const exps = storeGet('expenses') || [];
+    if (!exps.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    // Aggregate CHF amounts by category key (uncategorised → 'other')
+    const totals = {};
+    let grandTotal = 0;
+    exps.forEach(e => {
+      const k = e.cat || 'other';
+      totals[k] = (totals[k] || 0) + (Number(e.amount) || 0);
+      grandTotal += (Number(e.amount) || 0);
+    });
+
+    // Build sorted slices
+    const slices = Object.entries(totals)
+      .map(([key, val]) => {
+        const meta = EXP_CATEGORIES.find(c => c.key === key) ||
+          { key: 'other', label: 'Other', icon: '🔖', color: '#94A3B8', bg: 'rgba(148,163,184,0.13)' };
+        return { key, val, meta };
+      })
+      .sort((a, b) => b.val - a.val);
+
+    // Draw donut (cx=70, cy=70, r_outer=62, r_inner=44, gap=0.02 rad)
+    const CX = 70, CY = 70, RO = 62, RI = 44, GAP = slices.length > 1 ? 0.022 : 0;
+    let angle = -Math.PI / 2;
+    let pathsHtml = '';
+
+    function arc(cx, cy, r, startA, endA) {
+      const x1 = cx + r * Math.cos(startA), y1 = cy + r * Math.sin(startA);
+      const x2 = cx + r * Math.cos(endA),   y2 = cy + r * Math.sin(endA);
+      const large = (endA - startA) > Math.PI ? 1 : 0;
+      return `${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)}`;
+    }
+
+    slices.forEach(s => {
+      const sweep = (s.val / grandTotal) * Math.PI * 2;
+      const a1 = angle + GAP, a2 = angle + sweep - GAP;
+      if (a2 > a1) {
+        const ox1 = CX + RO * Math.cos(a1), oy1 = CY + RO * Math.sin(a1);
+        const ox2 = CX + RO * Math.cos(a2), oy2 = CY + RO * Math.sin(a2);
+        const ix1 = CX + RI * Math.cos(a2), iy1 = CY + RI * Math.sin(a2);
+        const ix2 = CX + RI * Math.cos(a1), iy2 = CY + RI * Math.sin(a1);
+        const large = sweep > Math.PI ? 1 : 0;
+        const d = `M${ox1.toFixed(2)},${oy1.toFixed(2)} A${RO},${RO} 0 ${large} 1 ${ox2.toFixed(2)},${oy2.toFixed(2)} L${ix1.toFixed(2)},${iy1.toFixed(2)} A${RI},${RI} 0 ${large} 0 ${ix2.toFixed(2)},${iy2.toFixed(2)} Z`;
+        pathsHtml += `<path d="${d}" fill="${s.meta.color}" opacity="0.9"></path>`;
+      }
+      angle += sweep;
+    });
+    svg.innerHTML = pathsHtml;
+
+    // Grand total label (display in entered currency not possible since we mix currencies; show CHF)
+    totalEl.textContent = 'CHF ' + Math.round(grandTotal).toLocaleString('en-US');
+
+    // Legend
+    legend.innerHTML = slices.map(s => {
+      const pct = grandTotal > 0 ? ((s.val / grandTotal) * 100).toFixed(1) : '0.0';
+      return `<div style="display:flex;align-items:center;gap:8px;">
+        <span style="width:9px;height:9px;border-radius:50%;background:${s.meta.color};flex-shrink:0;display:inline-block;"></span>
+        <span style="font-size:13px;flex-shrink:0;">${s.meta.icon}</span>
+        <span style="flex:1;font-size:12px;font-weight:600;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.meta.label}</span>
+        <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;background:rgba(255,255,255,0.06);padding:2px 7px;border-radius:999px;color:rgba(255,255,255,0.75);flex-shrink:0;">${pct}%</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);font-variant-numeric:tabular-nums;flex-shrink:0;min-width:70px;text-align:right;">CHF ${Math.round(s.val).toLocaleString('en-US')}</span>
+      </div>`;
+    }).join('');
+  }
+
   function setupAssetsLiabilities() {
     document.getElementById('addAssetBtn')?.addEventListener('click', async () => {
       const name = document.getElementById('addAssetName').value.trim();
@@ -11082,6 +11247,8 @@ function switchTab(tab) {
       const name = document.getElementById('addExpName').value.trim();
       const aRaw = parseFloat(document.getElementById('addExpAmt').value);
       const ccy = document.getElementById('addExpCcy').value;
+      const cat = document.getElementById('addExpCat').value;
+      const subCat = document.getElementById('addExpSubCat').value;
       const dest = document.getElementById('addExpDest').value;
       const dateVal = document.getElementById('addExpDate').value;
       let ts = Date.now();
@@ -11122,14 +11289,19 @@ function switchTab(tab) {
         amount: amountCHF,
         entered_amount: aRaw,
         entered_currency: ccy,
+        cat: cat || '',
+        subCat: subCat || '',
         fromCat,
         fromAccount,
         ts: ts
       });
       storeSet('expenses', exps);
-      
+
       document.getElementById('addExpName').value = '';
       document.getElementById('addExpAmt').value = '';
+      document.getElementById('addExpCat').value = '';
+      document.getElementById('addExpSubCat').value = '';
+      document.getElementById('addExpSubCat').disabled = true;
       renderAssetsLiabilities();
       renderAllNetWorth();
     });
