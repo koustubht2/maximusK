@@ -9257,6 +9257,125 @@ setInterval(updateDayBar, 60 * 1000);
   });
 
   boot();
+
+// ============================================================
+// SUPABASE CLOUD SYNC: OURA
+// ============================================================
+  const oS_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  const oS_KEY = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+  const oA_KEY = 'po-oura';
+
+  let osClient = null;
+  let osTimer = null;
+  let osSuppress = false;
+  let osPending = null;
+  let osLastJson = null;
+
+  function oisSyncKey(k) {
+    return k === OURA.tokenKey || k === OURA.cacheKey;
+  }
+
+  const oorigSet = localStorage.setItem.bind(localStorage);
+  const oorigRemove = localStorage.removeItem.bind(localStorage);
+
+  localStorage.setItem = function(k, v) {
+    oorigSet(k, v);
+    try { if (!osSuppress && oisSyncKey(k)) osSchedule(); } catch(e) {}
+  };
+  localStorage.removeItem = function(k) {
+    oorigRemove(k);
+    try { if (!osSuppress && oisSyncKey(k)) osSchedule(); } catch(e) {}
+  };
+
+  function ocollect() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (oisSyncKey(k)) {
+        try { out[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+      }
+    }
+    return out;
+  }
+
+  function odoRender() {
+    try { if (typeof boot === 'function') boot(); } catch(e) {}
+  }
+
+  function oapplyRemote(remote) {
+    if (!remote || typeof remote !== 'object') return false;
+    osSuppress = true;
+    let changed = false;
+    try {
+      for (const k in remote) {
+        const incoming = JSON.stringify(remote[k]);
+        if (localStorage.getItem(k) !== incoming) { oorigSet(k, incoming); changed = true; }
+      }
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (oisSyncKey(k) && !(k in remote)) { oorigRemove(k); changed = true; i--; }
+      }
+    } finally { osSuppress = false; }
+    if (changed) odoRender();
+    return changed;
+  }
+
+  async function opushNow() {
+    if (!osClient) return;
+    const s = ocollect();
+    const json = JSON.stringify(s);
+    if (json === osLastJson) return;
+    try {
+      const { error } = await osClient.from('app_state').upsert({ key: oA_KEY, data: s, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (!error) osLastJson = json;
+    } catch (_) {}
+  }
+
+  function osSchedule() {
+    if (osSuppress) return;
+    clearTimeout(osTimer);
+    osTimer = setTimeout(opushNow, 250);
+  }
+
+  function oflushPush() {
+    if (!osClient) return;
+    const s = ocollect();
+    const json = JSON.stringify(s);
+    if (json === osLastJson) return;
+    try {
+      fetch(oS_URL + '/rest/v1/app_state?on_conflict=key', {
+        method: 'POST',
+        headers: { 'apikey': oS_KEY, 'Authorization': 'Bearer ' + oS_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ key: oA_KEY, data: s, updated_at: new Date().toISOString() }),
+        keepalive: true
+      }).catch(()=>{});
+      osLastJson = json;
+    } catch (_) {}
+  }
+
+  window.addEventListener('beforeunload', oflushPush);
+  window.addEventListener('pagehide', oflushPush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') oflushPush(); });
+
+  (async function oinitSync() {
+    if (!window.supabase) return;
+    osClient = window.supabase.createClient(oS_URL, oS_KEY);
+    try {
+      const { data, error } = await osClient.from('app_state').select('data').eq('key', oA_KEY).maybeSingle();
+      if (!error && data && data.data) { oapplyRemote(data.data); osLastJson = JSON.stringify(data.data); }
+      else opushNow();
+      osClient.channel('public:app_state:oura')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + oA_KEY }, p => {
+          if (p.new && p.new.data) {
+            const incomingJson = JSON.stringify(p.new.data);
+            if (incomingJson === osLastJson) return;
+            osLastJson = incomingJson;
+            oapplyRemote(p.new.data);
+          }
+        }).subscribe();
+    } catch (e) {}
+  })();
+
 })();
 </script>
 
