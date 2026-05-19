@@ -6460,6 +6460,7 @@ setInterval(updateDayBar, 60 * 1000);
   let sSuppress = false;
   let sPending = null;
   let sLastJson = null;
+  let sReady = false;
 
   function isSyncKey(k) {
     return k.startsWith('goals:') || k.startsWith('goal_') || k.startsWith('goals_');
@@ -6533,61 +6534,90 @@ setInterval(updateDayBar, 60 * 1000);
     setTimeout(() => { if (sPending && !isEditing()) { applyRemote(sPending); sPending = null; } }, 50);
   });
 
-  async function pushNow() {
-    if (!sClient) return;
+  function sRawPush(s, keepalive) {
+    return fetch(S_URL + '/rest/v1/app_state?on_conflict=key', {
+      method: 'POST',
+      headers: { 'apikey': S_KEY, 'Authorization': 'Bearer ' + S_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: A_KEY, data: s, updated_at: new Date().toISOString() }),
+      keepalive: !!keepalive
+    });
+  }
+
+  function pushNow() {
+    if (!sReady) return;
     const s = collect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === sLastJson) return;
-    try {
-      const { error } = await sClient.from('app_state').upsert({ key: A_KEY, data: s, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-      if (!error) sLastJson = json;
-    } catch (_) {}
+    sLastJson = json;
+    sRawPush(s, true).catch(() => { sLastJson = null; });
   }
 
   function sSchedule() {
     if (sSuppress) return;
     clearTimeout(sTimer);
-    sTimer = setTimeout(pushNow, 250);
+    sTimer = setTimeout(pushNow, 100);
   }
 
   function flushPush() {
-    if (!sClient) return;
+    if (!sReady) return;
     const s = collect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === sLastJson) return;
+    sRawPush(s, true).catch(() => {});
+    sLastJson = json;
+  }
+
+  async function pollRemote() {
+    if (!sReady) return;
     try {
-      fetch(S_URL + '/rest/v1/app_state?on_conflict=key', {
-        method: 'POST',
-        headers: { 'apikey': S_KEY, 'Authorization': 'Bearer ' + S_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({ key: A_KEY, data: s, updated_at: new Date().toISOString() }),
+      const res = await fetch(S_URL + '/rest/v1/app_state?select=data&key=eq.' + A_KEY, {
+        headers: { 'apikey': S_KEY, 'Authorization': 'Bearer ' + S_KEY },
         keepalive: true
-      }).catch(()=>{});
-      sLastJson = json;
+      });
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length && rows[0].data) {
+        const incomingJson = window.canonicalJson(rows[0].data);
+        if (incomingJson !== sLastJson) { sLastJson = incomingJson; maybeApply(rows[0].data); }
+      }
     } catch (_) {}
   }
 
   window.addEventListener('beforeunload', flushPush);
   window.addEventListener('pagehide', flushPush);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushPush(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPush();
+    else { pollRemote(); if (sPending && !isEditing()) { applyRemote(sPending); sPending = null; } }
+  });
+  setInterval(() => { if (sPending && !isEditing()) { applyRemote(sPending); sPending = null; } }, 2000);
 
   (async function initSync() {
-    if (!window.supabase) return;
+    if (!window.supabase) { sReady = true; return; }
     sClient = window.supabase.createClient(S_URL, S_KEY);
     try {
       const { data, error } = await sClient.from('app_state').select('data').eq('key', A_KEY).maybeSingle();
-      if (!error && data && data.data) { applyRemote(data.data); sLastJson = JSON.stringify(data.data); }
-      else pushNow();
+      if (!error && data && data.data) { applyRemote(data.data); sLastJson = window.canonicalJson(data.data); }
+      sReady = true;
+      pushNow();
       sClient.channel('public:app_state:goals')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + A_KEY }, p => {
           if (p.new && p.new.data) {
-            const incomingJson = JSON.stringify(p.new.data);
+            const incomingJson = window.canonicalJson(p.new.data);
             if (incomingJson === sLastJson) return;
             sLastJson = incomingJson;
             maybeApply(p.new.data);
           }
         }).subscribe();
-    } catch (e) {}
+      setInterval(pollRemote, 3000);
+    } catch (e) { sReady = true; }
   })();
+
+  if (typeof window.registerSync === 'function') {
+    window.registerSync(
+      pushNow,
+      pollRemote,
+      () => sReady && window.canonicalJson(collect()) !== sLastJson
+    );
+  }
 })();
 
 </script>
@@ -9411,6 +9441,7 @@ setInterval(updateDayBar, 60 * 1000);
   let osSuppress = false;
   let osPending = null;
   let osLastJson = null;
+  let osReady = false;
 
   function oisSyncKey(k) {
     return k === OURA.tokenKey || k === OURA.cacheKey;
@@ -9461,61 +9492,89 @@ setInterval(updateDayBar, 60 * 1000);
     return changed;
   }
 
-  async function opushNow() {
-    if (!osClient) return;
+  function oRawPush(s, keepalive) {
+    return fetch(oS_URL + '/rest/v1/app_state?on_conflict=key', {
+      method: 'POST',
+      headers: { 'apikey': oS_KEY, 'Authorization': 'Bearer ' + oS_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: oA_KEY, data: s, updated_at: new Date().toISOString() }),
+      keepalive: !!keepalive
+    });
+  }
+
+  function opushNow() {
+    if (!osReady) return;
     const s = ocollect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === osLastJson) return;
-    try {
-      const { error } = await osClient.from('app_state').upsert({ key: oA_KEY, data: s, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-      if (!error) osLastJson = json;
-    } catch (_) {}
+    osLastJson = json;
+    oRawPush(s, true).catch(() => { osLastJson = null; });
   }
 
   function osSchedule() {
     if (osSuppress) return;
     clearTimeout(osTimer);
-    osTimer = setTimeout(opushNow, 250);
+    osTimer = setTimeout(opushNow, 100);
   }
 
   function oflushPush() {
-    if (!osClient) return;
+    if (!osReady) return;
     const s = ocollect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === osLastJson) return;
+    oRawPush(s, true).catch(() => {});
+    osLastJson = json;
+  }
+
+  async function opollRemote() {
+    if (!osReady) return;
     try {
-      fetch(oS_URL + '/rest/v1/app_state?on_conflict=key', {
-        method: 'POST',
-        headers: { 'apikey': oS_KEY, 'Authorization': 'Bearer ' + oS_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({ key: oA_KEY, data: s, updated_at: new Date().toISOString() }),
+      const res = await fetch(oS_URL + '/rest/v1/app_state?select=data&key=eq.' + oA_KEY, {
+        headers: { 'apikey': oS_KEY, 'Authorization': 'Bearer ' + oS_KEY },
         keepalive: true
-      }).catch(()=>{});
-      osLastJson = json;
+      });
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length && rows[0].data) {
+        const incomingJson = window.canonicalJson(rows[0].data);
+        if (incomingJson !== osLastJson) { osLastJson = incomingJson; oapplyRemote(rows[0].data); }
+      }
     } catch (_) {}
   }
 
   window.addEventListener('beforeunload', oflushPush);
   window.addEventListener('pagehide', oflushPush);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') oflushPush(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') oflushPush();
+    else opollRemote();
+  });
 
   (async function oinitSync() {
-    if (!window.supabase) return;
+    if (!window.supabase) { osReady = true; return; }
     osClient = window.supabase.createClient(oS_URL, oS_KEY);
     try {
       const { data, error } = await osClient.from('app_state').select('data').eq('key', oA_KEY).maybeSingle();
-      if (!error && data && data.data) { oapplyRemote(data.data); osLastJson = JSON.stringify(data.data); }
-      else opushNow();
+      if (!error && data && data.data) { oapplyRemote(data.data); osLastJson = window.canonicalJson(data.data); }
+      osReady = true;
+      opushNow();
       osClient.channel('public:app_state:oura')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + oA_KEY }, p => {
           if (p.new && p.new.data) {
-            const incomingJson = JSON.stringify(p.new.data);
+            const incomingJson = window.canonicalJson(p.new.data);
             if (incomingJson === osLastJson) return;
             osLastJson = incomingJson;
             oapplyRemote(p.new.data);
           }
         }).subscribe();
-    } catch (e) {}
+      setInterval(opollRemote, 3000);
+    } catch (e) { osReady = true; }
   })();
+
+  if (typeof window.registerSync === 'function') {
+    window.registerSync(
+      opushNow,
+      opollRemote,
+      () => osReady && window.canonicalJson(ocollect()) !== osLastJson
+    );
+  }
 
 })();
 </script>
