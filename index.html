@@ -2926,7 +2926,9 @@ html, body {
   border-color: rgba(96,165,250,0.45);
   background: rgba(96,165,250,0.10);
   color: #60a5fa;
-  animation: sync-spin 0.7s linear infinite;
+}
+.topbar-sync.syncing svg {
+  animation: sync-spin 0.65s linear infinite;
 }
 .topbar-sync.done {
   border-color: rgba(110,231,183,0.45);
@@ -4611,6 +4613,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 window._syncRegistry = [];
 window.registerSync = function(pushFn, pollFn, isDirtyFn) {
   window._syncRegistry.push({ pushFn, pollFn, isDirtyFn });
+};
+// Canonical JSON for dirty comparison — sorts keys so order differences don't cause false positives
+window.canonicalJson = function(obj) {
+  if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+  if (Array.isArray(obj)) return '[' + obj.map(window.canonicalJson).join(',') + ']';
+  return '{' + Object.keys(obj).sort().map(k => JSON.stringify(k) + ':' + window.canonicalJson(obj[k])).join(',') + '}';
 };
 
 (function() {
@@ -8972,7 +8980,7 @@ setInterval(updateDayBar, 60 * 1000);
   function hpushNow() {
     if (!hsReady) return;
     const s = hcollect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === hsLastJson) return;
     hsLastJson = json;
     hRawPush(s, true).catch(() => { hsLastJson = null; });
@@ -8987,7 +8995,7 @@ setInterval(updateDayBar, 60 * 1000);
   function hflushPush() {
     if (!hsReady) return;
     const s = hcollect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === hsLastJson) return;
     hRawPush(s, true).catch(() => {});
     hsLastJson = json;
@@ -9002,7 +9010,7 @@ setInterval(updateDayBar, 60 * 1000);
       });
       const rows = await res.json();
       if (Array.isArray(rows) && rows.length && rows[0].data) {
-        const incomingJson = JSON.stringify(rows[0].data);
+        const incomingJson = window.canonicalJson(rows[0].data);
         if (incomingJson !== hsLastJson) { hsLastJson = incomingJson; hmaybeApply(rows[0].data); }
       }
     } catch (_) {}
@@ -9021,13 +9029,13 @@ setInterval(updateDayBar, 60 * 1000);
     hsClient = window.supabase.createClient(hS_URL, hS_KEY);
     try {
       const { data, error } = await hsClient.from('app_state').select('data').eq('key', hA_KEY).maybeSingle();
-      if (!error && data && data.data) { happlyRemote(data.data); hsLastJson = JSON.stringify(data.data); }
+      if (!error && data && data.data) { happlyRemote(data.data); hsLastJson = window.canonicalJson(data.data); }
       hsReady = true;
       hpushNow();
       hsClient.channel('public:app_state:health')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + hA_KEY }, p => {
           if (p.new && p.new.data) {
-            const incomingJson = JSON.stringify(p.new.data);
+            const incomingJson = window.canonicalJson(p.new.data);
             if (incomingJson === hsLastJson) return;
             hsLastJson = incomingJson;
             hmaybeApply(p.new.data);
@@ -9041,7 +9049,7 @@ setInterval(updateDayBar, 60 * 1000);
     window.registerSync(
       hpushNow,
       hpollRemote,
-      () => { const json = JSON.stringify(hcollect()); return hsReady && json !== hsLastJson; }
+      () => hsReady && window.canonicalJson(hcollect()) !== hsLastJson
     );
   }
 
@@ -10108,7 +10116,7 @@ setInterval(updateDayBar, 60 * 1000);
   function wtrPushNow() {
     if (!wtrReady) return;
     const s = wtrCollectState();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === wtrLastSyncedJson) return;
     wtrLastSyncedJson = json;
     wtrRawPush(s, true).catch(() => { wtrLastSyncedJson = null; });
@@ -10123,7 +10131,7 @@ setInterval(updateDayBar, 60 * 1000);
   function wtrFlushPushOnUnload() {
     if (!wtrReady) return;
     const s = wtrCollectState();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === wtrLastSyncedJson) return;
     wtrRawPush(s, true).catch(() => {});
     wtrLastSyncedJson = json;
@@ -10138,7 +10146,7 @@ setInterval(updateDayBar, 60 * 1000);
       });
       const rows = await res.json();
       if (Array.isArray(rows) && rows.length && rows[0].data) {
-        const incomingJson = JSON.stringify(rows[0].data);
+        const incomingJson = window.canonicalJson(rows[0].data);
         if (incomingJson !== wtrLastSyncedJson) {
           wtrLastSyncedJson = incomingJson;
           wtrMaybeApplyRemote(rows[0].data);
@@ -10163,14 +10171,14 @@ setInterval(updateDayBar, 60 * 1000);
         .from('app_state').select('data').eq('key', WTR_APP_KEY).maybeSingle();
       if (!error && data && data.data) {
         wtrApplyRemoteState(data.data);
-        wtrLastSyncedJson = JSON.stringify(data.data);
+        wtrLastSyncedJson = window.canonicalJson(data.data);
       }
       wtrReady = true;
       wtrPushNow();
       wtrSupa.channel('public:app_state:water')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + WTR_APP_KEY }, payload => {
           if (payload.new && payload.new.data) {
-            const incomingJson = JSON.stringify(payload.new.data);
+            const incomingJson = window.canonicalJson(payload.new.data);
             if (incomingJson === wtrLastSyncedJson) return;
             wtrLastSyncedJson = incomingJson;
             wtrMaybeApplyRemote(payload.new.data);
@@ -10184,7 +10192,7 @@ setInterval(updateDayBar, 60 * 1000);
     window.registerSync(
       wtrPushNow,
       wtrPollRemote,
-      () => { const json = JSON.stringify(wtrCollectState()); return wtrReady && json !== wtrLastSyncedJson; }
+      () => wtrReady && window.canonicalJson(wtrCollectState()) !== wtrLastSyncedJson
     );
   }
 
@@ -12469,7 +12477,7 @@ function switchTab(tab) {
   function fpushNow() {
     if (!fsReady) return;
     const s = fcollect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === fsLastJson) return;
     fsLastJson = json;
     fsRawPush(s, true).catch(() => { fsLastJson = null; });
@@ -12484,7 +12492,7 @@ function switchTab(tab) {
   function fflushPush() {
     if (!fsReady) return;
     const s = fcollect();
-    const json = JSON.stringify(s);
+    const json = window.canonicalJson(s);
     if (json === fsLastJson) return;
     try {
       fsRawPush(s, true).catch(() => {});
@@ -12505,7 +12513,7 @@ function switchTab(tab) {
       });
       const rows = await res.json();
       if (Array.isArray(rows) && rows.length && rows[0].data) {
-        const incomingJson = JSON.stringify(rows[0].data);
+        const incomingJson = window.canonicalJson(rows[0].data);
         if (incomingJson !== fsLastJson) {
           fsLastJson = incomingJson;
           fmaybeApply(rows[0].data);
@@ -12531,7 +12539,7 @@ function switchTab(tab) {
       const { data, error } = await fsClient.from('app_state').select('data').eq('key', fA_KEY).maybeSingle();
       if (!error && data && data.data) {
         fapplyRemote(data.data);
-        fsLastJson = JSON.stringify(data.data);
+        fsLastJson = window.canonicalJson(data.data);
       }
       fsReady = true;
       // Flush any writes that queued during the initial fetch
@@ -12539,7 +12547,7 @@ function switchTab(tab) {
       fsClient.channel('public:app_state:finance')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + fA_KEY }, p => {
           if (p.new && p.new.data) {
-            const incomingJson = JSON.stringify(p.new.data);
+            const incomingJson = window.canonicalJson(p.new.data);
             if (incomingJson === fsLastJson) return;
             fsLastJson = incomingJson;
             fmaybeApply(p.new.data);
@@ -12554,7 +12562,7 @@ function switchTab(tab) {
     window.registerSync(
       fpushNow,
       fpollRemote,
-      () => { const json = JSON.stringify(fcollect()); return fsReady && json !== fsLastJson; }
+      () => { return fsReady && window.canonicalJson(fcollect()) !== fsLastJson; }
     );
   }
 
