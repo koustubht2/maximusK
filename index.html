@@ -2937,6 +2937,57 @@ html, body {
 }
 @keyframes sync-spin { to { transform: rotate(360deg); } }
 
+.topbar-date {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 2px;
+}
+.topbar-date-arrow {
+  width: 26px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none;
+  color: rgba(255,255,255,0.35); font-size: 14px; cursor: pointer;
+  border-radius: 8px;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s, background 0.12s;
+}
+.topbar-date-arrow:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.07); }
+.topbar-date-arrow:disabled { opacity: 0.2; cursor: default; }
+.topbar-date-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.5); white-space: nowrap; cursor: pointer;
+  padding: 4px 3px; border-radius: 6px;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.topbar-date-label:hover { color: rgba(255,255,255,0.85); }
+.topbar-date-label.is-past { color: #fbbf24; }
+
+/* Past-view banner */
+.past-view-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 52px; z-index: 39;
+  background: rgba(251,191,36,0.12);
+  border-bottom: 1px solid rgba(251,191,36,0.25);
+  padding: 7px 16px;
+  gap: 12px;
+  font-size: 12px; font-weight: 600;
+  color: #fbbf24;
+  backdrop-filter: blur(8px);
+}
+.past-view-banner.hidden { display: none !important; }
+.past-view-banner-text { display: flex; align-items: center; gap: 7px; }
+.past-view-banner-back {
+  flex: 0 0 auto;
+  padding: 4px 10px; border-radius: 7px;
+  border: 1px solid rgba(251,191,36,0.4);
+  background: rgba(251,191,36,0.12);
+  color: #fbbf24; font-size: 11px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.past-view-banner-back:hover { background: rgba(251,191,36,0.22); }
+
 @media (max-width: 480px) {
   .topbar { padding-left: 10px; padding-right: 10px; gap: 4px; }
   .topbar-pill, .topbar-water-pill { padding: 7px 9px; gap: 5px; }
@@ -2944,6 +2995,8 @@ html, body {
   .topbar-pill-count { font-size: 11px; }
   .topbar-water-add { width: 32px; font-size: 16px; }
   .topbar-sync { width: 32px; height: 32px; font-size: 13px; }
+  .topbar-date-label { font-size: 9px; }
+  .topbar-date-arrow { width: 22px; }
 }
 @media (max-width: 380px) {
   .topbar-pill-label { display: none; }
@@ -4603,12 +4656,80 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </button>
     <button class="topbar-water-add" id="topbarWaterAdd" aria-label="Log one drink" type="button">+</button>
   </div>
+  <div class="topbar-date">
+    <button class="topbar-date-arrow" id="topbarDatePrev" aria-label="Previous day">&#8249;</button>
+    <span class="topbar-date-label" id="topbarDateLabel">TODAY</span>
+    <button class="topbar-date-arrow" id="topbarDateNext" aria-label="Next day" disabled>&#8250;</button>
+  </div>
   <button class="topbar-sync" id="topbarSync" aria-label="Sync now" title="Sync now" type="button">
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
   </button>
 </header>
 
+<div class="past-view-banner hidden" id="pastViewBanner">
+  <span class="past-view-banner-text">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="pastViewBannerText">Viewing past — read only</span>
+  </span>
+  <button class="past-view-banner-back" id="pastViewBackBtn">Back to Today</button>
+</div>
+
 <script>
+// ── Global date state ───────────────────────────────────────────
+(function() {
+  function todayStr() {
+    const now = new Date();
+    if (now.getHours() < 6) now.setDate(now.getDate() - 1);
+    return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  }
+  function parseYMD(s) { const [y,m,d] = s.split('-').map(Number); const dt = new Date(y,m-1,d); return dt; }
+  function fmtLabel(s) {
+    const t = todayStr();
+    if (s === t) return 'TODAY';
+    const d = parseYMD(s);
+    const dows = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const mons = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return dows[d.getDay()] + ' ' + mons[d.getMonth()] + ' ' + d.getDate();
+  }
+
+  let _viewDate = todayStr();
+
+  window.getViewDate = () => _viewDate;
+  window.isViewingToday = () => _viewDate === todayStr();
+
+  function setViewDate(s) {
+    _viewDate = s;
+    const isToday = window.isViewingToday();
+    const lbl = document.getElementById('topbarDateLabel');
+    const next = document.getElementById('topbarDateNext');
+    const banner = document.getElementById('pastViewBanner');
+    const bannerText = document.getElementById('pastViewBannerText');
+    if (lbl) { lbl.textContent = fmtLabel(s); lbl.classList.toggle('is-past', !isToday); }
+    if (next) next.disabled = isToday;
+    if (banner) banner.classList.toggle('hidden', isToday);
+    if (bannerText) {
+      const d = parseYMD(s);
+      const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      bannerText.textContent = 'Viewing ' + d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' — read only';
+    }
+    window.dispatchEvent(new CustomEvent('viewdate-changed', { detail: { date: s } }));
+  }
+
+  document.getElementById('topbarDatePrev').addEventListener('click', () => {
+    const d = parseYMD(_viewDate); d.setDate(d.getDate() - 1);
+    setViewDate(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
+  });
+  document.getElementById('topbarDateNext').addEventListener('click', () => {
+    if (window.isViewingToday()) return;
+    const d = parseYMD(_viewDate); d.setDate(d.getDate() + 1);
+    setViewDate(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
+  });
+  document.getElementById('topbarDateLabel').addEventListener('click', () => {
+    if (!window.isViewingToday()) setViewDate(todayStr());
+  });
+  document.getElementById('pastViewBackBtn').addEventListener('click', () => setViewDate(todayStr()));
+})();
+
 // Global sync coordinator — each IIFE registers its push + poll functions here
 window._syncRegistry = [];
 window.registerSync = function(pushFn, pollFn, isDirtyFn) {
@@ -6179,8 +6300,17 @@ function renderListInto(goals, listEl, emptyEl, key, readOnly, reloadFn) {
 }
 
 function loadToday() {
-  const goals = storeGet(TODAY_KEY) || [];
-  renderListInto(goals, document.getElementById('goalList'), document.getElementById('emptyState'), TODAY_KEY, false, loadToday);
+  const viewKey = 'goals:' + (window.getViewDate ? window.getViewDate() : dateToYYYYMMDD(activeDateObj));
+  const isPast = window.isViewingToday ? !window.isViewingToday() : false;
+  const goals = storeGet(viewKey) || [];
+  renderListInto(goals, document.getElementById('goalList'), document.getElementById('emptyState'), viewKey, isPast, loadToday);
+  // Hide add/push controls in past view
+  const addRow = document.querySelector('.goal-input-wrap.gm-input-wrap');
+  const pushBtn = document.getElementById('gmPushBtn');
+  const polishStatus = document.getElementById('polishStatus');
+  if (addRow) addRow.style.display = isPast ? 'none' : '';
+  if (pushBtn) pushBtn.style.display = isPast ? 'none' : '';
+  if (polishStatus) polishStatus.style.display = isPast ? 'none' : '';
 }
 function loadTomorrow() {
   const goals = storeGet(TOMORROW_KEY) || [];
@@ -6446,6 +6576,7 @@ loadToday();
 loadTomorrow();
 updateDayBar();
 setInterval(updateDayBar, 60 * 1000);
+window.addEventListener('viewdate-changed', loadToday);
 
 // ============================================================
 // SUPABASE CLOUD SYNC: GOALS
@@ -7066,17 +7197,19 @@ setInterval(updateDayBar, 60 * 1000);
   }
 
   function renderTodaysWorkout() {
-    const todayKey = wtDateKey(new Date());
+    const isPast = window.isViewingToday && !window.isViewingToday();
+    const viewDateKey = window.getViewDate ? window.getViewDate() : wtDateKey(new Date());
     const all = logsByDay();
-    const todaySets = all[todayKey] || [];
+    const todaySets = all[viewDateKey] || [];
     const sum = summarizeDay(todaySets);
     const u = state.units;
 
     const eyebrow = $('poTwDateLabel');
     const dows = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
     const mons = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    const d = new Date();
-    eyebrow.textContent = 'TODAY · ' + dows[d.getDay()] + ', ' + mons[d.getMonth()] + ' ' + d.getDate();
+    const [vy,vm,vd] = viewDateKey.split('-').map(Number);
+    const d = new Date(vy, vm-1, vd);
+    eyebrow.textContent = (isPast ? '' : 'TODAY · ') + dows[d.getDay()] + ', ' + mons[d.getMonth()] + ' ' + d.getDate();
 
     $('poTwSetCount').textContent = sum.totalSets;
     $('poTwTotalVol').textContent = Math.round(sum.totalVol).toLocaleString() + ' ' + u + ' lifted';
@@ -7102,13 +7235,17 @@ setInterval(updateDayBar, 60 * 1000);
       }).join('');
     }
 
-    // Done button state
+    // Done button — hidden in past view
     const btn = $('poTwDoneBtn');
-    const isDone = !!doneDays[todayKey];
+    const isDone = !!doneDays[viewDateKey];
     btn.textContent = isDone ? '✓ Done' : 'Mark workout done';
     btn.classList.toggle('is-done', isDone);
-    btn.disabled = sum.totalSets === 0 && !isDone;
+    btn.disabled = isPast || (sum.totalSets === 0 && !isDone);
     btn.style.opacity = btn.disabled ? '0.4' : '';
+
+    // Hide log-set controls in past view
+    const logWrap = $('poTwLogWrap');
+    if (logWrap) logWrap.style.display = isPast ? 'none' : '';
   }
 
   function renderPastWorkouts() {
@@ -8194,6 +8331,7 @@ setInterval(updateDayBar, 60 * 1000);
   renderAll();
   wtRender();
   photosRender();
+  window.addEventListener('viewdate-changed', () => { renderAll(); });
 
   // ============================================================
   // CLOUD SYNC via Supabase  (OPTIONAL — leave blank for local-only)
@@ -8519,6 +8657,10 @@ setInterval(updateDayBar, 60 * 1000);
 
   let todayKey = `stack:taken:${getActiveDate()}`;
 
+  function getViewKey() {
+    return window.getViewDate ? `stack:taken:${window.getViewDate()}` : todayKey;
+  }
+
   function getItems() {
     const storedVersion = storeGet('stack:version');
     const stored = storeGet('stack:items');
@@ -8531,8 +8673,8 @@ setInterval(updateDayBar, 60 * 1000);
     return stored;
   }
   function setItems(items) { storeSet('stack:items', items); }
-  function getTaken() { return storeGet(todayKey) || {}; }
-  function setTaken(map) { storeSet(todayKey, map); }
+  function getTaken() { return storeGet(getViewKey()) || {}; }
+  function setTaken(map) { if (window.isViewingToday && !window.isViewingToday()) return; storeSet(todayKey, map); }
   function getLow() { return storeGet('stack:low') || []; }
   function setLow(arr) { storeSet('stack:low', arr); }
 
@@ -8579,13 +8721,15 @@ setInterval(updateDayBar, 60 * 1000);
   }
 
   function render() {
+    const isPast = window.isViewingToday && !window.isViewingToday();
     const items = getItems();
     const taken = getTaken();
     const low = getLow();
     const totalCount = items.length;
     const takenCount = items.filter(i => taken[i.id]).length;
-    document.getElementById('stackProgressText').textContent =
-      `${takenCount} / ${totalCount} taken today · resets at 6 AM`;
+    document.getElementById('stackProgressText').textContent = isPast
+      ? `${takenCount} / ${totalCount} taken · past view`
+      : `${takenCount} / ${totalCount} taken today · resets at 6 AM`;
     const pct = totalCount === 0 ? 0 : (takenCount / totalCount) * 100;
     document.getElementById('stackProgressBar').style.width = pct + '%';
 
@@ -8739,6 +8883,7 @@ setInterval(updateDayBar, 60 * 1000);
   }
 
   document.getElementById('stackGroups').addEventListener('click', (e) => {
+    if (window.isViewingToday && !window.isViewingToday()) return;
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     e.stopPropagation();
@@ -8916,6 +9061,7 @@ setInterval(updateDayBar, 60 * 1000);
 
   render();
   startTicker();
+  window.addEventListener('viewdate-changed', render);
 
 // ============================================================
 // SUPABASE CLOUD SYNC: HEALTH
@@ -9670,12 +9816,14 @@ setInterval(updateDayBar, 60 * 1000);
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
   function todayKey() { return dateKey(new Date()); }
-  function todayCount() { 
-    let v = state.logs[todayKey()] || 0; 
-    if (v > 0 && v < 100) v *= 500; 
-    return v; 
+  function viewKey() { return window.getViewDate ? window.getViewDate() : todayKey(); }
+  function todayCount() {
+    let v = state.logs[viewKey()] || 0;
+    if (v > 0 && v < 100) v *= 500;
+    return v;
   }
   function setTodayCount(n) {
+    if (window.isViewingToday && !window.isViewingToday()) return;
     const k = todayKey();
     if (n <= 0) delete state.logs[k];
     else state.logs[k] = n;
@@ -9734,10 +9882,16 @@ setInterval(updateDayBar, 60 * 1000);
   // RENDER
   // ============================================================
   function renderDayPill() {
-    const d = new Date();
+    const vk = viewKey();
+    const [vy,vm,vd] = vk.split('-').map(Number);
+    const d = new Date(vy, vm-1, vd);
     const dows = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
     const mons = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    w$('wtrDayPillLabel').textContent = dows[d.getDay()] + ', ' + mons[d.getMonth()] + ' ' + d.getDate();
+    const isPast = window.isViewingToday && !window.isViewingToday();
+    w$('wtrDayPillLabel').textContent = (isPast ? '' : '') + dows[d.getDay()] + ', ' + mons[d.getMonth()] + ' ' + d.getDate();
+    // Disable +/- in past view
+    if (w$('wtrPlusBtn')) w$('wtrPlusBtn').disabled = isPast;
+    if (w$('wtrMinusBtn')) w$('wtrMinusBtn').disabled = isPast || todayCount() <= 0;
   }
 
   function renderWater() {
@@ -10257,6 +10411,7 @@ setInterval(updateDayBar, 60 * 1000);
 
   // BOOT
   renderAll();
+  window.addEventListener('viewdate-changed', renderAll);
 
 })();
 
