@@ -9247,7 +9247,7 @@ window.addEventListener('viewdate-changed', loadToday);
     authUrl: 'https://cloud.ouraring.com/oauth/authorize',
     proxyUrl: '/api/oura-token',
     tokenKey: 'oura_tokens',
-    cacheKey: 'oura_cache',
+    cacheKey: 'oura_cache_v2',
     cacheTTL: 15 * 60 * 1000, // 15 min
   };
 
@@ -9404,9 +9404,20 @@ window.addEventListener('viewdate-changed', loadToday);
     const todaySleep = findByDate(sleepArr);
     const todayRead = findByDate(readArr);
     const todayAct = findByDate(actArr);
-    // detailedSleep: same day field as other endpoints
-    const lastSleepDetail = dSleepArr.find(e => e.day === viewDate) ||
-      (isToday ? (dSleepArr[dSleepArr.length - 1] || null) : null);
+    // detailedSleep: multiple sessions can share a day (naps vs overnight).
+    // Pick the one with the highest total_sleep_duration (= main overnight sleep).
+    const findBestSleepForDate = (arr, date) => {
+      const matches = arr.filter(e => e.day === date);
+      if (matches.length > 0) return matches.reduce((a, b) => ((b.total_sleep_duration || 0) > (a.total_sleep_duration || 0) ? b : a));
+      if (isToday && arr.length > 0) {
+        // Today has no exact match yet — fall back to the most recent day's best session
+        const latestDay = arr[arr.length - 1].day;
+        const latestMatches = arr.filter(e => e.day === latestDay);
+        return latestMatches.reduce((a, b) => ((b.total_sleep_duration || 0) > (a.total_sleep_duration || 0) ? b : a));
+      }
+      return null;
+    };
+    const lastSleepDetail = findBestSleepForDate(dSleepArr, viewDate);
 
     const sleepScore = todaySleep ? todaySleep.score : null;
     const readScore = todayRead ? todayRead.score : null;
