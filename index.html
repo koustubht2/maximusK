@@ -9359,8 +9359,8 @@ window.addEventListener('viewdate-changed', loadToday);
       safeFetch('/daily_sleep', { start_date: weekAgo, end_date: today }),
       safeFetch('/daily_readiness', { start_date: weekAgo, end_date: today }),
       safeFetch('/daily_activity', { start_date: weekAgo, end_date: today }),
-      safeFetch('/sleep', { start_date: daysAgo(1), end_date: today }),
-      safeFetch('/heart_rate', { start_date: today, end_date: today }),
+      safeFetch('/sleep', { start_date: daysAgo(7), end_date: today }),
+      safeFetch('/heart_rate', { start_date: daysAgo(7), end_date: today }),
     ]);
     const data = { sleep, readiness, activity, detailedSleep, hr };
     saveCache(data);
@@ -9391,18 +9391,35 @@ window.addEventListener('viewdate-changed', loadToday);
     const dSleepArr = (data.detailedSleep && data.detailedSleep.data) || [];
     const hrArr = (data.hr && data.hr.data) || [];
 
-    const todaySleep = sleepArr[sleepArr.length - 1];
-    const todayRead = readArr[readArr.length - 1];
-    const todayAct = actArr[actArr.length - 1];
-    const lastSleepDetail = dSleepArr[dSleepArr.length - 1];
+    // Pick entries for the viewed date — no fallback so past dates show correct (or blank) data
+    const viewDate = window.getViewDate ? window.getViewDate() : todayStr();
+    const isToday = viewDate === todayStr();
+    const findByDate = (arr) => {
+      const exact = arr.find(e => e.day === viewDate);
+      if (exact) return exact;
+      // Only fall back to latest when viewing today and no exact match yet (data not synced)
+      return isToday ? (arr[arr.length - 1] || null) : null;
+    };
+
+    const todaySleep = findByDate(sleepArr);
+    const todayRead = findByDate(readArr);
+    const todayAct = findByDate(actArr);
+    // detailedSleep: Oura records sleep ending on the morning after — try viewDate and next day
+    const nextDate = (() => { const d = new Date(viewDate); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); })();
+    const lastSleepDetail = dSleepArr.find(e => e.day === viewDate || e.day === nextDate) ||
+      (isToday ? (dSleepArr[dSleepArr.length - 1] || null) : null);
 
     const sleepScore = todaySleep ? todaySleep.score : null;
     const readScore = todayRead ? todayRead.score : null;
     const actScore = todayAct ? todayAct.score : null;
 
-    // Resting HR from heart rate data (source='rest')
-    const restHrPts = hrArr.filter(h => h.source === 'rest' || h.source === 'sleep');
-    const restHr = restHrPts.length ? Math.round(restHrPts.reduce((s, h) => s + h.bpm, 0) / restHrPts.length) : null;
+    // Resting HR — lowest_heart_rate from detailed /sleep endpoint (what Oura app shows)
+    const restHr = lastSleepDetail && lastSleepDetail.lowest_heart_rate != null
+      ? lastSleepDetail.lowest_heart_rate : null;
+
+    // HRV — average_hrv from detailed /sleep endpoint in ms (what Oura app shows)
+    const hrv = lastSleepDetail && lastSleepDetail.average_hrv != null
+      ? Math.round(lastSleepDetail.average_hrv) : null;
 
     const steps = todayAct ? (todayAct.steps || 0) : null;
     const cal = todayAct ? (todayAct.active_calories || 0) : null;
@@ -9431,11 +9448,9 @@ window.addEventListener('viewdate-changed', loadToday);
     // Metrics row
     html += '<div class="oura-metrics">';
     html += renderMetric('Resting HR', restHr, 'bpm');
+    html += renderMetric('HRV', hrv, 'ms');
     html += renderMetric('Steps', steps ? steps.toLocaleString() : null, '');
     html += renderMetric('Active Cal', cal ? cal.toLocaleString() : null, 'kcal');
-    if (todayRead && todayRead.contributors && todayRead.contributors.hrv_balance != null) {
-      html += renderMetric('HRV Balance', todayRead.contributors.hrv_balance, '');
-    }
     html += '</div>';
 
     // Sleep breakdown
@@ -9574,6 +9589,12 @@ window.addEventListener('viewdate-changed', loadToday);
   });
 
   boot();
+
+  // Re-render on date change using cached data (no re-fetch needed)
+  window.addEventListener('viewdate-changed', () => {
+    const cached = loadCache();
+    if (cached) renderOura(cached);
+  });
 
 // ============================================================
 // SUPABASE CLOUD SYNC: OURA
