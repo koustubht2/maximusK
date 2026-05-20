@@ -9404,9 +9404,8 @@ window.addEventListener('viewdate-changed', loadToday);
     const todaySleep = findByDate(sleepArr);
     const todayRead = findByDate(readArr);
     const todayAct = findByDate(actArr);
-    // detailedSleep: Oura records sleep ending on the morning after — try viewDate and next day
-    const nextDate = (() => { const d = new Date(viewDate); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); })();
-    const lastSleepDetail = dSleepArr.find(e => e.day === viewDate || e.day === nextDate) ||
+    // detailedSleep: same day field as other endpoints
+    const lastSleepDetail = dSleepArr.find(e => e.day === viewDate) ||
       (isToday ? (dSleepArr[dSleepArr.length - 1] || null) : null);
 
     const sleepScore = todaySleep ? todaySleep.score : null;
