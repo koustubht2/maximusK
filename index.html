@@ -3010,12 +3010,12 @@ html, body {
 }
 .oura-header-left { display: flex; align-items: center; gap: 10px; }
 .oura-header-title {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--text-3);
 }
 .oura-header-ring {
   width: 20px; height: 20px; border-radius: 50%;
-  border: 2px solid rgba(110,231,183,0.5);
+  border: 2px solid rgba(110,231,183,0.4);
   display: flex; align-items: center; justify-content: center;
 }
 .oura-header-ring-dot {
@@ -3030,114 +3030,130 @@ html, body {
 .oura-status.disconnected { color: var(--text-3); }
 .oura-connect-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 14px; border-radius: 12px;
-  background: rgba(110,231,183,0.08); border: 1px solid rgba(110,231,183,0.18);
-  color: #6ee7b7; font-size: 13px; font-weight: 700;
-  font-family: inherit; cursor: pointer; letter-spacing: 0.04em;
+  width: 100%; padding: 14px; border-radius: 14px;
+  background: rgba(110,231,183,0.05); border: 1px solid rgba(110,231,183,0.12);
+  color: var(--good); font-size: 13px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.oura-connect-btn:hover { background: rgba(110,231,183,0.14); border-color: rgba(110,231,183,0.28); }
+.oura-connect-btn:hover { background: rgba(110,231,183,0.10); border-color: rgba(110,231,183,0.24); }
+
+/* Score cards */
 .oura-scores {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .oura-score-card {
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px; padding: 14px 10px; text-align: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px 12px 14px; text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 .oura-score-label {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--text-3); margin-bottom: 6px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 8px;
 }
 .oura-score-num {
-  font-size: 32px; font-weight: 800; line-height: 1;
-  font-variant-numeric: tabular-nums;
+  font-size: 30px; font-weight: 600; line-height: 1;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
 }
-.oura-score-num.good { color: #6ee7b7; }
-.oura-score-num.warn { color: #fbbf24; }
-.oura-score-num.bad { color: #ff8a8a; }
-.oura-score-num.na { color: var(--text-3); font-size: 18px; }
+.oura-score-num.good { color: var(--good); }
+.oura-score-num.warn { color: var(--warn); }
+.oura-score-num.bad { color: var(--bad); }
+.oura-score-num.na { color: var(--text-4); font-size: 20px; }
 .oura-score-desc {
-  font-size: 10px; font-weight: 600; color: var(--text-3);
-  margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 9px; font-weight: 600; color: var(--text-3);
+  margin-top: 5px; letter-spacing: 0.05em;
 }
+
+/* Metric tiles */
 .oura-metrics {
-  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;
 }
 .oura-metric {
-  flex: 1 1 calc(50% - 4px); min-width: 120px;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px; padding: 10px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
-.oura-metric-top { display: flex; align-items: baseline; gap: 3px; }
+.oura-metric-top { display: flex; align-items: baseline; gap: 4px; }
 .oura-metric-val {
-  font-size: 16px; font-weight: 800; color: var(--text-1);
-  font-variant-numeric: tabular-nums;
+  font-size: 26px; font-weight: 600; color: var(--text-1);
+  letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1;
 }
 .oura-metric-unit {
-  font-size: 10px; font-weight: 600; color: var(--text-3);
+  font-size: 11px; font-weight: 500; color: var(--text-3);
 }
 .oura-metric-label {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text-3); margin-top: 2px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3); margin-top: 4px;
 }
+
+/* Sleep breakdown */
 .oura-sleep-breakdown {
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px 18px; margin-bottom: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 .oura-sleep-title {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .oura-sleep-title-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--text-3);
 }
 .oura-sleep-title-total {
-  font-size: 12px; font-weight: 700; color: var(--text-2);
+  font-size: 13px; font-weight: 600; color: var(--text-2);
+  letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
 }
 .oura-sleep-bar-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
 }
+.oura-sleep-bar-row:last-child { margin-bottom: 0; }
 .oura-sleep-bar-label {
-  width: 48px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; color: var(--text-3); letter-spacing: 0.06em;
-  flex-shrink: 0;
+  width: 44px; font-size: 10px; font-weight: 600;
+  color: var(--text-3); letter-spacing: 0.04em; flex-shrink: 0;
 }
 .oura-sleep-bar-track {
-  flex: 1; height: 8px; background: rgba(255,255,255,0.04);
-  border-radius: 4px; overflow: hidden;
+  flex: 1; height: 6px; background: rgba(255,255,255,0.05);
+  border-radius: 3px; overflow: hidden;
 }
-.oura-sleep-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
-.oura-sleep-bar-fill.deep { background: #818cf8; }
-.oura-sleep-bar-fill.rem { background: #38bdf8; }
+.oura-sleep-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.oura-sleep-bar-fill.deep  { background: #818cf8; }
+.oura-sleep-bar-fill.rem   { background: #38bdf8; }
 .oura-sleep-bar-fill.light { background: #6ee7b7; }
-.oura-sleep-bar-fill.awake { background: #fbbf24; }
+.oura-sleep-bar-fill.awake { background: rgba(255,255,255,0.18); }
 .oura-sleep-bar-time {
-  width: 52px; font-size: 11px; font-weight: 700; color: var(--text-2);
+  width: 48px; font-size: 11px; font-weight: 500; color: var(--text-2);
   text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums;
 }
-.oura-trend-wrap { position: relative; margin-top: 4px; }
-.oura-trend-svg { width: 100%; height: 40px; display: block; }
-.oura-trend-line { fill: none; stroke: #6ee7b7; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.oura-trend-fill { fill: rgba(110,231,183,0.10); }
+
+/* Trend */
+.oura-trend-wrap {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.oura-trend-svg { width: 100%; height: 44px; display: block; }
+.oura-trend-line { fill: none; stroke: var(--good); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.oura-trend-fill { fill: rgba(110,231,183,0.08); }
 .oura-trend-label {
   font-size: 9px; color: var(--text-3); text-align: center;
-  margin-top: 4px; font-weight: 600; letter-spacing: 0.08em;
+  margin-top: 6px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase;
 }
+
 .oura-loading {
-  text-align: center; padding: 20px; color: var(--text-3);
-  font-size: 12px; font-weight: 600;
+  text-align: center; padding: 24px; color: var(--text-3);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
 }
 .oura-error {
-  text-align: center; padding: 12px; color: #ff8a8a;
-  font-size: 11px; font-weight: 600; background: rgba(255,138,138,0.06);
-  border-radius: 8px;
+  text-align: center; padding: 12px; color: var(--bad);
+  font-size: 11px; font-weight: 600; background: rgba(255,138,138,0.05);
+  border-radius: 12px; border: 1px solid rgba(255,138,138,0.12);
 }
 @media (max-width: 380px) {
   .oura-scores { gap: 6px; }
-  .oura-score-num { font-size: 26px; }
-  .oura-metric { flex: 1 1 100%; }
+  .oura-score-num { font-size: 24px; }
+  .oura-metric-val { font-size: 22px; }
 }
 
 /* ========== FINANCE STYLES ========== */
