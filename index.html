@@ -9621,7 +9621,8 @@ window.addEventListener('viewdate-changed', loadToday);
   let osReady = false;
 
   function oisSyncKey(k) {
-    return k === OURA.tokenKey || k === OURA.cacheKey;
+    // Oura tokens and cache are device-local auth credentials — never sync across devices
+    return false;
   }
 
   const oorigSet = localStorage.setItem.bind(localStorage);
@@ -9657,6 +9658,7 @@ window.addEventListener('viewdate-changed', loadToday);
     let changed = false;
     try {
       for (const k in remote) {
+        if (!oisSyncKey(k)) continue;
         const incoming = JSON.stringify(remote[k]);
         if (localStorage.getItem(k) !== incoming) { oorigSet(k, incoming); changed = true; }
       }
