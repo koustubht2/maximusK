@@ -3795,7 +3795,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   border: none;
   border-radius: 12px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 .nw-chart-head {
   display: flex;
@@ -3839,6 +3839,32 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   pointer-events: none;
 }
 .nw-chart-wrap.has-data .nw-chart-empty { display: none; }
+.nw-chart-tooltip {
+  position: absolute;
+  background: rgba(15,15,20,0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+}
+.nw-chart-tt-date {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+.nw-chart-tt-val {
+  font-size: 13px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.nw-chart-tt-delta {
+  font-size: 10px; font-weight: 600; margin-top: 1px;
+}
+.nw-chart-tt-delta.up   { color: #6BE3A4; }
+.nw-chart-tt-delta.down { color: #FF8A8A; }
+.nw-chart-tt-delta.flat { color: var(--text-tertiary); }
 
 /* Stats overlay sitting at the bottom of the chart card */
 .nw-chart-stats {
@@ -5932,7 +5958,17 @@ window.canonicalJson = function(obj) {
           <path id="nwChartLine" fill="none" stroke="currentColor" stroke-width="2.4"
                 stroke-linejoin="round" stroke-linecap="round"
                 style="filter: drop-shadow(0 0 6px currentColor)" d=""/>
+          <!-- Interactive crosshair -->
+          <line id="nwCrosshair" x1="0" x2="0" y1="0" y2="200"
+                stroke="rgba(255,255,255,0.25)" stroke-width="1"
+                stroke-dasharray="3 3" vector-effect="non-scaling-stroke"
+                style="display:none"/>
+          <circle id="nwCrosshairDot" cx="0" cy="0" r="4.5"
+                  fill="currentColor" stroke="rgba(0,0,0,0.5)" stroke-width="1.5"
+                  vector-effect="non-scaling-stroke"
+                  style="display:none;filter:drop-shadow(0 0 4px currentColor)"/>
         </svg>
+        <div id="nwChartTooltip" class="nw-chart-tooltip" style="display:none"></div>
         <!-- Stats overlay — fills the empty space inside the chart card.
              Always visible: shows what 1% is, plus high/low/current. -->
         <div class="nw-chart-stats" id="nwChartStats">
@@ -11683,6 +11719,93 @@ function switchTab(tab) {
     const firstPt = points[0];
     areaPath.setAttribute('d', lineD + ' L' + lastPt.x + ',' + H + ' L' + firstPt.x + ',' + H + ' Z');
     renderChartStats(hist);
+
+    // ── Interactive crosshair ────────────────────────────
+    const crosshair  = document.getElementById('nwCrosshair');
+    const dot        = document.getElementById('nwCrosshairDot');
+    const tooltip    = document.getElementById('nwChartTooltip');
+    if (!crosshair || !dot || !tooltip) return;
+
+    // Remove old listeners by replacing svg with a clone
+    const newSvg = svg.cloneNode(true);
+    svg.parentNode.replaceChild(newSvg, svg);
+    // Re-grab elements after clone
+    const ch  = newSvg.querySelector('#nwCrosshair');
+    const cdt = newSvg.querySelector('#nwCrosshairDot');
+
+    const fmtDate = (ts) => {
+      const d = new Date(ts);
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+    const fmtTime = (ts) => {
+      const d = new Date(ts);
+      return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const onPointer = (clientX, clientY) => {
+      const rect = newSvg.getBoundingClientRect();
+      const svgX = ((clientX - rect.left) / rect.width) * W;
+
+      // Find nearest point by x distance
+      let nearest = 0;
+      let minDist = Infinity;
+      points.forEach((p, i) => {
+        const d = Math.abs(p.x - svgX);
+        if (d < minDist) { minDist = d; nearest = i; }
+      });
+
+      const pt  = points[nearest];
+      const snap = hist[nearest];
+
+      ch.setAttribute('x1', pt.x); ch.setAttribute('x2', pt.x);
+      ch.style.display = '';
+      cdt.setAttribute('cx', pt.x); cdt.setAttribute('cy', pt.y);
+      cdt.style.display = '';
+
+      // Tooltip content
+      const dispVal = fmtMoney(snap.v);
+      const prevSnap = nearest > 0 ? hist[nearest - 1] : null;
+      const delta = prevSnap ? (snap.v - prevSnap.v) : null;
+      let deltaHtml = '';
+      if (delta !== null && Math.abs(delta) >= 0.005) {
+        const cls = delta > 0 ? 'up' : 'down';
+        const sign = delta > 0 ? '+' : '−';
+        deltaHtml = '<div class="nw-chart-tt-delta ' + cls + '">' + sign + fmtMoney(Math.abs(delta)) + '</div>';
+      }
+      tooltip.innerHTML =
+        '<div class="nw-chart-tt-date">' + fmtDate(snap.t) + ' · ' + fmtTime(snap.t) + '</div>'
+        + '<div class="nw-chart-tt-val">' + dispVal + '</div>'
+        + deltaHtml;
+      tooltip.style.display = '';
+
+      // Position tooltip: above the dot, clamped to chart bounds
+      const wrapRect = newSvg.parentElement.getBoundingClientRect();
+      const dotDomX  = rect.left + (pt.x / W) * rect.width - wrapRect.left;
+      const dotDomY  = rect.top  + (pt.y / H) * rect.height - wrapRect.top;
+      const ttW = tooltip.offsetWidth  || 140;
+      const ttH = tooltip.offsetHeight || 56;
+      let tx = dotDomX - ttW / 2;
+      let ty = dotDomY - ttH - 12;
+      // Clamp horizontally
+      const wrapW = wrapRect.width;
+      if (tx < 4) tx = 4;
+      if (tx + ttW > wrapW - 4) tx = wrapW - ttW - 4;
+      // If too close to top, flip below
+      if (ty < 4) ty = dotDomY + 14;
+      tooltip.style.left = tx + 'px';
+      tooltip.style.top  = ty + 'px';
+    };
+
+    const onLeave = () => {
+      if (ch)  ch.style.display  = 'none';
+      if (cdt) cdt.style.display = 'none';
+      tooltip.style.display = 'none';
+    };
+
+    newSvg.addEventListener('mousemove',  (e) => onPointer(e.clientX, e.clientY));
+    newSvg.addEventListener('mouseleave', onLeave);
+    newSvg.addEventListener('touchmove',  (e) => { e.preventDefault(); const t = e.touches[0]; onPointer(t.clientX, t.clientY); }, { passive: false });
+    newSvg.addEventListener('touchend',   onLeave);
   }
 
   // Stats overlay — what 1% is worth, all-time high/low, snapshot count.
