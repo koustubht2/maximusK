@@ -3176,6 +3176,152 @@ html, body {
   .oura-metric-val { font-size: 14px; }
 }
 
+/* ========== SPENDING INSIGHTS ========== */
+.sp-month-nav { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:12px; }
+.sp-month-btn { background:none; border:none; color:var(--text-3); font-size:22px; cursor:pointer; padding:0 6px; line-height:1; font-family:inherit; transition:color 0.15s; }
+.sp-month-btn:hover { color:var(--text-1); }
+.sp-month-btn:disabled { opacity:0.25; cursor:default; }
+.sp-month-label { font-size:13px; font-weight:600; color:var(--text-1); min-width:100px; text-align:center; }
+.sp-top-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+.sp-card { background:var(--bg-card); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.4); padding:16px 18px; margin-bottom:8px; }
+.sp-card-label { font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-3); margin-bottom:6px; }
+.sp-total-num { font-size:20px; font-weight:600; color:#ff8a8a; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1; }
+.sp-total-delta { font-size:10px; font-weight:600; color:var(--text-3); margin-top:5px; }
+.sp-total-delta.better { color:#6ee7b7; }
+.sp-total-delta.worse  { color:#fbbf24; }
+.sp-flow-num { font-size:20px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; line-height:1; }
+.sp-flow-num.positive { color:#6ee7b7; }
+.sp-flow-num.negative { color:#ff8a8a; }
+.sp-flow-sub { font-size:10px; font-weight:500; color:var(--text-3); margin-top:5px; }
+.sp-top4-row { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+.sp-top4-row:last-child { margin-bottom:0; }
+.sp-top4-rank { font-size:10px; font-weight:700; color:var(--text-4); width:14px; flex-shrink:0; text-align:center; }
+.sp-top4-label { font-size:12px; font-weight:500; color:var(--text-2); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sp-top4-bar-wrap { width:70px; flex-shrink:0; }
+.sp-top4-bar-track { height:4px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; }
+.sp-top4-bar-fill { height:100%; border-radius:2px; background:#6EE7B7; transition:width 0.4s ease; }
+.sp-top4-amt { font-size:11px; font-weight:600; color:var(--text-1); font-variant-numeric:tabular-nums; text-align:right; min-width:56px; flex-shrink:0; }
+.sp-insight-card {
+  background: linear-gradient(135deg, rgba(110,231,183,0.07), rgba(125,211,252,0.04));
+  border: 1px solid rgba(110,231,183,0.18);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.sp-insight-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  opacity: 0.85;
+}
+.sp-insight-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sp-insight-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: #6EE7B7; opacity: 0.9;
+}
+.sp-insight-text {
+  font-size: 12px; font-weight: 500; color: var(--text-secondary); line-height: 1.5;
+  transition: opacity 0.3s ease;
+}
+.sp-insight-text.fading { opacity: 0; }
+.sp-insight-dots {
+  display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0; align-self: center;
+}
+.sp-insight-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.2s;
+}
+.sp-insight-dot.active { background: #6EE7B7; }
+.sp-bars { display:flex; align-items:flex-end; gap:6px; height:80px; }
+.sp-bar-col { display:flex; flex-direction:column; align-items:center; gap:5px; width:14px; flex-shrink:0; }
+.sp-bar-fill-wrap { width:100%; display:flex; flex-direction:column; justify-content:flex-end; }
+.sp-bar-fill { width:100%; border-radius:2px 2px 0 0; background:rgba(110,231,183,0.25); min-height:3px; transition:height 0.4s ease; }
+.sp-bar-fill.sp-bar-active { background:#6EE7B7; box-shadow:0 0 8px rgba(110,231,183,0.5); }
+.sp-bar-month { font-size:8px; font-weight:600; color:var(--text-4); letter-spacing:0.06em; text-transform:uppercase; }
+.sp-bar-month.sp-bar-active { color:#6EE7B7; }
+
+/* ========== EXPENSE LOG ========== */
+.exp-log-date-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 0 8px;
+}
+.exp-log-date-divider:first-child { margin-top: 4px; }
+.exp-log-date-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  white-space: nowrap; flex-shrink: 0;
+}
+.exp-log-date-line {
+  flex: 1; height: 1px; background: rgba(255,255,255,0.07);
+}
+.exp-log-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px 8px 14px;
+  background: rgba(255,255,255,0.025);
+  border-radius: 10px;
+  margin-bottom: 5px;
+  border: 1px solid var(--exp-log-color, rgba(255,255,255,0.06));
+  box-shadow: 0 0 0 0 var(--exp-log-color, transparent);
+  transition: background 0.15s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.exp-log-row:hover {
+  background: rgba(255,255,255,0.045);
+  box-shadow: 0 0 10px -2px var(--exp-log-color, transparent);
+}
+.exp-log-accent {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2.5px;
+}
+.exp-log-icon {
+  font-size: 15px; flex-shrink: 0; width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+}
+.exp-log-body { flex: 1; min-width: 0; }
+.exp-log-name {
+  font-size: 12.5px; font-weight: 600;
+  color: var(--text-primary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+.exp-log-meta {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 2px; flex-wrap: wrap;
+}
+.exp-log-subcat {
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 1px 5px;
+  border-radius: 999px;
+}
+.exp-log-from {
+  font-size: 9.5px; color: var(--text-tertiary);
+}
+.exp-log-right { text-align: right; flex-shrink: 0; }
+.exp-log-amt {
+  font-size: 13px; font-weight: 700;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  color: #FF8A8A;
+}
+.exp-log-time {
+  font-size: 9.5px; color: var(--text-tertiary);
+  margin-top: 1px; font-variant-numeric: tabular-nums;
+}
+.exp-log-undo {
+  background: transparent; border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-tertiary); font-size: 8.5px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 5px; cursor: pointer;
+  margin-top: 3px; transition: border-color 0.15s, color 0.15s;
+  display: block; margin-left: auto;
+}
+.exp-log-undo:hover { border-color: #FF8A8A; color: #FF8A8A; }
+
 /* ========== FINANCE STYLES ========== */
 /* ===== Back to dashboard ===== */
 .fin-back-btn {
@@ -5838,7 +5984,44 @@ window.canonicalJson = function(obj) {
     </div>
   </div>
 
-  <div id="expensesList" style="margin-top:20px;"></div>
+  <div id="expensesList" style="margin-top:20px;max-height:340px;overflow-y:auto;padding-right:4px;"></div>
+
+  <!-- ===== SPENDING INSIGHTS (below history) ===== -->
+  <div id="spendingInsightsSection" style="margin-top:28px;">
+    <div class="sp-month-nav">
+      <button class="sp-month-btn" id="spMonthPrev">‹</button>
+      <span class="sp-month-label" id="spMonthLabel"></span>
+      <button class="sp-month-btn" id="spMonthNext">›</button>
+    </div>
+    <div class="sp-top-row">
+      <div class="sp-card">
+        <div class="sp-card-label">Total Expenses</div>
+        <div class="sp-total-num" id="spTotalExp">—</div>
+        <div class="sp-total-delta" id="spTotalDelta"></div>
+      </div>
+      <div class="sp-card">
+        <div class="sp-card-label">Net Flow</div>
+        <div class="sp-flow-num" id="spNetFlow">—</div>
+        <div class="sp-flow-sub" id="spFlowSub"></div>
+      </div>
+    </div>
+    <div class="sp-card">
+      <div class="sp-card-label" style="margin-bottom:12px">Top Spend</div>
+      <div id="spTop4List"></div>
+    </div>
+    <div class="sp-insight-card" id="spInsightCard" style="display:none">
+      <span class="sp-insight-icon" id="spInsightIcon">💡</span>
+      <div class="sp-insight-body">
+        <span class="sp-insight-label" id="spInsightLabel">Insight</span>
+        <div class="sp-insight-text" id="spInsightText"></div>
+      </div>
+      <div class="sp-insight-dots" id="spInsightDots"></div>
+    </div>
+    <div class="sp-card" style="margin-top:8px">
+      <div class="sp-card-label" style="margin-bottom:14px">Monthly Expenses</div>
+      <div class="sp-bars" id="spBars"></div>
+    </div>
+  </div>
 
 </div>
 
@@ -10843,6 +11026,7 @@ function switchTab(tab) {
     if (typeof renderOrders   === 'function') renderOrders();
     if (typeof renderAssetsLiabilities === 'function') renderAssetsLiabilities();
     if (typeof updateOrdPreview === 'function') updateOrdPreview();
+    if (typeof renderSpendingInsights === 'function') renderSpendingInsights();
   }
 
   // ============================================================
@@ -11194,6 +11378,11 @@ function switchTab(tab) {
       renderSubs();
     });
   }
+  // ── declared early: used by renderSpendingInsights which is called during renderAllNetWorth ──
+  const SP_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let spY = new Date().getFullYear(), spM = new Date().getMonth();
+  let spInsightAlerts = [], spInsightIdx = 0, spInsightTimer = null;
+
   // ============================================================
   // EXPENSE CATEGORIES — must be declared before renderAllNetWorth()
   // because renderAssetsLiabilities (called inside it) references this.
@@ -11358,46 +11547,283 @@ function switchTab(tab) {
       if (expItems.length === 0) {
         expensesListEl.innerHTML = '<div class="empty-state" style="margin-top:0">No expenses logged.</div>';
       } else {
-        // Show last 10 expenses
-        const recentExp = expItems.slice().reverse().slice(0, 10);
+        const recentExp = expItems.slice().reverse();
+        const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const fmtDateKey = ts => {
+          const d = new Date(ts);
+          const now = new Date();
+          const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+          const dayMs   = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+          if (dayMs === todayMs) return 'Today';
+          if (dayMs === todayMs - 86400000) return 'Yesterday';
+          return mons[d.getMonth()] + ' ' + d.getDate() + (d.getFullYear() !== now.getFullYear() ? ', ' + d.getFullYear() : '');
+        };
+        const fmtTime = ts => {
+          const d = new Date(ts);
+          return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        };
+
+        let lastDateKey = null;
         recentExp.forEach((it) => {
-          const li = document.createElement('div');
-          li.className = 'ord-card';
-          li.style.marginBottom = '8px';
-          
+          const dateKey = fmtDateKey(it.ts);
+          if (dateKey !== lastDateKey) {
+            lastDateKey = dateKey;
+            const divider = document.createElement('div');
+            divider.className = 'exp-log-date-divider';
+            divider.innerHTML = `<span class="exp-log-date-label">${dateKey}</span><div class="exp-log-date-line"></div>`;
+            expensesListEl.appendChild(divider);
+          }
+
+          const catMeta = EXP_CATEGORIES.find(c => c.key === it.cat);
           const enteredAmt = it.entered_amount != null ? it.entered_amount : it.amount;
           const enteredCcy = it.entered_currency || 'CHF';
-          
-          const catMeta = EXP_CATEGORIES.find(c => c.key === it.cat);
-          const catBadge = catMeta
-            ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:999px;background:${catMeta.bg};color:${catMeta.color};font-family:var(--font-mono);">${catMeta.icon} ${escapeHtml(it.subCat || catMeta.label)}</span>`
-            : '';
-          li.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-              <div style="min-width:0;">
-                <div class="ord-name" style="font-size:14px">${escapeHtml(it.name)}</div>
-                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px;">
-                  ${catBadge}
-                  <span class="ord-meta" style="font-size:11px;">From ${escapeHtml(it.fromAccount)} &middot; ${fmtActivityDate(it.ts)}</span>
-                </div>
-              </div>
-              <div style="text-align:right;flex-shrink:0;">
-                <div class="ord-cost" style="color:var(--danger)">-${enteredCcy} ${Number(enteredAmt).toLocaleString('en-US', {maximumFractionDigits:2})}</div>
-                <button class="qa-btn" style="padding:2px 6px; font-size:10px; margin-top:4px;" data-undo="${it.id}">Undo</button>
+          const accentColor = catMeta ? catMeta.color : 'rgba(255,255,255,0.2)';
+          const iconBg = catMeta ? catMeta.bg : 'rgba(255,255,255,0.06)';
+          const icon = catMeta ? catMeta.icon : '💰';
+          const subLabel = it.subCat || (catMeta ? catMeta.label : '');
+          const subcatColor = catMeta ? catMeta.color : 'rgba(255,255,255,0.5)';
+          const subcatBg = catMeta ? catMeta.bg : 'rgba(255,255,255,0.07)';
+
+          const row = document.createElement('div');
+          row.className = 'exp-log-row';
+          row.style.setProperty('--exp-log-color', accentColor + '40');
+          row.innerHTML = `
+            <div class="exp-log-accent" style="background:${accentColor}"></div>
+            <div class="exp-log-icon" style="background:${iconBg}">${icon}</div>
+            <div class="exp-log-body">
+              <div class="exp-log-name">${escapeHtml(it.name)}</div>
+              <div class="exp-log-meta">
+                ${subLabel ? `<span class="exp-log-subcat" style="background:${subcatBg};color:${subcatColor}">${escapeHtml(subLabel)}</span>` : ''}
+                ${it.fromAccount ? `<span class="exp-log-from">${escapeHtml(it.fromAccount)}</span>` : ''}
               </div>
             </div>
+            <div class="exp-log-right">
+              <div class="exp-log-amt">-${enteredCcy} ${Number(enteredAmt).toLocaleString('en-IN', {maximumFractionDigits:0})}</div>
+              <div class="exp-log-time">${fmtTime(it.ts)}</div>
+              <button class="exp-log-undo">UNDO</button>
+            </div>
           `;
-          
-          li.querySelector('button[data-undo]').addEventListener('click', () => {
-             undoExpense(it.id);
-          });
-          expensesListEl.appendChild(li);
+          row.querySelector('.exp-log-undo').addEventListener('click', () => undoExpense(it.id));
+          expensesListEl.appendChild(row);
         });
       }
       
     }
 
     renderExpensePieChart();
+    if (typeof renderSpendingInsights === 'function') renderSpendingInsights();
+  }
+
+  // ── SPENDING INSIGHTS ──────────────────────────────────────
+
+  function spToDisplay(e) {
+    // Mirror the pie chart: use entered_amount if entered in INR, otherwise use fmtMoney(amount)
+    // For aggregation we need a raw number in the display currency
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    if ((e.entered_currency || 'CHF') === 'INR') return Number(e.entered_amount) || 0;
+    return (Number(e.amount) || 0) * inrRate;
+  }
+
+  function spExpForMonth(y, m) {
+    return (storeGet('expenses') || []).filter(e => {
+      const d = new Date(e.ts); return d.getFullYear() === y && d.getMonth() === m;
+    });
+  }
+
+  function spIncForMonth(y, m) {
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return (storeGet('incomes') || []).reduce((sum, e) => {
+      const val = (e.entered_currency || 'CHF') === 'INR'
+        ? (Number(e.entered_amount) || 0)
+        : (Number(e.amount) || 0) * inrRate;
+      const p = e.period || 'one-off';
+      if (p === 'monthly') return sum + val;
+      if (p === 'weekly')  return sum + val * 4.33;
+      if (p === 'yearly')  return sum + val / 12;
+      const d = new Date(e.ts);
+      return (d.getFullYear() === y && d.getMonth() === m) ? sum + val : sum;
+    }, 0);
+  }
+
+  function spSubsForMonth() {
+    // Subs are recurring — count their monthly equivalent every month
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return (storeGet('subs') || []).reduce((sum, it) => {
+      return sum + monthlyEquivalent(it) * inrRate;
+    }, 0);
+  }
+
+  function spOrdersForMonth(y, m) {
+    // Orders: only those actually deducted in this month
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return (storeGet('incoming_orders') || []).reduce((sum, o) => {
+      if (!o.deductedAt) return sum;
+      const d = new Date(o.deductedAt);
+      if (d.getFullYear() !== y || d.getMonth() !== m) return sum;
+      return sum + (Number(o.amount) || 0) * inrRate;
+    }, 0);
+  }
+
+  function spFmt(inrAmt) {
+    // Format raw INR amount using the same fmtMoney path
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return fmtMoney(inrAmt / inrRate);
+  }
+
+  function renderSpendingInsights() {
+    const todayY = new Date().getFullYear(), todayM = new Date().getMonth();
+    const labelEl  = document.getElementById('spMonthLabel');
+    const nextBtn  = document.getElementById('spMonthNext');
+    if (labelEl) labelEl.textContent = SP_MONTHS[spM] + ' ' + spY;
+    if (nextBtn) nextBtn.disabled = (spY === todayY && spM === todayM);
+
+    const curExps  = spExpForMonth(spY, spM);
+    const curTotal = curExps.reduce((s, e) => s + spToDisplay(e), 0);
+    let prevY = spY, prevM = spM - 1;
+    if (prevM < 0) { prevM = 11; prevY--; }
+    const prevTotal = spExpForMonth(prevY, prevM).reduce((s, e) => s + spToDisplay(e), 0);
+
+    const totalEl = document.getElementById('spTotalExp');
+    const deltaEl = document.getElementById('spTotalDelta');
+    if (totalEl) totalEl.textContent = curTotal > 0 ? spFmt(curTotal) : '—';
+    if (deltaEl) {
+      if (prevTotal > 0 && curTotal > 0) {
+        const pct = Math.abs((curTotal - prevTotal) / prevTotal * 100).toFixed(0);
+        if (curTotal < prevTotal) { deltaEl.textContent = '↓ ' + pct + '% vs last month'; deltaEl.className = 'sp-total-delta better'; }
+        else { deltaEl.textContent = '↑ ' + pct + '% vs last month'; deltaEl.className = 'sp-total-delta worse'; }
+      } else { deltaEl.textContent = ''; deltaEl.className = 'sp-total-delta'; }
+    }
+
+    const curInc    = spIncForMonth(spY, spM);
+    const curSubs   = spSubsForMonth();
+    const curOrders = spOrdersForMonth(spY, spM);
+    const totalOut  = curTotal + curSubs + curOrders;
+    const net       = curInc - totalOut;
+    const flowEl = document.getElementById('spNetFlow');
+    const subEl  = document.getElementById('spFlowSub');
+    if (flowEl) { flowEl.textContent = (curInc > 0 || totalOut > 0) ? spFmt(Math.abs(net)) : '—'; flowEl.className = 'sp-flow-num ' + (net >= 0 ? 'positive' : 'negative'); }
+    if (subEl)  subEl.textContent = (curInc > 0 || totalOut > 0) ? spFmt(curInc) + ' in · ' + spFmt(totalOut) + ' out' : '';
+
+    const subMap = {};
+    curExps.forEach(e => { const k = e.subCat || e.cat || 'Other'; subMap[k] = (subMap[k] || 0) + spToDisplay(e); });
+    const top5 = Object.entries(subMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const top5El = document.getElementById('spTop4List');
+    if (top5El) {
+      if (!top5.length) { top5El.innerHTML = '<div style="font-size:12px;color:var(--text-3)">No expenses this month.</div>'; }
+      else {
+        const maxAmt = top5[0][1];
+        top5El.innerHTML = top5.map(([name, amt], i) =>
+          '<div class="sp-top4-row">'
+          + '<span class="sp-top4-rank">' + (i+1) + '</span>'
+          + '<span class="sp-top4-label">' + name + '</span>'
+          + '<div class="sp-top4-bar-wrap"><div class="sp-top4-bar-track"><div class="sp-top4-bar-fill" style="width:' + (amt/maxAmt*100).toFixed(0) + '%"></div></div></div>'
+          + '<span class="sp-top4-amt">' + spFmt(amt) + '</span>'
+          + '</div>'
+        ).join('');
+      }
+    }
+
+    // Build cycling insight alerts
+    const alerts = [];
+    const isCurrentMonth = (spY === todayY && spM === todayM);
+    const day = new Date().getDate();
+    const daysInMonth = new Date(todayY, todayM + 1, 0).getDate();
+    const daysLeft = daysInMonth - day;
+
+    if (isCurrentMonth && curTotal > 0 && day >= 3) {
+      const proj = curTotal / day * daysInMonth;
+      // Projected spend — always show
+      alerts.push({ icon: '📈', label: 'Projected', text: 'Projected spend this month: ' + spFmt(proj) });
+      // Pace alert — only >10% over last month
+      if (prevTotal > 0 && proj > prevTotal * 1.1) {
+        const overPct = Math.round((proj - prevTotal) / prevTotal * 100);
+        alerts.push({ icon: '⚠️', label: 'Pace', text: 'On pace to spend ~' + overPct + '% more than last month' });
+      }
+      // Daily average
+      alerts.push({ icon: '📅', label: 'Daily Avg', text: spFmt(curTotal / day) + '/day avg — ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' left this month' });
+    }
+
+    // Top category dominance >40%
+    if (top5.length && curTotal > 0 && top5[0][1] / curTotal > 0.4) {
+      const pct = Math.round(top5[0][1] / curTotal * 100);
+      alerts.push({ icon: '🏷️', label: 'Top Category', text: top5[0][0] + ' is ' + pct + '% of ' + (isCurrentMonth ? 'this month\'s' : SP_MONTHS[spM] + '\'s') + ' spend' });
+    }
+
+    // Biggest single expense
+    if (curExps.length > 0) {
+      const biggest = curExps.reduce((a, b) => spToDisplay(b) > spToDisplay(a) ? b : a);
+      alerts.push({ icon: '💸', label: 'Largest', text: 'Largest expense: ' + (biggest.name || 'Expense') + ' — ' + spFmt(spToDisplay(biggest)) });
+    }
+
+    // Month delta vs previous month
+    if (prevTotal > 0 && curTotal > 0) {
+      const delta = Math.round((curTotal - prevTotal) / prevTotal * 100);
+      const sign = delta > 0 ? '+' : '';
+      const word = delta > 0 ? 'more' : 'less';
+      alerts.push({ icon: delta > 0 ? '📊' : '✅', label: 'vs Last Month', text: Math.abs(delta) + '% ' + word + ' than ' + SP_MONTHS[prevM] + ' (' + sign + spFmt(curTotal - prevTotal) + ')' });
+    }
+
+    spInsightAlerts = alerts;
+    spInsightIdx = 0;
+    if (spInsightTimer) { clearInterval(spInsightTimer); spInsightTimer = null; }
+
+    const insightCard  = document.getElementById('spInsightCard');
+    const insightText  = document.getElementById('spInsightText');
+    const insightLabel = document.getElementById('spInsightLabel');
+    const insightIcon  = document.getElementById('spInsightIcon');
+    const insightDots  = document.getElementById('spInsightDots');
+
+    if (!insightCard || !insightText) { /* skip */ }
+    else if (!alerts.length) {
+      insightCard.style.display = 'none';
+    } else {
+      insightCard.style.display = '';
+      const paintInsight = () => {
+        const a = spInsightAlerts[spInsightIdx];
+        if (!a) return;
+        insightText.classList.add('fading');
+        setTimeout(() => {
+          insightText.textContent = a.text;
+          if (insightLabel) insightLabel.textContent = a.label;
+          if (insightIcon)  insightIcon.textContent  = a.icon;
+          insightText.classList.remove('fading');
+          if (insightDots) {
+            insightDots.querySelectorAll('.sp-insight-dot').forEach((d, i) => d.classList.toggle('active', i === spInsightIdx));
+          }
+        }, 300);
+      };
+      // Build dots
+      if (insightDots) {
+        insightDots.innerHTML = alerts.map((_, i) =>
+          '<div class="sp-insight-dot' + (i === 0 ? ' active' : '') + '"></div>'
+        ).join('');
+      }
+      paintInsight();
+      if (alerts.length > 1) {
+        spInsightTimer = setInterval(() => {
+          spInsightIdx = (spInsightIdx + 1) % spInsightAlerts.length;
+          paintInsight();
+        }, 3000);
+      }
+    }
+
+    const barsEl = document.getElementById('spBars');
+    if (barsEl) {
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        let my = spY, mm = spM - i; while (mm < 0) { mm += 12; my--; }
+        months.push({ y: my, m: mm, total: spExpForMonth(my, mm).reduce((s, e) => s + spToDisplay(e), 0) });
+      }
+      const maxT = Math.max(...months.map(x => x.total), 1);
+      barsEl.innerHTML = months.map(({ y, m, total }) => {
+        const active = (y === spY && m === spM);
+        const h = Math.round(total / maxT * 68);
+        return '<div class="sp-bar-col">'
+          + '<div class="sp-bar-fill-wrap"><div class="sp-bar-fill' + (active ? ' sp-bar-active' : '') + '" style="height:' + (h||3) + 'px"></div></div>'
+          + '<span class="sp-bar-month' + (active ? ' sp-bar-active' : '') + '">' + SP_MONTHS[m] + '</span>'
+          + '</div>';
+      }).join('');
+    }
   }
 
   window.editIncome = function(idx) {
@@ -12556,25 +12982,87 @@ function switchTab(tab) {
     return d;
   }
   function buildTickerEntries() {
-    const subs = storeGet('subs') || [];
-    const out = [];
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const out = [];
+
+    // ── 1. Subscription renewals (existing) ──
+    const subs = storeGet('subs') || [];
     subs.forEach(s => {
       if (!s.renewal) return;
       const next = nextRenewalDate(s.renewal, s.period);
       if (!next) return;
       const days = Math.round((next.getTime() - today) / 86400000);
-      // Use the period-local cost for what the user actually pays at renewal,
-      // not the monthlyEquivalent — this ticker shows "what's about to hit".
-      out.push({
-        name: s.name,
-        amount: Number(s.amount) || 0,
-        days,
-        period: s.period
-      });
+      out.push({ tag: 'RENEWS', name: s.name, amount: Number(s.amount) || 0, days, period: s.period, urgent: days <= 5 });
     });
     out.sort((a, b) => a.days - b.days);
+
+    // ── 2. Spending insight alerts ──
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    const curY = now.getFullYear(), curM = now.getMonth();
+    const dayOfMonth = now.getDate();
+    const daysInMonth = new Date(curY, curM + 1, 0).getDate();
+
+    const toDisp = e => (e.entered_currency || 'CHF') === 'INR' ? (Number(e.entered_amount) || 0) : (Number(e.amount) || 0) * inrRate;
+    const fmtDisp = v => fmtMoney(v / inrRate);
+
+    const allExps = storeGet('expenses') || [];
+    const curExps = allExps.filter(e => { const d = new Date(e.ts); return d.getFullYear() === curY && d.getMonth() === curM; });
+    const curTotal = curExps.reduce((s, e) => s + toDisp(e), 0);
+
+    // Previous month total
+    let prevY = curY, prevM = curM - 1; if (prevM < 0) { prevM = 11; prevY--; }
+    const prevTotal = allExps.filter(e => { const d = new Date(e.ts); return d.getFullYear() === prevY && d.getMonth() === prevM; }).reduce((s, e) => s + toDisp(e), 0);
+
+    // Pace alert: projected to overspend vs last month by >15%
+    if (prevTotal > 0 && dayOfMonth >= 5) {
+      const projected = curTotal / dayOfMonth * daysInMonth;
+      const overPct = Math.round((projected - prevTotal) / prevTotal * 100);
+      if (overPct > 15) {
+        out.push({ tag: 'ALERT', name: 'On pace to spend ' + overPct + '% more than last month', amount: null, urgent: overPct > 30 });
+      }
+    }
+
+    // Top category dominance >45%
+    const subMap = {};
+    curExps.forEach(e => { const k = e.subCat || e.cat || 'Other'; subMap[k] = (subMap[k] || 0) + toDisp(e); });
+    const topCat = Object.entries(subMap).sort((a, b) => b[1] - a[1])[0];
+    if (topCat && curTotal > 0 && topCat[1] / curTotal > 0.45) {
+      out.push({ tag: 'INSIGHT', name: topCat[0] + ' is ' + Math.round(topCat[1] / curTotal * 100) + '% of this month\'s spend — ' + fmtDisp(topCat[1]), amount: null, urgent: false });
+    }
+
+    // Net flow negative alert
+    const curInc = (storeGet('incomes') || []).reduce((sum, e) => {
+      const val = (e.entered_currency || 'CHF') === 'INR' ? (Number(e.entered_amount) || 0) : (Number(e.amount) || 0) * inrRate;
+      const p = e.period || 'one-off';
+      if (p === 'monthly') return sum + val;
+      if (p === 'weekly') return sum + val * 4.33;
+      if (p === 'yearly') return sum + val / 12;
+      const d = new Date(e.ts);
+      return (d.getFullYear() === curY && d.getMonth() === curM) ? sum + val : sum;
+    }, 0);
+    const curSubsTotal = subs.reduce((s, it) => s + monthlyEquivalent(it) * inrRate, 0);
+    const curOrdsTotal = (storeGet('incoming_orders') || []).reduce((s, o) => {
+      if (!o.deductedAt) return s;
+      const d = new Date(o.deductedAt);
+      return (d.getFullYear() === curY && d.getMonth() === curM) ? s + (Number(o.amount) || 0) * inrRate : s;
+    }, 0);
+    const totalOut = curTotal + curSubsTotal + curOrdsTotal;
+    if (curInc > 0 && totalOut > curInc) {
+      const deficit = totalOut - curInc;
+      out.push({ tag: 'ALERT', name: 'Spending exceeds income by ' + fmtDisp(deficit) + ' this month', amount: null, urgent: true });
+    }
+
+    // Upcoming orders (arriving within 7 days)
+    const orders = storeGet('incoming_orders') || [];
+    orders.filter(o => !o.deductedAt && o.date).forEach(o => {
+      const arrival = new Date(o.date + 'T00:00');
+      const days = Math.round((arrival.getTime() - today) / 86400000);
+      if (days >= 0 && days <= 7) {
+        out.push({ tag: 'ORDER', name: o.name + ' arriving ' + (days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'in ' + days + 'd'), amount: Number(o.amount) || 0, urgent: days <= 1 });
+      }
+    });
+
     return out;
   }
   let tickerIdx = 0;
@@ -12591,7 +13079,9 @@ function switchTab(tab) {
     items.forEach((el, i) => el.classList.toggle('active', i === tickerIdx));
     dotEls.forEach((el, i) => el.classList.toggle('active', i === tickerIdx));
     const cur = entries[tickerIdx];
-    wrap.classList.toggle('urgent', !!(cur && cur.days <= 5));
+    wrap.classList.toggle('urgent', !!(cur && cur.urgent));
+    const tagEl = document.getElementById('tickerTag');
+    if (tagEl && cur) tagEl.textContent = cur.tag || 'RENEWS';
   }
   function renderTicker() {
     const wrap   = document.getElementById('financeTicker');
@@ -12620,17 +13110,17 @@ function switchTab(tab) {
 
     // Paint the items as overlapping absolute layers; .active is the visible one
     stream.innerHTML = entries.map((e, i) => {
-      const daysLabel = e.days < 0
-        ? Math.abs(e.days) + 'd late'
-        : e.days === 0
-          ? 'TODAY'
-          : e.days === 1
-            ? 'TOMORROW'
-            : 'in ' + e.days + 'd';
+      let right = '';
+      if (e.days != null) {
+        const daysLabel = e.days < 0 ? Math.abs(e.days) + 'd late' : e.days === 0 ? 'TODAY' : e.days === 1 ? 'TOMORROW' : 'in ' + e.days + 'd';
+        right = (e.amount != null ? '<span class="ticker-item-amt">' + fmtMoney(e.amount) + '</span>' : '')
+              + '<span class="ticker-item-days">' + daysLabel + '</span>';
+      } else if (e.amount != null) {
+        right = '<span class="ticker-item-amt">' + fmtMoney(e.amount) + '</span>';
+      }
       return '<div class="ticker-item' + (i === tickerIdx ? ' active' : '') + '" data-i="' + i + '">'
         +   '<span class="ticker-item-name">' + escapeHtml(e.name) + '</span>'
-        +   '<span class="ticker-item-amt">' + fmtMoney(e.amount) + '</span>'
-        +   '<span class="ticker-item-days">' + daysLabel + '</span>'
+        +   right
         + '</div>';
     }).join('');
     dots.innerHTML = entries.map((_, i) =>
@@ -12657,7 +13147,16 @@ function switchTab(tab) {
   function safeRenderTicker() {
     try { renderTicker(); } catch (e) { console.error('ticker render failed', e); }
   }
+
   setupAssetsLiabilities();
+  document.getElementById('spMonthPrev')?.addEventListener('click', () => {
+    spM--; if (spM < 0) { spM = 11; spY--; } renderSpendingInsights();
+  });
+  document.getElementById('spMonthNext')?.addEventListener('click', () => {
+    const ty = new Date().getFullYear(), tm = new Date().getMonth();
+    if (spY === ty && spM === tm) return;
+    spM++; if (spM > 11) { spM = 0; spY++; } renderSpendingInsights();
+  });
   safeRenderTicker();
   setInterval(safeRenderTicker, 1500);
 
