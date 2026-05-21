@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<title>Koustubh's Dashboard</title>
+<title>Koustubh.exe</title>
 
 
 <script>
@@ -177,15 +177,43 @@ body::after {
 }
 
 /* Page Title */
+.dash-hero {
+  margin: 14px 0 18px 0;
+  padding: 20px 20px 18px;
+  background: var(--bg-card);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+.dash-hero-tag {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  margin-top: 5px;
+}
 .dash-title {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
-  letter-spacing: -0.025em;
-  margin: 0 0 14px 0;
-  background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
-  -webkit-background-clip: text;
-  background-clip: text;
+  letter-spacing: -0.03em;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.05;
+}
+.dash-title-exe {
+  color: #6EE7B7;
+  font-weight: 700;
+}
+.dash-title-preview { margin-top: 6px; }
+
+/* Molten — outlined stroke in fire orange */
+.dtm-molten {
   -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px #FF5500;
+  text-shadow: 0 0 14px rgba(255,85,0,0.7), 0 0 35px rgba(255,69,0,0.3);
+}
+@media (max-width: 480px) {
+  .dash-title { font-size: 24px; }
+  .dash-hero { padding: 16px 16px 14px; }
 }
 @media (max-width: 480px) {
   .dash-title { font-size: 22px; }
@@ -3809,6 +3837,16 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   font-family: var(--font-mono);
 }
 .nw-chart-label { color: var(--text-tertiary); }
+.nw-chart-windows { display: flex; gap: 2px; }
+.nw-cw-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--text-tertiary); padding: 3px 6px;
+  border-radius: 5px; font-family: var(--font-mono);
+  transition: background 0.15s, color 0.15s;
+}
+.nw-cw-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.07); }
+.nw-cw-btn.nw-cw-active { color: #6EE7B7; background: rgba(110,231,183,0.12); }
 .nw-chart-delta { font-variant-numeric: tabular-nums; color: var(--text-tertiary); }
 .nw-chart-delta.up   { color: #6BE3A4; }
 .nw-chart-delta.down { color: #FF8A8A; }
@@ -5353,7 +5391,10 @@ window.canonicalJson = function(obj) {
 <!-- ========== DASHBOARD VIEW (Main Tab) ========== -->
 <div id="dashView" class="view-container active">
 
-  <h1 class="dash-title">Koustubh's Dashboard</h1>
+  <div class="dash-hero">
+    <h1 class="dash-title">Life Arc <span class="dash-title-maxxing dtm-molten">MAXXING</span></h1>
+    <div class="dash-hero-tag">Koustubh<span class="dash-title-exe">.exe</span></div>
+  </div>
   
   <div class="ticker-row">
     <div class="goal-ticker" id="goalTicker" aria-live="polite" aria-atomic="true">
@@ -5939,7 +5980,15 @@ window.canonicalJson = function(obj) {
     <div class="nw-overview-grid">
       <div class="nw-chart-wrap" id="nwChartWrap">
         <div class="nw-chart-head">
-          <span class="nw-chart-label">All-time</span>
+          <span class="nw-chart-label">Net Worth</span>
+          <div class="nw-chart-windows" id="nwChartWindows">
+            <button class="nw-cw-btn" data-w="1D">1D</button>
+            <button class="nw-cw-btn" data-w="7D">7D</button>
+            <button class="nw-cw-btn nw-cw-active" data-w="1M">1M</button>
+            <button class="nw-cw-btn" data-w="3M">3M</button>
+            <button class="nw-cw-btn" data-w="1Y">1Y</button>
+            <button class="nw-cw-btn" data-w="ALL">ALL</button>
+          </div>
           <span class="nw-chart-delta" id="nwChartDelta">—</span>
         </div>
         <svg class="nw-chart-svg" id="nwChartSvg" viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true">
@@ -11698,27 +11747,37 @@ function switchTab(tab) {
       }
     }
     const W = 600, H = 200, pad = 8;
-    const vals = hist.map(p => p.v);
-    const minV = Math.min.apply(null, vals);
-    const maxV = Math.max.apply(null, vals);
-    const range = (maxV - minV) || Math.max(1, Math.abs(maxV));
-    if (hist.length === 1) {
+    // Filter history to selected window
+    const windowMs = { '1D': 1, '7D': 7, '1M': 30, '3M': 90, '1Y': 365, 'ALL': Infinity };
+    const selWindow = window._nwChartWindow || '1M';
+    const cutoff = selWindow === 'ALL' ? 0 : Date.now() - windowMs[selWindow] * 86400000;
+    const windowed = hist.filter(p => p.t >= cutoff);
+    const view = windowed.length >= 2 ? windowed : hist;
+    if (view.length === 1) {
       const y = H / 2;
       linePath.setAttribute('d', 'M0,' + y + ' L' + W + ',' + y);
       areaPath.setAttribute('d', 'M0,' + y + ' L' + W + ',' + y + ' L' + W + ',' + H + ' L0,' + H + ' Z');
       renderChartStats(hist);
       return;
     }
-    const points = hist.map((p, i) => ({
-      x: (i / (hist.length - 1)) * W,
-      y: H - pad - ((p.v - minV) / range) * (H - pad * 2)
+    const vals = view.map(p => p.v);
+    const minV = Math.min.apply(null, vals);
+    const maxV = Math.max.apply(null, vals);
+    const rawRange = maxV - minV;
+    const buffer = rawRange > 0 ? rawRange * 0.12 : Math.max(1, Math.abs(maxV)) * 0.05;
+    const chartMin = minV - buffer;
+    const chartMax = maxV + buffer;
+    const range = chartMax - chartMin;
+    const points = view.map((p, i) => ({
+      x: (i / (view.length - 1)) * W,
+      y: H - pad - ((p.v - chartMin) / range) * (H - pad * 2)
     }));
     const lineD = nwSmoothPath(points);
     linePath.setAttribute('d', lineD);
     const lastPt = points[points.length - 1];
     const firstPt = points[0];
     areaPath.setAttribute('d', lineD + ' L' + lastPt.x + ',' + H + ' L' + firstPt.x + ',' + H + ' Z');
-    renderChartStats(hist);
+    renderChartStats(hist); // always pass full hist for all-time stats
 
     // ── Interactive crosshair ────────────────────────────
     const crosshair  = document.getElementById('nwCrosshair');
@@ -11754,8 +11813,8 @@ function switchTab(tab) {
         if (d < minDist) { minDist = d; nearest = i; }
       });
 
-      const pt  = points[nearest];
-      const snap = hist[nearest];
+      const pt   = points[nearest];
+      const snap = view[nearest];
 
       ch.setAttribute('x1', pt.x); ch.setAttribute('x2', pt.x);
       ch.style.display = '';
@@ -11764,7 +11823,7 @@ function switchTab(tab) {
 
       // Tooltip content
       const dispVal = fmtMoney(snap.v);
-      const prevSnap = nearest > 0 ? hist[nearest - 1] : null;
+      const prevSnap = nearest > 0 ? view[nearest - 1] : null;
       const delta = prevSnap ? (snap.v - prevSnap.v) : null;
       let deltaHtml = '';
       if (delta !== null && Math.abs(delta) >= 0.005) {
@@ -11896,6 +11955,19 @@ function switchTab(tab) {
   ];
 
   renderAllNetWorth();
+
+  // Net worth chart window selector
+  window._nwChartWindow = '1M';
+  const nwWinEl = document.getElementById('nwChartWindows');
+  if (nwWinEl) {
+    nwWinEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.nw-cw-btn');
+      if (!btn) return;
+      window._nwChartWindow = btn.dataset.w;
+      nwWinEl.querySelectorAll('.nw-cw-btn').forEach(b => b.classList.toggle('nw-cw-active', b === btn));
+      renderNetWorthChart();
+    });
+  }
 
   // ============================================================
   // SUBSCRIPTIONS
