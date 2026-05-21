@@ -3245,6 +3245,46 @@ html, body {
 .sp-bar-month { font-size:8px; font-weight:600; color:var(--text-4); letter-spacing:0.06em; text-transform:uppercase; }
 .sp-bar-month.sp-bar-active { color:#6EE7B7; }
 
+/* ========== OURA CORRELATION CARD ========== */
+.oura-correl-card {
+  background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(192,132,252,0.05));
+  border: 1px solid rgba(251,191,36,0.18);
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-top: 8px;
+  display: none;
+}
+.oura-correl-card.visible { display: block; }
+.oura-correl-header {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
+}
+.oura-correl-icon { font-size: 13px; opacity: 0.9; }
+.oura-correl-title {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: #FBBF24; opacity: 0.9;
+}
+.oura-correl-days {
+  margin-left: auto; font-size: 9px; color: var(--text-tertiary);
+  font-weight: 600; letter-spacing: 0.04em;
+}
+.oura-correl-insights { display: flex; flex-direction: column; gap: 7px; }
+.oura-correl-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.oura-correl-label {
+  font-size: 11px; color: var(--text-tertiary); flex: 1; min-width: 0;
+}
+.oura-correl-val {
+  font-size: 12px; font-weight: 700; color: var(--text-primary); text-align: right;
+}
+.oura-correl-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 2px 6px; border-radius: 99px; text-transform: uppercase;
+}
+.oura-correl-badge.higher { background: rgba(251,191,36,0.18); color: #FBBF24; }
+.oura-correl-badge.lower  { background: rgba(110,231,183,0.18); color: #6EE7B7; }
+.oura-correl-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 2px 0; }
+
 /* ========== EXPENSE LOG ========== */
 .exp-log-date-divider {
   display: flex; align-items: center; gap: 10px;
@@ -6092,6 +6132,14 @@ window.canonicalJson = function(obj) {
         <div class="sp-insight-text" id="spInsightText"></div>
       </div>
       <div class="sp-insight-dots" id="spInsightDots"></div>
+    </div>
+    <div class="oura-correl-card" id="ouraCorrelCard">
+      <div class="oura-correl-header">
+        <span class="oura-correl-icon">🧬</span>
+        <span class="oura-correl-title">Body × Spend Correlation</span>
+        <span class="oura-correl-days" id="ouraCorrelDays"></span>
+      </div>
+      <div class="oura-correl-insights" id="ouraCorrelInsights"></div>
     </div>
     <div class="sp-card" style="margin-top:8px">
       <div class="sp-card-label" style="margin-bottom:14px">Monthly Expenses</div>
@@ -9659,6 +9707,12 @@ window.addEventListener('viewdate-changed', loadToday);
     ]);
     const data = { sleep, readiness, activity, detailedSleep, hr };
     saveCache(data);
+    upsertOuraDaily(data).then(() => {
+      fetchOuraHistory().then(history => {
+        window.ouraHistory = history;
+        if (typeof window.renderOuraCorrelations === 'function') window.renderOuraCorrelations();
+      });
+    });
     return data;
   }
 
@@ -9819,6 +9873,69 @@ window.addEventListener('viewdate-changed', loadToday);
       + '<div class="oura-trend-label">7-DAY SLEEP SCORE TREND</div></div>';
   }
 
+  // ── OURA DAILY SUPABASE UPSERT ──────────────────────────
+  const OURA_SB_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  const OURA_SB_KEY = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+
+  async function upsertOuraDaily(data) {
+    try {
+      const today = todayStr();
+      const sleepArr    = (data.sleep        && data.sleep.data)        || [];
+      const readArr     = (data.readiness    && data.readiness.data)    || [];
+      const actArr      = (data.activity     && data.activity.data)     || [];
+      const dSleepArr   = (data.detailedSleep && data.detailedSleep.data) || [];
+
+      const findDay = (arr, d) => arr.find(e => e.day === d) || arr[arr.length - 1] || null;
+      const findBestSleep = (arr, d) => {
+        const m = arr.filter(e => e.day === d);
+        if (m.length) return m.reduce((a, b) => (b.total_sleep_duration || 0) > (a.total_sleep_duration || 0) ? b : a);
+        return arr[arr.length - 1] || null;
+      };
+
+      const sl  = findDay(sleepArr, today);
+      const rd  = findDay(readArr, today);
+      const ac  = findDay(actArr, today);
+      const ds  = findBestSleep(dSleepArr, today);
+
+      const row = {
+        date: today,
+        sleep_score:      sl  ? (sl.score  || null) : null,
+        readiness_score:  rd  ? (rd.score  || null) : null,
+        activity_score:   ac  ? (ac.score  || null) : null,
+        hrv:              ds  ? (ds.average_hrv != null ? Math.round(ds.average_hrv) : null) : null,
+        rhr:              ds  ? (ds.lowest_heart_rate || null) : null,
+        sleep_duration:   ds  ? (ds.total_sleep_duration || null) : null,
+        steps:            ac  ? (ac.steps || null) : null,
+        active_calories:  ac  ? (ac.active_calories || null) : null,
+      };
+
+      await fetch(OURA_SB_URL + '/rest/v1/oura_daily?on_conflict=date', {
+        method: 'POST',
+        headers: {
+          'apikey': OURA_SB_KEY,
+          'Authorization': 'Bearer ' + OURA_SB_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify(row),
+      });
+    } catch (_) {}
+  }
+
+  async function fetchOuraHistory() {
+    try {
+      const since = new Date(); since.setDate(since.getDate() - 60);
+      const sinceStr = since.toISOString().slice(0, 10);
+      const res = await fetch(
+        OURA_SB_URL + '/rest/v1/oura_daily?date=gte.' + sinceStr + '&order=date.asc&limit=60',
+        { headers: { 'apikey': OURA_SB_KEY, 'Authorization': 'Bearer ' + OURA_SB_KEY } }
+      );
+      if (!res.ok) return [];
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : [];
+    } catch (_) { return []; }
+  }
+
   function renderDisconnected() {
     const body = o$('ouraBody');
     const statusBtn = o$('ouraStatusBtn');
@@ -9866,7 +9983,14 @@ window.addEventListener('viewdate-changed', loadToday);
 
     // Try cache first
     const cached = loadCache();
-    if (cached) { renderOura(cached); return; }
+    if (cached) {
+      renderOura(cached);
+      fetchOuraHistory().then(history => {
+        window.ouraHistory = history;
+        if (typeof window.renderOuraCorrelations === 'function') window.renderOuraCorrelations();
+      });
+      return;
+    }
 
     // Fetch fresh
     renderLoading();
@@ -12064,7 +12188,224 @@ function switchTab(tab) {
           + '</div>';
       }).join('');
     }
+
+    if (typeof window.renderOuraCorrelations === 'function') window.renderOuraCorrelations();
   }
+
+  // ── OURA × FINANCE CORRELATIONS ─────────────────────────
+  window.renderOuraCorrelations = function() {
+    const card = document.getElementById('ouraCorrelCard');
+    const insightsEl = document.getElementById('ouraCorrelInsights');
+    const daysEl = document.getElementById('ouraCorrelDays');
+    if (!card || !insightsEl) return;
+
+    const history = window.ouraHistory;
+    if (!Array.isArray(history) || history.length < 14) {
+      card.classList.remove('visible');
+      return;
+    }
+
+    const allExps = storeGet('expenses') || [];
+
+    // date → total spend
+    const expByDate = {};
+    allExps.forEach(e => {
+      const d = new Date(e.ts).toISOString().slice(0, 10);
+      expByDate[d] = (expByDate[d] || 0) + spToDisplay(e);
+    });
+
+    // date → list of expenses
+    const expListByDate = {};
+    allExps.forEach(e => {
+      const d = new Date(e.ts).toISOString().slice(0, 10);
+      if (!expListByDate[d]) expListByDate[d] = [];
+      expListByDate[d].push(e);
+    });
+
+    const rows = history.filter(r => r.readiness_score != null || r.sleep_score != null);
+    if (rows.length < 14) { card.classList.remove('visible'); return; }
+
+    // Build date → row map for lag lookups
+    const rowByDate = {};
+    rows.forEach(r => { rowByDate[r.date] = r; });
+
+    const avgSpend = (dayArr) => {
+      if (!dayArr.length) return 0;
+      return dayArr.reduce((s, r) => s + (expByDate[r.date] || 0), 0) / dayArr.length;
+    };
+
+    const pctDiff = (a, b) => b > 0 ? Math.round((a - b) / b * 100) : 0;
+
+    // ── 1. Low readiness days spend ──────────────────────
+    const lowReadDays  = rows.filter(r => r.readiness_score != null && r.readiness_score < 70);
+    const highReadDays = rows.filter(r => r.readiness_score != null && r.readiness_score >= 70);
+    const lowAvg  = avgSpend(lowReadDays);
+    const highAvg = avgSpend(highReadDays);
+    const readinessDiff = pctDiff(lowAvg, highAvg);
+
+    // ── 2. Poor sleep days spend ─────────────────────────
+    const lowSleepDays  = rows.filter(r => r.sleep_score != null && r.sleep_score < 70);
+    const highSleepDays = rows.filter(r => r.sleep_score != null && r.sleep_score >= 70);
+    const sleepLowAvg  = avgSpend(lowSleepDays);
+    const sleepHighAvg = avgSpend(highSleepDays);
+    const sleepDiff = pctDiff(sleepLowAvg, sleepHighAvg);
+
+    // ── 3. Top category on low readiness days ────────────
+    const catOnLowRead = {};
+    lowReadDays.forEach(r => {
+      (expListByDate[r.date] || []).forEach(e => {
+        const k = e.subCat || e.cat || 'Other';
+        catOnLowRead[k] = (catOnLowRead[k] || 0) + spToDisplay(e);
+      });
+    });
+    const topLowCat = Object.entries(catOnLowRead).sort((a, b) => b[1] - a[1])[0];
+
+    // ── 4. Lagged effect: spend day AFTER bad sleep ──────
+    const lagDates = [];
+    const lagBaseDates = [];
+    rows.forEach(r => {
+      if (r.sleep_score == null || r.sleep_score >= 70) return;
+      const next = new Date(r.date); next.setDate(next.getDate() + 1);
+      const nextStr = next.toISOString().slice(0, 10);
+      if (expByDate[nextStr] !== undefined || expListByDate[nextStr]) {
+        lagDates.push(nextStr);
+      }
+    });
+    // baseline: day after good sleep
+    rows.forEach(r => {
+      if (r.sleep_score == null || r.sleep_score < 70) return;
+      const next = new Date(r.date); next.setDate(next.getDate() + 1);
+      const nextStr = next.toISOString().slice(0, 10);
+      lagBaseDates.push(nextStr);
+    });
+    const lagAvg = lagDates.length
+      ? lagDates.reduce((s, d) => s + (expByDate[d] || 0), 0) / lagDates.length : 0;
+    const lagBaseAvg = lagBaseDates.length
+      ? lagBaseDates.reduce((s, d) => s + (expByDate[d] || 0), 0) / lagBaseDates.length : 0;
+    const lagDiff = pctDiff(lagAvg, lagBaseAvg);
+
+    // ── 5. Retail therapy: lifestyle/shopping on low readiness ──
+    const LIFESTYLE_CATS = ['lifestyle', 'Apparel & Accessories', 'Personal Care', 'General Merchandise / Hobbies', 'Subscriptions'];
+    const isLifestyle = (e) => LIFESTYLE_CATS.includes(e.cat) || LIFESTYLE_CATS.includes(e.subCat);
+    const lifestyleByDate = {};
+    allExps.filter(isLifestyle).forEach(e => {
+      const d = new Date(e.ts).toISOString().slice(0, 10);
+      lifestyleByDate[d] = (lifestyleByDate[d] || 0) + spToDisplay(e);
+    });
+    const lifeLowAvg = lowReadDays.length
+      ? lowReadDays.reduce((s, r) => s + (lifestyleByDate[r.date] || 0), 0) / lowReadDays.length : 0;
+    const lifeHighAvg = highReadDays.length
+      ? highReadDays.reduce((s, r) => s + (lifestyleByDate[r.date] || 0), 0) / highReadDays.length : 0;
+    const lifeDiff = pctDiff(lifeLowAvg, lifeHighAvg);
+
+    // ── 6. HRV below personal baseline → spend delta ────
+    const hrvRows = rows.filter(r => r.hrv != null);
+    let hrvInsight = null;
+    if (hrvRows.length >= 10) {
+      const avgHrv = hrvRows.reduce((s, r) => s + r.hrv, 0) / hrvRows.length;
+      const lowHrvDays  = hrvRows.filter(r => r.hrv < avgHrv);
+      const highHrvDays = hrvRows.filter(r => r.hrv >= avgHrv);
+      const lowHrvSpend  = avgSpend(lowHrvDays);
+      const highHrvSpend = avgSpend(highHrvDays);
+      const diff = pctDiff(lowHrvSpend, highHrvSpend);
+      if (lowHrvDays.length >= 5 && Math.abs(diff) >= 5) {
+        hrvInsight = { lowAvg: lowHrvSpend, diff, baseline: Math.round(avgHrv) };
+      }
+    }
+
+    // ── 7. Splurge day biometrics ────────────────────────
+    const datesWithSpend = Object.entries(expByDate).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const topN = Math.max(1, Math.floor(datesWithSpend.length * 0.1));
+    const splurgeDates = new Set(datesWithSpend.slice(0, topN).map(([d]) => d));
+    const splurgeRows = rows.filter(r => splurgeDates.has(r.date));
+    let splurgeInsight = null;
+    if (splurgeRows.length >= 3) {
+      const avgReadiness = splurgeRows.filter(r => r.readiness_score != null).reduce((s, r) => s + r.readiness_score, 0) / (splurgeRows.filter(r => r.readiness_score != null).length || 1);
+      const avgSleep = splurgeRows.filter(r => r.sleep_score != null).reduce((s, r) => s + r.sleep_score, 0) / (splurgeRows.filter(r => r.sleep_score != null).length || 1);
+      splurgeInsight = { readiness: Math.round(avgReadiness), sleep: Math.round(avgSleep), n: splurgeRows.length };
+    }
+
+    // ── 8. Streak: 2+ consecutive low-readiness → spend ─
+    let streakInsight = null;
+    const readRows = rows.filter(r => r.readiness_score != null).sort((a, b) => a.date.localeCompare(b.date));
+    if (readRows.length >= 7) {
+      const streakDates = [];
+      let streak = 0;
+      readRows.forEach((r, i) => {
+        if (r.readiness_score < 70) {
+          streak++;
+          if (streak >= 2) streakDates.push(r.date);
+        } else {
+          streak = 0;
+        }
+      });
+      const nonStreakDates = readRows.filter(r => !streakDates.includes(r.date) && r.readiness_score >= 70).map(r => r.date);
+      if (streakDates.length >= 3 && nonStreakDates.length >= 3) {
+        const streakAvg = streakDates.reduce((s, d) => s + (expByDate[d] || 0), 0) / streakDates.length;
+        const normalAvg = nonStreakDates.reduce((s, d) => s + (expByDate[d] || 0), 0) / nonStreakDates.length;
+        const diff = pctDiff(streakAvg, normalAvg);
+        if (Math.abs(diff) >= 5) streakInsight = { avg: streakAvg, diff, streakDays: streakDates.length };
+      }
+    }
+
+    // ── BUILD HTML ───────────────────────────────────────
+    let html = '';
+    const row = (label, val, diff, showDiff) => {
+      const isHigher = diff > 0;
+      const badge = showDiff && Math.abs(diff) >= 5
+        ? '<span class="oura-correl-badge ' + (isHigher ? 'higher' : 'lower') + '">' + (isHigher ? '+' : '') + diff + '%</span>'
+        : '';
+      return '<div class="oura-correl-row">'
+        + '<span class="oura-correl-label">' + label + '</span>'
+        + '<span class="oura-correl-val">' + val + '</span>'
+        + badge + '</div>';
+    };
+    const divider = () => '<div class="oura-correl-divider"></div>';
+
+    if (lowReadDays.length >= 3 && highReadDays.length >= 3) {
+      html += row('Spend on low-readiness days', spFmt(lowAvg) + '/day', readinessDiff, true);
+    }
+    if (lowSleepDays.length >= 3 && highSleepDays.length >= 3) {
+      if (html) html += divider();
+      html += row('Spend on poor sleep days', spFmt(sleepLowAvg) + '/day', sleepDiff, true);
+    }
+    if (topLowCat && lowReadDays.length >= 3) {
+      if (html) html += divider();
+      html += row('Top category when tired', topLowCat[0], 0, false);
+    }
+    if (lagDates.length >= 3 && Math.abs(lagDiff) >= 5) {
+      if (html) html += divider();
+      html += row('Spend day after bad sleep', spFmt(lagAvg) + '/day', lagDiff, true);
+    }
+    if (lowReadDays.length >= 3 && highReadDays.length >= 3 && Math.abs(lifeDiff) >= 5) {
+      if (html) html += divider();
+      html += row('Shopping on low-readiness days', spFmt(lifeLowAvg) + '/day', lifeDiff, true);
+    }
+    if (hrvInsight) {
+      if (html) html += divider();
+      html += row('Spend when HRV below ' + hrvInsight.baseline + 'ms baseline', spFmt(hrvInsight.lowAvg) + '/day', hrvInsight.diff, true);
+    }
+    if (splurgeInsight) {
+      if (html) html += divider();
+      html += '<div class="oura-correl-row">'
+        + '<span class="oura-correl-label">Your top-spend days — avg biometrics</span>'
+        + '<span class="oura-correl-val">😴 ' + splurgeInsight.sleep + ' · 🔋 ' + splurgeInsight.readiness + '</span>'
+        + '</div>';
+    }
+    if (streakInsight) {
+      if (html) html += divider();
+      html += row('Spend during low-readiness streaks', spFmt(streakInsight.avg) + '/day', streakInsight.diff, true);
+    }
+
+    if (!html) { card.classList.remove('visible'); return; }
+
+    insightsEl.innerHTML = html;
+    if (daysEl) daysEl.textContent = rows.length + ' days';
+    card.classList.add('visible');
+  };
+
+  // Call once on load with whatever history is already available
+  window.renderOuraCorrelations();
 
   window.editIncome = function(idx) {
     const items = storeGet('incomes') || [];
@@ -12778,10 +13119,17 @@ function switchTab(tab) {
     const items = storeGet('wishlist') || [];
     const grand = nwGrandCHF();
     let total = 0;
-    items.forEach(it => { total += Number(it.amount) || 0; });
+    const wDispCcy = currencyEl ? currencyEl.value : 'CHF';
+    let totalDisp = 0;
+    items.forEach(it => {
+      total += Number(it.amount) || 0;
+      const eCcy = it.entered_currency || 'CHF';
+      const eAmt = it.entered_amount != null ? Number(it.entered_amount) : (Number(it.amount) || 0) * (exchangeRates[wDispCcy] || 1);
+      totalDisp += (eCcy === wDispCcy && it.entered_amount != null) ? eAmt : (Number(it.amount) || 0) * (exchangeRates[wDispCcy] || 1);
+    });
 
     // Hero: total + huge % + color-coded
-    if (wishTotalEl) wishTotalEl.textContent = fmtMoney(total);
+    if (wishTotalEl) wishTotalEl.textContent = wDispCcy + ' ' + Math.round(totalDisp).toLocaleString('en-IN');
     if (grand > 0) {
       const pct = (total / grand) * 100;
       const cls = pctClass(pct);
