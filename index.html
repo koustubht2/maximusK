@@ -3458,7 +3458,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   box-shadow: var(--glass-shadow);
   position: relative;
-  overflow: hidden;
+  overflow: clip;
 }
 #financeView .card::before {
   content: '';
@@ -13031,83 +13031,71 @@ function switchTab(tab) {
   function buildTickerEntries() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const dispCcy = currencyEl ? currencyEl.value : 'CHF';
     const out = [];
 
-    // ── 1. Subscription renewals (existing) ──
+    // Helper: format an item's amount respecting entered_currency to avoid drift
+    const fmtItemAmt = (item) => {
+      const eCcy = item.entered_currency || 'CHF';
+      const eAmt = item.entered_amount != null ? Number(item.entered_amount) : null;
+      if (eCcy === dispCcy && eAmt != null) {
+        return dispCcy + ' ' + eAmt.toLocaleString('en-IN', { maximumFractionDigits: eAmt % 1 === 0 ? 0 : 2 });
+      }
+      return fmtMoney(Number(item.amount) || 0);
+    };
+
+    // ── 1. Subscription renewals ──
     const subs = storeGet('subs') || [];
+    const renewalEntries = [];
     subs.forEach(s => {
       if (!s.renewal) return;
       const next = nextRenewalDate(s.renewal, s.period);
       if (!next) return;
       const days = Math.round((next.getTime() - today) / 86400000);
-      out.push({ tag: 'RENEWS', name: s.name, amount: Number(s.amount) || 0, days, period: s.period, urgent: days <= 5 });
+      renewalEntries.push({ tag: 'RENEWS', name: s.name, dispStr: fmtItemAmt(s), days, period: s.period, urgent: days <= 5 });
     });
-    out.sort((a, b) => a.days - b.days);
+    renewalEntries.sort((a, b) => a.days - b.days);
+    renewalEntries.forEach(e => out.push(e));
 
-    // ── 2. Spending insight alerts ──
-    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
-    const curY = now.getFullYear(), curM = now.getMonth();
-    const dayOfMonth = now.getDate();
-    const daysInMonth = new Date(curY, curM + 1, 0).getDate();
-
-    const toDisp = e => (e.entered_currency || 'CHF') === 'INR' ? (Number(e.entered_amount) || 0) : (Number(e.amount) || 0) * inrRate;
-    const fmtDisp = v => fmtMoney(v / inrRate);
-
-    const allExps = storeGet('expenses') || [];
-    const curExps = allExps.filter(e => { const d = new Date(e.ts); return d.getFullYear() === curY && d.getMonth() === curM; });
-    const curTotal = curExps.reduce((s, e) => s + toDisp(e), 0);
-
-    // Previous month total
-    let prevY = curY, prevM = curM - 1; if (prevM < 0) { prevM = 11; prevY--; }
-    const prevTotal = allExps.filter(e => { const d = new Date(e.ts); return d.getFullYear() === prevY && d.getMonth() === prevM; }).reduce((s, e) => s + toDisp(e), 0);
-
-    // Pace alert: projected to overspend vs last month by >15%
-    if (prevTotal > 0 && dayOfMonth >= 5) {
-      const projected = curTotal / dayOfMonth * daysInMonth;
-      const overPct = Math.round((projected - prevTotal) / prevTotal * 100);
-      if (overPct > 15) {
-        out.push({ tag: 'ALERT', name: 'On pace to spend ' + overPct + '% more than last month', amount: null, urgent: overPct > 30 });
-      }
-    }
-
-    // Top category dominance >45%
-    const subMap = {};
-    curExps.forEach(e => { const k = e.subCat || e.cat || 'Other'; subMap[k] = (subMap[k] || 0) + toDisp(e); });
-    const topCat = Object.entries(subMap).sort((a, b) => b[1] - a[1])[0];
-    if (topCat && curTotal > 0 && topCat[1] / curTotal > 0.45) {
-      out.push({ tag: 'INSIGHT', name: topCat[0] + ' is ' + Math.round(topCat[1] / curTotal * 100) + '% of this month\'s spend — ' + fmtDisp(topCat[1]), amount: null, urgent: false });
-    }
-
-    // Net flow negative alert
-    const curInc = (storeGet('incomes') || []).reduce((sum, e) => {
-      const val = (e.entered_currency || 'CHF') === 'INR' ? (Number(e.entered_amount) || 0) : (Number(e.amount) || 0) * inrRate;
-      const p = e.period || 'one-off';
-      if (p === 'monthly') return sum + val;
-      if (p === 'weekly') return sum + val * 4.33;
-      if (p === 'yearly') return sum + val / 12;
-      const d = new Date(e.ts);
-      return (d.getFullYear() === curY && d.getMonth() === curM) ? sum + val : sum;
-    }, 0);
-    const curSubsTotal = subs.reduce((s, it) => s + monthlyEquivalent(it) * inrRate, 0);
-    const curOrdsTotal = (storeGet('incoming_orders') || []).reduce((s, o) => {
-      if (!o.deductedAt) return s;
-      const d = new Date(o.deductedAt);
-      return (d.getFullYear() === curY && d.getMonth() === curM) ? s + (Number(o.amount) || 0) * inrRate : s;
-    }, 0);
-    const totalOut = curTotal + curSubsTotal + curOrdsTotal;
-    if (curInc > 0 && totalOut > curInc) {
-      const deficit = totalOut - curInc;
-      out.push({ tag: 'ALERT', name: 'Spending exceeds income by ' + fmtDisp(deficit) + ' this month', amount: null, urgent: true });
-    }
-
-    // Upcoming orders (arriving within 7 days)
+    // ── 2. Upcoming orders arriving within 7 days ──
     const orders = storeGet('incoming_orders') || [];
     orders.filter(o => !o.deductedAt && o.date).forEach(o => {
       const arrival = new Date(o.date + 'T00:00');
       const days = Math.round((arrival.getTime() - today) / 86400000);
       if (days >= 0 && days <= 7) {
-        out.push({ tag: 'ORDER', name: o.name + ' arriving ' + (days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'in ' + days + 'd'), amount: Number(o.amount) || 0, urgent: days <= 1 });
+        const daysLabel = days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'in ' + days + 'd';
+        out.push({ tag: 'ORDER', name: o.name + ' arriving ' + daysLabel, dispStr: fmtItemAmt(o), days, urgent: days <= 1 });
       }
+    });
+
+    // ── 3. Spending pace alert (>10% projected overspend) ──
+    const curY = now.getFullYear(), curM = now.getMonth();
+    const dayOfMonth = now.getDate();
+    const daysInMonth = new Date(curY, curM + 1, 0).getDate();
+    const allExps = storeGet('expenses') || [];
+    const toDispExp = e => (e.entered_currency || 'CHF') === 'INR'
+      ? (Number(e.entered_amount) || 0)
+      : (Number(e.amount) || 0) * ((exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96);
+    const curExps = allExps.filter(e => { const d = new Date(e.ts); return d.getFullYear() === curY && d.getMonth() === curM; });
+    const curTotal = curExps.reduce((s, e) => s + toDispExp(e), 0);
+    let prevY = curY, prevM = curM - 1; if (prevM < 0) { prevM = 11; prevY--; }
+    const prevTotal = allExps.filter(e => { const d = new Date(e.ts); return d.getFullYear() === prevY && d.getMonth() === prevM; }).reduce((s, e) => s + toDispExp(e), 0);
+    if (prevTotal > 0 && dayOfMonth >= 5) {
+      const projected = curTotal / dayOfMonth * daysInMonth;
+      const overPct = Math.round((projected - prevTotal) / prevTotal * 100);
+      if (overPct > 10) {
+        out.push({ tag: 'PACE', name: 'On pace to spend ~' + overPct + '% more than last month', dispStr: null, urgent: overPct > 30 });
+      }
+    }
+
+    // ── 4. Wishlist items ──
+    const grand = nwGrandCHF();
+    const wishItems = storeGet('wishlist') || [];
+    wishItems.forEach(w => {
+      const cost = Number(w.amount) || 0;
+      const pct = grand > 0 ? (cost / grand * 100).toFixed(1) : null;
+      const pctLabel = pct != null ? ' · ' + pct + '% of NW' : '';
+      out.push({ tag: 'WISH', name: escapeHtml(w.name) + pctLabel, dispStr: fmtItemAmt(w), urgent: false });
     });
 
     return out;
@@ -13117,7 +13105,7 @@ function switchTab(tab) {
   let tickerLastSig = '';   // signature of last-painted entries — skip re-paint if unchanged
   let tickerLastEntries = [];
   function tickerSig(entries) {
-    return entries.map(e => e.name + '|' + e.amount + '|' + e.days + '|' + (e.period || '')).join('~');
+    return entries.map(e => e.name + '|' + (e.dispStr || '') + '|' + (e.days != null ? e.days : '') + '|' + (e.period || '')).join('~');
   }
   function paintTickerActive(wrap, stream, dots, entries) {
     if (tickerIdx >= entries.length) tickerIdx = 0;
@@ -13160,13 +13148,13 @@ function switchTab(tab) {
       let right = '';
       if (e.days != null) {
         const daysLabel = e.days < 0 ? Math.abs(e.days) + 'd late' : e.days === 0 ? 'TODAY' : e.days === 1 ? 'TOMORROW' : 'in ' + e.days + 'd';
-        right = (e.amount != null ? '<span class="ticker-item-amt">' + fmtMoney(e.amount) + '</span>' : '')
+        right = (e.dispStr ? '<span class="ticker-item-amt">' + e.dispStr + '</span>' : '')
               + '<span class="ticker-item-days">' + daysLabel + '</span>';
-      } else if (e.amount != null) {
-        right = '<span class="ticker-item-amt">' + fmtMoney(e.amount) + '</span>';
+      } else if (e.dispStr) {
+        right = '<span class="ticker-item-amt">' + e.dispStr + '</span>';
       }
       return '<div class="ticker-item' + (i === tickerIdx ? ' active' : '') + '" data-i="' + i + '">'
-        +   '<span class="ticker-item-name">' + escapeHtml(e.name) + '</span>'
+        +   '<span class="ticker-item-name">' + e.name + '</span>'
         +   right
         + '</div>';
     }).join('');
