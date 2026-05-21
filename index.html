@@ -5742,7 +5742,7 @@ window.canonicalJson = function(obj) {
   </button>
   <button class="bot-tab" data-tab="al">
     <span class="bot-tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span>
-    <span class="bot-tab-label">Asset & Liab</span>
+    <span class="bot-tab-label">Drip Maxxing</span>
   </button>
   <button class="bot-tab" data-tab="subs">
     <span class="bot-tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
@@ -12186,10 +12186,21 @@ function switchTab(tab) {
       return;
     }
     subsEmpty.style.display = 'none';
-    let monthly = 0;
+    let monthly = 0;       // CHF — for net worth calcs
+    let monthlyDisp = 0;   // entered currency equivalent — for display
     items.forEach((it, idx) => {
       const m = monthlyEquivalent(it);
       monthly += m;
+      // Display total: use entered_amount when currencies match, else live rate
+      const _dCcy = currencyEl ? currencyEl.value : 'CHF';
+      const _eCcy = it.entered_currency || 'CHF';
+      const dAmt = (_eCcy === _dCcy && it.entered_amount != null)
+        ? Number(it.entered_amount)
+        : (Number(it.amount) || 0) * (exchangeRates[_dCcy] || 1);
+      let dMonthly = dAmt;
+      if (it.period === 'yearly') dMonthly = dAmt / 12;
+      if (it.period === 'weekly') dMonthly = dAmt * 4.345;
+      monthlyDisp += dMonthly;
       // Days until next renewal (rolls past dates forward by the period so
       // a "Renews Apr 28 · monthly" sub shows the *next* upcoming renewal).
       let daysToRenew = null;
@@ -12230,12 +12241,26 @@ function switchTab(tab) {
         metaLine;
       const cost = document.createElement('div');
       cost.style.cssText = 'text-align:right;line-height:1.1';
-      const bigNum = fmtMoney(m);
-      const origHint = (it.entered_currency && it.entered_currency !== 'CHF' && it.entered_amount != null)
-        ? '<div style="font-size:10px;color:var(--text-tertiary);margin-top:2px">billed ' + it.entered_currency + ' ' + Number(it.entered_amount).toLocaleString('en-US', { minimumFractionDigits: it.entered_amount % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 }) + ' / ' + it.period + '</div>'
-        : (it.period !== 'monthly'
-            ? '<div style="font-size:10px;color:var(--text-tertiary);margin-top:2px">billed ' + fmtMoney(it.amount) + ' / ' + it.period + '</div>'
-            : '');
+      const displayCcy = (currencyEl ? currencyEl.value : 'CHF');
+      const enteredCcy = it.entered_currency || 'CHF';
+      // If display currency matches what was entered — use exact entered value (no drift)
+      // Otherwise convert from CHF through live rates (user intentionally viewing foreign currency)
+      let dispAmt, dispCcy;
+      if (enteredCcy === displayCcy && it.entered_amount != null) {
+        dispAmt = Number(it.entered_amount);
+        dispCcy = enteredCcy;
+      } else {
+        dispAmt = (Number(it.amount) || 0) * (exchangeRates[displayCcy] || 1);
+        dispCcy = displayCcy;
+      }
+      const fmtDisp = (amt) => dispCcy + ' ' + amt.toLocaleString('en-IN', { minimumFractionDigits: amt % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+      let dispMonthly = dispAmt;
+      if (it.period === 'yearly') dispMonthly = dispAmt / 12;
+      if (it.period === 'weekly') dispMonthly = dispAmt * 4.345;
+      const bigNum = fmtDisp(dispMonthly);
+      const origHint = it.period !== 'monthly'
+        ? '<div style="font-size:10px;color:var(--text-tertiary);margin-top:2px">billed ' + fmtDisp(dispAmt) + ' / ' + it.period + '</div>'
+        : '';
       cost.innerHTML = '<div style="font-size:20px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">' + bigNum + '</div>' +
         '<div style="font-size:10px;color:var(--text-tertiary);margin-top:1px">/ month</div>' +
         origHint;
@@ -12275,8 +12300,10 @@ function switchTab(tab) {
         renderSubs();
       });
     });
-    subsTotal.innerHTML = fmtMoney(monthly) + ' <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">/ mo</span>';
-    subsYearly.textContent = '~' + fmtMoney(monthly * 12) + ' per year';
+    const _totCcy = currencyEl ? currencyEl.value : 'CHF';
+    const fmtTot = (amt) => _totCcy + ' ' + Math.round(amt).toLocaleString('en-IN');
+    subsTotal.innerHTML = fmtTot(monthlyDisp) + ' <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">/ mo</span>';
+    subsYearly.textContent = '~' + fmtTot(monthlyDisp * 12) + ' per year';
     subsCount.textContent = items.length + (items.length === 1 ? ' subscription' : ' subscriptions');
     // Re-render the donut so the subs slice updates with the latest annualized total
     if (typeof renderAllNetWorth === 'function') renderAllNetWorth();
@@ -12543,17 +12570,29 @@ function switchTab(tab) {
       const cls = pct == null ? 'flat' : pctClass(pct);
       const pctText = pct == null ? '—' : pct.toFixed(2) + '%';
       const fillPct = Math.min(100, pct == null ? 0 : pct);
-      const monthsToSave = (grand > 0 && cost > 0) ? Math.ceil(cost / Math.max(1, grand * 0.05)) : null; // rough: if you saved 5%/mo
+      const monthsToSave = (grand > 0 && cost > 0) ? Math.ceil(cost / Math.max(1, grand * 0.05)) : null;
+      // Use entered values when display currency matches — avoids drift; otherwise convert live
+      const wDisplayCcy = currencyEl ? currencyEl.value : 'CHF';
+      const wEnteredCcy = it.entered_currency || 'CHF';
+      let wDispAmt, wDispCcy;
+      if (wEnteredCcy === wDisplayCcy && it.entered_amount != null) {
+        wDispAmt = Number(it.entered_amount);
+        wDispCcy = wEnteredCcy;
+      } else {
+        wDispAmt = cost * (exchangeRates[wDisplayCcy] || 1);
+        wDispCcy = wDisplayCcy;
+      }
+      const wDispStr = wDispCcy + ' ' + wDispAmt.toLocaleString('en-IN', { maximumFractionDigits: wDispAmt % 1 === 0 ? 0 : 2 });
       const row = document.createElement('div');
       row.className = 'wish-row';
       row.innerHTML =
           '<div class="wish-row-h">'
         + '<div class="wish-row-info">'
         +   '<div class="wish-row-name">' + escapeHtml(it.name) + '</div>'
-        +   '<div class="wish-row-meta">' + (it.entered_currency || 'CHF') + ' ' + Number(it.entered_amount != null ? it.entered_amount : it.amount).toLocaleString('en-US', {maximumFractionDigits: 2}) + ' · added ' + fmtActivityDate(it.ts || Date.now()) + '</div>'
+        +   '<div class="wish-row-meta">' + wDispStr + ' · added ' + fmtActivityDate(it.ts || Date.now()) + '</div>'
         + '</div>'
         + '<div class="wish-row-amt-wrap">'
-        +   '<div class="wish-row-amt">' + fmtMoney(cost) + '</div>'
+        +   '<div class="wish-row-amt">' + wDispStr + '</div>'
         +   '<div class="wish-row-pct ' + cls + '">' + pctText + ' of NW</div>'
         + '</div>'
         + '<button class="wish-row-x" data-i="' + idx + '" aria-label="Remove">×</button>'
@@ -12713,6 +12752,14 @@ function switchTab(tab) {
     }).forEach(o => {
       const cost = Number(o.amount) || 0;
       const isDeducted = !!o.deductedAt;
+      const _ordDisplayCcy = currencyEl ? currencyEl.value : 'CHF';
+      const _ordEnteredCcy = o.entered_currency || 'CHF';
+      const ordDispAmt = (_ordEnteredCcy === _ordDisplayCcy && o.entered_amount != null)
+        ? Number(o.entered_amount)
+        : cost * (exchangeRates[_ordDisplayCcy] || 1);
+      const ordDispStr = _ordDisplayCcy === _ordEnteredCcy
+        ? (_ordDisplayCcy + ' ' + ordDispAmt.toLocaleString('en-IN', { maximumFractionDigits: ordDispAmt % 1 === 0 ? 0 : 2 }))
+        : fmtMoney(cost);
       // Use frozen pct once deducted; live pct otherwise.
       let pct, pctText, pctCls;
       if (isDeducted && typeof o.pctAtDeduction === 'number') {
@@ -12747,7 +12794,7 @@ function switchTab(tab) {
       row.innerHTML =
           '<div class="ord-card-h">'
         +   '<div class="ord-card-name">' + escapeHtml(o.name) + '</div>'
-        +   '<div class="ord-card-amt">' + fmtMoney(cost) + '</div>'
+        +   '<div class="ord-card-amt">' + ordDispStr + '</div>'
         +   '<button class="ord-card-x" data-id="' + o.id + '" aria-label="Remove">×</button>'
         + '</div>'
         + '<div class="ord-card-meta">'
