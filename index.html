@@ -219,6 +219,92 @@ body::after {
   .dash-title { font-size: 22px; }
 }
 
+/* ========== FACE ID LOCK ========== */
+.fid-lock {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg, #0a0a0f);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.5s ease;
+}
+.fid-lock.fid-unlocking {
+  opacity: 0; pointer-events: none;
+}
+.fid-lock.fid-gone { display: none; }
+.fid-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; padding: 40px 32px; text-align: center;
+}
+.fid-app-name {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.12em;
+  color: #6EE7B7; text-transform: uppercase; margin-bottom: 2px;
+  font-family: var(--font-mono, monospace);
+}
+.fid-title {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: #fff; line-height: 1.1; margin-bottom: 32px;
+}
+.fid-icon-wrap {
+  width: 80px; height: 80px; border-radius: 24px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.6);
+  transition: border-color 0.3s, background 0.3s, color 0.3s;
+  margin-bottom: 4px;
+}
+.fid-icon-wrap.fid-scanning {
+  border-color: rgba(110,231,183,0.5);
+  background: rgba(110,231,183,0.08);
+  color: #6EE7B7;
+  animation: fid-scan-pulse 1.2s ease-in-out infinite;
+}
+.fid-icon-wrap.fid-success {
+  border-color: rgba(110,231,183,0.8);
+  background: rgba(110,231,183,0.15);
+  color: #6EE7B7;
+}
+.fid-icon-wrap.fid-fail {
+  border-color: rgba(255,80,80,0.6);
+  background: rgba(255,80,80,0.08);
+  color: #FF8A8A;
+  animation: fid-shake 0.4s ease;
+}
+@keyframes fid-scan-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(110,231,183,0.3); }
+  50% { box-shadow: 0 0 0 10px rgba(110,231,183,0); }
+}
+@keyframes fid-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.fid-icon { width: 36px; height: 36px; }
+.fid-label {
+  font-size: 14px; font-weight: 500; color: var(--text-secondary, rgba(255,255,255,0.6));
+  min-height: 20px; transition: color 0.2s;
+}
+.fid-btn {
+  margin-top: 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 12px 28px;
+  font-size: 14px; font-weight: 600; color: #fff;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.fid-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+.fid-btn.fid-btn-primary {
+  background: rgba(110,231,183,0.12);
+  border-color: rgba(110,231,183,0.3);
+  color: #6EE7B7;
+}
+.fid-btn.fid-btn-primary:hover { background: rgba(110,231,183,0.2); }
+.fid-sub {
+  font-size: 11px; color: rgba(255,255,255,0.25);
+  margin-top: 4px; min-height: 16px;
+}
+
+/* ========== TICKER ========== */
 /* Ticker */
 .ticker-row {
   margin-bottom: 18px;
@@ -4998,6 +5084,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<!-- ========== FACE ID LOCK SCREEN ========== -->
+<div id="faceIdLock" class="fid-lock">
+  <div class="fid-inner">
+    <div class="fid-app-name">Koustubh.exe</div>
+    <div class="fid-title">Life Arc MAXXING</div>
+    <div class="fid-icon-wrap" id="fidIconWrap">
+      <svg class="fid-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
+        <path d="M15 3h4a2 2 0 0 1 2 2v4"/>
+        <path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
+        <path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
+        <circle cx="12" cy="10" r="2"/>
+        <path d="M9 16c0-1.7 1.3-3 3-3s3 1.3 3 3"/>
+      </svg>
+    </div>
+    <div class="fid-label" id="fidLabel">Authenticating…</div>
+    <button class="fid-btn" id="fidBtn" style="display:none"></button>
+    <div class="fid-sub" id="fidSub"></div>
+  </div>
+</div>
 
 <!-- Top Bar -->
 <header class="topbar" id="topbar" role="navigation" aria-label="Quick stats">
@@ -14173,6 +14280,119 @@ function switchTab(tab) {
 })();
 </script>
 
+<script>
+// ============================================================
+// FACE ID / BIOMETRIC LOCK
+// ============================================================
+(function() {
+  const CRED_KEY = 'faceId_credId_v1';
+  const lock     = document.getElementById('faceIdLock');
+  const iconWrap = document.getElementById('fidIconWrap');
+  const label    = document.getElementById('fidLabel');
+  const btn      = document.getElementById('fidBtn');
+  const sub      = document.getElementById('fidSub');
+
+  if (!lock) return;
+
+  // WebAuthn not supported — just unlock silently
+  if (!window.PublicKeyCredential) { unlock(); return; }
+
+  function unlock() {
+    lock.classList.add('fid-unlocking');
+    setTimeout(() => lock.classList.add('fid-gone'), 520);
+  }
+
+  function setIcon(state) {
+    iconWrap.classList.remove('fid-scanning', 'fid-success', 'fid-fail');
+    if (state) iconWrap.classList.add(state);
+  }
+
+  function b64url(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+  function fromB64url(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(s);
+    return Uint8Array.from(bin, c => c.charCodeAt(0)).buffer;
+  }
+
+  async function register() {
+    setIcon('fid-scanning');
+    label.textContent = 'Setting up Face ID…';
+    btn.style.display = 'none';
+    sub.textContent = '';
+    try {
+      const cred = await navigator.credentials.create({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: 'Koustubh.exe' },
+        user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'koustubh', displayName: 'Koustubh' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000,
+      }});
+      localStorage.setItem(CRED_KEY, b64url(cred.rawId));
+      setIcon('fid-success');
+      label.textContent = 'Face ID set up!';
+      setTimeout(unlock, 600);
+    } catch (e) {
+      setIcon('fid-fail');
+      label.textContent = 'Setup cancelled';
+      btn.textContent = 'Try again';
+      btn.className = 'fid-btn';
+      btn.style.display = '';
+      btn.onclick = register;
+      sub.textContent = e.message || '';
+    }
+  }
+
+  async function authenticate() {
+    const credId = localStorage.getItem(CRED_KEY);
+    if (!credId) { showSetup(); return; }
+    setIcon('fid-scanning');
+    label.textContent = 'Authenticating…';
+    btn.style.display = 'none';
+    sub.textContent = '';
+    try {
+      await navigator.credentials.get({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ type: 'public-key', id: fromB64url(credId) }],
+        userVerification: 'required',
+        timeout: 60000,
+      }});
+      setIcon('fid-success');
+      label.textContent = 'Welcome back 👋';
+      setTimeout(unlock, 500);
+    } catch (e) {
+      setIcon('fid-fail');
+      label.textContent = 'Face ID failed';
+      btn.textContent = 'Try again';
+      btn.className = 'fid-btn';
+      btn.style.display = '';
+      btn.onclick = authenticate;
+      sub.textContent = 'Or use your passcode';
+    }
+  }
+
+  function showSetup() {
+    setIcon(null);
+    label.textContent = 'Protect your dashboard';
+    btn.textContent = 'Set up Face ID';
+    btn.className = 'fid-btn fid-btn-primary';
+    btn.style.display = '';
+    btn.onclick = register;
+    sub.textContent = 'Uses your device biometrics — no data leaves your device';
+  }
+
+  // Boot
+  const credId = localStorage.getItem(CRED_KEY);
+  if (credId) {
+    authenticate();
+  } else {
+    showSetup();
+  }
+})();
+</script>
 
 </body>
 </html>
