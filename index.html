@@ -304,6 +304,19 @@ body::after {
   margin-top: 4px; min-height: 16px;
 }
 
+.fid-pin-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 4px; }
+.fid-pin-dots { display: flex; gap: 12px; }
+.fid-pin-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  transition: background 0.15s, border-color 0.15s;
+}
+.fid-pin-dot.filled { background: #fff; border-color: #fff; }
+.fid-pin-dot.error  { background: #FF8A8A; border-color: #FF8A8A; }
+.fid-pin-input {
+  position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;
+}
+
 /* ========== TICKER ========== */
 /* Ticker */
 .ticker-row {
@@ -5089,7 +5102,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <div id="faceIdLock" class="fid-lock">
   <div class="fid-inner">
     <div class="fid-app-name">Koustubh.exe</div>
-    <div class="fid-title">Life Arc MAXXING</div>
+    <div class="fid-title">Life Arc <span style="-webkit-text-fill-color:transparent;-webkit-text-stroke:1.5px #FF5500;text-shadow:0 0 14px rgba(255,85,0,0.7)">MAXXING</span></div>
     <div class="fid-icon-wrap" id="fidIconWrap">
       <svg class="fid-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
@@ -5100,7 +5113,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <path d="M9 16c0-1.7 1.3-3 3-3s3 1.3 3 3"/>
       </svg>
     </div>
-    <div class="fid-label" id="fidLabel">Authenticating…</div>
+    <div class="fid-label" id="fidLabel">Loading…</div>
+    <div class="fid-pin-wrap" id="fidPinWrap" style="display:none">
+      <div class="fid-pin-dots" id="fidPinDots">
+        <div class="fid-pin-dot"></div>
+        <div class="fid-pin-dot"></div>
+        <div class="fid-pin-dot"></div>
+        <div class="fid-pin-dot"></div>
+        <div class="fid-pin-dot"></div>
+        <div class="fid-pin-dot"></div>
+      </div>
+      <input type="password" inputmode="numeric" maxlength="6" id="fidPinInput" class="fid-pin-input" autocomplete="off" pattern="[0-9]*">
+    </div>
     <button class="fid-btn" id="fidBtn" style="display:none"></button>
     <div class="fid-sub" id="fidSub"></div>
   </div>
@@ -14282,46 +14306,105 @@ function switchTab(tab) {
 
 <script>
 // ============================================================
-// FACE ID / BIOMETRIC LOCK
+// LOCK SCREEN — PIN (Supabase) + Biometric (WebAuthn)
 // ============================================================
 (function() {
+  const SB_URL  = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  const SB_KEY  = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+  const PIN_ROW = 'lock_pin_hash';
   const CRED_KEY = 'faceId_credId_v1';
+
   const lock     = document.getElementById('faceIdLock');
   const iconWrap = document.getElementById('fidIconWrap');
   const label    = document.getElementById('fidLabel');
   const btn      = document.getElementById('fidBtn');
   const sub      = document.getElementById('fidSub');
+  const pinWrap  = document.getElementById('fidPinWrap');
+  const pinInput = document.getElementById('fidPinInput');
+  const pinDots  = document.querySelectorAll('.fid-pin-dot');
 
   if (!lock) return;
 
-  // WebAuthn not supported — just unlock silently
-  if (!window.PublicKeyCredential) { unlock(); return; }
-
+  // ── Helpers ──────────────────────────────────────────────
   function unlock() {
     lock.classList.add('fid-unlocking');
     setTimeout(() => lock.classList.add('fid-gone'), 520);
   }
-
   function setIcon(state) {
     iconWrap.classList.remove('fid-scanning', 'fid-success', 'fid-fail');
     if (state) iconWrap.classList.add(state);
   }
-
+  function showBtn(text, primary, cb) {
+    btn.textContent = text;
+    btn.className = 'fid-btn' + (primary ? ' fid-btn-primary' : '');
+    btn.style.display = '';
+    btn.onclick = cb;
+  }
+  function hideBtn() { btn.style.display = 'none'; }
+  function showPin(onSubmit) {
+    pinWrap.style.display = '';
+    pinInput.value = '';
+    updateDots('');
+    pinInput.focus();
+    pinInput.oninput = () => {
+      const v = pinInput.value.replace(/\D/g, '').slice(0, 6);
+      pinInput.value = v;
+      updateDots(v);
+      if (v.length === 6) { pinInput.oninput = null; onSubmit(v); }
+    };
+  }
+  function hidePin() { pinWrap.style.display = 'none'; pinInput.value = ''; updateDots(''); }
+  function updateDots(val, state) {
+    pinDots.forEach((d, i) => {
+      d.classList.remove('filled', 'error');
+      if (state === 'error') { d.classList.add('error'); }
+      else if (i < val.length) d.classList.add('filled');
+    });
+  }
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
   function b64url(buf) {
-    return btoa(String.fromCharCode(...new Uint8Array(buf)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
   }
   function fromB64url(s) {
-    s = s.replace(/-/g, '+').replace(/_/g, '/');
-    const bin = atob(s);
-    return Uint8Array.from(bin, c => c.charCodeAt(0)).buffer;
+    s = s.replace(/-/g,'+').replace(/_/g,'/');
+    return Uint8Array.from(atob(s), c => c.charCodeAt(0)).buffer;
   }
 
-  async function register() {
-    setIcon('fid-scanning');
-    label.textContent = 'Setting up Face ID…';
-    btn.style.display = 'none';
-    sub.textContent = '';
+  // ── Supabase PIN helpers ──────────────────────────────────
+  async function fetchPinHash() {
+    try {
+      const r = await fetch(SB_URL + '/rest/v1/app_state?select=data&key=eq.' + PIN_ROW,
+        { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+      const rows = await r.json();
+      return (Array.isArray(rows) && rows[0]?.data?.hash) ? rows[0].data.hash : null;
+    } catch { return null; }
+  }
+  async function savePinHash(hash) {
+    await fetch(SB_URL + '/rest/v1/app_state?on_conflict=key', {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: PIN_ROW, data: { hash }, updated_at: new Date().toISOString() }),
+    });
+  }
+
+  // ── Biometric helpers ─────────────────────────────────────
+  const biometricAvailable = !!window.PublicKeyCredential;
+  async function biometricAuth() {
+    const credId = localStorage.getItem(CRED_KEY);
+    if (!credId) return false;
+    try {
+      await navigator.credentials.get({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ type: 'public-key', id: fromB64url(credId) }],
+        userVerification: 'required', timeout: 60000,
+      }});
+      return true;
+    } catch { return false; }
+  }
+  async function biometricRegister() {
     try {
       const cred = await navigator.credentials.create({ publicKey: {
         challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -14332,65 +14415,151 @@ function switchTab(tab) {
         timeout: 60000,
       }});
       localStorage.setItem(CRED_KEY, b64url(cred.rawId));
-      setIcon('fid-success');
-      label.textContent = 'Face ID set up!';
-      setTimeout(unlock, 600);
-    } catch (e) {
-      setIcon('fid-fail');
-      label.textContent = 'Setup cancelled';
-      btn.textContent = 'Try again';
-      btn.className = 'fid-btn';
-      btn.style.display = '';
-      btn.onclick = register;
-      sub.textContent = e.message || '';
-    }
+      return true;
+    } catch { return false; }
   }
 
-  async function authenticate() {
-    const credId = localStorage.getItem(CRED_KEY);
-    if (!credId) { showSetup(); return; }
+  // ── States ────────────────────────────────────────────────
+
+  // State: no PIN set yet — ask user to create one
+  function stateCreatePin() {
+    setIcon(null);
+    label.textContent = 'Create a 6-digit PIN';
+    hideBtn();
+    sub.textContent = 'This PIN protects your dashboard across all devices';
+    showPin(async (pin) => {
+      hidePin();
+      label.textContent = 'Confirm PIN';
+      showPin(async (pin2) => {
+        hidePin();
+        if (pin !== pin2) {
+          setIcon('fid-fail');
+          label.textContent = 'PINs do not match';
+          sub.textContent = '';
+          setTimeout(stateCreatePin, 1200);
+          return;
+        }
+        label.textContent = 'Saving…';
+        const hash = await sha256(pin);
+        await savePinHash(hash);
+        // Offer to set up biometric
+        if (biometricAvailable) {
+          stateBiometricSetup();
+        } else {
+          setIcon('fid-success');
+          label.textContent = 'All set!';
+          setTimeout(unlock, 700);
+        }
+      });
+    });
+  }
+
+  // State: PIN exists, no biometric on this device — ask for PIN
+  function statePinAuth(pinHash, afterSuccess) {
+    setIcon(null);
+    label.textContent = 'Enter your PIN';
+    hideBtn();
+    sub.textContent = '';
+    showPin(async (pin) => {
+      hidePin();
+      const hash = await sha256(pin);
+      if (hash === pinHash) {
+        if (afterSuccess) { afterSuccess(); }
+        else {
+          setIcon('fid-success');
+          label.textContent = 'Welcome back 👋';
+          setTimeout(unlock, 500);
+        }
+      } else {
+        updateDots('xxxxxx', 'error');
+        setIcon('fid-fail');
+        label.textContent = 'Wrong PIN';
+        sub.textContent = '';
+        setTimeout(() => statePinAuth(pinHash, afterSuccess), 1000);
+      }
+    });
+  }
+
+  // State: offer biometric setup after PIN created
+  async function stateBiometricSetup() {
+    setIcon(null);
+    label.textContent = 'Set up Face ID / Touch ID?';
+    sub.textContent = 'Skip PIN entry on this device';
+    showBtn('Set up', true, async () => {
+      hideBtn();
+      setIcon('fid-scanning');
+      label.textContent = 'Follow the prompt…';
+      sub.textContent = '';
+      const ok = await biometricRegister();
+      if (ok) {
+        setIcon('fid-success');
+        label.textContent = 'All set!';
+        setTimeout(unlock, 600);
+      } else {
+        setIcon('fid-fail');
+        label.textContent = 'Biometric setup failed';
+        setTimeout(unlock, 900);
+      }
+    });
+    showBtn('Skip', false, unlock);
+    // Show two buttons — override to show both
+    const skip = document.createElement('button');
+    skip.textContent = 'Skip';
+    skip.className = 'fid-btn';
+    skip.style.marginTop = '6px';
+    skip.onclick = unlock;
+    btn.after(skip);
+  }
+
+  // State: biometric registered — try it, fallback to PIN
+  async function stateBiometricAuth(pinHash) {
     setIcon('fid-scanning');
     label.textContent = 'Authenticating…';
-    btn.style.display = 'none';
+    hideBtn();
     sub.textContent = '';
-    try {
-      await navigator.credentials.get({ publicKey: {
-        challenge: crypto.getRandomValues(new Uint8Array(32)),
-        allowCredentials: [{ type: 'public-key', id: fromB64url(credId) }],
-        userVerification: 'required',
-        timeout: 60000,
-      }});
+    const ok = await biometricAuth();
+    if (ok) {
       setIcon('fid-success');
       label.textContent = 'Welcome back 👋';
       setTimeout(unlock, 500);
-    } catch (e) {
+    } else {
       setIcon('fid-fail');
-      label.textContent = 'Face ID failed';
-      btn.textContent = 'Try again';
-      btn.className = 'fid-btn';
-      btn.style.display = '';
-      btn.onclick = authenticate;
-      sub.textContent = 'Or use your passcode';
+      label.textContent = 'Biometric failed';
+      sub.textContent = 'Use PIN instead';
+      showBtn('Enter PIN', false, () => { hideBtn(); statePinAuth(pinHash); });
     }
   }
 
-  function showSetup() {
-    setIcon(null);
-    label.textContent = 'Protect your dashboard';
-    btn.textContent = 'Set up Face ID';
-    btn.className = 'fid-btn fid-btn-primary';
-    btn.style.display = '';
-    btn.onclick = register;
-    sub.textContent = 'Uses your device biometrics — no data leaves your device';
-  }
+  // ── Boot ──────────────────────────────────────────────────
+  (async function boot() {
+    label.textContent = 'Loading…';
+    const pinHash = await fetchPinHash();
 
-  // Boot
-  const credId = localStorage.getItem(CRED_KEY);
-  if (credId) {
-    authenticate();
-  } else {
-    showSetup();
-  }
+    if (!pinHash) {
+      // First time ever — create PIN
+      stateCreatePin();
+      return;
+    }
+
+    const credId = localStorage.getItem(CRED_KEY);
+    if (biometricAvailable && credId) {
+      // This device has biometric registered
+      stateBiometricAuth(pinHash);
+    } else if (biometricAvailable && !credId) {
+      // PIN exists but no biometric on this device — auth with PIN, then offer biometric setup
+      statePinAuth(pinHash, async () => {
+        setIcon('fid-success');
+        label.textContent = 'Verified!';
+        hidePin();
+        sub.textContent = '';
+        await new Promise(r => setTimeout(r, 500));
+        stateBiometricSetup();
+      });
+    } else {
+      // No biometric support — PIN only
+      statePinAuth(pinHash);
+    }
+  })();
 })();
 </script>
 
