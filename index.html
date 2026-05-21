@@ -3391,8 +3391,12 @@ html, body {
 .bot-tab-icon { font-size: 18px; line-height: 1; }
 .bot-tab-label {
   font-size: 10px; font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* Sections: hide non-active when bottom tabs are in use */
