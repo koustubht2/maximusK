@@ -3671,6 +3671,78 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   #financeView .section #financeView .card .card-grid { grid-template-columns: 1fr; }
 }
 
+/* ── Savings Maxxing Card ── */
+.sg-card {
+  margin: 0 0 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(110,231,183,0.07), rgba(125,211,252,0.04));
+  border: 1px solid rgba(110,231,183,0.18);
+  border-radius: 14px;
+  position: relative;
+  overflow: clip;
+}
+.sg-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(110,231,183,0.3), transparent);
+}
+.sg-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+.sg-title-wrap { display: flex; flex-direction: column; gap: 2px; }
+.sg-eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #6EE7B7; opacity: 0.85; }
+.sg-label { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.sg-edit-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,0.10);
+  color: var(--text-tertiary); font-size: 11px; padding: 4px 10px;
+  border-radius: 7px; cursor: pointer; font-family: inherit;
+  transition: border-color 0.15s, color 0.15s; flex-shrink: 0;
+}
+.sg-edit-btn:hover { border-color: #6EE7B7; color: #6EE7B7; }
+.sg-stats { display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+.sg-stat { display: flex; flex-direction: column; gap: 2px; }
+.sg-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); }
+.sg-stat-val { font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.sg-stat-val.good { color: #6EE7B7; }
+.sg-stat-val.warn { color: #FBBF24; }
+.sg-bar-track { height: 6px; background: rgba(255,255,255,0.07); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
+.sg-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #6EE7B7, #7DD3FC); transition: width 0.6s ease; box-shadow: 0 0 8px rgba(110,231,183,0.4); }
+.sg-bar-labels { display: flex; justify-content: space-between; }
+.sg-bar-pct { font-size: 10px; font-weight: 700; color: #6EE7B7; font-variant-numeric: tabular-nums; }
+.sg-bar-remaining { font-size: 10px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.sg-projected { font-size: 10.5px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; }
+.sg-projected strong { color: var(--text-secondary); }
+.sg-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 10px 0 4px; text-align: center;
+}
+.sg-empty-text { font-size: 12px; color: var(--text-tertiary); line-height: 1.5; }
+.sg-set-btn {
+  background: rgba(110,231,183,0.10); border: 1px solid rgba(110,231,183,0.25);
+  color: #6EE7B7; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 7px 16px; border-radius: 8px;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.sg-set-btn:hover { background: rgba(110,231,183,0.18); }
+.sg-form { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.sg-form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.sg-input {
+  flex: 1; min-width: 120px; background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.10); border-radius: 8px;
+  color: var(--text-primary); font-size: 12px; font-family: inherit;
+  padding: 7px 10px; outline: none; transition: border-color 0.15s;
+}
+.sg-input:focus { border-color: rgba(110,231,183,0.4); }
+.sg-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.sg-save-btn {
+  background: rgba(110,231,183,0.12); border: 1px solid rgba(110,231,183,0.28);
+  color: #6EE7B7; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 6px 14px; border-radius: 7px; cursor: pointer; font-family: inherit;
+}
+.sg-cancel-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-tertiary); font-size: 11px; font-weight: 600;
+  padding: 6px 12px; border-radius: 7px; cursor: pointer; font-family: inherit;
+}
+
 /* Stock-style net-worth chart */
 .nw-chart-wrap {
   margin: 14px 0 18px;
@@ -5777,7 +5849,7 @@ window.canonicalJson = function(obj) {
   <div class="card" style="background:transparent;border:none !important;box-shadow:none;padding:0;overflow:visible">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:14px">
       <div>
-        <div style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;font-weight:500">Total net worth</div>
+        <div style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;font-weight:500">Wealth Maxxing</div>
         <div id="netWorthTotal" style="font-size:34px;font-weight:700;color:var(--text-primary);line-height:1.05;margin-top:2px">CHF 0</div>
         <div id="netWorthBreakdown" style="font-size:11px;color:var(--text-tertiary);margin-top:4px"></div>
       </div>
@@ -5856,6 +5928,9 @@ window.canonicalJson = function(obj) {
         <div class="nw-donut-legend" id="nwDonutLegend"></div>
       </div>
     </div>
+
+    <!-- Savings Maxxing -->
+    <div class="sg-card" id="sgCard"></div>
 
     <!-- Activity log — every add / edit, newest first -->
     <div class="nw-activity" id="nwActivity">
@@ -11023,11 +11098,175 @@ function switchTab(tab) {
     renderNetWorthChart();
     renderAllocationDonut(sliceTotals, grand);
     renderActivity();
+    renderSavingsGoal();
     if (typeof renderWishlist === 'function') renderWishlist();
     if (typeof renderOrders   === 'function') renderOrders();
     if (typeof renderAssetsLiabilities === 'function') renderAssetsLiabilities();
     if (typeof updateOrdPreview === 'function') updateOrdPreview();
     if (typeof renderSpendingInsights === 'function') renderSpendingInsights();
+  }
+
+  // ── Savings Maxxing ──────────────────────────────────────────────
+  function renderSavingsGoal() {
+    const card = document.getElementById('sgCard');
+    if (!card) return;
+    const goal = storeGet('savings_goal');
+    const grand = nwGrandCHF();
+    const dispCcy = currencyEl ? currencyEl.value : 'CHF';
+    const dispRate = exchangeRates[dispCcy] || 1;
+    const grandDisp = grand * dispRate;
+
+    if (!goal) {
+      card.innerHTML = `
+        <div class="sg-header" style="margin-bottom:6px">
+          <div class="sg-title-wrap">
+            <span class="sg-eyebrow">Savings Maxxing</span>
+            <span class="sg-label" style="font-size:13px;color:var(--text-tertiary);font-weight:500">No goal set yet</span>
+          </div>
+        </div>
+        <div class="sg-empty">
+          <div class="sg-empty-text">Set a savings goal to track your progress<br>against your net worth</div>
+          <button class="sg-set-btn" id="sgSetBtn">+ Set Goal</button>
+        </div>`;
+      card.querySelector('#sgSetBtn').addEventListener('click', () => sgShowForm(card, null));
+      return;
+    }
+
+    // Convert goal target to CHF for comparison
+    const goalRate = exchangeRates[goal.currency] || 1;
+    const targetCHF = goal.amount / goalRate;
+    const targetDisp = goal.amount; // already in goal.currency
+    const pct = Math.min(100, grand > 0 ? (grand / targetCHF) * 100 : 0);
+    const remainingCHF = Math.max(0, targetCHF - grand);
+    const remainingDisp = remainingCHF * dispRate;
+
+    // Projected date based on net monthly flow
+    let projectedHtml = '';
+    const inrRate = (exchangeRates['INR'] || 96);
+    const now = new Date();
+    const curY = now.getFullYear(), curM = now.getMonth();
+    const allExps = storeGet('expenses') || [];
+    const toInr = e => (e.entered_currency || 'CHF') === 'INR' ? (Number(e.entered_amount) || 0) : (Number(e.amount) || 0) * inrRate;
+    const curExps = allExps.filter(e => { const d = new Date(e.ts); return d.getFullYear() === curY && d.getMonth() === curM; });
+    const curExpTotal = curExps.reduce((s, e) => s + toInr(e), 0);
+    const curInc = (storeGet('incomes') || []).reduce((sum, e) => {
+      const val = (e.entered_currency || 'CHF') === 'INR' ? (Number(e.entered_amount) || 0) : (Number(e.amount) || 0) * inrRate;
+      const p = e.period || 'one-off';
+      if (p === 'monthly') return sum + val;
+      if (p === 'weekly') return sum + val * 4.33;
+      if (p === 'yearly') return sum + val / 12;
+      return sum;
+    }, 0);
+    const subsTotal = (storeGet('subs') || []).reduce((s, it) => s + monthlyEquivalent(it) * inrRate, 0);
+    const netMonthlyInr = curInc - curExpTotal - subsTotal;
+    const netMonthlyCHF = netMonthlyInr / inrRate;
+
+    if (pct >= 100) {
+      projectedHtml = '<div class="sg-projected" style="color:#6EE7B7;font-weight:700">🎉 Goal reached!</div>';
+    } else if (netMonthlyCHF > 0 && remainingCHF > 0) {
+      const monthsLeft = Math.ceil(remainingCHF / netMonthlyCHF);
+      const projDate = new Date(now.getFullYear(), now.getMonth() + monthsLeft, 1);
+      const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const projStr = mons[projDate.getMonth()] + ' ' + projDate.getFullYear();
+      // Check against target date
+      let dateNote = '';
+      if (goal.targetDate) {
+        const td = new Date(goal.targetDate);
+        if (projDate > td) {
+          const mOver = Math.round((projDate - td) / (1000 * 60 * 60 * 24 * 30));
+          dateNote = ' <span style="color:#FF8A8A">(' + mOver + 'mo behind target)</span>';
+        } else {
+          const mAhead = Math.round((td - projDate) / (1000 * 60 * 60 * 24 * 30));
+          if (mAhead > 0) dateNote = ' <span style="color:#6EE7B7">(' + mAhead + 'mo ahead)</span>';
+        }
+      }
+      projectedHtml = '<div class="sg-projected">At current pace, you\'ll hit your goal in <strong>' + projStr + '</strong>' + dateNote + ' · saving ~' + fmtMoney(netMonthlyCHF) + '/mo</div>';
+    } else if (netMonthlyCHF <= 0) {
+      projectedHtml = '<div class="sg-projected" style="color:#FBBF24">⚠ Negative net flow — goal timeline unavailable</div>';
+    }
+
+    const targetDateStr = goal.targetDate
+      ? (() => { const d = new Date(goal.targetDate); const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return mons[d.getMonth()] + ' ' + d.getFullYear(); })()
+      : '—';
+
+    card.innerHTML = `
+      <div class="sg-header">
+        <div class="sg-title-wrap">
+          <span class="sg-eyebrow">Savings Maxxing</span>
+          <span class="sg-label">${escapeHtml(goal.label)}</span>
+        </div>
+        <button class="sg-edit-btn" id="sgEditBtn">Edit</button>
+      </div>
+      <div class="sg-stats">
+        <div class="sg-stat">
+          <span class="sg-stat-label">Current</span>
+          <span class="sg-stat-val">${fmtMoney(grand)}</span>
+        </div>
+        <div class="sg-stat">
+          <span class="sg-stat-label">Target</span>
+          <span class="sg-stat-val">${goal.currency} ${Number(goal.amount).toLocaleString('en-IN')}</span>
+        </div>
+        <div class="sg-stat">
+          <span class="sg-stat-label">Remaining</span>
+          <span class="sg-stat-val ${pct >= 100 ? 'good' : ''}">${pct >= 100 ? '✓ Done' : fmtMoney(remainingCHF)}</span>
+        </div>
+        <div class="sg-stat">
+          <span class="sg-stat-label">Target Date</span>
+          <span class="sg-stat-val">${targetDateStr}</span>
+        </div>
+      </div>
+      <div class="sg-bar-track"><div class="sg-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+      <div class="sg-bar-labels">
+        <span class="sg-bar-pct">${pct.toFixed(1)}% complete</span>
+        <span class="sg-bar-remaining">${pct < 100 ? fmtMoney(remainingCHF) + ' to go' : '🎉 Achieved'}</span>
+      </div>
+      ${projectedHtml}`;
+    card.querySelector('#sgEditBtn').addEventListener('click', () => sgShowForm(card, goal));
+  }
+
+  function sgShowForm(card, existing) {
+    const dispCcy = currencyEl ? currencyEl.value : 'CHF';
+    card.innerHTML = `
+      <div class="sg-eyebrow" style="margin-bottom:10px">Savings Maxxing</div>
+      <div class="sg-form">
+        <input class="sg-input" id="sgLabelIn" placeholder="Goal name (e.g. First Crore)" value="${existing ? escapeHtml(existing.label) : ''}">
+        <div class="sg-form-row">
+          <input class="sg-input" id="sgAmtIn" type="number" placeholder="Target amount" value="${existing ? existing.amount : ''}" style="flex:2">
+          <select class="sg-input" id="sgCcyIn" style="flex:1;min-width:80px">
+            ${['INR','USD','EUR','GBP','CHF'].map(c => `<option value="${c}"${(existing ? existing.currency : dispCcy) === c ? ' selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <input class="sg-input" id="sgDateIn" type="month" value="${existing && existing.targetDate ? existing.targetDate.slice(0,7) : ''}" placeholder="Target date (optional)">
+        <div class="sg-form-actions">
+          ${existing ? '<button class="sg-cancel-btn" id="sgDelBtn" style="margin-right:auto;color:#FF8A8A;border-color:rgba(255,138,138,0.2)">Delete</button>' : ''}
+          <button class="sg-cancel-btn" id="sgCancelBtn">Cancel</button>
+          <button class="sg-save-btn" id="sgSaveBtn">Save Goal</button>
+        </div>
+      </div>`;
+
+    card.querySelector('#sgCancelBtn').addEventListener('click', () => renderSavingsGoal());
+    if (existing) {
+      card.querySelector('#sgDelBtn').addEventListener('click', () => {
+        storeSet('savings_goal', null);
+        renderSavingsGoal();
+      });
+    }
+    card.querySelector('#sgSaveBtn').addEventListener('click', () => {
+      const label = card.querySelector('#sgLabelIn').value.trim();
+      const amt = parseFloat(card.querySelector('#sgAmtIn').value);
+      const ccy = card.querySelector('#sgCcyIn').value;
+      const dateVal = card.querySelector('#sgDateIn').value;
+      if (!label || isNaN(amt) || amt <= 0) {
+        card.querySelector('#sgLabelIn').focus(); return;
+      }
+      storeSet('savings_goal', {
+        label,
+        amount: amt,
+        currency: ccy,
+        targetDate: dateVal ? dateVal + '-01' : null
+      });
+      renderSavingsGoal();
+    });
   }
 
   // ============================================================
@@ -13213,7 +13452,7 @@ function switchTab(tab) {
   function fisSyncKey(k) {
     if (k === 'finance_active_tab' || k === 'activeTab') return false;
     if (k.startsWith('nw:')) return true;
-    if (['incomes', 'expenses', 'subs', 'wishlist', 'incoming_orders', 'nw_currency_v1'].includes(k)) return true;
+    if (['incomes', 'expenses', 'subs', 'wishlist', 'incoming_orders', 'nw_currency_v1', 'savings_goal'].includes(k)) return true;
     return false;
   }
 
