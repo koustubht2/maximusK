@@ -7660,7 +7660,7 @@ function formatDate(d) {
 // GOALS SYSTEM — TODAY TAB
 // ============================================================
 
-const GS_GEMINI_KEY = 'AIzaSyAqM6aQBFKpKh8eFO0ITK3WevhkLE6Sl6o';
+const GS_GEMINI_KEY = '';
 
 // --- Data keys ---
 function gsDateKey(d) { return dateToYYYYMMDD(d || getActiveDateObj()); }
@@ -8552,8 +8552,9 @@ function gwRenderWeek() {
     const tasks = daily || tplTasks;
     const hasDailyData = !!daily;
 
-    // Commitment blocks — colored, editable
-    gpGetCommitments().forEach((c, commitIdx) => {
+    // Commitment blocks — colored, editable (hidden after Clear until Recurring/Seed is clicked)
+    const commitsHidden = storeGet(GS_COMMITS_HIDDEN_KEY);
+    if (!commitsHidden) gpGetCommitments().forEach((c, commitIdx) => {
       if (!(c.days || []).includes(dayName)) return;
       const top = gwTimeToTop(c.start);
       if (top === null || top < 0) return;
@@ -8710,6 +8711,7 @@ document.querySelectorAll('.goals-tab').forEach(btn => {
 
 const GS_COMMITMENTS_KEY = 'goals_commitments_v3';
 const GS_PLAN_DRAFT_KEY  = 'goals_plan_draft_v1';
+const GS_COMMITS_HIDDEN_KEY = 'goals_commits_hidden';
 
 const GS_DEFAULT_COMMITMENTS = [
   { name: 'Wake + walk',          start: '07:00', end: '07:30', days: ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'], category: 'Health' },
@@ -9267,6 +9269,7 @@ function gpConfirmPlan() {
     }));
   });
   storeSet(weekKey, planToSave);
+  storeDelete(GS_COMMITS_HIDDEN_KEY);
   // Save meta (thesis, constraint)
   storeSet(weekKey + '_meta', { thesis: gpPlanDraft.thesis, constraint_task: gpPlanDraft.constraint_task });
   // If this week, invalidate today's daily
@@ -9463,8 +9466,10 @@ document.getElementById('gpClearWeekBtn') && document.getElementById('gpClearWee
     storeDelete(gsDailyKey(dateToYYYYMMDD(dayDate)));
   });
   gpPlanDraft = null;
+  storeSet(GS_COMMITS_HIDDEN_KEY, true);
   loadGoalsToday();
   gpRenderPlan();
+  if (typeof gwRenderWeek === 'function') gwRenderWeek();
 });
 
 document.getElementById('gpLoadRecurringBtn') && document.getElementById('gpLoadRecurringBtn').addEventListener('click', () => {
@@ -9478,6 +9483,7 @@ document.getElementById('gpLoadSeedBtn2') && document.getElementById('gpLoadSeed
 // ---- Quick: load recurring only (no AI) ----
 function gpLoadRecurringToWeek() {
   if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+  storeDelete(GS_COMMITS_HIDDEN_KEY);
   const weekKey = gpWeekKey(gpCurrentWeekMonday);
   const plan = {};
   const commits = gpGetCommitments();
@@ -9502,6 +9508,7 @@ function gpLoadRecurringToWeek() {
 // ---- Quick: load seed week ----
 function gpLoadSeedToWeek() {
   if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+  storeDelete(GS_COMMITS_HIDDEN_KEY);
   if (!confirm('Load seed week? This will overwrite existing tasks for this week.')) return;
   const weekKey = gpWeekKey(gpCurrentWeekMonday);
   storeSet(weekKey, JSON.parse(JSON.stringify(GS_SEED)));
