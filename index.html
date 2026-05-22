@@ -878,6 +878,820 @@ body::after {
 }
 
 
+/* ========== GOALS SYSTEM ========== */
+.goals-tabs-wrap { margin: 0 0 14px; }
+.goals-tab-bar {
+  display: flex; gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px; padding: 4px;
+}
+.goals-tab {
+  flex: 1; background: none; border: none; cursor: pointer;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  padding: 8px 4px; border-radius: 9px;
+  font-family: inherit; transition: background 0.15s, color 0.15s;
+}
+.goals-tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.goals-tab-content { display: none; }
+.goals-tab-content.active { display: block; }
+
+/* Banner */
+.gs-banner {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.gs-banner-slot {
+  font-size: 15px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.gs-banner-next {
+  font-size: 11px; color: var(--text-tertiary);
+  margin-top: 3px; letter-spacing: 0.02em;
+}
+.gs-banner.eod { background: linear-gradient(135deg, rgba(110,231,183,0.07), rgba(125,211,252,0.04)); }
+
+/* Category Rings */
+.gs-rings-wrap {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 12px;
+}
+.gs-ring-item {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 14px; padding: 12px 8px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.gs-ring-svg { width: 52px; height: 52px; }
+.gs-ring-track { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 4; }
+.gs-ring-fill  { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+.gs-ring-pct {
+  font-size: 11px; font-weight: 700; fill: var(--text-primary);
+  dominant-baseline: middle; text-anchor: middle;
+}
+.gs-ring-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-tertiary); text-align: center;
+}
+
+/* Insight Card */
+.gs-insight-card {
+  background: linear-gradient(135deg, rgba(110,231,183,0.07), rgba(125,211,252,0.04));
+  border: 1px solid rgba(110,231,183,0.15);
+  border-radius: 12px; padding: 12px 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 12px;
+}
+.gs-insight-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.gs-insight-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gs-insight-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: #6EE7B7; opacity: 0.9;
+}
+.gs-insight-text {
+  font-size: 12px; font-weight: 500; color: var(--text-secondary); line-height: 1.5;
+  transition: opacity 0.3s ease;
+}
+.gs-insight-text.fading { opacity: 0; }
+.gs-insight-dots { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; align-self: center; }
+.gs-insight-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.2s; }
+.gs-insight-dot.active { background: #6EE7B7; }
+
+/* Task Sections */
+.gs-section { margin-bottom: 14px; }
+.gs-section-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px; padding: 0 2px;
+}
+.gs-section-title {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-tertiary);
+}
+.gs-section-badge {
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #FF5500;
+  background: rgba(255,85,0,0.12); border-radius: 99px; padding: 2px 7px;
+}
+.gs-section-count {
+  font-size: 9px; color: var(--text-tertiary); font-weight: 600;
+}
+
+/* Task Rows */
+.gs-task {
+  background: var(--bg-card);
+  border-radius: 12px; padding: 11px 12px;
+  margin-bottom: 6px;
+  display: flex; align-items: flex-start; gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: opacity 0.2s;
+  position: relative;
+}
+.gs-task.checked { opacity: 0.45; }
+.gs-task.skipped { opacity: 0.35; }
+.gs-task-cb {
+  width: 18px; height: 18px; border-radius: 6px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  background: none; cursor: pointer; flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.gs-task-cb.checked { background: #6EE7B7; border-color: #6EE7B7; }
+.gs-task-cb.checked::after { content: '✓'; font-size: 10px; color: #000; font-weight: 800; }
+.gs-task-cb.skipped { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+.gs-task-cb.skipped::after { content: '—'; font-size: 9px; color: var(--text-tertiary); font-weight: 700; }
+.gs-task-body { flex: 1; min-width: 0; }
+.gs-task-title {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  line-height: 1.35; margin-bottom: 4px;
+}
+.gs-task.checked .gs-task-title,
+.gs-task.skipped .gs-task-title { text-decoration: line-through; color: var(--text-tertiary); }
+.gs-task-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gs-task-cat {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 99px;
+}
+.gs-task-time {
+  font-size: 10px; color: var(--text-tertiary); font-weight: 500;
+}
+.gs-task-dur {
+  font-size: 10px; color: var(--text-tertiary); font-weight: 500;
+}
+.gs-task-actions { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0; }
+.gs-task-skip {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-tertiary); background: none; border: none; cursor: pointer;
+  padding: 3px 6px; border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.gs-task-skip:hover { color: #FF8A8A; background: rgba(255,138,138,0.1); }
+
+/* Log Slot Button — manual fallback, subtle */
+.gs-log-btn {
+  display: block; width: 100%; padding: 10px;
+  background: transparent;
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 10px; color: var(--text-tertiary);
+  font-size: 11px; font-weight: 500; font-family: inherit;
+  cursor: pointer; margin-top: 8px; margin-bottom: 16px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  letter-spacing: 0.04em;
+}
+.gs-log-btn:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.15); color: var(--text-secondary); }
+
+/* Feedback + Skip Modals */
+.gs-modal-bg {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.gs-modal {
+  background: #1a1a1f; border-radius: 20px 20px 0 0;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  width: 100%; max-width: 480px;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+}
+.gs-modal-title {
+  font-size: 14px; font-weight: 800; color: var(--text-primary);
+  letter-spacing: -0.01em; margin-bottom: 16px;
+}
+.gs-modal-q {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  margin-bottom: 8px; margin-top: 14px;
+}
+.gs-modal-seg { display: flex; gap: 6px; }
+.gs-seg-btn {
+  flex: 1; padding: 9px 4px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-tertiary); font-size: 12px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.gs-seg-btn.active { background: rgba(110,231,183,0.15); border-color: rgba(110,231,183,0.35); color: #6EE7B7; }
+.gs-modal-textarea {
+  width: 100%; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+  color: var(--text-primary); font-size: 13px; font-family: inherit;
+  padding: 10px 12px; resize: none; box-sizing: border-box;
+}
+.gs-modal-textarea:focus { outline: none; border-color: rgba(255,255,255,0.25); }
+.gs-modal-energy { display: flex; gap: 8px; }
+.gs-energy-btn {
+  flex: 1; padding: 10px 4px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-tertiary); font-size: 14px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.gs-energy-btn.active { background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.35); color: #FBBF24; }
+.gs-modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.gs-modal-cancel {
+  flex: 1; padding: 13px; border-radius: 12px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-secondary); font-size: 13px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+}
+.gs-modal-submit {
+  flex: 2; padding: 13px; border-radius: 12px;
+  background: rgba(110,231,183,0.15); border: 1px solid rgba(110,231,183,0.3);
+  color: #6EE7B7; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+}
+.gs-modal-skip {
+  background: rgba(255,138,138,0.1); border-color: rgba(255,138,138,0.25); color: #FF8A8A;
+}
+.gs-skip-why {
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  background: rgba(255,85,0,0.08); border: 1px solid rgba(255,85,0,0.15);
+  border-radius: 10px; padding: 12px 14px; line-height: 1.5;
+}
+
+/* EOD Summary */
+.gs-eod-wrap { padding: 4px 0 16px; }
+.gs-eod-title {
+  font-size: 14px; font-weight: 800; color: var(--text-primary);
+  margin-bottom: 12px; letter-spacing: -0.01em;
+}
+.gs-eod-stat {
+  background: var(--bg-card); border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+}
+
+.gs-coming-soon {
+  text-align: center; padding: 60px 20px;
+  font-size: 13px; color: var(--text-tertiary); font-style: italic;
+}
+
+/* Current Focus Card */
+.gs-focus-card {
+  margin-bottom: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(110,231,183,0.08) 0%, rgba(125,211,252,0.05) 100%);
+  border: 1px solid rgba(110,231,183,0.25);
+  box-shadow: 0 0 28px rgba(110,231,183,0.08), 0 4px 20px rgba(0,0,0,0.35);
+  overflow: hidden;
+}
+.gs-focus-now {
+  padding: 16px 18px 14px;
+}
+.gs-focus-eyebrow {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+  color: #6EE7B7; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.gs-focus-eyebrow::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%; background: #6EE7B7;
+  box-shadow: 0 0 8px #6EE7B7; animation: gs-pulse 1.8s ease-in-out infinite;
+}
+@keyframes gs-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+.gs-focus-title {
+  font-size: 18px; font-weight: 800; color: var(--text-primary);
+  line-height: 1.25; letter-spacing: -0.02em; margin-bottom: 6px;
+}
+.gs-focus-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.gs-focus-cat {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 2px 8px; border-radius: 20px;
+}
+.gs-focus-time {
+  font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums;
+}
+.gs-focus-dur {
+  font-size: 11px; color: var(--text-tertiary);
+}
+.gs-focus-done-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #6EE7B7; background: rgba(110,231,183,0.12); border-radius: 20px; padding: 2px 8px;
+}
+.gs-focus-divider {
+  height: 1px; background: rgba(255,255,255,0.06); margin: 0 18px;
+}
+.gs-focus-up {
+  padding: 12px 18px 14px;
+}
+.gs-focus-up-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 8px;
+}
+.gs-focus-up-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.gs-focus-up-item {
+  display: flex; align-items: center; gap: 8px;
+}
+.gs-focus-up-dot {
+  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; opacity: 0.7;
+}
+.gs-focus-up-name {
+  font-size: 12px; color: var(--text-secondary); font-weight: 500; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gs-focus-up-time {
+  font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+.gs-focus-none {
+  font-size: 12px; color: var(--text-tertiary); font-style: italic;
+}
+
+/* ===== THIS WEEK TAB — CALENDAR VIEW ===== */
+.gw-week-nav {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.gw-cal-wrap {
+  border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden;
+  background: var(--bg-card);
+}
+.gw-cal-header {
+  display: grid; border-bottom: 1px solid rgba(255,255,255,0.07);
+  /* columns set by JS: gutter + 7 day cols */
+}
+.gw-cal-header-gutter { width: 36px; flex-shrink: 0; }
+.gw-cal-day-head {
+  padding: 8px 4px 7px; text-align: center; border-left: 1px solid rgba(255,255,255,0.05);
+}
+.gw-cal-day-letter {
+  display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-tertiary);
+}
+.gw-cal-day-num {
+  display: block; font-size: 16px; font-weight: 800; color: var(--text-primary);
+  line-height: 1.2; margin-top: 1px;
+}
+.gw-cal-day-head.today .gw-cal-day-letter { color: #6EE7B7; }
+.gw-cal-day-head.today .gw-cal-day-num {
+  background: #6EE7B7; color: #000; border-radius: 50%;
+  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  margin: 2px auto 0;
+}
+
+.gw-cal-body {
+  display: flex; position: relative;
+  max-height: 520px; overflow-y: auto;
+}
+.gw-time-gutter {
+  width: 36px; flex-shrink: 0; position: relative;
+}
+.gw-time-label {
+  position: absolute; right: 6px; font-size: 9px; color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums; transform: translateY(-50%); white-space: nowrap;
+}
+.gw-cal-cols {
+  flex: 1; display: grid; position: relative;
+  /* grid-template-columns set by JS */
+}
+.gw-cal-col {
+  border-left: 1px solid rgba(255,255,255,0.05); position: relative;
+}
+.gw-cal-col.today-col { background: rgba(110,231,183,0.02); }
+.gw-hour-line {
+  position: absolute; left: 0; right: 0;
+  border-top: 1px solid rgba(255,255,255,0.05); pointer-events: none;
+}
+.gw-hour-line.half { border-top-style: dashed; opacity: 0.4; }
+
+/* Current time line */
+.gw-now-line {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: #FF6B6B; z-index: 3; pointer-events: none;
+}
+.gw-now-line::before {
+  content: ''; position: absolute; left: -4px; top: -4px;
+  width: 10px; height: 10px; border-radius: 50%; background: #FF6B6B;
+}
+
+/* Task cards in calendar */
+.gw-cal-task {
+  position: absolute; left: 2px; right: 2px;
+  border-radius: 6px; padding: 3px 6px;
+  overflow: hidden; cursor: pointer; z-index: 2;
+  transition: opacity 0.15s, transform 0.1s;
+  box-sizing: border-box;
+}
+.gw-cal-task:hover { opacity: 0.85; transform: scale(1.01); }
+.gw-cal-task-title {
+  font-size: 10px; font-weight: 700; color: #fff; line-height: 1.3;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.gw-cal-task-time {
+  font-size: 9px; color: rgba(255,255,255,0.65); margin-top: 1px;
+}
+.gw-cal-task.done-task { opacity: 0.4; }
+.gw-cal-task.done-task .gw-cal-task-title { text-decoration: line-through; }
+
+/* Untimed tasks strip at top */
+.gw-untimed-strip {
+  border-bottom: 1px solid rgba(255,255,255,0.07); padding: 6px 4px;
+  display: flex; flex-direction: column; gap: 3px; min-height: 0;
+}
+.gw-untimed-chip {
+  font-size: 9px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(255,255,255,0.06); border-radius: 4px; padding: 2px 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+}
+
+/* Task popup */
+.gw-task-popup {
+  margin-top: 12px; background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; overflow: hidden;
+}
+.gw-task-popup-header {
+  display: flex; align-items: center; padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07); gap: 8px;
+}
+.gw-task-popup-title {
+  flex: 1; font-size: 14px; font-weight: 700; color: var(--text-primary);
+}
+.gw-task-popup-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.gw-popup-field { display: flex; gap: 10px; align-items: flex-start; }
+.gw-popup-lbl {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-tertiary); width: 60px; flex-shrink: 0; padding-top: 1px;
+}
+.gw-popup-val { font-size: 12px; color: var(--text-secondary); flex: 1; line-height: 1.5; }
+.gw-detail-close {
+  background: none; border: none; color: var(--text-tertiary); font-size: 20px;
+  cursor: pointer; padding: 0; line-height: 1; opacity: 0.6; transition: opacity 0.15s;
+}
+.gw-detail-close:hover { opacity: 1; }
+
+/* ===== PLAN TAB ===== */
+.gp-week-nav {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+}
+.gp-week-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: var(--text-secondary); font-size: 18px;
+  width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.gp-week-btn:hover { background: rgba(255,255,255,0.1); }
+.gp-week-label {
+  flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--text-primary);
+}
+
+/* Thesis card */
+.gp-thesis-card {
+  background: linear-gradient(135deg, rgba(110,231,183,0.08), rgba(192,132,252,0.06));
+  border: 1px solid rgba(110,231,183,0.2); border-radius: 16px;
+  padding: 16px; margin-bottom: 16px; position: relative;
+}
+.gp-thesis-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: #6EE7B7;
+  text-transform: uppercase; display: block; margin-bottom: 6px;
+}
+.gp-thesis-text {
+  font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.4;
+}
+.gp-replan-btn {
+  margin-top: 10px; font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: 5px 12px; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.gp-replan-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.08); }
+
+/* Section label */
+.gp-section-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: var(--text-tertiary);
+  text-transform: uppercase; margin: 16px 0 8px;
+}
+
+/* Commitments */
+.gp-commitments-wrap { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.gp-commit-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 9px 12px; cursor: pointer; transition: background 0.15s;
+}
+.gp-commit-chip:hover { background: rgba(255,255,255,0.07); }
+.gp-commit-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.gp-commit-info { flex: 1; min-width: 0; }
+.gp-commit-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.gp-commit-sub { font-size: 10px; color: var(--text-tertiary); margin-top: 1px; }
+.gp-commit-edit { font-size: 12px; color: var(--text-tertiary); opacity: 0.5; }
+.gp-add-commitment-btn {
+  width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 8px; color: var(--text-tertiary); font-size: 11px;
+  font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; margin-bottom: 16px;
+}
+.gp-add-commitment-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text-secondary); }
+.gp-day-toggle-row { display: flex; gap: 6px; }
+.gp-day-toggle {
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+  background: transparent; color: var(--text-tertiary); font-size: 11px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.gp-day-toggle.active { background: rgba(110,231,183,0.15); border-color: #6EE7B7; color: #6EE7B7; }
+
+/* Wizard steps */
+.gp-wizard-step { animation: gp-fadein 0.25s ease; }
+@keyframes gp-fadein { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* Step 1 — brain dump */
+.gp-braindump-card {
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 18px; margin-bottom: 12px;
+}
+.gp-braindump-heading {
+  font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;
+}
+.gp-braindump-sub {
+  font-size: 12px; color: var(--text-tertiary); margin-bottom: 14px; line-height: 1.5;
+}
+.gp-braindump-textarea {
+  width: 100%; min-height: 120px; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+  padding: 12px; color: var(--text-primary); font-size: 13px; line-height: 1.6;
+  font-family: inherit; resize: none; box-sizing: border-box; transition: border-color 0.15s;
+}
+.gp-braindump-textarea:focus { outline: none; border-color: rgba(110,231,183,0.3); }
+.gp-braindump-textarea::placeholder { color: var(--text-tertiary); }
+.gp-primary-btn {
+  width: 100%; padding: 13px; background: linear-gradient(135deg,#6EE7B7,#7DD3FC);
+  border: none; border-radius: 12px; color: #0a0a0a; font-size: 13px; font-weight: 800;
+  font-family: inherit; cursor: pointer; transition: opacity 0.15s; margin-top: 12px;
+  letter-spacing: 0.04em;
+}
+.gp-primary-btn:hover { opacity: 0.9; }
+.gp-primary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Step 2 — AI interrogation */
+.gp-ai-card {
+  background: var(--bg-card); border: 1px solid rgba(192,132,252,0.2);
+  border-radius: 16px; padding: 18px; margin-bottom: 12px;
+}
+.gp-ai-eyebrow {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: #C084FC;
+  text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.gp-ai-question {
+  font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; line-height: 1.5;
+}
+.gp-ai-question-block { margin-bottom: 18px; }
+.gp-ai-question-block:last-child { margin-bottom: 0; }
+.gp-ai-answer {
+  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 10px 12px; color: var(--text-primary); font-size: 13px;
+  font-family: inherit; resize: none; box-sizing: border-box; transition: border-color 0.15s;
+}
+.gp-ai-answer:focus { outline: none; border-color: rgba(192,132,252,0.35); }
+.gp-ai-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.gp-ai-opt {
+  padding: 6px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; color: var(--text-secondary); font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.gp-ai-opt.selected { background: rgba(192,132,252,0.15); border-color: #C084FC; color: #C084FC; }
+.gp-generate-btn {
+  width: 100%; padding: 13px; background: linear-gradient(135deg,#C084FC,#7DD3FC);
+  border: none; border-radius: 12px; color: #0a0a0a; font-size: 13px; font-weight: 800;
+  font-family: inherit; cursor: pointer; transition: opacity 0.15s; margin-top: 16px;
+  letter-spacing: 0.04em;
+}
+.gp-generate-btn:hover { opacity: 0.9; }
+.gp-generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.gp-goals-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.gp-goal-chip {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+}
+.gp-goal-chip-text { flex: 1; font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.gp-goal-flag-btn {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer;
+  font-family: inherit; border: 1px solid rgba(255,255,255,0.1); transition: all 0.15s;
+  background: transparent; color: var(--text-tertiary);
+}
+.gp-goal-flag-btn.flagged { background: rgba(252,211,77,0.1); border-color: rgba(252,211,77,0.3); color: #FCD34D; }
+
+/* Step 3 — Review */
+.gp-review-card {
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; overflow: hidden; margin-bottom: 12px;
+}
+.gp-review-day-header {
+  padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+.gp-review-day-name {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-primary); flex: 1;
+}
+.gp-review-day-date { font-size: 11px; color: var(--text-tertiary); }
+.gp-review-tasks { padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 5px; }
+.gp-review-task {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border-radius: 9px; cursor: pointer; transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.gp-review-task:hover { background: rgba(255,255,255,0.04); }
+.gp-review-task-title { flex: 1; font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.gp-review-task-meta { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
+.gp-review-task-del {
+  font-size: 14px; color: var(--text-tertiary); opacity: 0.4; background: none;
+  border: none; cursor: pointer; padding: 0 2px; line-height: 1; transition: opacity 0.15s;
+}
+.gp-review-task-del:hover { opacity: 1; color: #FF8A8A; }
+.gp-review-empty {
+  font-size: 11px; color: var(--text-tertiary); padding: 8px 2px; font-style: italic;
+}
+.gp-confirm-btn {
+  width: 100%; padding: 14px; background: linear-gradient(135deg,#6EE7B7,#7DD3FC);
+  border: none; border-radius: 12px; color: #0a0a0a; font-size: 14px; font-weight: 800;
+  font-family: inherit; cursor: pointer; transition: opacity 0.15s; letter-spacing: 0.04em;
+}
+.gp-confirm-btn:hover { opacity: 0.9; }
+
+/* Thinking spinner */
+.gp-thinking {
+  display: flex; align-items: center; gap: 10px; padding: 16px;
+  background: var(--bg-card); border: 1px solid rgba(192,132,252,0.15);
+  border-radius: 16px; margin-bottom: 12px;
+}
+.gp-thinking-dots { display: flex; gap: 4px; }
+.gp-thinking-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: #C084FC;
+  animation: gp-bounce 1.2s ease-in-out infinite;
+}
+.gp-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.gp-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes gp-bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+.gp-thinking-text { font-size: 12px; color: #C084FC; font-weight: 600; }
+
+/* Existing plan view */
+.gp-plan-day-card {
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; overflow: hidden; margin-bottom: 8px;
+}
+.gp-plan-day-hdr {
+  display: flex; align-items: center; gap: 8px; padding: 11px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.gp-plan-day-hdr.today-hdr { border-left: 3px solid #6EE7B7; }
+.gp-plan-day-dname { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; flex: 1; }
+.gp-plan-day-ddate { font-size: 11px; color: var(--text-tertiary); }
+.gp-plan-day-count { font-size: 10px; color: var(--text-tertiary); background: rgba(255,255,255,0.06); border-radius: 20px; padding: 1px 7px; }
+.gp-plan-tier-section { padding: 8px 12px 4px; }
+.gp-plan-tier-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 5px;
+}
+.gp-plan-task-pill {
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+  border-radius: 8px; border-left: 3px solid transparent; margin-bottom: 4px;
+  background: rgba(255,255,255,0.03); transition: background 0.15s; cursor: pointer;
+}
+.gp-plan-task-pill:hover { background: rgba(255,255,255,0.06); }
+.gp-plan-task-title { flex: 1; font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.gp-plan-task-time { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
+.gp-plan-add-row { padding: 0 12px 10px; }
+
+/* Shared field styles */
+.gp-field-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.gp-field-row { display: flex; gap: 10px; margin-bottom: 0; }
+.gp-field-row .gp-field-group { margin-bottom: 12px; }
+.gp-field-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+.gp-field-input, .gp-field-select, .gp-field-textarea {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; padding: 9px 11px; color: var(--text-primary); font-size: 13px;
+  font-family: inherit; width: 100%; box-sizing: border-box; transition: border-color 0.15s;
+}
+.gp-field-input:focus, .gp-field-select:focus, .gp-field-textarea:focus {
+  outline: none; border-color: rgba(110,231,183,0.4);
+}
+.gp-field-textarea { resize: vertical; }
+.gp-field-select option { background: #1a1a1e; }
+.gp-task-delete-btn {
+  width: 100%; margin-top: 8px; padding: 10px; background: rgba(255,100,100,0.06);
+  border: 1px solid rgba(255,100,100,0.15); border-radius: 9px; color: #FF8A8A;
+  font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; transition: background 0.15s;
+}
+.gp-task-delete-btn:hover { background: rgba(255,100,100,0.12); }
+.gp-add-btn {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  background: transparent; border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 9px; padding: 8px 11px; color: var(--text-tertiary);
+  font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.gp-add-btn:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.18); color: var(--text-secondary); }
+.gp-tier-nonneg { background: #FF6B6B; }
+.gp-tier-priority { background: #FCD34D; }
+.gp-tier-optional { background: rgba(255,255,255,0.2); }
+
+/* Ring icon overlay */
+.gs-ring-icon { position: absolute; top: 13px; left: 50%; transform: translateX(-50%); font-size: 14px; pointer-events: none; }
+
+/* Custom checkbox */
+.gs-task-cb-wrap { display: flex; align-items: center; flex-shrink: 0; }
+.gs-task-cb { position: absolute; opacity: 0; width: 0; height: 0; }
+.gs-task-cb-box {
+  width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.18);
+  background: transparent; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.gs-task-cb:checked + .gs-task-cb-box { background: var(--cb-color, #6EE7B7); border-color: var(--cb-color, #6EE7B7); }
+.gs-task-cb:checked + .gs-task-cb-box::after { content: '✓'; font-size: 10px; color: #000; font-weight: 800; }
+.gs-task.skipped .gs-task-cb-box { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+
+/* Skip badge */
+.gs-task-skip-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(255,138,138,0.7); background: rgba(255,138,138,0.08);
+  border-radius: 4px; padding: 1px 5px;
+}
+
+/* Reflections Log */
+.gs-reflections-wrap {
+  border: 1px solid rgba(255,255,255,0.07); border-radius: 14px;
+  background: rgba(255,255,255,0.02); margin-top: 8px; margin-bottom: 8px; overflow: hidden;
+}
+.gs-reflections-header {
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px; cursor: pointer;
+  user-select: none;
+}
+.gs-reflections-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-tertiary); flex: 1;
+}
+.gs-reflections-count {
+  font-size: 11px; color: var(--text-tertiary);
+  background: rgba(255,255,255,0.06); border-radius: 20px; padding: 1px 8px;
+}
+.gs-reflections-chevron {
+  font-size: 14px; color: var(--text-tertiary); transition: transform 0.2s; display: inline-block;
+}
+.gs-reflections-chevron.open { transform: rotate(90deg); }
+.gs-reflections-body { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.gs-reflect-nav {
+  display: flex; align-items: center; gap: 8px; padding: 4px 0 10px;
+}
+.gs-reflect-nav-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: var(--text-secondary); font-size: 16px;
+  width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.gs-reflect-nav-btn:disabled { opacity: 0.25; cursor: default; }
+.gs-reflect-nav-btn:not(:disabled):hover { background: rgba(255,255,255,0.1); }
+.gs-reflect-nav-date { flex: 1; text-align: center; font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.gs-reflect-empty {
+  text-align: center; padding: 20px 0 8px;
+  font-size: 12px; color: var(--text-tertiary); font-style: italic;
+}
+.gs-reflect-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 12px 13px;
+}
+.gs-reflect-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.gs-reflect-slot { font-size: 12px; font-weight: 700; color: var(--text-primary); flex: 1; }
+.gs-reflect-completed {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 2px 7px; border-radius: 20px;
+}
+.gs-reflect-completed.yes     { color: #6EE7B7; background: rgba(110,231,183,0.1); }
+.gs-reflect-completed.partial { color: #FCD34D; background: rgba(252,211,77,0.1); }
+.gs-reflect-completed.no      { color: #FF8A8A; background: rgba(255,138,138,0.1); }
+.gs-reflect-fields { display: flex; flex-direction: column; gap: 6px; }
+.gs-reflect-field { display: flex; gap: 8px; align-items: flex-start; }
+.gs-reflect-field-lbl {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-tertiary); width: 52px; flex-shrink: 0; padding-top: 1px;
+}
+.gs-reflect-field-val { font-size: 12px; color: var(--text-secondary); line-height: 1.5; flex: 1; }
+.gs-reflect-energy-dots { letter-spacing: 2px; font-size: 11px; }
+.gs-reflect-del {
+  background: none; border: none; color: var(--text-tertiary); font-size: 16px;
+  cursor: pointer; padding: 0 0 0 4px; line-height: 1; opacity: 0.5; transition: opacity 0.15s;
+}
+.gs-reflect-del:hover { opacity: 1; color: #FF8A8A; }
+.gs-reflect-insight-val {
+  font-size: 12px; color: #7DD3FC; line-height: 1.5;
+  border-left: 2px solid rgba(125,211,252,0.3); padding-left: 8px;
+}
+
+/* EOD Card */
+.gs-eod-card {
+  background: linear-gradient(135deg, rgba(110,231,183,0.06), rgba(125,211,252,0.04));
+  border: 1px solid rgba(110,231,183,0.15); border-radius: 16px; padding: 18px 16px;
+}
+.gs-eod-grade { font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 14px; }
+.gs-eod-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.gs-eod-stat { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 8px; text-align: center; }
+.gs-eod-num { display: block; font-size: 18px; font-weight: 800; color: #6EE7B7; line-height: 1; margin-bottom: 4px; }
+.gs-eod-lbl { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
+
 /* ========== GYM APP STYLES ========== */
 
 :root {
@@ -5560,64 +6374,300 @@ window.canonicalJson = function(obj) {
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">To Do List</div>
-    
-    <div class="gm-card" id="todayCard">
-      <div class="gm-header-row">
-        <div class="gm-header-left">
-          <div class="gm-eyebrow" id="todayLabel">Today</div>
-          <div class="gm-progress-row">
-            <span class="gm-progress-num" id="gmProgressNum">0</span>
-            <span class="gm-progress-total" id="gmProgressTotal">/ 0</span>
-            <span class="gm-progress-label" id="gmProgressLabel">no goals yet</span>
-          </div>
-        </div>
-        <div class="gm-streak" id="gmStreak">
-          <span>⚡</span><span class="gm-streak-num" id="gmStreakNum">0</span><span>day streak</span>
-        </div>
-      </div>
-      
-      <div class="gm-bar" id="gmBar"></div>
-      
-      <ul id="goalList" class="goal-list gm-list"></ul>
-      <div id="emptyState" class="empty-state" style="display: none;">No goals for today yet — add one below.</div>
-      
-      <button class="gm-push-btn" id="gmPushBtn" style="display: none;">Push remaining to tomorrow</button>
-      
-      <div class="goal-input-wrap gm-input-wrap">
-        <input type="text" id="goalInput" class="goal-input" placeholder="Add a goal for today…">
-        <button id="goalPolishBtn" class="goal-polish-btn">✨</button>
-        <button id="goalAddBtn" class="goal-add-btn">+</button>
-      </div>
-      <div class="polish-status" id="polishStatus"></div>
+  <!-- ===== GOALS SUB-TABS ===== -->
+  <div class="goals-tabs-wrap">
+    <div class="goals-tab-bar">
+      <button class="goals-tab active" data-tab="today">Today</button>
+      <button class="goals-tab" data-tab="week">This Week</button>
+      <button class="goals-tab" data-tab="plan">Plan</button>
+    </div>
+  </div>
+
+  <!-- ===== TODAY TAB ===== -->
+  <div class="goals-tab-content active" id="goalsTabToday">
+
+    <!-- Time Slot Banner -->
+    <div class="gs-banner" id="gsBanner">
+      <div class="gs-banner-slot" id="gsBannerSlot">Loading…</div>
+      <div class="gs-banner-next" id="gsBannerNext"></div>
     </div>
 
-    <div class="gm-card gm-card-tomorrow" id="tomorrowCard">
-      <div class="gm-header-row">
-        <div class="gm-header-left">
-          <div class="gm-eyebrow" id="tomorrowLabel">Plan tomorrow</div>
-          <div class="gm-subtext">Write tonight, locked until 6 AM.</div>
-          <div class="gm-progress-row">
-            <!-- hidden via css -->
-          </div>
+    <!-- Current Focus Card -->
+    <div class="gs-focus-card" id="gsFocusCard" style="display:none">
+      <div class="gs-focus-now">
+        <div class="gs-focus-eyebrow" id="gsFocusEyebrow">NOW</div>
+        <div class="gs-focus-title" id="gsFocusTitle"></div>
+        <div class="gs-focus-meta" id="gsFocusMeta"></div>
+      </div>
+      <div class="gs-focus-divider"></div>
+      <div class="gs-focus-up">
+        <div class="gs-focus-up-label">Up next</div>
+        <div class="gs-focus-up-list" id="gsFocusUpList"></div>
+      </div>
+    </div>
+
+    <!-- Category Rings -->
+    <div class="gs-rings-wrap" id="gsRingsWrap"></div>
+
+    <!-- Cycling Insight Card -->
+    <div class="gs-insight-card" id="gsInsightCard" style="display:none">
+      <span class="gs-insight-icon" id="gsInsightIcon">💡</span>
+      <div class="gs-insight-body">
+        <span class="gs-insight-label" id="gsInsightLabel">Insight</span>
+        <div class="gs-insight-text" id="gsInsightText"></div>
+      </div>
+      <div class="gs-insight-dots" id="gsInsightDots"></div>
+    </div>
+
+    <!-- Task Sections -->
+    <div class="gs-section" id="gsSectionNonNeg">
+      <div class="gs-section-header">
+        <span class="gs-section-title">Non-Negotiables</span>
+        <span class="gs-section-badge">Sacred</span>
+      </div>
+      <div class="gs-task-list" id="gsListNonNeg"></div>
+    </div>
+
+    <div class="gs-section" id="gsSectionPriority">
+      <div class="gs-section-header">
+        <span class="gs-section-title">Priorities</span>
+        <span class="gs-section-count" id="gsPriorityCount"></span>
+      </div>
+      <div class="gs-task-list" id="gsListPriority"></div>
+    </div>
+
+    <div class="gs-section" id="gsSectionOptional">
+      <div class="gs-section-header">
+        <span class="gs-section-title">Optional</span>
+      </div>
+      <div class="gs-task-list" id="gsListOptional"></div>
+    </div>
+
+    <!-- Slot Feedback Button — manual fallback (auto-prompts on slot completion) -->
+    <button class="gs-log-btn" id="gsLogSlotBtn">+ log slot manually</button>
+
+    <!-- Reflections Log -->
+    <div class="gs-reflections-wrap" id="gsReflectionsWrap">
+      <div class="gs-reflections-header" id="gsReflectionsHeader">
+        <span class="gs-reflections-title">Reflections</span>
+        <span class="gs-reflections-count" id="gsReflectionsCount"></span>
+        <span class="gs-reflections-chevron" id="gsReflectionsChevron">›</span>
+      </div>
+      <div class="gs-reflections-body" id="gsReflectionsBody" style="display:none">
+        <div class="gs-reflect-nav">
+          <button class="gs-reflect-nav-btn" id="gsReflectPrev">‹</button>
+          <span class="gs-reflect-nav-date" id="gsReflectNavDate"></span>
+          <button class="gs-reflect-nav-btn" id="gsReflectNext">›</button>
         </div>
-        <div class="gm-tomorrow-count" id="gmTomorrowCount">0 planned</div>
+        <div id="gsReflectCards"></div>
       </div>
-      
-      <ul id="tomorrowList" class="goal-list gm-list"></ul>
-      <div id="tomorrowEmptyState" class="empty-state" style="display: none;">Nothing planned for tomorrow yet.</div>
-      
-      <div class="goal-input-wrap gm-input-wrap">
-        <input type="text" id="tomorrowInput" class="goal-input" placeholder="Plan a goal for tomorrow…">
-        <button id="tomorrowPolishBtn" class="goal-polish-btn">✨</button>
-        <button id="tomorrowAddBtn" class="goal-add-btn">+</button>
+    </div>
+
+    <!-- End of Day Summary (shown after 9pm) -->
+    <div class="gs-eod-wrap" id="gsEodWrap" style="display:none"></div>
+
+  </div>
+
+  <!-- ===== THIS WEEK TAB ===== -->
+  <div class="goals-tab-content" id="goalsTabWeek">
+
+    <!-- Week nav -->
+    <div class="gw-week-nav">
+      <button class="gp-week-btn" id="gwWeekPrev">‹</button>
+      <span class="gp-week-label" id="gwWeekLabel"></span>
+      <button class="gp-week-btn" id="gwWeekNext">›</button>
+    </div>
+
+    <!-- Calendar grid -->
+    <div class="gw-cal-wrap">
+      <!-- Day header row -->
+      <div class="gw-cal-header" id="gwCalHeader"></div>
+      <!-- Time grid -->
+      <div class="gw-cal-body">
+        <!-- Time gutter -->
+        <div class="gw-time-gutter" id="gwTimeGutter"></div>
+        <!-- Day columns -->
+        <div class="gw-cal-cols" id="gwCalCols"></div>
       </div>
-      <div class="polish-status" id="tomorrowStatus"></div>
+    </div>
+
+    <!-- Task detail popup -->
+    <div class="gw-task-popup" id="gwTaskPopup" style="display:none">
+      <div class="gw-task-popup-header">
+        <span class="gw-task-popup-title" id="gwPopupTitle"></span>
+        <button class="gw-detail-close" id="gwPopupClose">×</button>
+      </div>
+      <div class="gw-task-popup-body" id="gwPopupBody"></div>
     </div>
 
   </div>
 
+  <!-- ===== PLAN TAB ===== -->
+  <div class="goals-tab-content" id="goalsTabPlan">
+
+    <!-- Week navigator -->
+    <div class="gp-week-nav">
+      <button class="gp-week-btn" id="gpWeekPrev">‹</button>
+      <span class="gp-week-label" id="gpWeekLabel"></span>
+      <button class="gp-week-btn" id="gpWeekNext">›</button>
+    </div>
+
+    <!-- Week thesis (shown when plan exists) -->
+    <div class="gp-thesis-card" id="gpThesisCard" style="display:none">
+      <span class="gp-thesis-label">THIS WEEK IS ABOUT</span>
+      <div class="gp-thesis-text" id="gpThesisText"></div>
+      <button class="gp-replan-btn" id="gpReplanBtn">↺ Replan week</button>
+    </div>
+
+    <!-- Fixed commitments panel -->
+    <div class="gp-section-label">FIXED COMMITMENTS</div>
+    <div class="gp-commitments-wrap" id="gpCommitmentsWrap"></div>
+    <button class="gp-add-commitment-btn" id="gpAddCommitmentBtn">+ Add commitment</button>
+
+    <!-- Wizard container (steps 1-3, or existing plan view) -->
+    <div id="gpWizard"></div>
+
+  </div>
+
+  <!-- Commitment editor modal -->
+  <div class="gs-modal-bg" id="gpCommitModalBg" style="display:none">
+    <div class="gs-modal" id="gpCommitModal">
+      <div class="gs-modal-title" id="gpCommitModalTitle">Add Commitment</div>
+      <div class="gp-field-group">
+        <label class="gp-field-label">Name</label>
+        <input class="gp-field-input" id="gpCommitName" placeholder="e.g. TCS Office">
+      </div>
+      <div class="gp-field-row">
+        <div class="gp-field-group" style="flex:1">
+          <label class="gp-field-label">Start time</label>
+          <input class="gp-field-input" id="gpCommitStart" type="time">
+        </div>
+        <div class="gp-field-group" style="flex:1">
+          <label class="gp-field-label">End time</label>
+          <input class="gp-field-input" id="gpCommitEnd" type="time">
+        </div>
+      </div>
+      <div class="gp-field-group">
+        <label class="gp-field-label">Repeat days</label>
+        <div class="gp-day-toggle-row" id="gpCommitDays">
+          <button class="gp-day-toggle" data-d="monday">M</button>
+          <button class="gp-day-toggle" data-d="tuesday">T</button>
+          <button class="gp-day-toggle" data-d="wednesday">W</button>
+          <button class="gp-day-toggle" data-d="thursday">T</button>
+          <button class="gp-day-toggle" data-d="friday">F</button>
+          <button class="gp-day-toggle" data-d="saturday">S</button>
+          <button class="gp-day-toggle" data-d="sunday">S</button>
+        </div>
+      </div>
+      <div class="gp-field-group">
+        <label class="gp-field-label">Category</label>
+        <select class="gp-field-select" id="gpCommitCat">
+          <option value="Career">💼 Career</option>
+          <option value="Business">🚀 Business</option>
+          <option value="Health">🏃 Health</option>
+          <option value="Finance">💰 Finance</option>
+          <option value="Going Abroad">✈️ Going Abroad</option>
+          <option value="Personal">🧠 Personal</option>
+        </select>
+      </div>
+      <div class="gs-modal-actions">
+        <button class="gs-modal-cancel" id="gpCommitCancel">Cancel</button>
+        <button class="gs-modal-submit" id="gpCommitSave">Save</button>
+      </div>
+      <button class="gp-task-delete-btn" id="gpCommitDelete" style="display:none">Remove commitment</button>
+    </div>
+  </div>
+
+  <!-- Plan task tweak modal (step 3 edit) -->
+  <div class="gs-modal-bg" id="gpTaskModalBg" style="display:none">
+    <div class="gs-modal" id="gpTaskModal" style="max-height:85vh;overflow-y:auto">
+      <div class="gs-modal-title" id="gpTaskModalTitle">Edit Task</div>
+      <div class="gp-field-group">
+        <label class="gp-field-label">Task name</label>
+        <input class="gp-field-input" id="gpFieldTitle" placeholder="e.g. Salesforce Trailhead — 2 modules">
+      </div>
+      <div class="gp-field-row">
+        <div class="gp-field-group" style="flex:1">
+          <label class="gp-field-label">Category</label>
+          <select class="gp-field-select" id="gpFieldCat">
+            <option value="Career">💼 Career</option>
+            <option value="Business">🚀 Business</option>
+            <option value="Health">🏃 Health</option>
+            <option value="Finance">💰 Finance</option>
+            <option value="Going Abroad">✈️ Going Abroad</option>
+            <option value="Personal">🧠 Personal</option>
+          </select>
+        </div>
+        <div class="gp-field-group" style="flex:1">
+          <label class="gp-field-label">Tier</label>
+          <select class="gp-field-select" id="gpFieldTier">
+            <option value="non-neg">Non-Negotiable</option>
+            <option value="priority">Priority</option>
+            <option value="optional">Optional</option>
+          </select>
+        </div>
+      </div>
+      <div class="gp-field-row">
+        <div class="gp-field-group" style="flex:1">
+          <label class="gp-field-label">Time</label>
+          <input class="gp-field-input" id="gpFieldTime" type="time">
+        </div>
+        <div class="gp-field-group" style="flex:1">
+          <label class="gp-field-label">Duration (min)</label>
+          <input class="gp-field-input" id="gpFieldDur" type="number" min="5" step="5" placeholder="60">
+        </div>
+      </div>
+      <div class="gp-field-group" id="gpWhyGroup">
+        <label class="gp-field-label">Why <span style="opacity:0.5;font-weight:400">(shown before skipping)</span></label>
+        <textarea class="gp-field-textarea" id="gpFieldWhy" rows="2" placeholder="Why does this matter?"></textarea>
+      </div>
+      <div class="gs-modal-actions">
+        <button class="gs-modal-cancel" id="gpTaskCancel">Cancel</button>
+        <button class="gs-modal-submit" id="gpTaskSave">Save</button>
+      </div>
+      <button class="gp-task-delete-btn" id="gpTaskDelete" style="display:none">Remove task</button>
+    </div>
+  </div>
+
+  <!-- Slot Feedback Modal -->
+  <div class="gs-modal-bg" id="gsModalBg" style="display:none">
+    <div class="gs-modal" id="gsModal">
+      <div class="gs-modal-title" id="gsModalTitle">Log: Morning Deep Work</div>
+      <div class="gs-modal-q">Did you complete this slot?</div>
+      <div class="gs-modal-seg" id="gsModalCompleted">
+        <button class="gs-seg-btn active" data-v="yes">Yes</button>
+        <button class="gs-seg-btn" data-v="partial">Partial</button>
+        <button class="gs-seg-btn" data-v="no">No</button>
+      </div>
+      <div class="gs-modal-q">What did you actually do? <span style="opacity:0.4">(one sentence)</span></div>
+      <textarea class="gs-modal-textarea" id="gsModalNote" placeholder="e.g. Completed 2 of 3 Trailhead modules…" rows="2"></textarea>
+      <div class="gs-modal-q">Energy level</div>
+      <div class="gs-modal-energy" id="gsModalEnergy">
+        <button class="gs-energy-btn" data-v="1">1</button>
+        <button class="gs-energy-btn" data-v="2">2</button>
+        <button class="gs-energy-btn active" data-v="3">3</button>
+        <button class="gs-energy-btn" data-v="4">4</button>
+        <button class="gs-energy-btn" data-v="5">5</button>
+      </div>
+      <div class="gs-modal-actions">
+        <button class="gs-modal-cancel" id="gsModalCancel">Cancel</button>
+        <button class="gs-modal-submit" id="gsModalSubmit">Save &amp; Get Insight</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skip Confirmation Modal -->
+  <div class="gs-modal-bg" id="gsSkipModalBg" style="display:none">
+    <div class="gs-modal" id="gsSkipModal">
+      <div class="gs-modal-title">Before you skip…</div>
+      <div class="gs-skip-why" id="gsSkipWhy"></div>
+      <div class="gs-modal-q" style="margin-top:12px">Are you sure you want to skip this?</div>
+      <div class="gs-modal-actions">
+        <button class="gs-modal-cancel" id="gsSkipCancel">No, I'll do it</button>
+        <button class="gs-modal-submit gs-modal-skip" id="gsSkipConfirm">Skip anyway</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 
@@ -6556,6 +7606,9 @@ function storeSet(key, value) {
 function storeDelete(key) {
   localStorage.removeItem(key);
 }
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function storeListKeys(prefix) {
   const keys = [];
   for(let i=0; i<localStorage.length; i++) {
@@ -6588,76 +7641,1800 @@ function formatDate(d) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-const activeDateObj = getActiveDateObj();
-const tomorrowDateObj = getTomorrowDateObj();
-const TODAY_KEY = 'goals:' + dateToYYYYMMDD(activeDateObj);
-const TOMORROW_KEY = 'goals:' + dateToYYYYMMDD(tomorrowDateObj);
+// ============================================================
+// GOALS SYSTEM — TODAY TAB
+// ============================================================
 
-document.getElementById('todayLabel').textContent = 'Today — ' + formatDate(activeDateObj);
-document.getElementById('tomorrowLabel').textContent = 'Plan tomorrow — ' + formatDate(tomorrowDateObj);
+const GS_GEMINI_KEY = 'AIzaSyAqM6aQBFKpKh8eFO0ITK3WevhkLE6Sl6o';
+
+// --- Data keys ---
+function gsDateKey(d) { return dateToYYYYMMDD(d || getActiveDateObj()); }
+function gsDailyKey(dateStr) { return 'goals_daily_' + dateStr; }
+function gsTemplateKey(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const startOfWeek1 = new Date(jan4);
+  startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const diff = d - startOfWeek1;
+  const week = Math.floor(diff / (7 * 86400000)) + 1;
+  return 'goals_template_' + d.getFullYear() + '-W' + String(week).padStart(2, '0');
+}
+function gsFeedbackKey(dateStr) { return 'goals_feedback_' + dateStr; }
+
+// --- Seed week (May 26 – June 1, 2026) ---
+const GS_SEED_WEEK_KEY = 'goals_template_2026-W22';
+const GS_SEED = {
+  monday: [
+    { id: 'mn1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
+    { id: 'mn2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
+    { id: 'mn3', title: 'Log expenses from weekend', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 15, why: 'Gaps in expense tracking distort your net worth and break the feedback loop.' },
+    { id: 'mn4', title: 'TCS client ticket triage', category: 'Career', tier: 'priority', time: '12:00', duration: 60, why: 'Unresolved tickets compound. Early triage prevents escalations.' },
+    { id: 'mn5', title: 'Research visa document checklist', category: 'Going Abroad', tier: 'priority', time: '18:30', duration: 45, why: 'Every week without a complete checklist is a week of avoidable risk to your timeline.' },
+    { id: 'mn6', title: 'Cold outreach — 2 LinkedIn messages', category: 'Business', tier: 'priority', time: '20:00', duration: 30, why: 'The pipeline only moves if you feed it. Two messages a day is the minimum viable effort.' },
+    { id: 'mn7', title: 'Read 20 pages', category: 'Personal', tier: 'optional', time: '22:00', duration: 30 }
+  ],
+  tuesday: [
+    { id: 'tu1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
+    { id: 'tu2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
+    { id: 'tu3', title: 'Review monthly budget vs actuals', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 20, why: 'Budget drift is invisible unless you check it. One review a week keeps you in control.' },
+    { id: 'tu4', title: 'TCS project documentation update', category: 'Career', tier: 'priority', time: '12:00', duration: 60, why: 'Stale docs create confusion and slow down the team. Stay current.' },
+    { id: 'tu5', title: 'Freelance proposal draft', category: 'Business', tier: 'priority', time: '18:30', duration: 60, why: 'A sent proposal is infinitely more valuable than a draft. Move it forward.' },
+    { id: 'tu6', title: 'Language learning — 30 min', category: 'Going Abroad', tier: 'priority', time: '20:00', duration: 30, why: 'Consistent daily practice is the only path to fluency before moving.' },
+    { id: 'tu7', title: 'Journal — weekly reflection', category: 'Personal', tier: 'optional', time: '22:00', duration: 20 }
+  ],
+  wednesday: [
+    { id: 'we1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
+    { id: 'we2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
+    { id: 'we3', title: 'Net worth snapshot', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 10, why: 'Mid-week check-in prevents end-of-month surprises.' },
+    { id: 'we4', title: 'TCS standup prep + delivery', category: 'Career', tier: 'priority', time: '12:00', duration: 45, why: 'Clear communication builds trust with the team and management.' },
+    { id: 'we5', title: 'Visa application research — 1 hour', category: 'Going Abroad', tier: 'priority', time: '18:30', duration: 60, why: 'The closer the deadline, the more this matters. Do it now.' },
+    { id: 'we6', title: 'Business idea validation call / DM', category: 'Business', tier: 'priority', time: '20:00', duration: 30, why: 'Ideas die without pressure-testing. One conversation moves you forward.' },
+    { id: 'we7', title: 'Stretch + recovery', category: 'Health', tier: 'optional', time: '22:00', duration: 20 }
+  ],
+  thursday: [
+    { id: 'th1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
+    { id: 'th2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
+    { id: 'th3', title: 'Log expenses', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 10, why: 'Gaps in expense tracking distort your net worth and break the feedback loop.' },
+    { id: 'th4', title: 'TCS client deliverable check', category: 'Career', tier: 'priority', time: '12:00', duration: 60, why: 'Stay ahead of deadlines — Thursday is the inflection point for week delivery.' },
+    { id: 'th5', title: 'Freelance client follow-up', category: 'Business', tier: 'priority', time: '18:30', duration: 30, why: 'Follow-up converts interest to contracts. Don\'t let leads go cold.' },
+    { id: 'th6', title: 'Language learning — 30 min', category: 'Going Abroad', tier: 'priority', time: '20:00', duration: 30, why: 'Consistent daily practice is the only path to fluency before moving.' },
+    { id: 'th7', title: 'Call family', category: 'Personal', tier: 'optional', time: '21:00', duration: 30 }
+  ],
+  friday: [
+    { id: 'fr1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'End the week strong. Friday run sets the tone for the weekend.' },
+    { id: 'fr2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
+    { id: 'fr3', title: 'Weekly finance review — income vs spend', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 20, why: 'Friday review is the anchor of your financial system. Skip it and you lose the week.' },
+    { id: 'fr4', title: 'TCS weekly summary & report', category: 'Career', tier: 'priority', time: '12:00', duration: 45, why: 'Visibility with management is built over consistent, clear reporting.' },
+    { id: 'fr5', title: 'Post one piece of content (LinkedIn / X)', category: 'Business', tier: 'priority', time: '18:30', duration: 30, why: 'Personal brand compounds. One post a week is the minimum viable presence.' },
+    { id: 'fr6', title: 'Plan weekend visa/language study block', category: 'Going Abroad', tier: 'priority', time: '20:00', duration: 20, why: 'Unplanned weekends lose hours. Schedule it now.' },
+    { id: 'fr7', title: 'Movie / chill — guilt-free', category: 'Personal', tier: 'optional', time: '22:00', duration: 120 }
+  ],
+  saturday: [
+    { id: 'sa1', title: 'Long run or hike — 60min', category: 'Health', tier: 'non-neg', time: '08:00', duration: 60, why: 'Weekend long effort builds the aerobic base that makes weekday runs easier.' },
+    { id: 'sa2', title: 'Salesforce practice exam — mock test', category: 'Career', tier: 'non-neg', time: '10:00', duration: 90, why: 'Exam simulation is non-negotiable in the final prep phase. Knowledge without test-taking skill fails.' },
+    { id: 'sa3', title: 'Visa document gathering — 2 hours', category: 'Going Abroad', tier: 'priority', time: '13:00', duration: 120, why: 'Saturdays are for deep work the week won\'t allow. Use this block.' },
+    { id: 'sa4', title: 'Freelance project work — 2 hours', category: 'Business', tier: 'priority', time: '16:00', duration: 120, why: 'Your side income depends on hours put in. This is the main weekly block.' },
+    { id: 'sa5', title: 'Review investments / portfolio', category: 'Finance', tier: 'optional', time: '19:00', duration: 30 },
+    { id: 'sa6', title: 'Social / rest', category: 'Personal', tier: 'optional', time: '20:00', duration: 120 }
+  ],
+  sunday: [
+    { id: 'su1', title: 'Morning yoga / mobility — 45min', category: 'Health', tier: 'non-neg', time: '08:00', duration: 45, why: 'Sunday mobility is your recovery investment for the week ahead.' },
+    { id: 'su2', title: 'Weekly planning session', category: 'Personal', tier: 'non-neg', time: '10:00', duration: 60, why: 'The week you don\'t plan is the week you drift. Sunday planning is the keystone habit.' },
+    { id: 'su3', title: 'Salesforce Trailhead — 1 module review', category: 'Career', tier: 'priority', time: '12:00', duration: 45, why: 'Light Sunday review consolidates the week\'s learning without overloading.' },
+    { id: 'su4', title: 'Language learning — 45 min', category: 'Going Abroad', tier: 'priority', time: '14:00', duration: 45, why: 'End the week with a longer language session to cement weekly progress.' },
+    { id: 'su5', title: 'Meal prep for the week', category: 'Health', tier: 'priority', time: '16:00', duration: 60, why: 'Prepared food means better eating decisions all week — directly tied to readiness scores.' },
+    { id: 'su6', title: 'Read / Netflix', category: 'Personal', tier: 'optional', time: '20:00', duration: 90 }
+  ]
+};
+
+const GS_DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const GS_CAT_META = {
+  'Career':      { icon: '💼', color: '#7DD3FC' },
+  'Business':    { icon: '🚀', color: '#C084FC' },
+  'Health':      { icon: '🏃', color: '#6EE7B7' },
+  'Finance':     { icon: '💰', color: '#FCD34D' },
+  'Going Abroad':{ icon: '✈️', color: '#F9A8D4' },
+  'Personal':    { icon: '🧠', color: '#A5B4FC' }
+};
+const GS_SLOTS = [
+  { key: 'morning_health',    label: 'Morning Health',     start: 7,    end: 7.5  },
+  { key: 'morning_deep',      label: 'Morning Deep Work',  start: 7.5,  end: 10   },
+  { key: 'mid_morning',       label: 'Mid-Morning',        start: 10,   end: 12   },
+  { key: 'tcs_window',        label: 'TCS Window',         start: 12,   end: 18.5 },
+  { key: 'evening_deep',      label: 'Evening Deep Work',  start: 18.5, end: 22   },
+  { key: 'late_night',        label: 'Late Night',         start: 22,   end: 24   }
+];
+
+// GS_SEED is available as the default template for the Plan tab to pre-fill.
+
+// --- Template → Daily copy ---
+function gsEnsureDailyFromTemplate(dateStr) {
+  const dailyKey = gsDailyKey(dateStr);
+  if (storeGet(dailyKey)) return;
+  const tplKey = gsTemplateKey(dateStr);
+  const tpl = storeGet(tplKey) || storeGet(GS_SEED_WEEK_KEY);
+  if (!tpl) return;
+  const d = new Date(dateStr + 'T12:00:00');
+  const dayName = GS_DAYS[d.getDay()];
+  const srcTasks = (tpl[dayName] || []).map(t => Object.assign({}, t, { checked: false, skipped: false, skipNote: '' }));
+  storeSet(dailyKey, srcTasks);
+}
+
+// --- Helpers ---
+function gsCurrentSlot() {
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60;
+  for (const s of GS_SLOTS) {
+    if (h >= s.start && h < s.end) return s;
+  }
+  return null;
+}
+function gsNextSlot() {
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60;
+  for (const s of GS_SLOTS) {
+    if (s.start > h) return s;
+  }
+  return null;
+}
+
+// --- Sub-tab switching ---
+document.querySelectorAll('.goals-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.goals-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.goals-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const tabId = 'goalsTab' + btn.dataset.tab.charAt(0).toUpperCase() + btn.dataset.tab.slice(1);
+    const el = document.getElementById(tabId);
+    if (el) el.classList.add('active');
+  });
+});
+
+// --- Focus Card ---
+function gsRenderFocusCard(tasks) {
+  const card = document.getElementById('gsFocusCard');
+  if (!card) return;
+
+  const now = new Date();
+  const nowH = now.getHours() + now.getMinutes() / 60;
+
+  // Sort all tasks by time
+  const timed = tasks
+    .filter(t => t.time)
+    .map(t => {
+      const [h, m] = t.time.split(':').map(Number);
+      return { ...t, _h: h + m / 60 };
+    })
+    .sort((a, b) => a._h - b._h);
+
+  // Current: task whose time window covers now (start → start+duration), not yet done/skipped
+  // Fallback: most recent past task that isn't done yet
+  let current = timed.find(t => {
+    const end = t._h + (t.duration || 60) / 60;
+    return nowH >= t._h && nowH < end && !t.checked && !t.skipped;
+  });
+
+  // If none active right now, show the next unchecked upcoming task
+  if (!current) {
+    current = timed.find(t => t._h > nowH && !t.checked && !t.skipped);
+  }
+
+  // Upcoming: next 2 unchecked tasks after current
+  const upcomingFrom = current ? current._h : nowH;
+  const upcoming = timed
+    .filter(t => t._h > upcomingFrom && !t.checked && !t.skipped && t !== current)
+    .slice(0, 2);
+
+  if (!current && upcoming.length === 0) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+
+  const titleEl = document.getElementById('gsFocusTitle');
+  const metaEl = document.getElementById('gsFocusMeta');
+  const eyebrowEl = document.getElementById('gsFocusEyebrow');
+  const upListEl = document.getElementById('gsFocusUpList');
+
+  if (current) {
+    const meta = GS_CAT_META[current.category] || { icon: '•', color: '#aaa' };
+    const isNow = nowH >= current._h && nowH < current._h + (current.duration || 60) / 60;
+    if (eyebrowEl) eyebrowEl.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${isNow ? '#6EE7B7' : '#7DD3FC'};box-shadow:0 0 8px ${isNow ? '#6EE7B7' : '#7DD3FC'}"></span>${isNow ? 'NOW' : 'NEXT UP'}`;
+    if (titleEl) titleEl.textContent = current.title;
+    if (metaEl) {
+      metaEl.innerHTML = `
+        <span class="gs-focus-cat" style="color:${meta.color};background:${meta.color}18">${meta.icon} ${current.category}</span>
+        ${current.time ? `<span class="gs-focus-time">${current.time}</span>` : ''}
+        ${current.duration ? `<span class="gs-focus-dur">· ${current.duration}m</span>` : ''}
+        ${current.checked ? '<span class="gs-focus-done-badge">Done ✓</span>' : ''}`;
+    }
+  } else {
+    if (eyebrowEl) eyebrowEl.textContent = 'ALL CLEAR';
+    if (titleEl) titleEl.textContent = 'No active task right now';
+    if (metaEl) metaEl.innerHTML = '';
+  }
+
+  if (upListEl) {
+    upListEl.innerHTML = '';
+    if (upcoming.length === 0) {
+      upListEl.innerHTML = '<span class="gs-focus-none">Nothing more scheduled</span>';
+    } else {
+      upcoming.forEach(t => {
+        const meta = GS_CAT_META[t.category] || { color: '#aaa' };
+        const item = document.createElement('div');
+        item.className = 'gs-focus-up-item';
+        item.innerHTML = `
+          <span class="gs-focus-up-dot" style="background:${meta.color}"></span>
+          <span class="gs-focus-up-name">${escapeHtml(t.title)}</span>
+          ${t.time ? `<span class="gs-focus-up-time">${t.time}</span>` : ''}`;
+        upListEl.appendChild(item);
+      });
+    }
+  }
+}
+
+// --- Banner ---
+function gsRenderBanner() {
+  const slot = gsCurrentSlot();
+  const next = gsNextSlot();
+  const slotEl = document.getElementById('gsBannerSlot');
+  const nextEl = document.getElementById('gsBannerNext');
+  const bannerEl = document.getElementById('gsBanner');
+  if (!slotEl) return;
+  const now = new Date();
+  const h = now.getHours();
+  if (h >= 21) {
+    bannerEl.classList.add('eod');
+    slotEl.textContent = '🌙 End of Day';
+    nextEl.textContent = 'Review & reflect';
+  } else if (slot) {
+    bannerEl.classList.remove('eod');
+    slotEl.textContent = '⏱ ' + slot.label;
+    nextEl.textContent = next ? 'Next: ' + next.label : '';
+  } else {
+    bannerEl.classList.remove('eod');
+    const until = GS_SLOTS.find(s => s.start > (now.getHours() + now.getMinutes()/60));
+    slotEl.textContent = '💤 Between slots';
+    nextEl.textContent = until ? 'Next: ' + until.label : '';
+  }
+}
+setInterval(() => {
+  gsRenderBanner();
+  const dateStr = gsDateKey();
+  const tasks = storeGet(gsDailyKey(dateStr)) || [];
+  gsRenderFocusCard(tasks);
+}, 60000);
+
+// --- Category rings ---
+function gsRenderRings(tasks) {
+  const wrap = document.getElementById('gsRingsWrap');
+  if (!wrap) return;
+  const cats = Object.keys(GS_CAT_META);
+  const counts = {};
+  cats.forEach(c => { counts[c] = { done: 0, total: 0 }; });
+  tasks.forEach(t => {
+    if (!counts[t.category]) return;
+    counts[t.category].total++;
+    if (t.checked) counts[t.category].done++;
+  });
+  wrap.innerHTML = '';
+  cats.forEach(cat => {
+    const { done, total } = counts[cat];
+    const pct = total > 0 ? done / total : 0;
+    const meta = GS_CAT_META[cat];
+    const r = 20, circ = 2 * Math.PI * r;
+    const offset = circ * (1 - pct);
+    const item = document.createElement('div');
+    item.className = 'gs-ring-item';
+    item.innerHTML = `
+      <svg class="gs-ring-svg" viewBox="0 0 50 50" width="50" height="50">
+        <circle class="gs-ring-track" cx="25" cy="25" r="${r}"/>
+        <circle class="gs-ring-fill" cx="25" cy="25" r="${r}"
+          style="stroke:${meta.color};stroke-dasharray:${circ.toFixed(2)};stroke-dashoffset:${offset.toFixed(2)};transform:rotate(-90deg);transform-origin:center"/>
+      </svg>
+      <div class="gs-ring-icon">${meta.icon}</div>
+      <div class="gs-ring-pct">${total > 0 ? done + '/' + total : '—'}</div>
+      <div class="gs-ring-label">${cat === 'Going Abroad' ? 'Abroad' : cat}</div>`;
+    wrap.appendChild(item);
+  });
+}
+
+// --- Task list rendering ---
+let gsSkipTarget = null;
+
+function gsRenderTasks(dateStr) {
+  const tasks = storeGet(gsDailyKey(dateStr)) || [];
+  const tiers = { 'non-neg': [], priority: [], optional: [] };
+  tasks.forEach(t => { if (tiers[t.tier]) tiers[t.tier].push(t); });
+
+  gsRenderList('gsListNonNeg', tiers['non-neg'], tasks, dateStr);
+  gsRenderList('gsListPriority', tiers['priority'], tasks, dateStr);
+  gsRenderList('gsListOptional', tiers['optional'], tasks, dateStr);
+
+  const pCount = document.getElementById('gsPriorityCount');
+  if (pCount) {
+    const done = tiers['priority'].filter(t => t.checked).length;
+    pCount.textContent = done + '/' + tiers['priority'].length;
+  }
+  gsRenderFocusCard(tasks);
+  gsRenderRings(tasks);
+  gsRenderInsights(tasks);
+  gsRenderEod(tasks);
+}
+
+function gsRenderList(listId, tierTasks, allTasks, dateStr) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+  el.innerHTML = '';
+  if (tierTasks.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-3);font-size:12px;padding:8px 0;">Nothing planned</div>';
+    return;
+  }
+  tierTasks.forEach(task => {
+    const row = document.createElement('div');
+    row.className = 'gs-task' + (task.checked ? ' checked' : '') + (task.skipped ? ' skipped' : '');
+    const catMeta = GS_CAT_META[task.category] || { icon: '•', color: '#aaa' };
+    row.innerHTML = `
+      <label class="gs-task-cb-wrap">
+        <input type="checkbox" class="gs-task-cb" ${task.checked ? 'checked' : ''} ${task.skipped ? 'disabled' : ''}>
+        <span class="gs-task-cb-box" style="--cb-color:${catMeta.color}"></span>
+      </label>
+      <div class="gs-task-body">
+        <div class="gs-task-title">${escapeHtml(task.title)}</div>
+        <div class="gs-task-meta">
+          <span class="gs-task-cat" style="color:${catMeta.color}">${catMeta.icon} ${task.category}</span>
+          ${task.time ? '<span class="gs-task-time">' + task.time + (task.duration ? ' · ' + task.duration + 'm' : '') + '</span>' : ''}
+          ${task.skipped ? '<span class="gs-task-skip-badge">Skipped</span>' : ''}
+        </div>
+      </div>
+      ${!task.checked && !task.skipped && (task.tier === 'non-neg' || task.tier === 'priority') ? '<button class="gs-task-skip" data-id="' + task.id + '">Skip</button>' : ''}`;
+
+    const cb = row.querySelector('.gs-task-cb');
+    if (cb && !task.skipped) {
+      cb.addEventListener('change', () => {
+        const daily = storeGet(gsDailyKey(dateStr)) || [];
+        const idx = daily.findIndex(t => t.id === task.id);
+        if (idx > -1) { daily[idx].checked = cb.checked; storeSet(gsDailyKey(dateStr), daily); }
+        gsRenderTasks(dateStr);
+        window.dispatchEvent(new CustomEvent('goals-changed'));
+        if (cb.checked) gsCheckSlotCompletion(storeGet(gsDailyKey(dateStr)) || daily, dateStr, task);
+      });
+    }
+    const skipBtn = row.querySelector('.gs-task-skip');
+    if (skipBtn) {
+      skipBtn.addEventListener('click', () => gsOpenSkipModal(task, dateStr));
+    }
+    el.appendChild(row);
+  });
+}
+
+// --- Auto-prompt slot feedback when all tasks in a slot are done/skipped ---
+function gsCheckSlotCompletion(daily, dateStr, checkedTask) {
+  // Determine the slot from the task's own time, not wall-clock
+  let slot = null;
+  if (checkedTask && checkedTask.time) {
+    const [h, m] = checkedTask.time.split(':').map(Number);
+    const taskH = h + m / 60;
+    slot = GS_SLOTS.find(s => taskH >= s.start && taskH < s.end) || null;
+  }
+  // Fallback to current wall-clock slot if task has no time
+  if (!slot) slot = gsCurrentSlot();
+  if (!slot) return;
+
+  // Don't re-prompt if already logged this slot in the last 5 minutes
+  const fb = storeGet(gsFeedbackKey(dateStr)) || {};
+  const recentLog = (fb.slots || []).find(s => s.slotKey === slot.key && (Date.now() - (s.ts || 0)) < 5 * 60 * 1000);
+  if (recentLog) return;
+
+  // All tasks in this slot done/skipped?
+  const slotTasks = daily.filter(t => {
+    if (!t.time) return false;
+    const [h, m] = t.time.split(':').map(Number);
+    const tH = h + m / 60;
+    return tH >= slot.start && tH < slot.end;
+  });
+
+  if (slotTasks.length === 0 || !slotTasks.every(t => t.checked || t.skipped)) return;
+
+  setTimeout(() => gsOpenFeedbackModal(slot, checkedTask), 300);
+}
+
+// --- Skip modal ---
+function gsOpenSkipModal(task, dateStr) {
+  gsSkipTarget = { task, dateStr };
+  const whyEl = document.getElementById('gsSkipWhy');
+  if (whyEl) whyEl.textContent = task.why || 'Are you sure you want to skip this task?';
+  const bg = document.getElementById('gsSkipModalBg');
+  if (bg) bg.style.display = 'flex';
+}
+
+document.getElementById('gsSkipConfirm') && document.getElementById('gsSkipConfirm').addEventListener('click', () => {
+  if (!gsSkipTarget) return;
+  const { task, dateStr } = gsSkipTarget;
+  const daily = storeGet(gsDailyKey(dateStr)) || [];
+  const idx = daily.findIndex(t => t.id === task.id);
+  if (idx > -1) { daily[idx].skipped = true; daily[idx].checked = false; storeSet(gsDailyKey(dateStr), daily); }
+  document.getElementById('gsSkipModalBg').style.display = 'none';
+  gsSkipTarget = null;
+  gsRenderTasks(dateStr);
+  window.dispatchEvent(new CustomEvent('goals-changed'));
+});
+
+document.getElementById('gsSkipCancel') && document.getElementById('gsSkipCancel').addEventListener('click', () => {
+  document.getElementById('gsSkipModalBg').style.display = 'none';
+  gsSkipTarget = null;
+});
+
+// --- Slot feedback modal ---
+let gsFeedbackDateStr = null;
+
+let gsFeedbackTask = null;
+
+function gsOpenFeedbackModal(slot, task) {
+  gsFeedbackTask = task || null;
+  const titleEl = document.getElementById('gsModalTitle');
+  const label = task ? task.title : (slot ? slot.label : 'Current Slot');
+  if (titleEl) titleEl.textContent = label;
+  document.querySelectorAll('#gsModalCompleted .gs-seg-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  const noteEl = document.getElementById('gsModalNote');
+  if (noteEl) noteEl.value = '';
+  document.querySelectorAll('#gsModalEnergy .gs-energy-btn').forEach((b,i) => b.classList.toggle('active', i===2));
+  gsFeedbackDateStr = gsDateKey();
+  document.getElementById('gsModalBg').style.display = 'flex';
+}
+
+// manual fallback button (hidden by default, shown if needed)
+document.getElementById('gsLogSlotBtn') && document.getElementById('gsLogSlotBtn').addEventListener('click', () => {
+  gsOpenFeedbackModal(gsCurrentSlot());
+});
+
+document.getElementById('gsModalCancel') && document.getElementById('gsModalCancel').addEventListener('click', () => {
+  document.getElementById('gsModalBg').style.display = 'none';
+});
+
+document.querySelectorAll('#gsModalCompleted .gs-seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#gsModalCompleted .gs-seg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+document.querySelectorAll('#gsModalEnergy .gs-energy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#gsModalEnergy .gs-energy-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+document.getElementById('gsModalSubmit') && document.getElementById('gsModalSubmit').addEventListener('click', async () => {
+  const completedBtn = document.querySelector('#gsModalCompleted .gs-seg-btn.active');
+  const energyBtn = document.querySelector('#gsModalEnergy .gs-energy-btn.active');
+  const note = document.getElementById('gsModalNote').value.trim();
+  const completed = completedBtn ? completedBtn.dataset.v : 'yes';
+  const energy = energyBtn ? parseInt(energyBtn.dataset.v) : 3;
+  const slot = gsCurrentSlot();
+  const dateStr = gsFeedbackDateStr || gsDateKey();
+
+  const fbKey = gsFeedbackKey(dateStr);
+  const fb = storeGet(fbKey) || { slots: [] };
+  fb.slots = fb.slots || [];
+  // Each log is a separate entry — use unique id so multiple logs per slot are kept
+  const entryId = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const entry = {
+    id: entryId,
+    slotKey: slot ? slot.key : 'manual',
+    slotLabel: slot ? slot.label : 'Manual',
+    taskName: gsFeedbackTask ? gsFeedbackTask.title : null,
+    completed, energy, note, ts: Date.now(), insight: ''
+  };
+  fb.slots.push(entry);
+
+  const submitBtn = document.getElementById('gsModalSubmit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Getting insight…';
+
+  let insight = '';
+  if (GS_GEMINI_KEY) {
+    try {
+      const tasks = storeGet(gsDailyKey(dateStr)) || [];
+      const done = tasks.filter(t => t.checked).length;
+      const total = tasks.length;
+      const prompt = `You are a personal performance coach. A user just logged a time slot:\nSlot: ${entry.slotLabel}\nCompleted: ${completed}\nEnergy: ${energy}/5\nNote: "${note || 'none'}"\nToday: ${done}/${total} tasks done.\n\nGive one sharp, specific insight or improvement tip. 2 sentences max. Be direct, not generic.`;
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GS_GEMINI_KEY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await res.json();
+      insight = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (_) {}
+  }
+
+  // Write insight back to the entry we just pushed (find by id)
+  const savedIdx = fb.slots.findIndex(s => s.id === entryId);
+  if (savedIdx > -1) fb.slots[savedIdx].insight = insight;
+  storeSet(fbKey, fb);
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Save & Get Insight';
+  document.getElementById('gsModalBg').style.display = 'none';
+
+  // Expand reflections showing today, so the new log is immediately visible
+  gsReflectionsOpen = true;
+  gsReflectDateStr = dateStr;
+  gsRenderReflections(dateStr);
+
+  if (insight) gsShowInsightCard('💡', 'Slot Feedback', insight);
+});
+
+// --- Cycling insight card ---
+let gsInsightItems = [];
+let gsInsightIdx = 0;
+let gsInsightTimer = null;
+
+function gsShowInsightCard(icon, label, text) {
+  const card = document.getElementById('gsInsightCard');
+  const iconEl = document.getElementById('gsInsightIcon');
+  const labelEl = document.getElementById('gsInsightLabel');
+  const textEl = document.getElementById('gsInsightText');
+  if (!card) return;
+  if (iconEl) iconEl.textContent = icon;
+  if (labelEl) labelEl.textContent = label;
+  if (textEl) textEl.textContent = text;
+  card.style.display = 'flex';
+}
+
+function gsRenderInsights(tasks) {
+  const items = [];
+  const checked = tasks.filter(t => t.checked).length;
+  const total = tasks.length;
+  const skipped = tasks.filter(t => t.skipped).length;
+
+  if (total > 0) {
+    const pct = Math.round(checked / total * 100);
+    if (pct === 100) items.push({ icon: '🏆', label: 'Day Complete', text: 'All tasks done. Exceptional execution — every category delivered.' });
+    else if (checked === 0) items.push({ icon: '🚀', label: 'Let\'s go', text: 'Day is wide open. Your Non-Negotiables are waiting — start there.' });
+    else items.push({ icon: '📈', label: 'Progress', text: `${checked} of ${total} tasks done (${pct}%). ${total - checked - skipped} remaining, ${skipped} skipped.` });
+  }
+
+  const nonNeg = tasks.filter(t => t.tier === 'non-neg');
+  const nonNegDone = nonNeg.filter(t => t.checked).length;
+  if (nonNeg.length > 0 && nonNegDone < nonNeg.length) {
+    const pending = nonNeg.filter(t => !t.checked && !t.skipped);
+    if (pending.length > 0) items.push({ icon: '⚡', label: 'Non-Negotiable', text: `"${pending[0].title}" is still pending. This is your most important task.` });
+  }
+
+  const catCounts = {};
+  tasks.forEach(t => {
+    if (!catCounts[t.category]) catCounts[t.category] = { done: 0, total: 0 };
+    catCounts[t.category].total++;
+    if (t.checked) catCounts[t.category].done++;
+  });
+  const topCat = Object.entries(catCounts).sort((a,b) => b[1].done - a[1].done)[0];
+  if (topCat && topCat[1].done > 0) {
+    const meta = GS_CAT_META[topCat[0]] || { icon: '•' };
+    items.push({ icon: meta.icon, label: topCat[0], text: `Leading in ${topCat[0]} today — ${topCat[1].done}/${topCat[1].total} tasks done.` });
+  }
+
+  if (items.length === 0) return;
+
+  gsInsightItems = items;
+  const card = document.getElementById('gsInsightCard');
+  if (card) card.style.display = 'flex';
+  gsInsightIdx = 0;
+  gsShowInsightFromList();
+  clearInterval(gsInsightTimer);
+  gsInsightTimer = setInterval(() => {
+    gsInsightIdx = (gsInsightIdx + 1) % gsInsightItems.length;
+    gsShowInsightFromList();
+  }, 4000);
+}
+
+function gsShowInsightFromList() {
+  if (!gsInsightItems.length) return;
+  const item = gsInsightItems[gsInsightIdx];
+  const iconEl = document.getElementById('gsInsightIcon');
+  const labelEl = document.getElementById('gsInsightLabel');
+  const textEl = document.getElementById('gsInsightText');
+  const dotsEl = document.getElementById('gsInsightDots');
+  if (iconEl) iconEl.textContent = item.icon;
+  if (labelEl) labelEl.textContent = item.label;
+  if (textEl) textEl.textContent = item.text;
+  if (dotsEl) {
+    dotsEl.innerHTML = '';
+    gsInsightItems.forEach((_, i) => {
+      const dot = document.createElement('span');
+      dot.className = 'gs-insight-dot' + (i === gsInsightIdx ? ' active' : '');
+      dotsEl.appendChild(dot);
+    });
+  }
+}
+
+// --- End of Day summary (shown after 9pm) ---
+function gsRenderEod(tasks) {
+  const eodWrap = document.getElementById('gsEodWrap');
+  if (!eodWrap) return;
+  const now = new Date();
+  if (now.getHours() < 21) { eodWrap.style.display = 'none'; return; }
+
+  const checked = tasks.filter(t => t.checked).length;
+  const total = tasks.length;
+  const skipped = tasks.filter(t => t.skipped).length;
+  const nonNegDone = tasks.filter(t => t.tier === 'non-neg' && t.checked).length;
+  const nonNegTotal = tasks.filter(t => t.tier === 'non-neg').length;
+  const pct = total > 0 ? Math.round(checked / total * 100) : 0;
+
+  let grade = '💀 Rough day';
+  if (pct === 100) grade = '🏆 Perfect day';
+  else if (pct >= 80) grade = '🔥 Strong day';
+  else if (pct >= 60) grade = '✅ Solid day';
+  else if (pct >= 40) grade = '⚡ Half day';
+
+  eodWrap.style.display = 'block';
+  eodWrap.innerHTML = `
+    <div class="gs-eod-card">
+      <div class="gs-eod-grade">${grade}</div>
+      <div class="gs-eod-stats">
+        <div class="gs-eod-stat"><span class="gs-eod-num">${checked}</span><span class="gs-eod-lbl">Done</span></div>
+        <div class="gs-eod-stat"><span class="gs-eod-num">${skipped}</span><span class="gs-eod-lbl">Skipped</span></div>
+        <div class="gs-eod-stat"><span class="gs-eod-num">${nonNegDone}/${nonNegTotal}</span><span class="gs-eod-lbl">Sacred</span></div>
+        <div class="gs-eod-stat"><span class="gs-eod-num">${pct}%</span><span class="gs-eod-lbl">Complete</span></div>
+      </div>
+    </div>`;
+}
+
+// --- Reflections log ---
+let gsReflectionsOpen = false;
+let gsReflectDateStr = null; // currently viewed date in reflections
+
+function gsAllFeedbackDates() {
+  const dates = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('goals_feedback_')) {
+      const d = k.replace('goals_feedback_', '');
+      const fb = storeGet(k);
+      if (fb && (fb.slots || []).length > 0) dates.push(d);
+    }
+  }
+  return dates.sort();
+}
+
+function gsRenderReflectionCards(dateStr) {
+  const cardsEl = document.getElementById('gsReflectCards');
+  const navDate = document.getElementById('gsReflectNavDate');
+  const prevBtn = document.getElementById('gsReflectPrev');
+  const nextBtn = document.getElementById('gsReflectNext');
+  if (!cardsEl) return;
+
+  const allDates = gsAllFeedbackDates();
+  const idx = allDates.indexOf(dateStr);
+
+  // date label
+  if (navDate) {
+    const d = new Date(dateStr + 'T12:00:00');
+    const isToday = dateStr === gsDateKey();
+    navDate.textContent = isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  if (prevBtn) prevBtn.disabled = idx <= 0;
+  if (nextBtn) nextBtn.disabled = idx < 0 || idx >= allDates.length - 1;
+
+  const fb = storeGet(gsFeedbackKey(dateStr)) || {};
+  const slots = fb.slots || [];
+
+  cardsEl.innerHTML = '';
+  if (slots.length === 0) {
+    cardsEl.innerHTML = '<div class="gs-reflect-empty">No reflections logged for this day.</div>';
+    return;
+  }
+
+  slots.slice().reverse().forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'gs-reflect-card';
+    const completedLabel = s.completed === 'yes' ? 'Done' : s.completed === 'partial' ? 'Partial' : 'Not done';
+    const energyDots = '<span style="color:#6EE7B7">' + '●'.repeat(s.energy || 0) + '</span><span style="opacity:0.25">' + '●'.repeat(5 - (s.energy || 0)) + '</span>';
+    card.innerHTML = `
+      <div class="gs-reflect-top">
+        <span class="gs-reflect-slot">${escapeHtml(s.taskName || s.slotLabel || s.slotKey)}</span>
+        <span class="gs-reflect-completed ${s.completed}">${completedLabel}</span>
+        <button class="gs-reflect-del" title="Delete">×</button>
+      </div>
+      <div class="gs-reflect-fields">
+        <div class="gs-reflect-field">
+          <span class="gs-reflect-field-lbl">Energy</span>
+          <span class="gs-reflect-field-val gs-reflect-energy-dots">${energyDots} <span style="color:var(--text-tertiary);font-size:11px">${s.energy || '—'}/5</span></span>
+        </div>
+        ${s.note ? `<div class="gs-reflect-field">
+          <span class="gs-reflect-field-lbl">Note</span>
+          <span class="gs-reflect-field-val">${escapeHtml(s.note)}</span>
+        </div>` : ''}
+        ${s.insight ? `<div class="gs-reflect-field">
+          <span class="gs-reflect-field-lbl">Insight</span>
+          <span class="gs-reflect-field-val gs-reflect-insight-val">${escapeHtml(s.insight)}</span>
+        </div>` : ''}
+      </div>`;
+
+    card.querySelector('.gs-reflect-del').addEventListener('click', () => {
+      const fb = storeGet(gsFeedbackKey(dateStr)) || {};
+      fb.slots = (fb.slots || []).filter(x => x.id !== s.id && !(x.ts === s.ts && !x.id));
+      storeSet(gsFeedbackKey(dateStr), fb);
+      gsReflectDateStr = dateStr;
+      gsRenderReflections(dateStr);
+    });
+
+    cardsEl.appendChild(card);
+  });
+}
+
+function gsRenderReflections(dateStr) {
+  const wrap = document.getElementById('gsReflectionsWrap');
+  const body = document.getElementById('gsReflectionsBody');
+  const countEl = document.getElementById('gsReflectionsCount');
+  const chevron = document.getElementById('gsReflectionsChevron');
+  if (!wrap || !body) return;
+
+  // Count total logged entries across all days
+  const allDates = gsAllFeedbackDates();
+  const totalSlots = allDates.reduce((sum, d) => {
+    const fb = storeGet(gsFeedbackKey(d)) || {};
+    return sum + (fb.slots || []).length;
+  }, 0);
+
+  if (countEl) countEl.textContent = totalSlots > 0 ? totalSlots + ' total' : '';
+  if (chevron) chevron.className = 'gs-reflections-chevron' + (gsReflectionsOpen ? ' open' : '');
+  body.style.display = gsReflectionsOpen ? 'flex' : 'none';
+
+  if (!gsReflectionsOpen) return;
+
+  // Default to showing today (or most recent logged day)
+  if (!gsReflectDateStr) {
+    gsReflectDateStr = allDates.includes(dateStr) ? dateStr : (allDates[allDates.length - 1] || dateStr);
+  }
+  gsRenderReflectionCards(gsReflectDateStr);
+}
+
+// Toggle expand/collapse
+document.getElementById('gsReflectionsHeader') && document.getElementById('gsReflectionsHeader').addEventListener('click', () => {
+  gsReflectionsOpen = !gsReflectionsOpen;
+  gsRenderReflections(gsDateKey());
+});
+
+// Date nav
+document.getElementById('gsReflectPrev') && document.getElementById('gsReflectPrev').addEventListener('click', () => {
+  const allDates = gsAllFeedbackDates();
+  const idx = allDates.indexOf(gsReflectDateStr);
+  if (idx > 0) { gsReflectDateStr = allDates[idx - 1]; gsRenderReflectionCards(gsReflectDateStr); }
+});
+document.getElementById('gsReflectNext') && document.getElementById('gsReflectNext').addEventListener('click', () => {
+  const allDates = gsAllFeedbackDates();
+  const idx = allDates.indexOf(gsReflectDateStr);
+  if (idx < allDates.length - 1) { gsReflectDateStr = allDates[idx + 1]; gsRenderReflectionCards(gsReflectDateStr); }
+});
+
+// ============================================================
+// SHARED — WEEK / PLAN HELPERS (used by both tabs)
+// ============================================================
+const GP_DAYS_ORDER = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const GP_DAY_LABELS = { monday:'Monday', tuesday:'Tuesday', wednesday:'Wednesday', thursday:'Thursday', friday:'Friday', saturday:'Saturday', sunday:'Sunday' };
+
+function gpGetWeekMonday(d) {
+  const day = new Date(d);
+  const dow = day.getDay();
+  day.setDate(day.getDate() + (dow === 0 ? -6 : 1 - dow));
+  day.setHours(0,0,0,0);
+  return day;
+}
+function gpWeekLabel(monday) {
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const opts = { month: 'short', day: 'numeric' };
+  return monday.toLocaleDateString('en-US', opts) + ' – ' + sunday.toLocaleDateString('en-US', opts);
+}
+function gpWeekKey(monday) {
+  return gsTemplateKey(dateToYYYYMMDD(monday));
+}
+
+// ============================================================
+// THIS WEEK TAB
+// ============================================================
+
+let gwCurrentWeekMonday = null;
+let gwSelectedDay = null; // dateStr of open detail panel
+
+function gwRingColor(pct) {
+  if (pct === 0) return 'rgba(255,255,255,0.15)';
+  if (pct < 50) return '#FCD34D';
+  if (pct < 80) return '#7DD3FC';
+  return '#6EE7B7';
+}
+
+// ---- Calendar constants ----
+const GW_GRID_START = 6;   // 6am
+const GW_GRID_END   = 24;  // midnight
+const GW_PX_PER_HOUR = 56; // px per hour row
+
+function gwTimeToTop(hhmm) {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.split(':').map(Number);
+  if (isNaN(h)) return null;
+  return (h + (m || 0) / 60 - GW_GRID_START) * GW_PX_PER_HOUR;
+}
+
+function gwRenderWeek() {
+  if (!gwCurrentWeekMonday) gwCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+
+  const label = document.getElementById('gwWeekLabel');
+  if (label) label.textContent = gpWeekLabel(gwCurrentWeekMonday);
+
+  const header  = document.getElementById('gwCalHeader');
+  const gutter  = document.getElementById('gwTimeGutter');
+  const colWrap = document.getElementById('gwCalCols');
+  if (!header || !gutter || !colWrap) return;
+
+  const todayStr = gsDateKey();
+  const now      = new Date();
+  const totalRows = GW_GRID_END - GW_GRID_START;
+  const totalHeight = totalRows * GW_PX_PER_HOUR;
+
+  // ---- Header ----
+  // grid: 36px gutter + 7 equal columns
+  header.style.display = 'grid';
+  header.style.gridTemplateColumns = '36px repeat(7, 1fr)';
+  header.innerHTML = '<div></div>'; // gutter placeholder
+  GP_DAYS_ORDER.forEach((dayName, i) => {
+    const d = new Date(gwCurrentWeekMonday);
+    d.setDate(gwCurrentWeekMonday.getDate() + i);
+    const dateStr = dateToYYYYMMDD(d);
+    const isToday = dateStr === todayStr;
+    const cell = document.createElement('div');
+    cell.style.cssText = 'text-align:center;padding:8px 2px 6px;';
+    cell.innerHTML = `
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:${isToday ? '#6EE7B7' : 'var(--text-tertiary)'};font-weight:600;">${dayName.slice(0,3)}</div>
+      <div style="font-size:15px;font-weight:700;color:${isToday ? '#fff' : 'var(--text-secondary)'};width:26px;height:26px;line-height:26px;border-radius:50%;background:${isToday ? '#6EE7B7' : 'transparent'};color:${isToday ? '#0a0a0a' : 'var(--text-secondary)'};margin:3px auto 0;">${d.getDate()}</div>`;
+    header.appendChild(cell);
+  });
+
+  // ---- Time gutter ----
+  gutter.style.cssText = `width:36px;flex-shrink:0;position:relative;height:${totalHeight}px;`;
+  gutter.innerHTML = '';
+  for (let h = GW_GRID_START; h <= GW_GRID_END; h++) {
+    if (h === GW_GRID_END) break;
+    const lbl = document.createElement('div');
+    lbl.className = 'gw-time-label';
+    lbl.style.top = ((h - GW_GRID_START) * GW_PX_PER_HOUR) + 'px';
+    lbl.textContent = h === 12 ? '12pm' : h > 12 ? (h - 12) + 'pm' : h + 'am';
+    gutter.appendChild(lbl);
+  }
+
+  // ---- Day columns ----
+  colWrap.style.cssText = `flex:1;display:grid;grid-template-columns:repeat(7,1fr);position:relative;`;
+  colWrap.innerHTML = '';
+
+  GP_DAYS_ORDER.forEach((dayName, i) => {
+    const d = new Date(gwCurrentWeekMonday);
+    d.setDate(gwCurrentWeekMonday.getDate() + i);
+    const dateStr = dateToYYYYMMDD(d);
+    const isToday = dateStr === todayStr;
+
+    const col = document.createElement('div');
+    col.className = 'gw-cal-col' + (isToday ? ' today-col' : '');
+    col.style.cssText = `position:relative;height:${totalHeight}px;`;
+
+    // Hour lines
+    for (let h = GW_GRID_START; h < GW_GRID_END; h++) {
+      const line = document.createElement('div');
+      line.className = 'gw-hour-line';
+      line.style.top = ((h - GW_GRID_START) * GW_PX_PER_HOUR) + 'px';
+      col.appendChild(line);
+      // Half-hour dashed line
+      const half = document.createElement('div');
+      half.style.cssText = `position:absolute;left:0;right:0;border-top:1px dashed rgba(255,255,255,0.03);top:${((h - GW_GRID_START) * GW_PX_PER_HOUR + GW_PX_PER_HOUR / 2)}px;pointer-events:none;`;
+      col.appendChild(half);
+    }
+
+    // Load tasks
+    const daily = storeGet(gsDailyKey(dateStr));
+    const plan  = storeGet(gsTemplateKey(dateStr)) || {};
+    const tplTasks = plan[dayName] || [];
+    const tasks = daily || tplTasks;
+    const hasDailyData = !!daily;
+
+    // Untimed tasks: collect separately
+    const timedTasks   = tasks.filter(t => t.time);
+    const untimedTasks = tasks.filter(t => !t.time);
+
+    // Place timed tasks
+    timedTasks.forEach(task => {
+      const top = gwTimeToTop(task.time);
+      if (top === null || top < 0 || top > totalHeight) return;
+      const dur = task.duration || 30;
+      const height = Math.max(20, (dur / 60) * GW_PX_PER_HOUR - 2);
+      const meta = GS_CAT_META[task.category] || { icon: '•', color: '#aaa', bg: 'rgba(255,255,255,0.07)' };
+      const isDone = hasDailyData && task.checked;
+      const isSkipped = hasDailyData && task.skipped;
+
+      const card = document.createElement('div');
+      card.className = 'gw-cal-task' + (isDone ? ' done-task' : '') + (isSkipped ? ' done-task' : '');
+      card.style.cssText = `top:${top}px;height:${height}px;background:${meta.bg || 'rgba(255,255,255,0.07)'};border-left:3px solid ${meta.color};`;
+      card.innerHTML = `
+        <div class="gw-cal-task-title">${isDone ? '✓ ' : isSkipped ? '— ' : ''}${escapeHtml(task.title)}</div>
+        ${height > 28 ? `<div class="gw-cal-task-time">${task.time}${dur ? ' · ' + dur + 'm' : ''}</div>` : ''}`;
+
+      card.addEventListener('click', e => {
+        e.stopPropagation();
+        gwShowTaskPopup(task, dateStr, hasDailyData);
+      });
+      col.appendChild(card);
+    });
+
+    // Current time line (today only)
+    if (isToday) {
+      const nowH = now.getHours() + now.getMinutes() / 60;
+      if (nowH >= GW_GRID_START && nowH < GW_GRID_END) {
+        const nowLine = document.createElement('div');
+        nowLine.className = 'gw-now-line';
+        nowLine.id = 'gwNowLine';
+        nowLine.style.top = ((nowH - GW_GRID_START) * GW_PX_PER_HOUR) + 'px';
+        col.appendChild(nowLine);
+      }
+    }
+
+    colWrap.appendChild(col);
+  });
+
+  // Auto-scroll to current time (or 7am)
+  const scrollTarget = document.querySelector('.gw-cal-body');
+  if (scrollTarget) {
+    const nowH = now.getHours() + now.getMinutes() / 60;
+    const scrollTo = Math.max(0, ((nowH - 1) - GW_GRID_START) * GW_PX_PER_HOUR);
+    setTimeout(() => { scrollTarget.scrollTop = scrollTo; }, 50);
+  }
+
+  // Update now-line every minute
+  if (window._gwNowTimer) clearInterval(window._gwNowTimer);
+  window._gwNowTimer = setInterval(() => {
+    const line = document.getElementById('gwNowLine');
+    if (!line) return;
+    const n = new Date();
+    const nh = n.getHours() + n.getMinutes() / 60;
+    line.style.top = ((nh - GW_GRID_START) * GW_PX_PER_HOUR) + 'px';
+  }, 60000);
+}
+
+function gwShowTaskPopup(task, dateStr, hasDailyData) {
+  const popup = document.getElementById('gwTaskPopup');
+  const titleEl = document.getElementById('gwPopupTitle');
+  const bodyEl  = document.getElementById('gwPopupBody');
+  if (!popup || !titleEl || !bodyEl) return;
+
+  const meta = GS_CAT_META[task.category] || { icon: '•', color: '#aaa' };
+  const isDone = hasDailyData && task.checked;
+  const isSkipped = hasDailyData && task.skipped;
+  const statusBadge = isDone
+    ? '<span style="background:rgba(110,231,183,0.15);color:#6EE7B7;border-radius:6px;padding:2px 8px;font-size:11px;">✓ Done</span>'
+    : isSkipped
+    ? '<span style="background:rgba(255,107,107,0.15);color:#FF8A8A;border-radius:6px;padding:2px 8px;font-size:11px;">— Skipped</span>'
+    : hasDailyData
+    ? '<span style="background:rgba(255,255,255,0.07);color:var(--text-secondary);border-radius:6px;padding:2px 8px;font-size:11px;">Pending</span>'
+    : '<span style="background:rgba(255,255,255,0.07);color:var(--text-tertiary);border-radius:6px;padding:2px 8px;font-size:11px;">Planned</span>';
+
+  const tierLabels = { 'non-neg': '🔴 Non-Negotiable', 'priority': '🟡 Priority', 'optional': '⚪ Optional' };
+
+  titleEl.innerHTML = `<span style="color:${meta.color}">${meta.icon}</span> ${escapeHtml(task.title)}`;
+  bodyEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      ${statusBadge}
+      <span style="font-size:11px;color:var(--text-tertiary);">${tierLabels[task.tier] || task.tier}</span>
+    </div>
+    ${task.time ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">🕐 ${task.time}${task.duration ? ' · ' + task.duration + 'min' : ''}</div>` : ''}
+    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">${meta.icon} ${task.category || ''}</div>
+    ${task.why ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);">WHY: ${escapeHtml(task.why)}</div>` : ''}
+    ${isSkipped && task.skipNote ? `<div style="font-size:11px;color:#FF8A8A;margin-top:6px;">Skip reason: ${escapeHtml(task.skipNote)}</div>` : ''}`;
+
+  popup.style.display = 'block';
+}
+
+// Close task popup
+document.getElementById('gwPopupClose') && document.getElementById('gwPopupClose').addEventListener('click', () => {
+  const popup = document.getElementById('gwTaskPopup');
+  if (popup) popup.style.display = 'none';
+});
+
+// Week nav
+document.getElementById('gwWeekPrev') && document.getElementById('gwWeekPrev').addEventListener('click', () => {
+  if (!gwCurrentWeekMonday) gwCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+  gwCurrentWeekMonday.setDate(gwCurrentWeekMonday.getDate() - 7);
+  gwRenderWeek();
+});
+document.getElementById('gwWeekNext') && document.getElementById('gwWeekNext').addEventListener('click', () => {
+  if (!gwCurrentWeekMonday) gwCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+  gwCurrentWeekMonday.setDate(gwCurrentWeekMonday.getDate() + 7);
+  gwRenderWeek();
+});
+
+// Init when tab is switched to
+document.querySelectorAll('.goals-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'week') {
+      if (!gwCurrentWeekMonday) gwCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+      gwRenderWeek();
+    }
+  });
+});
+
+// ============================================================
+// PLAN TAB
+// ============================================================
+
+const GS_COMMITMENTS_KEY = 'goals_commitments_v1';
+const GS_PLAN_DRAFT_KEY  = 'goals_plan_draft_v1';
+
+let gpCurrentWeekMonday = null;
+let gpEditState = null;          // for task tweak modal in step 3
+let gpPlanDraft = null;          // step 3 preview data {thesis, constraint_task, flags, days}
+let gpBrainDump = '';            // step 1 text
+let gpFlaggedGoals = new Set();  // goals user marked optional/low-leverage
+let gpCommitEditIdx = null;      // which commitment is being edited
+
+function gpDayDate(monday, dayName) {
+  const idx = GP_DAYS_ORDER.indexOf(dayName);
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + idx);
+  return d;
+}
+
+// ---- Commitments ----
+
+function gpGetCommitments() {
+  return storeGet(GS_COMMITMENTS_KEY) || [];
+}
+
+function gpRenderCommitments() {
+  const wrap = document.getElementById('gpCommitmentsWrap');
+  if (!wrap) return;
+  const commits = gpGetCommitments();
+  wrap.innerHTML = '';
+  if (commits.length === 0) {
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--text-tertiary);padding:4px 2px;">No fixed commitments yet.</div>';
+    return;
+  }
+  commits.forEach((c, idx) => {
+    const meta = GS_CAT_META[c.category] || { color: '#aaa' };
+    const days = (c.days || []).map(d => d.slice(0,1).toUpperCase() + d.slice(1,3)).join(', ');
+    const chip = document.createElement('div');
+    chip.className = 'gp-commit-chip';
+    chip.innerHTML = `
+      <div class="gp-commit-dot" style="background:${meta.color}"></div>
+      <div class="gp-commit-info">
+        <div class="gp-commit-name">${escapeHtml(c.name)}</div>
+        <div class="gp-commit-sub">${days} · ${c.start}–${c.end}</div>
+      </div>
+      <span class="gp-commit-edit">✎</span>`;
+    chip.addEventListener('click', () => gpOpenCommitModal(idx));
+    wrap.appendChild(chip);
+  });
+}
+
+function gpOpenCommitModal(idx) {
+  gpCommitEditIdx = idx != null ? idx : null;
+  const commits = gpGetCommitments();
+  const c = idx != null ? commits[idx] : null;
+  document.getElementById('gpCommitModalTitle').textContent = c ? 'Edit Commitment' : 'Add Commitment';
+  document.getElementById('gpCommitName').value = c ? c.name : '';
+  document.getElementById('gpCommitStart').value = c ? c.start : '11:30';
+  document.getElementById('gpCommitEnd').value = c ? c.end : '18:00';
+  document.getElementById('gpCommitCat').value = c ? c.category : 'Career';
+  document.getElementById('gpCommitDelete').style.display = c ? 'block' : 'none';
+  // Reset day toggles
+  document.querySelectorAll('.gp-day-toggle').forEach(btn => {
+    const active = c ? (c.days || []).includes(btn.dataset.d) : ['monday','tuesday','wednesday','thursday','friday'].includes(btn.dataset.d);
+    btn.classList.toggle('active', active);
+  });
+  document.getElementById('gpCommitModalBg').style.display = 'flex';
+}
+
+document.getElementById('gpAddCommitmentBtn') && document.getElementById('gpAddCommitmentBtn').addEventListener('click', () => gpOpenCommitModal(null));
+
+document.querySelectorAll('.gp-day-toggle').forEach(btn => {
+  btn.addEventListener('click', () => btn.classList.toggle('active'));
+});
+
+document.getElementById('gpCommitCancel') && document.getElementById('gpCommitCancel').addEventListener('click', () => {
+  document.getElementById('gpCommitModalBg').style.display = 'none';
+});
+document.getElementById('gpCommitModalBg') && document.getElementById('gpCommitModalBg').addEventListener('click', e => {
+  if (e.target === document.getElementById('gpCommitModalBg')) document.getElementById('gpCommitModalBg').style.display = 'none';
+});
+
+document.getElementById('gpCommitSave') && document.getElementById('gpCommitSave').addEventListener('click', () => {
+  const name = document.getElementById('gpCommitName').value.trim();
+  if (!name) return;
+  const days = [...document.querySelectorAll('.gp-day-toggle.active')].map(b => b.dataset.d);
+  const commit = {
+    name,
+    start: document.getElementById('gpCommitStart').value || '11:30',
+    end:   document.getElementById('gpCommitEnd').value || '18:00',
+    days,
+    category: document.getElementById('gpCommitCat').value
+  };
+  const commits = gpGetCommitments();
+  if (gpCommitEditIdx != null) commits[gpCommitEditIdx] = commit;
+  else commits.push(commit);
+  storeSet(GS_COMMITMENTS_KEY, commits);
+  document.getElementById('gpCommitModalBg').style.display = 'none';
+  gpRenderCommitments();
+});
+
+document.getElementById('gpCommitDelete') && document.getElementById('gpCommitDelete').addEventListener('click', () => {
+  if (gpCommitEditIdx == null) return;
+  const commits = gpGetCommitments();
+  commits.splice(gpCommitEditIdx, 1);
+  storeSet(GS_COMMITMENTS_KEY, commits);
+  document.getElementById('gpCommitModalBg').style.display = 'none';
+  gpRenderCommitments();
+});
+
+// ---- Free windows helper ----
+function gpFreeWindows(dayName) {
+  const commits = gpGetCommitments().filter(c => (c.days || []).includes(dayName));
+  const blocks = commits.map(c => ({ start: c.start, end: c.end, name: c.name }));
+  blocks.sort((a, b) => a.start.localeCompare(b.start));
+  const windows = [];
+  let cursor = '07:00';
+  blocks.forEach(b => {
+    if (b.start > cursor) windows.push({ start: cursor, end: b.start, label: cursor + '–' + b.start });
+    cursor = b.end > cursor ? b.end : cursor;
+  });
+  if (cursor < '23:00') windows.push({ start: cursor, end: '23:00', label: cursor + '–23:00' });
+  return windows;
+}
+
+function gpFreeWindowsSummary() {
+  const lines = GP_DAYS_ORDER.map(d => {
+    const wins = gpFreeWindows(d);
+    const commits = gpGetCommitments().filter(c => (c.days || []).includes(d));
+    const blocked = commits.map(c => `${c.name} ${c.start}–${c.end}`).join(', ');
+    const free = wins.map(w => w.label).join(', ');
+    return `${d.charAt(0).toUpperCase() + d.slice(1)}: ${blocked ? 'Blocked: ' + blocked + '. ' : ''}Free: ${free || 'flexible'}`;
+  });
+  return lines.join('\n');
+}
+
+// ---- Plan render (wizard state machine) ----
+function gpRenderPlan() {
+  if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+
+  const label = document.getElementById('gpWeekLabel');
+  if (label) label.textContent = gpWeekLabel(gpCurrentWeekMonday);
+
+  gpRenderCommitments();
+
+  const weekKey = gpWeekKey(gpCurrentWeekMonday);
+  const existingPlan = storeGet(weekKey);
+  const hasAnyTask = existingPlan && GP_DAYS_ORDER.some(d => (existingPlan[d] || []).length > 0);
+
+  // Thesis card
+  const thesisCard = document.getElementById('gpThesisCard');
+  const thesisText = document.getElementById('gpThesisText');
+  const meta = storeGet(weekKey + '_meta') || {};
+  if (hasAnyTask && meta.thesis) {
+    thesisCard.style.display = 'block';
+    thesisText.textContent = meta.thesis;
+  } else {
+    thesisCard.style.display = 'none';
+  }
+
+  const wizard = document.getElementById('gpWizard');
+  if (!wizard) return;
+
+  // If draft in progress (step 3), show review
+  if (gpPlanDraft) {
+    gpRenderStep3(wizard);
+    return;
+  }
+
+  // If plan exists: show existing plan view
+  if (hasAnyTask) {
+    gpRenderExistingPlan(wizard, existingPlan);
+    return;
+  }
+
+  // No plan: show step 1
+  gpRenderStep1(wizard);
+}
+
+function gpRenderStep1(container) {
+  container.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'gp-wizard-step';
+  div.innerHTML = `
+    <div class="gp-braindump-card">
+      <div class="gp-braindump-heading">What do you want to move forward on this week?</div>
+      <div class="gp-braindump-sub">Write your goals in plain English — one per line. Don't filter yourself yet.</div>
+      <textarea class="gp-braindump-textarea" id="gpBrainDumpInput" placeholder="e.g.\nMake progress on Salesforce certification\nStart building the side project landing page\nImprove sleep consistency\nCall parents more often">${escapeHtml(gpBrainDump)}</textarea>
+      <button class="gp-primary-btn" id="gpStep1Next">not me being delusional →</button>
+    </div>`;
+  container.appendChild(div);
+  document.getElementById('gpStep1Next').addEventListener('click', () => {
+    const val = document.getElementById('gpBrainDumpInput').value.trim();
+    if (!val) return;
+    gpBrainDump = val;
+    gpFlaggedGoals = new Set();
+    gpRenderStep2(container);
+  });
+  setTimeout(() => {
+    const ta = document.getElementById('gpBrainDumpInput');
+    if (ta) ta.focus();
+  }, 100);
+}
+
+function gpRenderStep2(container) {
+  container.innerHTML = '';
+  const goals = gpBrainDump.split('\n').map(s => s.trim()).filter(Boolean);
+  const div = document.createElement('div');
+  div.className = 'gp-wizard-step';
+
+  // Goal chips with flag toggle
+  const goalChipsHtml = goals.map((g, i) => `
+    <div class="gp-goal-chip" id="gpGoalChip${i}">
+      <div class="gp-goal-chip-text">${escapeHtml(g)}</div>
+      <button class="gp-goal-flag-btn" data-idx="${i}">optional</button>
+    </div>`).join('');
+
+  div.innerHTML = `
+    <div class="gp-ai-card">
+      <div class="gp-ai-eyebrow">⚡ Hormozi interrogation</div>
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">
+        Flag any goals as optional before we proceed — AI will still schedule them but at lower priority.
+      </div>
+      <div class="gp-goals-list">${goalChipsHtml}</div>
+
+      <div class="gp-ai-question-block">
+        <div class="gp-ai-question">What's the ONE bottleneck — the thing actually blocking your biggest outcome right now?</div>
+        <textarea class="gp-ai-answer" id="gpQ1" rows="2" placeholder="e.g. I keep starting Salesforce modules but stop after 20 min because I have no accountability"></textarea>
+      </div>
+
+      <div class="gp-ai-question-block">
+        <div class="gp-ai-question">How many real, uninterrupted deep work hours can you give this week?</div>
+        <div class="gp-ai-options" id="gpQ2Opts">
+          <button class="gp-ai-opt" data-v="4">~4 hrs</button>
+          <button class="gp-ai-opt" data-v="8">~8 hrs</button>
+          <button class="gp-ai-opt" data-v="12">~12 hrs</button>
+          <button class="gp-ai-opt" data-v="20">~20 hrs</button>
+        </div>
+      </div>
+
+      <div class="gp-ai-question-block">
+        <div class="gp-ai-question">What's your energy / life situation like this week?</div>
+        <div class="gp-ai-options" id="gpQ3Opts">
+          <button class="gp-ai-opt" data-v="low">Low — survival mode</button>
+          <button class="gp-ai-opt selected" data-v="normal">Normal</button>
+          <button class="gp-ai-opt" data-v="high">High — locked in</button>
+        </div>
+      </div>
+
+      <button class="gp-generate-btn" id="gpGenerateBtn">Generate my week →</button>
+    </div>
+    <button style="background:none;border:none;color:var(--text-tertiary);font-size:12px;cursor:pointer;padding:6px 0;font-family:inherit;" id="gpBackToStep1">← back</button>`;
+
+  container.appendChild(div);
+
+  // Flag toggles
+  div.querySelectorAll('.gp-goal-flag-btn').forEach(btn => {
+    const idx = parseInt(btn.dataset.idx);
+    if (gpFlaggedGoals.has(idx)) btn.classList.add('flagged');
+    btn.addEventListener('click', () => {
+      if (gpFlaggedGoals.has(idx)) { gpFlaggedGoals.delete(idx); btn.classList.remove('flagged'); btn.textContent = 'optional'; }
+      else { gpFlaggedGoals.add(idx); btn.classList.add('flagged'); btn.textContent = '⚑ optional'; }
+    });
+  });
+
+  // Option buttons (single select)
+  ['gpQ2Opts','gpQ3Opts'].forEach(id => {
+    document.getElementById(id).querySelectorAll('.gp-ai-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(id).querySelectorAll('.gp-ai-opt').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+  });
+
+  document.getElementById('gpBackToStep1').addEventListener('click', () => gpRenderStep1(container));
+
+  document.getElementById('gpGenerateBtn').addEventListener('click', async () => {
+    const bottleneck = document.getElementById('gpQ1').value.trim();
+    const deepHours = document.querySelector('#gpQ2Opts .gp-ai-opt.selected')?.dataset.v || '8';
+    const energy    = document.querySelector('#gpQ3Opts .gp-ai-opt.selected')?.dataset.v || 'normal';
+
+    // Mark flagged goals in brain dump
+    const goalsWithFlags = goals.map((g, i) => gpFlaggedGoals.has(i) ? `[OPTIONAL] ${g}` : g).join('\n');
+
+    await gpCallGemini(container, goalsWithFlags, bottleneck, deepHours, energy);
+  });
+}
+
+async function gpCallGemini(container, goalsText, bottleneck, deepHours, energy) {
+  // Show thinking state
+  container.innerHTML = `
+    <div class="gp-thinking">
+      <div class="gp-thinking-dots"><span></span><span></span><span></span></div>
+      <div class="gp-thinking-text">Hormozi is tearing your week apart…</div>
+    </div>`;
+
+  const weekMonday = gpCurrentWeekMonday;
+  const weekDates = GP_DAYS_ORDER.map((d, i) => {
+    const date = new Date(weekMonday);
+    date.setDate(weekMonday.getDate() + i);
+    return `${d}: ${dateToYYYYMMDD(date)}`;
+  }).join('\n');
+
+  const systemPrompt = `You are a brutal, high-signal productivity strategist modeled after Alex Hormozi.
+Your job: take someone's weekly goals and turn them into a ruthlessly prioritized, executable task schedule.
+
+Rules:
+- One constraint rules everything. Find it. Build the week around removing it.
+- Label every goal as high-leverage ($100k/hr work) or low-leverage ($10/hr work). High-leverage = directly moves the needle on income, career trajectory, or life. Low-leverage = maintenance, busy work, feels productive but isn't.
+- Never over-schedule. An honest 3 tasks done beats 10 tasks attempted.
+- Be direct and confrontational. Call out goals that are vague or avoidant. Flag them.
+- The week needs a single thesis — one sentence defining what this week is FOR.
+- Tasks marked [OPTIONAL] by the user are low-priority — schedule as optional tier only.
+- Respect the free windows. Never schedule tasks inside blocked time.`;
+
+  const userPrompt = `Week dates:
+${weekDates}
+
+Fixed commitments and free windows this week:
+${gpFreeWindowsSummary()}
+
+Goals this week:
+${goalsText}
+
+Bottleneck (what's actually blocking progress):
+${bottleneck || 'Not specified'}
+
+Available deep work hours this week: ${deepHours} hours
+Energy level: ${energy}
+
+Return ONLY a valid JSON object — no markdown, no explanation, no backticks. Exact shape:
+{
+  "thesis": "one sentence defining this week",
+  "constraint_task": "the single most important task — the one that removes the bottleneck",
+  "flags": ["any goal you want to call out as low-leverage or vague — be brutal"],
+  "days": {
+    "monday": [ {"title":"...","category":"Career","tier":"non-neg","time":"07:30","duration":60,"why":"..."}, ... ],
+    "tuesday": [ ... ],
+    "wednesday": [ ... ],
+    "thursday": [ ... ],
+    "friday": [ ... ],
+    "saturday": [ ... ],
+    "sunday": [ ... ]
+  }
+}
+
+Category must be one of: Career, Business, Health, Finance, Going Abroad, Personal.
+Tier must be one of: non-neg, priority, optional.
+Time must be HH:MM format inside free windows only. Max 2 non-neg per day, max 3 priority, max 2 optional.`;
+
+  try {
+    if (!GS_GEMINI_KEY) throw new Error('NO_KEY');
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GS_GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }]
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Strip markdown fences if present
+    const jsonStr = raw.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+    const parsed = JSON.parse(jsonStr);
+    // Stamp IDs onto tasks
+    GP_DAYS_ORDER.forEach(d => {
+      (parsed.days[d] || []).forEach(t => { t.id = t.id || Date.now().toString(36) + Math.random().toString(36).slice(2,5); });
+    });
+    gpPlanDraft = parsed;
+    gpRenderStep3(container);
+  } catch(e) {
+    if (e.message === 'NO_KEY') {
+      // No API key — show stub
+      gpPlanDraft = gpStubPlan(goalsText, bottleneck);
+      gpRenderStep3(container);
+    } else {
+      container.innerHTML = `
+        <div class="gp-ai-card">
+          <div class="gp-ai-eyebrow" style="color:#FF8A8A">Something went wrong</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">${escapeHtml(e.message)}</div>
+          <button class="gp-primary-btn" id="gpRetryBtn">Try again</button>
+        </div>`;
+      document.getElementById('gpRetryBtn').addEventListener('click', () => gpRenderStep2(container));
+    }
+  }
+}
+
+function gpStubPlan(goalsText, bottleneck) {
+  const goals = goalsText.split('\n').filter(Boolean);
+  const days = {};
+  GP_DAYS_ORDER.forEach((d, i) => {
+    days[d] = [];
+    if (i < 5 && goals[0]) {
+      days[d].push({ id: Date.now().toString(36)+i, title: goals[0].replace('[OPTIONAL] ',''), category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'This is your bottleneck. Attack it first.' });
+    }
+    if (goals[1] && i < 5) {
+      days[d].push({ id: Date.now().toString(36)+i+'b', title: goals[1].replace('[OPTIONAL] ',''), category: 'Personal', tier: 'priority', time: '19:00', duration: 60, why: 'Important but not urgent.' });
+    }
+  });
+  return {
+    thesis: bottleneck ? `Remove the bottleneck: ${bottleneck.slice(0,60)}` : `Execute on ${goals[0] || 'your goals'} without distraction.`,
+    constraint_task: goals[0] || 'Define your #1 goal',
+    flags: goals.filter(g => g.startsWith('[OPTIONAL]')).map(g => g.replace('[OPTIONAL] ','')),
+    days
+  };
+}
+
+function gpRenderStep3(container) {
+  if (!gpPlanDraft) return;
+  const draft = gpPlanDraft;
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'gp-wizard-step';
+
+  // AI thesis preview
+  wrap.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(192,132,252,0.1),rgba(125,211,252,0.07));border:1px solid rgba(192,132,252,0.2);border-radius:16px;padding:16px;margin-bottom:14px;">
+      <div style="font-size:9px;font-weight:800;letter-spacing:0.14em;color:#C084FC;margin-bottom:6px;">HORMOZI'S VERDICT</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.5;">${escapeHtml(draft.thesis)}</div>
+      ${draft.constraint_task ? `<div style="margin-top:8px;font-size:11px;color:var(--text-tertiary);">Constraint task: <span style="color:#6EE7B7;font-weight:600;">${escapeHtml(draft.constraint_task)}</span></div>` : ''}
+      ${draft.flags && draft.flags.length > 0 ? `
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">
+          <div style="font-size:9px;font-weight:800;letter-spacing:0.1em;color:#FCD34D;margin-bottom:6px;">CALLED OUT AS LOW-LEVERAGE</div>
+          ${draft.flags.map(f => `<div style="font-size:11px;color:var(--text-tertiary);padding:2px 0;">⚑ ${escapeHtml(f)}</div>`).join('')}
+        </div>` : ''}
+    </div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Review the plan below. Tap any task to edit, ✕ to remove. Then confirm to lock in the week.</div>`;
+
+  // Day cards
+  GP_DAYS_ORDER.forEach(dayName => {
+    const tasks = (draft.days[dayName] || []);
+    const dayDate = gpDayDate(gpCurrentWeekMonday, dayName);
+    const isToday = dateToYYYYMMDD(dayDate) === gsDateKey();
+    const card = document.createElement('div');
+    card.className = 'gp-review-card';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'gp-review-day-header';
+    hdr.innerHTML = `
+      <span class="gp-review-day-name" style="${isToday ? 'color:#6EE7B7' : ''}">${GP_DAY_LABELS[dayName]}</span>
+      <span class="gp-review-day-date">${dayDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>`;
+    card.appendChild(hdr);
+
+    const tasksEl = document.createElement('div');
+    tasksEl.className = 'gp-review-tasks';
+    tasksEl.id = 'gpReviewTasks_' + dayName;
+
+    if (tasks.length === 0) {
+      tasksEl.innerHTML = '<div class="gp-review-empty">Rest day — nothing scheduled.</div>';
+    } else {
+      ['non-neg','priority','optional'].forEach(tier => {
+        const tierTasks = tasks.filter(t => t.tier === tier);
+        if (!tierTasks.length) return;
+        const tierLabel = tier === 'non-neg' ? '🔴 NON-NEGOTIABLE' : tier === 'priority' ? '🟡 PRIORITIES' : '⚪ OPTIONAL';
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:9px;font-weight:800;letter-spacing:0.1em;color:var(--text-tertiary);padding:4px 2px 2px;';
+        lbl.textContent = tierLabel;
+        tasksEl.appendChild(lbl);
+        tierTasks.forEach(t => {
+          const meta = GS_CAT_META[t.category] || { color: '#aaa' };
+          const row = document.createElement('div');
+          row.className = 'gp-review-task';
+          row.style.borderLeftColor = meta.color;
+          row.innerHTML = `
+            <span class="gp-review-task-title">${escapeHtml(t.title)}</span>
+            <span class="gp-review-task-meta">${t.time || ''}${t.duration ? ' · ' + t.duration + 'm' : ''}</span>
+            <button class="gp-review-task-del" data-day="${dayName}" data-id="${t.id}">✕</button>`;
+          row.querySelector('.gp-review-task-title').addEventListener('click', () => gpOpenReviewTaskModal(t, dayName));
+          tasksEl.appendChild(row);
+        });
+      });
+    }
+
+    // Add task button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'gp-add-btn';
+    addBtn.style.margin = '4px 0 2px';
+    addBtn.textContent = '+ Add task';
+    addBtn.addEventListener('click', () => gpOpenReviewTaskModal(null, dayName));
+    tasksEl.appendChild(addBtn);
+
+    card.appendChild(tasksEl);
+    wrap.appendChild(card);
+  });
+
+  // Confirm button
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'gp-confirm-btn';
+  confirmBtn.textContent = 'Lock in this week ✓';
+  confirmBtn.addEventListener('click', gpConfirmPlan);
+  wrap.appendChild(confirmBtn);
+
+  const backBtn = document.createElement('button');
+  backBtn.style.cssText = 'background:none;border:none;color:var(--text-tertiary);font-size:12px;cursor:pointer;padding:10px 0;font-family:inherit;display:block;width:100%;text-align:center;';
+  backBtn.textContent = '← start over';
+  backBtn.addEventListener('click', () => { gpPlanDraft = null; gpRenderStep1(container); });
+  wrap.appendChild(backBtn);
+
+  container.appendChild(wrap);
+
+  // Delete task listeners
+  container.querySelectorAll('.gp-review-task-del').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const { day, id } = btn.dataset;
+      gpPlanDraft.days[day] = (gpPlanDraft.days[day] || []).filter(t => t.id !== id);
+      gpRenderStep3(container);
+    });
+  });
+}
+
+function gpOpenReviewTaskModal(task, dayName) {
+  gpEditState = { dayName, taskId: task ? task.id : null, isReview: true };
+  document.getElementById('gpTaskModalTitle').textContent = task ? 'Edit Task' : 'Add Task — ' + GP_DAY_LABELS[dayName];
+  document.getElementById('gpFieldTitle').value = task ? task.title : '';
+  document.getElementById('gpFieldCat').value = task ? (task.category || 'Career') : 'Career';
+  document.getElementById('gpFieldTier').value = task ? (task.tier || 'priority') : 'priority';
+  document.getElementById('gpFieldTime').value = task ? (task.time || '') : '';
+  document.getElementById('gpFieldDur').value = task ? (task.duration || '') : '';
+  document.getElementById('gpFieldWhy').value = task ? (task.why || '') : '';
+  gpToggleWhyField();
+  document.getElementById('gpTaskDelete').style.display = task ? 'block' : 'none';
+  document.getElementById('gpTaskModalBg').style.display = 'flex';
+  document.getElementById('gpFieldTitle').focus();
+}
+
+function gpConfirmPlan() {
+  if (!gpPlanDraft) return;
+  const weekKey = gpWeekKey(gpCurrentWeekMonday);
+  // Save plan
+  const planToSave = {};
+  GP_DAYS_ORDER.forEach(d => {
+    planToSave[d] = (gpPlanDraft.days[d] || []).map(t => ({
+      id: t.id || Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+      title: t.title, category: t.category, tier: t.tier,
+      time: t.time || null, duration: t.duration || null, why: t.why || null
+    }));
+  });
+  storeSet(weekKey, planToSave);
+  // Save meta (thesis, constraint)
+  storeSet(weekKey + '_meta', { thesis: gpPlanDraft.thesis, constraint_task: gpPlanDraft.constraint_task });
+  // If this week, invalidate today's daily
+  const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
+  if (weekKey === todayWeekKey) {
+    storeDelete(gsDailyKey(gsDateKey()));
+    loadGoalsToday();
+  }
+  gpPlanDraft = null;
+  gpRenderPlan();
+}
+
+function gpRenderExistingPlan(container, plan) {
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'gp-wizard-step';
+
+  GP_DAYS_ORDER.forEach(dayName => {
+    const tasks = plan[dayName] || [];
+    const dayDate = gpDayDate(gpCurrentWeekMonday, dayName);
+    const isToday = dateToYYYYMMDD(dayDate) === gsDateKey();
+
+    const card = document.createElement('div');
+    card.className = 'gp-plan-day-card';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'gp-plan-day-hdr' + (isToday ? ' today-hdr' : '');
+    hdr.innerHTML = `
+      <span class="gp-plan-day-dname" style="${isToday ? 'color:#6EE7B7' : ''}">${GP_DAY_LABELS[dayName]}</span>
+      <span class="gp-plan-day-ddate">${dayDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+      <span class="gp-plan-day-count">${tasks.length} task${tasks.length !== 1 ? 's' : ''}</span>`;
+    card.appendChild(hdr);
+
+    if (tasks.length > 0) {
+      ['non-neg','priority','optional'].forEach(tier => {
+        const tierTasks = tasks.filter(t => t.tier === tier);
+        if (!tierTasks.length) return;
+        const tierLabel = tier === 'non-neg' ? '🔴 SACRED' : tier === 'priority' ? '🟡 PRIORITIES' : '⚪ OPTIONAL';
+        const section = document.createElement('div');
+        section.className = 'gp-plan-tier-section';
+        section.innerHTML = `<div class="gp-plan-tier-label">${tierLabel}</div>`;
+        tierTasks.forEach(t => {
+          const meta = GS_CAT_META[t.category] || { color: '#aaa' };
+          const pill = document.createElement('div');
+          pill.className = 'gp-plan-task-pill';
+          pill.style.borderLeftColor = meta.color;
+          pill.innerHTML = `
+            <span class="gp-plan-task-title">${escapeHtml(t.title)}</span>
+            <span class="gp-plan-task-time">${t.time || ''}${t.duration ? ' · '+t.duration+'m' : ''}</span>`;
+          pill.addEventListener('click', () => gpOpenExistingTaskModal(dayName, tasks.indexOf(t), plan));
+          section.appendChild(pill);
+        });
+        card.appendChild(section);
+      });
+    } else {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:11px;color:var(--text-tertiary);padding:10px 14px;font-style:italic;';
+      empty.textContent = 'Rest day';
+      card.appendChild(empty);
+    }
+
+    const addRow = document.createElement('div');
+    addRow.className = 'gp-plan-add-row';
+    const addBtn = document.createElement('button');
+    addBtn.className = 'gp-add-btn';
+    addBtn.textContent = '+ Add task';
+    addBtn.addEventListener('click', () => gpOpenExistingTaskModal(dayName, null, plan));
+    addRow.appendChild(addBtn);
+    card.appendChild(addRow);
+
+    wrap.appendChild(card);
+  });
+
+  container.appendChild(wrap);
+}
+
+// Task modal for existing plan (non-draft)
+function gpOpenExistingTaskModal(dayName, taskIdx, plan) {
+  const tasks = plan[dayName] || [];
+  const task = taskIdx !== null ? tasks[taskIdx] : null;
+  gpEditState = { dayName, taskIdx, isReview: false };
+  document.getElementById('gpTaskModalTitle').textContent = task ? 'Edit Task' : 'Add Task — ' + GP_DAY_LABELS[dayName];
+  document.getElementById('gpFieldTitle').value = task ? task.title : '';
+  document.getElementById('gpFieldCat').value = task ? (task.category || 'Career') : 'Career';
+  document.getElementById('gpFieldTier').value = task ? (task.tier || 'priority') : 'priority';
+  document.getElementById('gpFieldTime').value = task ? (task.time || '') : '';
+  document.getElementById('gpFieldDur').value = task ? (task.duration || '') : '';
+  document.getElementById('gpFieldWhy').value = task ? (task.why || '') : '';
+  gpToggleWhyField();
+  document.getElementById('gpTaskDelete').style.display = task ? 'block' : 'none';
+  document.getElementById('gpTaskModalBg').style.display = 'flex';
+  document.getElementById('gpFieldTitle').focus();
+}
+
+// ---- Task modal handlers ----
+function gpToggleWhyField() {
+  const tier = document.getElementById('gpFieldTier').value;
+  const whyGroup = document.getElementById('gpWhyGroup');
+  if (whyGroup) whyGroup.style.display = (tier === 'non-neg' || tier === 'priority') ? 'flex' : 'none';
+}
+document.getElementById('gpFieldTier') && document.getElementById('gpFieldTier').addEventListener('change', gpToggleWhyField);
+
+function gpCloseTaskModal() {
+  document.getElementById('gpTaskModalBg').style.display = 'none';
+  gpEditState = null;
+}
+document.getElementById('gpTaskCancel') && document.getElementById('gpTaskCancel').addEventListener('click', gpCloseTaskModal);
+document.getElementById('gpTaskModalBg') && document.getElementById('gpTaskModalBg').addEventListener('click', e => {
+  if (e.target === document.getElementById('gpTaskModalBg')) gpCloseTaskModal();
+});
+
+document.getElementById('gpTaskSave') && document.getElementById('gpTaskSave').addEventListener('click', () => {
+  if (!gpEditState) return;
+  const title = document.getElementById('gpFieldTitle').value.trim();
+  if (!title) { document.getElementById('gpFieldTitle').focus(); return; }
+  const { dayName, taskIdx, taskId, isReview } = gpEditState;
+
+  const task = {
+    id: taskId || taskIdx != null ? (taskId || Date.now().toString(36)) : Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    title,
+    category: document.getElementById('gpFieldCat').value,
+    tier: document.getElementById('gpFieldTier').value,
+    time: document.getElementById('gpFieldTime').value || null,
+    duration: parseInt(document.getElementById('gpFieldDur').value) || null,
+    why: document.getElementById('gpFieldWhy').value.trim() || null
+  };
+
+  if (isReview && gpPlanDraft) {
+    if (!gpPlanDraft.days[dayName]) gpPlanDraft.days[dayName] = [];
+    if (taskId) {
+      const idx = gpPlanDraft.days[dayName].findIndex(t => t.id === taskId);
+      if (idx !== -1) gpPlanDraft.days[dayName][idx] = task;
+      else gpPlanDraft.days[dayName].push(task);
+    } else {
+      gpPlanDraft.days[dayName].push(task);
+    }
+    gpCloseTaskModal();
+    gpRenderStep3(document.getElementById('gpWizard'));
+  } else {
+    const weekKey = gpWeekKey(gpCurrentWeekMonday);
+    const plan = storeGet(weekKey) || {};
+    if (!plan[dayName]) plan[dayName] = [];
+    if (taskIdx !== null && taskIdx !== undefined) plan[dayName][taskIdx] = task;
+    else plan[dayName].push(task);
+    storeSet(weekKey, plan);
+    const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
+    if (weekKey === todayWeekKey) { storeDelete(gsDailyKey(gsDateKey())); loadGoalsToday(); }
+    gpCloseTaskModal();
+    gpRenderPlan();
+  }
+});
+
+document.getElementById('gpTaskDelete') && document.getElementById('gpTaskDelete').addEventListener('click', () => {
+  if (!gpEditState) return;
+  const { dayName, taskIdx, taskId, isReview } = gpEditState;
+
+  if (isReview && gpPlanDraft) {
+    gpPlanDraft.days[dayName] = (gpPlanDraft.days[dayName] || []).filter(t => t.id !== taskId);
+    gpCloseTaskModal();
+    gpRenderStep3(document.getElementById('gpWizard'));
+  } else {
+    if (taskIdx === null || taskIdx === undefined) return;
+    const weekKey = gpWeekKey(gpCurrentWeekMonday);
+    const plan = storeGet(weekKey) || {};
+    if (plan[dayName]) plan[dayName].splice(taskIdx, 1);
+    storeSet(weekKey, plan);
+    const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
+    if (weekKey === todayWeekKey) { storeDelete(gsDailyKey(gsDateKey())); loadGoalsToday(); }
+    gpCloseTaskModal();
+    gpRenderPlan();
+  }
+});
+
+// ---- Replan button ----
+document.getElementById('gpReplanBtn') && document.getElementById('gpReplanBtn').addEventListener('click', () => {
+  gpPlanDraft = null;
+  gpBrainDump = '';
+  gpRenderPlan();
+});
+
+// ---- Week nav ----
+document.getElementById('gpWeekPrev') && document.getElementById('gpWeekPrev').addEventListener('click', () => {
+  if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+  gpCurrentWeekMonday.setDate(gpCurrentWeekMonday.getDate() - 7);
+  gpPlanDraft = null;
+  gpRenderPlan();
+});
+document.getElementById('gpWeekNext') && document.getElementById('gpWeekNext').addEventListener('click', () => {
+  if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+  gpCurrentWeekMonday.setDate(gpCurrentWeekMonday.getDate() + 7);
+  gpPlanDraft = null;
+  gpRenderPlan();
+});
+
+// ---- Init Plan tab when switched to ----
+document.querySelectorAll('.goals-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'plan') {
+      if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
+      gpRenderPlan();
+    }
+  });
+});
+
+// --- Today KEY for ticker compatibility ---
+const TODAY_KEY = 'goals_daily_' + gsDateKey();
+
+// --- Main load function ---
+function loadGoalsToday() {
+  const dateStr = gsDateKey();
+  gsEnsureDailyFromTemplate(dateStr);
+  gsRenderBanner();
+  gsRenderTasks(dateStr);
+  gsRenderReflections(dateStr);
+}
 
 // Notify ticker on changes
 function triggerGoalsChanged() {
   window.dispatchEvent(new CustomEvent('goals-changed'));
 }
 
-// Rollover & Streak Check
 function performRolloverAndStreak() {
-  const keys = storeListKeys('goals:').sort();
-  const activeKeyStr = TODAY_KEY;
-  
-  let streakData = storeGet('goal_streak_v1') || { count: 0, lastProcessedDate: null };
-  
-  let todayGoals = storeGet(TODAY_KEY) || [];
-  let dirtyToday = false;
-
-  for (const k of keys) {
-    if (k >= activeKeyStr) continue; // Skip today and future
-    
-    // Rollover undone goals
-    const pastGoals = storeGet(k) || [];
-    let allDone = true;
-    for (const g of pastGoals) {
-      if (!g.done) {
-        allDone = false;
-        // push to today if not duplicate
-        if (!todayGoals.some(tg => tg.text === g.text)) {
-          todayGoals.push({ text: g.text, done: false });
-          dirtyToday = true;
-        }
-      }
-    }
-    
-    // Streak calc
-    if (k > (streakData.lastProcessedDate || '')) {
-      if (pastGoals.length > 0) {
-        if (allDone) streakData.count++;
-        else streakData.count = 0;
-      }
-      streakData.lastProcessedDate = k;
-    }
-    
-    storeDelete(k); // Delete the old day's record
-  }
-  
-  if (dirtyToday) {
-    storeSet(TODAY_KEY, todayGoals);
-  }
-  storeSet('goal_streak_v1', streakData);
+  // no-op — replaced by new goals system
 }
 
-// Global state / render calls
-function renderStreak() {
-  const streakData = storeGet('goal_streak_v1') || { count: 0 };
-  const count = streakData.count;
-  const el = document.getElementById('gmStreak');
-  document.getElementById('gmStreakNum').textContent = count;
-  if (count > 0) {
-    el.classList.add('gm-streak-active');
-  } else {
-    el.classList.remove('gm-streak-active');
-  }
-}
+function renderStreak() { /* no-op */ }
+function loadToday() { try { loadGoalsToday(); } catch(e) {} }
+function loadTomorrow() { /* no-op */ }
 
 function renderTodayHeader(goals) {
   const total = goals.length;
@@ -6862,29 +9639,15 @@ function renderListInto(goals, listEl, emptyEl, key, readOnly, reloadFn) {
   else if (key === TOMORROW_KEY) renderTomorrowCount(goals);
 }
 
-function loadToday() {
-  const viewKey = 'goals:' + (window.getViewDate ? window.getViewDate() : dateToYYYYMMDD(activeDateObj));
-  const isPast = window.isViewingToday ? !window.isViewingToday() : false;
-  const goals = storeGet(viewKey) || [];
-  renderListInto(goals, document.getElementById('goalList'), document.getElementById('emptyState'), viewKey, isPast, loadToday);
-  // Hide add/push controls in past view
-  const addRow = document.querySelector('.goal-input-wrap.gm-input-wrap');
-  const pushBtn = document.getElementById('gmPushBtn');
-  const polishStatus = document.getElementById('polishStatus');
-  if (addRow) addRow.style.display = isPast ? 'none' : '';
-  if (pushBtn) pushBtn.style.display = isPast ? 'none' : '';
-  if (polishStatus) polishStatus.style.display = isPast ? 'none' : '';
-}
-function loadTomorrow() {
-  const goals = storeGet(TOMORROW_KEY) || [];
-  renderListInto(goals, document.getElementById('tomorrowList'), document.getElementById('tomorrowEmptyState'), TOMORROW_KEY, true, loadTomorrow);
-}
+// old loadToday / loadTomorrow removed — replaced above
 
-// Push Remaining
-document.getElementById('gmPushBtn').addEventListener('click', () => {
+// Push Remaining (legacy — element removed)
+const _gmPushBtn = document.getElementById('gmPushBtn');
+if (_gmPushBtn) _gmPushBtn.addEventListener('click', () => {
   if(!confirm('Push all unchecked goals to tomorrow?')) return;
   const todayGoals = storeGet(TODAY_KEY) || [];
-  const tomGoals = storeGet(TOMORROW_KEY) || [];
+  const TOMORROW_KEY_LEGACY = 'goals:tomorrow';
+  const tomGoals = storeGet(TOMORROW_KEY_LEGACY) || [];
   
   const keeping = [];
   todayGoals.forEach(g => {
@@ -6898,10 +9661,7 @@ document.getElementById('gmPushBtn').addEventListener('click', () => {
   });
   
   storeSet(TODAY_KEY, keeping);
-  storeSet(TOMORROW_KEY, tomGoals);
   triggerGoalsChanged();
-  loadToday();
-  loadTomorrow();
 });
 
 // Add & Polish
@@ -6975,8 +9735,7 @@ function makeAddHandlers(inputId, addBtnId, polishBtnId, key, statusId, reloadFn
   });
 }
 
-makeAddHandlers('goalInput', 'goalAddBtn', 'goalPolishBtn', TODAY_KEY, 'polishStatus', loadToday);
-makeAddHandlers('tomorrowInput', 'tomorrowAddBtn', 'tomorrowPolishBtn', TOMORROW_KEY, 'tomorrowStatus', loadTomorrow);
+// old makeAddHandlers removed
 
 
 // Ticker Logic
@@ -6985,21 +9744,20 @@ let tickerInterval = null;
 
 function tickTicker(forceReset = false) {
   if (forceReset) tickerCycleIdx = 0;
-  
-  const goals = storeGet(TODAY_KEY) || [];
-  const total = goals.length;
-  
-  const pendingGoals = goals.filter(g => !g.done);
+
+  const tasks = storeGet(TODAY_KEY) || [];
+  const total = tasks.length;
+  const pendingGoals = tasks.filter(t => !t.checked && !t.skipped);
   const doneCount = total - pendingGoals.length;
-  
+
   let item = null;
   if (total === 0) {
-    item = { status: 'empty', text: 'No goals set for today — add one to get rolling.' };
+    item = { status: 'empty', text: 'No tasks for today — plan your day.' };
   } else if (pendingGoals.length === 0) {
-    item = { status: 'done', text: '✓ All goals done — solid day.' };
+    item = { status: 'done', text: '✓ All tasks done — solid day.' };
   } else {
     tickerCycleIdx = tickerCycleIdx % pendingGoals.length;
-    item = { status: 'pending', text: pendingGoals[tickerCycleIdx].text };
+    item = { status: 'pending', text: pendingGoals[tickerCycleIdx].title || pendingGoals[tickerCycleIdx].text || '' };
     tickerCycleIdx++;
   }
   
@@ -7134,12 +9892,9 @@ function updateDayBar() {
 
 // Initial Boot
 performRolloverAndStreak();
-renderStreak();
-loadToday();
-loadTomorrow();
+loadGoalsToday();
 updateDayBar();
 setInterval(updateDayBar, 60 * 1000);
-window.addEventListener('viewdate-changed', loadToday);
 
 // ============================================================
 // SUPABASE CLOUD SYNC: GOALS
@@ -7193,10 +9948,7 @@ window.addEventListener('viewdate-changed', loadToday);
   }
 
   function doRender() {
-    try { if (typeof loadToday === 'function') loadToday(); } catch(e) {}
-    try { if (typeof loadTomorrow === 'function') loadTomorrow(); } catch(e) {}
-    try { if (typeof loadSomeday === 'function') loadSomeday(); } catch(e) {}
-    try { if (typeof renderStreak === 'function') renderStreak(); } catch(e) {}
+    try { if (typeof loadGoalsToday === 'function') loadGoalsToday(); } catch(e) {}
   }
 
   function applyRemote(remote) {
