@@ -8138,9 +8138,9 @@ document.getElementById('gsModalSubmit') && document.getElementById('gsModalSubm
       const done = tasks.filter(t => t.checked).length;
       const total = tasks.length;
       const prompt = `You are a personal performance coach. A user just logged a time slot:\nSlot: ${entry.slotLabel}\nCompleted: ${completed}\nEnergy: ${energy}/5\nNote: "${note || 'none'}"\nToday: ${done}/${total} tasks done.\n\nGive one sharp, specific insight or improvement tip. 2 sentences max. Be direct, not generic.`;
-      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GS_GEMINI_KEY, {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GS_GEMINI_KEY },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       });
       const data = await res.json();
@@ -9016,9 +9016,9 @@ Time must be HH:MM format inside free windows only. Max 2 non-neg per day, max 3
   try {
     if (!GS_GEMINI_KEY) throw new Error('NO_KEY');
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GS_GEMINI_KEY}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GS_GEMINI_KEY },
       body: JSON.stringify({
         contents: [{ parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }]
       })
@@ -9040,14 +9040,15 @@ Time must be HH:MM format inside free windows only. Max 2 non-neg per day, max 3
     gpRenderStep3(container);
   } catch(e) {
     if (e.message === 'NO_KEY') {
-      // No API key — show stub
       gpPlanDraft = gpStubPlan(goalsText, bottleneck);
       gpRenderStep3(container);
     } else {
+      console.error('[Gemini Plan Error]', e);
       container.innerHTML = `
         <div class="gp-ai-card">
           <div class="gp-ai-eyebrow" style="color:#FF8A8A">Something went wrong</div>
-          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">${escapeHtml(e.message)}</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;word-break:break-all;">${escapeHtml(e.message)}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:14px;">Open browser DevTools (F12) → Console for full details.</div>
           <button class="gp-primary-btn" id="gpRetryBtn">Try again</button>
         </div>`;
       document.getElementById('gpRetryBtn').addEventListener('click', () => gpRenderStep2(container));
