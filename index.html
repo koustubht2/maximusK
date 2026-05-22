@@ -7645,7 +7645,7 @@ function formatDate(d) {
 // GOALS SYSTEM — TODAY TAB
 // ============================================================
 
-const GS_GEMINI_KEY = '';
+const GS_GEMINI_KEY = 'AIzaSyAqM6aQBFKpKh8eFO0ITK3WevhkLE6Sl6o';
 
 // --- Data keys ---
 function gsDateKey(d) { return dateToYYYYMMDD(d || getActiveDateObj()); }
@@ -8138,9 +8138,9 @@ document.getElementById('gsModalSubmit') && document.getElementById('gsModalSubm
       const done = tasks.filter(t => t.checked).length;
       const total = tasks.length;
       const prompt = `You are a personal performance coach. A user just logged a time slot:\nSlot: ${entry.slotLabel}\nCompleted: ${completed}\nEnergy: ${energy}/5\nNote: "${note || 'none'}"\nToday: ${done}/${total} tasks done.\n\nGive one sharp, specific insight or improvement tip. 2 sentences max. Be direct, not generic.`;
-      const res = await fetch('/api/gemini', {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GS_GEMINI_KEY },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       });
       const data = await res.json();
@@ -8536,6 +8536,27 @@ function gwRenderWeek() {
     const tplTasks = plan[dayName] || [];
     const tasks = daily || tplTasks;
     const hasDailyData = !!daily;
+
+    // Commitment blocks — colored, editable
+    gpGetCommitments().forEach((c, commitIdx) => {
+      if (!(c.days || []).includes(dayName)) return;
+      const top = gwTimeToTop(c.start);
+      if (top === null || top < 0) return;
+      const [sh, sm] = c.start.split(':').map(Number);
+      const [eh, em] = c.end.split(':').map(Number);
+      const durMins = (eh * 60 + em) - (sh * 60 + sm);
+      const height = Math.max(20, (durMins / 60) * GW_PX_PER_HOUR - 2);
+      const meta = GS_CAT_META[c.category] || { color: '#7DD3FC' };
+      const block = document.createElement('div');
+      block.style.cssText = `position:absolute;left:2px;right:2px;top:${top}px;height:${height}px;border-radius:6px;padding:4px 7px;z-index:2;background:${meta.color}18;border:1px solid ${meta.color}40;border-left:3px solid ${meta.color};box-sizing:border-box;overflow:hidden;cursor:pointer;transition:background 0.15s;`;
+      block.innerHTML = `
+        <div style="font-size:10px;font-weight:800;color:${meta.color};letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.name)}</div>
+        ${height > 32 ? `<div style="font-size:9px;color:${meta.color};opacity:0.7;">${c.start}–${c.end}</div>` : ''}`;
+      block.addEventListener('mouseenter', () => { block.style.background = `${meta.color}28`; });
+      block.addEventListener('mouseleave', () => { block.style.background = `${meta.color}18`; });
+      block.addEventListener('click', e => { e.stopPropagation(); gpOpenCommitModal(commitIdx); });
+      col.appendChild(block);
+    });
 
     // Untimed tasks: collect separately
     const timedTasks   = tasks.filter(t => t.time);
@@ -9014,9 +9035,11 @@ Tier must be one of: non-neg, priority, optional.
 Time must be HH:MM format inside free windows only. Max 2 non-neg per day, max 3 priority, max 2 optional.`;
 
   try {
-    const res = await fetch('/api/gemini', {
+    if (!GS_GEMINI_KEY) throw new Error('NO_KEY');
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GS_GEMINI_KEY },
       body: JSON.stringify({
         contents: [{ parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }]
       })
@@ -9037,7 +9060,10 @@ Time must be HH:MM format inside free windows only. Max 2 non-neg per day, max 3
     gpPlanDraft = parsed;
     gpRenderStep3(container);
   } catch(e) {
-    {
+    if (e.message === 'NO_KEY') {
+      gpPlanDraft = gpStubPlan(goalsText, bottleneck);
+      gpRenderStep3(container);
+    } else {
       console.error('[Gemini Plan Error]', e);
       container.innerHTML = `
         <div class="gp-ai-card">
