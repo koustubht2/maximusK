@@ -8138,7 +8138,7 @@ document.getElementById('gsModalSubmit') && document.getElementById('gsModalSubm
       const done = tasks.filter(t => t.checked).length;
       const total = tasks.length;
       const prompt = `You are a personal performance coach. A user just logged a time slot:\nSlot: ${entry.slotLabel}\nCompleted: ${completed}\nEnergy: ${energy}/5\nNote: "${note || 'none'}"\nToday: ${done}/${total} tasks done.\n\nGive one sharp, specific insight or improvement tip. 2 sentences max. Be direct, not generic.`;
-      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GS_GEMINI_KEY },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -9016,7 +9016,7 @@ Time must be HH:MM format inside free windows only. Max 2 non-neg per day, max 3
   try {
     if (!GS_GEMINI_KEY) throw new Error('NO_KEY');
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GS_GEMINI_KEY },
       body: JSON.stringify({
