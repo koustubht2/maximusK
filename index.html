@@ -1325,6 +1325,15 @@ body::after {
   cursor: pointer; padding: 0; line-height: 1; opacity: 0.6; transition: opacity 0.15s;
 }
 .gw-detail-close:hover { opacity: 1; }
+.gw-action-btn {
+  flex: 1; padding: 7px 4px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 9px;
+  color: var(--text-secondary); font-size: 11px; font-weight: 700;
+  font-family: inherit; cursor: pointer; transition: all 0.15s;
+}
+.gw-action-btn:hover { background: rgba(255,255,255,0.09); color: var(--text-primary); }
+.gw-action-btn.gw-action-danger { color: #FF8A8A; border-color: rgba(255,100,100,0.2); }
+.gw-action-btn.gw-action-danger:hover { background: rgba(255,100,100,0.08); }
 
 /* ===== PLAN TAB ===== */
 .gp-week-nav {
@@ -6477,7 +6486,6 @@ window.canonicalJson = function(obj) {
       <span class="gp-week-label" id="gwWeekLabel"></span>
       <button class="gp-week-btn" id="gwWeekNext">›</button>
     </div>
-
     <!-- Calendar grid -->
     <div class="gw-cal-wrap">
       <!-- Day header row -->
@@ -6512,11 +6520,18 @@ window.canonicalJson = function(obj) {
       <button class="gp-week-btn" id="gpWeekNext">›</button>
     </div>
 
+    <!-- Permanent action toolbar -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button class="gw-action-btn" id="gpLoadRecurringBtn">🔁 Recurring</button>
+      <button class="gw-action-btn" id="gpLoadSeedBtn2">⚡ Seed week</button>
+      <button class="gw-action-btn" id="gpReplanBtn">↺ Replan</button>
+      <button class="gw-action-btn gw-action-danger" id="gpClearWeekBtn">🗑 Clear</button>
+    </div>
+
     <!-- Week thesis (shown when plan exists) -->
     <div class="gp-thesis-card" id="gpThesisCard" style="display:none">
       <span class="gp-thesis-label">THIS WEEK IS ABOUT</span>
       <div class="gp-thesis-text" id="gpThesisText"></div>
-      <button class="gp-replan-btn" id="gpReplanBtn">↺ Replan week</button>
     </div>
 
     <!-- Fixed commitments panel -->
@@ -8685,8 +8700,20 @@ document.querySelectorAll('.goals-tab').forEach(btn => {
 // PLAN TAB
 // ============================================================
 
-const GS_COMMITMENTS_KEY = 'goals_commitments_v1';
+const GS_COMMITMENTS_KEY = 'goals_commitments_v3';
 const GS_PLAN_DRAFT_KEY  = 'goals_plan_draft_v1';
+
+const GS_DEFAULT_COMMITMENTS = [
+  { name: 'Wake + walk',          start: '07:00', end: '07:30', days: ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'], category: 'Health' },
+  { name: 'Trailhead / AEL study',start: '07:30', end: '09:00', days: ['monday','tuesday','wednesday','thursday','friday','saturday'], category: 'Career' },
+  { name: 'Get ready + commute prep', start: '09:00', end: '09:30', days: ['monday','tuesday','wednesday','thursday','friday'], category: 'Personal' },
+  { name: 'Meditation',           start: '09:30', end: '10:00', days: ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'], category: 'Health' },
+  { name: 'Commute to TCS',       start: '11:30', end: '12:00', days: ['monday','tuesday','wednesday','thursday','friday'], category: 'Career' },
+  { name: 'TCS work',             start: '12:00', end: '17:00', days: ['monday','tuesday','wednesday','thursday','friday'], category: 'Career' },
+  { name: 'Commute home',         start: '17:00', end: '17:30', days: ['monday','tuesday','wednesday','thursday','friday'], category: 'Career' },
+  { name: 'Dinner',               start: '20:00', end: '20:30', days: ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'], category: 'Personal' },
+  { name: 'Wind down',            start: '22:00', end: '22:30', days: ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'], category: 'Health' }
+];
 
 let gpCurrentWeekMonday = null;
 let gpEditState = null;          // for task tweak modal in step 3
@@ -8705,7 +8732,10 @@ function gpDayDate(monday, dayName) {
 // ---- Commitments ----
 
 function gpGetCommitments() {
-  return storeGet(GS_COMMITMENTS_KEY) || [];
+  const stored = storeGet(GS_COMMITMENTS_KEY);
+  if (stored !== null && stored !== undefined) return stored;
+  storeSet(GS_COMMITMENTS_KEY, GS_DEFAULT_COMMITMENTS);
+  return GS_DEFAULT_COMMITMENTS;
 }
 
 function gpRenderCommitments() {
@@ -9402,12 +9432,76 @@ document.getElementById('gpTaskDelete') && document.getElementById('gpTaskDelete
   }
 });
 
-// ---- Replan button ----
+// ---- Permanent toolbar handlers ----
 document.getElementById('gpReplanBtn') && document.getElementById('gpReplanBtn').addEventListener('click', () => {
   gpPlanDraft = null;
   gpBrainDump = '';
   gpRenderPlan();
 });
+
+document.getElementById('gpClearWeekBtn') && document.getElementById('gpClearWeekBtn').addEventListener('click', () => {
+  if (!gpCurrentWeekMonday) return;
+  if (!confirm('Clear all tasks for this week?')) return;
+  const weekKey = gpWeekKey(gpCurrentWeekMonday);
+  storeDelete(weekKey);
+  storeDelete(weekKey + '_meta');
+  GP_DAYS_ORDER.forEach((d, i) => {
+    const dayDate = new Date(gpCurrentWeekMonday);
+    dayDate.setDate(gpCurrentWeekMonday.getDate() + i);
+    storeDelete(gsDailyKey(dateToYYYYMMDD(dayDate)));
+  });
+  gpPlanDraft = null;
+  loadGoalsToday();
+  gpRenderPlan();
+});
+
+document.getElementById('gpLoadRecurringBtn') && document.getElementById('gpLoadRecurringBtn').addEventListener('click', () => {
+  gpLoadRecurringToWeek();
+});
+
+document.getElementById('gpLoadSeedBtn2') && document.getElementById('gpLoadSeedBtn2').addEventListener('click', () => {
+  gpLoadSeedToWeek();
+});
+
+// ---- Quick: load recurring only (no AI) ----
+function gpLoadRecurringToWeek() {
+  if (!gpCurrentWeekMonday) return;
+  const weekKey = gpWeekKey(gpCurrentWeekMonday);
+  const plan = {};
+  const commits = gpGetCommitments();
+  GP_DAYS_ORDER.forEach((dayName, i) => {
+    plan[dayName] = [];
+    commits.filter(c => (c.days || []).includes(dayName)).forEach(c => {
+      const [sh,sm] = c.start.split(':').map(Number);
+      const [eh,em] = c.end.split(':').map(Number);
+      plan[dayName].push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+        title: c.name, category: c.category, tier: 'non-neg',
+        time: c.start, duration: (eh*60+em)-(sh*60+sm), why: null
+      });
+    });
+  });
+  storeSet(weekKey, plan);
+  const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
+  if (weekKey === todayWeekKey) { storeDelete(gsDailyKey(gsDateKey())); loadGoalsToday(); }
+  gpRenderPlan();
+}
+
+// ---- Quick: load seed week ----
+function gpLoadSeedToWeek() {
+  if (!gpCurrentWeekMonday) return;
+  if (!confirm('Load seed week? This will overwrite existing tasks for this week.')) return;
+  const weekKey = gpWeekKey(gpCurrentWeekMonday);
+  storeSet(weekKey, JSON.parse(JSON.stringify(GS_SEED)));
+  storeDelete(weekKey + '_meta');
+  GP_DAYS_ORDER.forEach((d, i) => {
+    const dayDate = new Date(gpCurrentWeekMonday);
+    dayDate.setDate(gpCurrentWeekMonday.getDate() + i);
+    storeDelete(gsDailyKey(dateToYYYYMMDD(dayDate)));
+  });
+  loadGoalsToday();
+  gpRenderPlan();
+}
 
 // ---- Week nav ----
 document.getElementById('gpWeekPrev') && document.getElementById('gpWeekPrev').addEventListener('click', () => {
