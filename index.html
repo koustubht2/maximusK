@@ -8636,36 +8636,44 @@ function gwRenderWeek() {
 }
 
 function gwShowTaskPopup(task, dateStr, hasDailyData) {
-  const popup = document.getElementById('gwTaskPopup');
-  const titleEl = document.getElementById('gwPopupTitle');
-  const bodyEl  = document.getElementById('gwPopupBody');
-  if (!popup || !titleEl || !bodyEl) return;
-
-  const meta = GS_CAT_META[task.category] || { icon: '•', color: '#aaa' };
-  const isDone = hasDailyData && task.checked;
-  const isSkipped = hasDailyData && task.skipped;
-  const statusBadge = isDone
-    ? '<span style="background:rgba(110,231,183,0.15);color:#6EE7B7;border-radius:6px;padding:2px 8px;font-size:11px;">✓ Done</span>'
-    : isSkipped
-    ? '<span style="background:rgba(255,107,107,0.15);color:#FF8A8A;border-radius:6px;padding:2px 8px;font-size:11px;">— Skipped</span>'
-    : hasDailyData
-    ? '<span style="background:rgba(255,255,255,0.07);color:var(--text-secondary);border-radius:6px;padding:2px 8px;font-size:11px;">Pending</span>'
-    : '<span style="background:rgba(255,255,255,0.07);color:var(--text-tertiary);border-radius:6px;padding:2px 8px;font-size:11px;">Planned</span>';
-
-  const tierLabels = { 'non-neg': '🔴 Non-Negotiable', 'priority': '🟡 Priority', 'optional': '⚪ Optional' };
-
-  titleEl.innerHTML = `<span style="color:${meta.color}">${meta.icon}</span> ${escapeHtml(task.title)}`;
-  bodyEl.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-      ${statusBadge}
-      <span style="font-size:11px;color:var(--text-tertiary);">${tierLabels[task.tier] || task.tier}</span>
-    </div>
-    ${task.time ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">🕐 ${task.time}${task.duration ? ' · ' + task.duration + 'min' : ''}</div>` : ''}
-    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">${meta.icon} ${task.category || ''}</div>
-    ${task.why ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);">WHY: ${escapeHtml(task.why)}</div>` : ''}
-    ${isSkipped && task.skipNote ? `<div style="font-size:11px;color:#FF8A8A;margin-top:6px;">Skip reason: ${escapeHtml(task.skipNote)}</div>` : ''}`;
-
-  popup.style.display = 'block';
+  // Open the full edit modal (reuse plan tab modal, keyed to week view's Monday)
+  if (!gwCurrentWeekMonday) return;
+  const weekKey = gpWeekKey(gwCurrentWeekMonday);
+  const plan = storeGet(weekKey) || {};
+  // Find which day + index this task belongs to in the template
+  let foundDay = null, foundIdx = null;
+  GP_DAYS_ORDER.forEach(dayName => {
+    const dayTasks = plan[dayName] || [];
+    let idx = dayTasks.findIndex(t => t.id === task.id);
+    if (idx === -1 && task.title) {
+      // daily snapshot may have same data but different object ref — match by title+time
+      idx = dayTasks.findIndex(t => t.title === task.title && t.time === task.time);
+    }
+    if (idx !== -1 && foundDay === null) { foundDay = dayName; foundIdx = idx; }
+  });
+  if (!foundDay) {
+    // Task only in daily (not in template) — we can still edit it in-place in the template
+    // Infer day from dateStr
+    const d = new Date(dateStr + 'T12:00:00');
+    const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    foundDay = dayNames[d.getDay()];
+    if (!plan[foundDay]) plan[foundDay] = [];
+    plan[foundDay].push(task);
+    storeSet(weekKey, plan);
+    foundIdx = plan[foundDay].length - 1;
+  }
+  gpEditState = { dayName: foundDay, taskIdx: foundIdx, taskId: task.id, isReview: false, weekMonday: gwCurrentWeekMonday };
+  document.getElementById('gpTaskModalTitle').textContent = 'Edit Task';
+  document.getElementById('gpFieldTitle').value = task.title || '';
+  document.getElementById('gpFieldCat').value = task.category || 'Career';
+  document.getElementById('gpFieldTier').value = task.tier || 'priority';
+  document.getElementById('gpFieldTime').value = task.time || '';
+  document.getElementById('gpFieldDur').value = task.duration || '';
+  document.getElementById('gpFieldWhy').value = task.why || '';
+  gpToggleWhyField();
+  document.getElementById('gpTaskDelete').style.display = 'block';
+  document.getElementById('gpTaskModalBg').style.display = 'flex';
+  document.getElementById('gpFieldTitle').focus();
 }
 
 // Close task popup
@@ -9398,7 +9406,9 @@ document.getElementById('gpTaskSave') && document.getElementById('gpTaskSave').a
     gpCloseTaskModal();
     gpRenderStep3(document.getElementById('gpWizard'));
   } else {
-    const weekKey = gpWeekKey(gpCurrentWeekMonday);
+    const fromWeekView = !!gpEditState.weekMonday;
+    const monday = gpEditState.weekMonday || gpCurrentWeekMonday;
+    const weekKey = gpWeekKey(monday);
     const plan = storeGet(weekKey) || {};
     if (!plan[dayName]) plan[dayName] = [];
     if (taskIdx !== null && taskIdx !== undefined) plan[dayName][taskIdx] = task;
@@ -9407,13 +9417,13 @@ document.getElementById('gpTaskSave') && document.getElementById('gpTaskSave').a
     const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
     if (weekKey === todayWeekKey) { storeDelete(gsDailyKey(gsDateKey())); loadGoalsToday(); }
     gpCloseTaskModal();
-    gpRenderPlan();
+    if (fromWeekView) gwRenderWeek(); else gpRenderPlan();
   }
 });
 
 document.getElementById('gpTaskDelete') && document.getElementById('gpTaskDelete').addEventListener('click', () => {
   if (!gpEditState) return;
-  const { dayName, taskIdx, taskId, isReview } = gpEditState;
+  const { dayName, taskIdx, taskId, isReview, weekMonday } = gpEditState;
 
   if (isReview && gpPlanDraft) {
     gpPlanDraft.days[dayName] = (gpPlanDraft.days[dayName] || []).filter(t => t.id !== taskId);
@@ -9421,14 +9431,16 @@ document.getElementById('gpTaskDelete') && document.getElementById('gpTaskDelete
     gpRenderStep3(document.getElementById('gpWizard'));
   } else {
     if (taskIdx === null || taskIdx === undefined) return;
-    const weekKey = gpWeekKey(gpCurrentWeekMonday);
+    const fromWeekView = !!weekMonday;
+    const monday = weekMonday || gpCurrentWeekMonday;
+    const weekKey = gpWeekKey(monday);
     const plan = storeGet(weekKey) || {};
     if (plan[dayName]) plan[dayName].splice(taskIdx, 1);
     storeSet(weekKey, plan);
     const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
     if (weekKey === todayWeekKey) { storeDelete(gsDailyKey(gsDateKey())); loadGoalsToday(); }
     gpCloseTaskModal();
-    gpRenderPlan();
+    if (fromWeekView) gwRenderWeek(); else gpRenderPlan();
   }
 });
 
@@ -9440,7 +9452,7 @@ document.getElementById('gpReplanBtn') && document.getElementById('gpReplanBtn')
 });
 
 document.getElementById('gpClearWeekBtn') && document.getElementById('gpClearWeekBtn').addEventListener('click', () => {
-  if (!gpCurrentWeekMonday) return;
+  if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
   if (!confirm('Clear all tasks for this week?')) return;
   const weekKey = gpWeekKey(gpCurrentWeekMonday);
   storeDelete(weekKey);
@@ -9465,7 +9477,7 @@ document.getElementById('gpLoadSeedBtn2') && document.getElementById('gpLoadSeed
 
 // ---- Quick: load recurring only (no AI) ----
 function gpLoadRecurringToWeek() {
-  if (!gpCurrentWeekMonday) return;
+  if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
   const weekKey = gpWeekKey(gpCurrentWeekMonday);
   const plan = {};
   const commits = gpGetCommitments();
@@ -9489,7 +9501,7 @@ function gpLoadRecurringToWeek() {
 
 // ---- Quick: load seed week ----
 function gpLoadSeedToWeek() {
-  if (!gpCurrentWeekMonday) return;
+  if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
   if (!confirm('Load seed week? This will overwrite existing tasks for this week.')) return;
   const weekKey = gpWeekKey(gpCurrentWeekMonday);
   storeSet(weekKey, JSON.parse(JSON.stringify(GS_SEED)));
