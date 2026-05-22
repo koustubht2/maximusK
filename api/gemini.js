@@ -1,3 +1,5 @@
+export const config = { api: { bodyParser: true } };
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -5,7 +7,16 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API key not configured' });
+    return res.status(500).json({ error: 'API key not configured on server' });
+  }
+
+  // Ensure body is parsed
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch(e) { return res.status(400).json({ error: 'Invalid JSON body' }); }
+  }
+  if (!body) {
+    return res.status(400).json({ error: 'Empty request body' });
   }
 
   try {
@@ -17,7 +28,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
           'x-goog-api-key': apiKey,
         },
-        body: JSON.stringify(req.body),
+        body: JSON.stringify(body),
       }
     );
 
