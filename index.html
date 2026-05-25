@@ -9469,25 +9469,17 @@ document.getElementById('gpLoadSeedBtn2') && document.getElementById('gpLoadSeed
 function gpLoadRecurringToWeek() {
   if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
   storeDelete(GS_COMMITS_HIDDEN_KEY);
+  // Commitments already render as colored blocks in the week view — no need to also add them as tasks.
+  // Just ensure the template exists (empty per day) and show the blocks.
   const weekKey = gpWeekKey(gpCurrentWeekMonday);
+  const existing = storeGet(weekKey) || {};
   const plan = {};
-  const commits = gpGetCommitments();
-  GP_DAYS_ORDER.forEach((dayName, i) => {
-    plan[dayName] = [];
-    commits.filter(c => (c.days || []).includes(dayName)).forEach(c => {
-      const [sh,sm] = c.start.split(':').map(Number);
-      const [eh,em] = c.end.split(':').map(Number);
-      plan[dayName].push({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
-        title: c.name, category: c.category, tier: 'non-neg',
-        time: c.start, duration: (eh*60+em)-(sh*60+sm), why: null
-      });
-    });
-  });
+  GP_DAYS_ORDER.forEach(dayName => { plan[dayName] = existing[dayName] || []; });
   storeSet(weekKey, plan);
   const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
   if (weekKey === todayWeekKey) { storeDelete(gsDailyKey(gsDateKey())); loadGoalsToday(); }
   gpRenderPlan();
+  if (typeof gwRenderWeek === 'function') gwRenderWeek();
 }
 
 // ---- Quick: load seed week ----
