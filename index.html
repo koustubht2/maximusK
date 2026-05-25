@@ -7680,65 +7680,50 @@ function gsFeedbackKey(dateStr) { return 'goals_feedback_' + dateStr; }
 const GS_SEED_WEEK_KEY = 'goals_template_2026-W22';
 const GS_SEED = {
   monday: [
-    { id: 'mn1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
-    { id: 'mn2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
     { id: 'mn3', title: 'Log expenses from weekend', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 15, why: 'Gaps in expense tracking distort your net worth and break the feedback loop.' },
-    { id: 'mn4', title: 'TCS client ticket triage', category: 'Career', tier: 'priority', time: '12:00', duration: 60, why: 'Unresolved tickets compound. Early triage prevents escalations.' },
-    { id: 'mn5', title: 'Research visa document checklist', category: 'Going Abroad', tier: 'priority', time: '18:30', duration: 45, why: 'Every week without a complete checklist is a week of avoidable risk to your timeline.' },
-    { id: 'mn6', title: 'Cold outreach — 2 LinkedIn messages', category: 'Business', tier: 'priority', time: '20:00', duration: 30, why: 'The pipeline only moves if you feed it. Two messages a day is the minimum viable effort.' },
-    { id: 'mn7', title: 'Read 20 pages', category: 'Personal', tier: 'optional', time: '22:00', duration: 30 }
+    { id: 'mn5', title: 'Research visa document checklist', category: 'Going Abroad', tier: 'priority', time: '17:30', duration: 45, why: 'Every week without a complete checklist is a week of avoidable risk to your timeline.' },
+    { id: 'mn6', title: 'Cold outreach — 2 LinkedIn messages', category: 'Business', tier: 'priority', time: '20:30', duration: 30, why: 'The pipeline only moves if you feed it. Two messages a day is the minimum viable effort.' },
+    { id: 'mn7', title: 'Read 20 pages', category: 'Personal', tier: 'optional', time: '21:15', duration: 30 }
   ],
   tuesday: [
-    { id: 'tu1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
-    { id: 'tu2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
     { id: 'tu3', title: 'Review monthly budget vs actuals', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 20, why: 'Budget drift is invisible unless you check it. One review a week keeps you in control.' },
-    { id: 'tu4', title: 'TCS project documentation update', category: 'Career', tier: 'priority', time: '12:00', duration: 60, why: 'Stale docs create confusion and slow down the team. Stay current.' },
-    { id: 'tu5', title: 'Freelance proposal draft', category: 'Business', tier: 'priority', time: '18:30', duration: 60, why: 'A sent proposal is infinitely more valuable than a draft. Move it forward.' },
-    { id: 'tu6', title: 'Language learning — 30 min', category: 'Going Abroad', tier: 'priority', time: '20:00', duration: 30, why: 'Consistent daily practice is the only path to fluency before moving.' },
-    { id: 'tu7', title: 'Journal — weekly reflection', category: 'Personal', tier: 'optional', time: '22:00', duration: 20 }
+    { id: 'tu5', title: 'Freelance proposal draft', category: 'Business', tier: 'priority', time: '17:30', duration: 60, why: 'A sent proposal is infinitely more valuable than a draft. Move it forward.' },
+    { id: 'tu6', title: 'Language learning — 30 min', category: 'Going Abroad', tier: 'priority', time: '20:30', duration: 30, why: 'Consistent daily practice is the only path to fluency before moving.' },
+    { id: 'tu7', title: 'Journal — weekly reflection', category: 'Personal', tier: 'optional', time: '21:15', duration: 20 }
   ],
   wednesday: [
-    { id: 'we1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
-    { id: 'we2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
     { id: 'we3', title: 'Net worth snapshot', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 10, why: 'Mid-week check-in prevents end-of-month surprises.' },
-    { id: 'we4', title: 'TCS standup prep + delivery', category: 'Career', tier: 'priority', time: '12:00', duration: 45, why: 'Clear communication builds trust with the team and management.' },
-    { id: 'we5', title: 'Visa application research — 1 hour', category: 'Going Abroad', tier: 'priority', time: '18:30', duration: 60, why: 'The closer the deadline, the more this matters. Do it now.' },
-    { id: 'we6', title: 'Business idea validation call / DM', category: 'Business', tier: 'priority', time: '20:00', duration: 30, why: 'Ideas die without pressure-testing. One conversation moves you forward.' },
-    { id: 'we7', title: 'Stretch + recovery', category: 'Health', tier: 'optional', time: '22:00', duration: 20 }
+    { id: 'we5', title: 'Visa application research — 1 hour', category: 'Going Abroad', tier: 'priority', time: '17:30', duration: 60, why: 'The closer the deadline, the more this matters. Do it now.' },
+    { id: 'we6', title: 'Business idea validation call / DM', category: 'Business', tier: 'priority', time: '20:30', duration: 30, why: 'Ideas die without pressure-testing. One conversation moves you forward.' },
+    { id: 'we7', title: 'Stretch + recovery', category: 'Health', tier: 'optional', time: '21:15', duration: 20 }
   ],
   thursday: [
-    { id: 'th1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'Your cardio base directly impacts your readiness score and cognitive output for the rest of the day.' },
-    { id: 'th2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
     { id: 'th3', title: 'Log expenses', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 10, why: 'Gaps in expense tracking distort your net worth and break the feedback loop.' },
-    { id: 'th4', title: 'TCS client deliverable check', category: 'Career', tier: 'priority', time: '12:00', duration: 60, why: 'Stay ahead of deadlines — Thursday is the inflection point for week delivery.' },
-    { id: 'th5', title: 'Freelance client follow-up', category: 'Business', tier: 'priority', time: '18:30', duration: 30, why: 'Follow-up converts interest to contracts. Don\'t let leads go cold.' },
-    { id: 'th6', title: 'Language learning — 30 min', category: 'Going Abroad', tier: 'priority', time: '20:00', duration: 30, why: 'Consistent daily practice is the only path to fluency before moving.' },
-    { id: 'th7', title: 'Call family', category: 'Personal', tier: 'optional', time: '21:00', duration: 30 }
+    { id: 'th5', title: 'Freelance client follow-up', category: 'Business', tier: 'priority', time: '17:30', duration: 30, why: 'Follow-up converts interest to contracts. Don\'t let leads go cold.' },
+    { id: 'th6', title: 'Language learning — 30 min', category: 'Going Abroad', tier: 'priority', time: '20:30', duration: 30, why: 'Consistent daily practice is the only path to fluency before moving.' },
+    { id: 'th7', title: 'Call family', category: 'Personal', tier: 'optional', time: '21:15', duration: 30 }
   ],
   friday: [
-    { id: 'fr1', title: 'Morning run 5km', category: 'Health', tier: 'non-neg', time: '07:00', duration: 45, why: 'End the week strong. Friday run sets the tone for the weekend.' },
-    { id: 'fr2', title: 'Salesforce Trailhead — 2 modules', category: 'Career', tier: 'non-neg', time: '07:30', duration: 90, why: 'Consistent daily progress is the only way to hit the certification target before the deadline.' },
     { id: 'fr3', title: 'Weekly finance review — income vs spend', category: 'Finance', tier: 'non-neg', time: '10:00', duration: 20, why: 'Friday review is the anchor of your financial system. Skip it and you lose the week.' },
-    { id: 'fr4', title: 'TCS weekly summary & report', category: 'Career', tier: 'priority', time: '12:00', duration: 45, why: 'Visibility with management is built over consistent, clear reporting.' },
-    { id: 'fr5', title: 'Post one piece of content (LinkedIn / X)', category: 'Business', tier: 'priority', time: '18:30', duration: 30, why: 'Personal brand compounds. One post a week is the minimum viable presence.' },
-    { id: 'fr6', title: 'Plan weekend visa/language study block', category: 'Going Abroad', tier: 'priority', time: '20:00', duration: 20, why: 'Unplanned weekends lose hours. Schedule it now.' },
-    { id: 'fr7', title: 'Movie / chill — guilt-free', category: 'Personal', tier: 'optional', time: '22:00', duration: 120 }
+    { id: 'fr5', title: 'Post one piece of content (LinkedIn / X)', category: 'Business', tier: 'priority', time: '17:30', duration: 30, why: 'Personal brand compounds. One post a week is the minimum viable presence.' },
+    { id: 'fr6', title: 'Plan weekend visa/language study block', category: 'Going Abroad', tier: 'priority', time: '20:30', duration: 20, why: 'Unplanned weekends lose hours. Schedule it now.' },
+    { id: 'fr7', title: 'Movie / chill — guilt-free', category: 'Personal', tier: 'optional', time: '21:00', duration: 60 }
   ],
   saturday: [
-    { id: 'sa1', title: 'Long run or hike — 60min', category: 'Health', tier: 'non-neg', time: '08:00', duration: 60, why: 'Weekend long effort builds the aerobic base that makes weekday runs easier.' },
-    { id: 'sa2', title: 'Salesforce practice exam — mock test', category: 'Career', tier: 'non-neg', time: '10:00', duration: 90, why: 'Exam simulation is non-negotiable in the final prep phase. Knowledge without test-taking skill fails.' },
+    { id: 'sa1', title: 'Long run or hike — 60min', category: 'Health', tier: 'non-neg', time: '09:05', duration: 60, why: 'Weekend long effort builds the aerobic base that makes weekday runs easier.' },
+    { id: 'sa2', title: 'Salesforce practice exam — mock test', category: 'Career', tier: 'non-neg', time: '10:30', duration: 90, why: 'Exam simulation is non-negotiable in the final prep phase. Knowledge without test-taking skill fails.' },
     { id: 'sa3', title: 'Visa document gathering — 2 hours', category: 'Going Abroad', tier: 'priority', time: '13:00', duration: 120, why: 'Saturdays are for deep work the week won\'t allow. Use this block.' },
     { id: 'sa4', title: 'Freelance project work — 2 hours', category: 'Business', tier: 'priority', time: '16:00', duration: 120, why: 'Your side income depends on hours put in. This is the main weekly block.' },
-    { id: 'sa5', title: 'Review investments / portfolio', category: 'Finance', tier: 'optional', time: '19:00', duration: 30 },
-    { id: 'sa6', title: 'Social / rest', category: 'Personal', tier: 'optional', time: '20:00', duration: 120 }
+    { id: 'sa5', title: 'Review investments / portfolio', category: 'Finance', tier: 'optional', time: '18:30', duration: 30 },
+    { id: 'sa6', title: 'Social / rest', category: 'Personal', tier: 'optional', time: '20:30', duration: 90 }
   ],
   sunday: [
-    { id: 'su1', title: 'Morning yoga / mobility — 45min', category: 'Health', tier: 'non-neg', time: '08:00', duration: 45, why: 'Sunday mobility is your recovery investment for the week ahead.' },
+    { id: 'su1', title: 'Morning yoga / mobility — 45min', category: 'Health', tier: 'non-neg', time: '07:35', duration: 45, why: 'Sunday mobility is your recovery investment for the week ahead.' },
     { id: 'su2', title: 'Weekly planning session', category: 'Personal', tier: 'non-neg', time: '10:00', duration: 60, why: 'The week you don\'t plan is the week you drift. Sunday planning is the keystone habit.' },
-    { id: 'su3', title: 'Salesforce Trailhead — 1 module review', category: 'Career', tier: 'priority', time: '12:00', duration: 45, why: 'Light Sunday review consolidates the week\'s learning without overloading.' },
+    { id: 'su3', title: 'Salesforce Trailhead — 1 module review', category: 'Career', tier: 'priority', time: '11:15', duration: 45, why: 'Light Sunday review consolidates the week\'s learning without overloading.' },
     { id: 'su4', title: 'Language learning — 45 min', category: 'Going Abroad', tier: 'priority', time: '14:00', duration: 45, why: 'End the week with a longer language session to cement weekly progress.' },
     { id: 'su5', title: 'Meal prep for the week', category: 'Health', tier: 'priority', time: '16:00', duration: 60, why: 'Prepared food means better eating decisions all week — directly tied to readiness scores.' },
-    { id: 'su6', title: 'Read / Netflix', category: 'Personal', tier: 'optional', time: '20:00', duration: 90 }
+    { id: 'su6', title: 'Read / Netflix', category: 'Personal', tier: 'optional', time: '20:30', duration: 60 }
   ]
 };
 
