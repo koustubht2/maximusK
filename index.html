@@ -1098,6 +1098,18 @@ body::after {
   display: flex; align-items: flex-end; justify-content: center;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+#gpTaskModalBg, #gpCommitModalBg {
+  align-items: center;
+  padding: 20px;
+  padding-bottom: 20px;
+}
+#gpTaskModalBg .gs-modal, #gpCommitModalBg .gs-modal {
+  border-radius: 20px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  animation: gw-popup-in 0.2s cubic-bezier(0.22,1,0.36,1);
+}
 .gs-modal {
   background: #1a1a1f; border-radius: 20px 20px 0 0;
   padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
