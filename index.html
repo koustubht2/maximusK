@@ -1398,6 +1398,40 @@ body::after {
 .gw-action-btn.gw-action-danger { color: #FF8A8A; border-color: rgba(255,100,100,0.2); }
 .gw-action-btn.gw-action-danger:hover { background: rgba(255,100,100,0.08); }
 
+/* ===== PLAN TOOLBAR ===== */
+.gp-toolbar {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; margin-bottom: 12px;
+}
+.gp-tool-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px; padding: 10px 6px 9px;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.gp-tool-btn:hover { background: rgba(255,255,255,0.06); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.gp-tool-btn:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+.gp-tool-icon { width: 16px; height: 16px; display: block; }
+.gp-tool-label {
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-tertiary); line-height: 1;
+}
+.gp-tool-recurring { border-color: rgba(110,231,183,0.15); }
+.gp-tool-recurring .gp-tool-icon { color: #6EE7B7; }
+.gp-tool-recurring .gp-tool-label { color: #6EE7B7; }
+.gp-tool-seed { border-color: rgba(251,191,36,0.15); }
+.gp-tool-seed .gp-tool-icon { color: #FBBF24; }
+.gp-tool-seed .gp-tool-label { color: #FBBF24; }
+.gp-tool-replan { border-color: rgba(192,132,252,0.15); }
+.gp-tool-replan .gp-tool-icon { color: #C084FC; }
+.gp-tool-replan .gp-tool-label { color: #C084FC; }
+.gp-tool-clear { border-color: rgba(255,138,138,0.15); }
+.gp-tool-clear .gp-tool-icon { color: #FF8A8A; }
+.gp-tool-clear .gp-tool-label { color: #FF8A8A; }
+
 /* ===== PLAN TAB ===== */
 .gp-week-nav {
   display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
@@ -6711,11 +6745,38 @@ window.canonicalJson = function(obj) {
     </div>
 
     <!-- Permanent action toolbar -->
-    <div style="display:flex;gap:6px;margin-bottom:14px;">
-      <button class="gw-action-btn" id="gpLoadRecurringBtn">🔁 Recurring</button>
-      <button class="gw-action-btn" id="gpLoadSeedBtn2">⚡ Seed week</button>
-      <button class="gw-action-btn" id="gpReplanBtn">↺ Replan</button>
-      <button class="gw-action-btn gw-action-danger" id="gpClearWeekBtn">🗑 Clear</button>
+    <div class="gp-toolbar">
+      <button class="gp-tool-btn gp-tool-recurring" id="gpLoadRecurringBtn">
+        <svg class="gp-tool-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 10a6 6 0 0 1 6-6 6 6 0 0 1 4.24 1.76L16 8"/>
+          <path d="M16 4v4h-4"/>
+          <path d="M16 10a6 6 0 0 1-6 6 6 6 0 0 1-4.24-1.76L4 12"/>
+          <path d="M4 16v-4h4"/>
+        </svg>
+        <span class="gp-tool-label">Recurring</span>
+      </button>
+      <button class="gp-tool-btn gp-tool-seed" id="gpLoadSeedBtn2">
+        <svg class="gp-tool-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 3L5 11h6l-2 6 8-9h-6l2-5z"/>
+        </svg>
+        <span class="gp-tool-label">Seed Week</span>
+      </button>
+      <button class="gp-tool-btn gp-tool-replan" id="gpReplanBtn">
+        <svg class="gp-tool-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 10a7 7 0 0 1 7-7 7 7 0 0 1 5 2.1"/>
+          <path d="M17 4v4h-4"/>
+          <path d="M8 14H4v4"/>
+          <path d="M17 10a7 7 0 0 1-7 7 7 7 0 0 1-5-2.1"/>
+        </svg>
+        <span class="gp-tool-label">Replan</span>
+      </button>
+      <button class="gp-tool-btn gp-tool-clear" id="gpClearWeekBtn">
+        <svg class="gp-tool-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 7h10M8 7V5h4v2M6 7l1 9h6l1-9"/>
+          <path d="M9 11v4M11 11v4"/>
+        </svg>
+        <span class="gp-tool-label">Clear</span>
+      </button>
     </div>
 
     <!-- Week thesis (shown when plan exists) -->
