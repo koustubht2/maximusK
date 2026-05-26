@@ -439,7 +439,8 @@ body::after {
   align-items: center;
   gap: 26px;
   flex-wrap: wrap;
-  margin: 32px 0;
+  margin: 0 0 10px;
+  padding: 22px 20px;
 }
 .day-ring-left {
   width: 168px; height: 168px;
@@ -501,18 +502,22 @@ body::after {
   gap: 6px;
 }
 .day-ring-status {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-primary);
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 .day-ring-remaining {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 .day-ring-range {
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-tertiary);
 }
 @media (max-width: 480px) {
@@ -879,81 +884,113 @@ body::after {
 
 
 /* ========== GOALS SYSTEM ========== */
-.goals-tabs-wrap { margin: 0 0 14px; }
+.goals-tabs-wrap { margin: 0 0 12px; }
 .goals-tab-bar {
   display: flex; gap: 4px;
   background: rgba(255,255,255,0.04);
-  border-radius: 12px; padding: 4px;
+  border-radius: 14px; padding: 4px;
+  border: 1px solid rgba(255,255,255,0.05);
 }
 .goals-tab {
   flex: 1; background: none; border: none; cursor: pointer;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--text-tertiary);
-  padding: 8px 4px; border-radius: 9px;
+  padding: 9px 4px; border-radius: 10px;
   font-family: inherit; transition: background 0.15s, color 0.15s;
 }
-.goals-tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.goals-tab.active {
+  background: var(--bg-card); color: var(--text-primary);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
 .goals-tab-content { display: none; }
 .goals-tab-content.active { display: block; }
 
 /* Banner */
 .gs-banner {
   background: var(--bg-card);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.gs-banner-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px;
 }
 .gs-banner-slot {
-  font-size: 15px; font-weight: 700; color: var(--text-primary);
-  letter-spacing: -0.01em;
+  font-size: 17px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: -0.02em; line-height: 1.2;
 }
 .gs-banner-next {
-  font-size: 11px; color: var(--text-tertiary);
-  margin-top: 3px; letter-spacing: 0.02em;
+  font-size: 10px; color: var(--text-tertiary);
+  margin-top: 5px; letter-spacing: 0.04em; font-weight: 500;
 }
-.gs-banner.eod { background: linear-gradient(135deg, rgba(110,231,183,0.07), rgba(125,211,252,0.04)); }
+.gs-banner.eod {
+  background: linear-gradient(135deg, rgba(110,231,183,0.09), rgba(125,211,252,0.05));
+  border-color: rgba(110,231,183,0.15);
+}
 
-/* Category Rings */
+/* Category Rings — unified card like oura-metrics */
 .gs-rings-wrap {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 8px; margin-bottom: 12px;
+  background: var(--bg-card);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  overflow: hidden;
+  margin-bottom: 10px;
 }
 .gs-ring-item {
   position: relative;
-  background: var(--bg-card);
-  border-radius: 14px; padding: 12px 8px 10px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  padding: 20px 10px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.gs-ring-svg { width: 52px; height: 52px; }
+.gs-ring-item:nth-child(3n) { border-right: none; }
+.gs-ring-item:nth-last-child(-n+3) { border-bottom: none; }
+.gs-ring-svg { width: 58px; height: 58px; }
 .gs-ring-track { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 4; }
-.gs-ring-fill  { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
-.gs-ring-pct {
-  font-size: 11px; font-weight: 700; fill: var(--text-primary);
+.gs-ring-fill  { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(0.22,1,0.36,1); }
+.gs-ring-icon-svg {
+  font-size: 14px;
   dominant-baseline: middle; text-anchor: middle;
 }
+.gs-ring-fraction {
+  font-size: 12px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  line-height: 1;
+}
 .gs-ring-label {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  font-size: 8.5px; font-weight: 600; letter-spacing: 0.10em;
   text-transform: uppercase; color: var(--text-tertiary); text-align: center;
+  line-height: 1.3; margin-top: -2px;
 }
 
 /* Insight Card */
 .gs-insight-card {
-  background: linear-gradient(135deg, rgba(110,231,183,0.07), rgba(125,211,252,0.04));
-  border: 1px solid rgba(110,231,183,0.15);
-  border-radius: 12px; padding: 12px 14px;
-  display: flex; align-items: flex-start; gap: 10px;
-  margin-bottom: 12px;
+  background: var(--bg-card);
+  border: 1px solid rgba(110,231,183,0.12);
+  border-radius: 18px;
+  padding: 16px 18px;
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
-.gs-insight-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
-.gs-insight-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gs-insight-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.gs-insight-body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .gs-insight-label {
-  font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
-  text-transform: uppercase; color: #6EE7B7; opacity: 0.9;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #6EE7B7;
 }
 .gs-insight-text {
-  font-size: 12px; font-weight: 500; color: var(--text-secondary); line-height: 1.5;
+  font-size: 12px; font-weight: 500; color: var(--text-secondary); line-height: 1.55;
   transition: opacity 0.3s ease;
 }
 .gs-insight-text.fading { opacity: 0; }
@@ -961,15 +998,24 @@ body::after {
 .gs-insight-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.2s; }
 .gs-insight-dot.active { background: #6EE7B7; }
 
-/* Task Sections */
-.gs-section { margin-bottom: 14px; }
+/* Task Sections — unified card per section */
+.gs-section {
+  background: var(--bg-card);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
 .gs-section-header {
   display: flex; align-items: center; gap: 8px;
-  margin-bottom: 8px; padding: 0 2px;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .gs-section-title {
-  font-size: 10px; font-weight: 800; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--text-tertiary);
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-tertiary); flex: 1;
 }
 .gs-section-badge {
   font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em;
@@ -979,34 +1025,35 @@ body::after {
 .gs-section-count {
   font-size: 9px; color: var(--text-tertiary); font-weight: 600;
 }
+.gs-task-list { display: flex; flex-direction: column; }
 
-/* Task Rows */
+/* Task Rows — internal dividers, no individual cards */
 .gs-task {
-  background: var(--bg-card);
-  border-radius: 12px; padding: 11px 12px;
-  margin-bottom: 6px;
-  display: flex; align-items: flex-start; gap: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  transition: opacity 0.2s;
+  padding: 13px 18px;
+  display: flex; align-items: flex-start; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: opacity 0.2s, background 0.15s;
   position: relative;
 }
-.gs-task.checked { opacity: 0.45; }
-.gs-task.skipped { opacity: 0.35; }
+.gs-task:last-child { border-bottom: none; }
+.gs-task:hover { background: rgba(255,255,255,0.02); }
+.gs-task.checked { opacity: 0.4; }
+.gs-task.skipped { opacity: 0.3; }
 .gs-task-cb {
-  width: 18px; height: 18px; border-radius: 6px;
-  border: 1.5px solid rgba(255,255,255,0.2);
+  width: 20px; height: 20px; border-radius: 6px;
+  border: 1.5px solid rgba(255,255,255,0.18);
   background: none; cursor: pointer; flex-shrink: 0; margin-top: 1px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.15s, border-color 0.15s;
 }
 .gs-task-cb.checked { background: #6EE7B7; border-color: #6EE7B7; }
-.gs-task-cb.checked::after { content: '✓'; font-size: 10px; color: #000; font-weight: 800; }
+.gs-task-cb.checked::after { content: '✓'; font-size: 11px; color: #000; font-weight: 800; }
 .gs-task-cb.skipped { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
 .gs-task-cb.skipped::after { content: '—'; font-size: 9px; color: var(--text-tertiary); font-weight: 700; }
 .gs-task-body { flex: 1; min-width: 0; }
 .gs-task-title {
-  font-size: 13px; font-weight: 600; color: var(--text-primary);
-  line-height: 1.35; margin-bottom: 4px;
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  line-height: 1.3; margin-bottom: 5px;
 }
 .gs-task.checked .gs-task-title,
 .gs-task.skipped .gs-task-title { text-decoration: line-through; color: var(--text-tertiary); }
@@ -1017,6 +1064,7 @@ body::after {
 }
 .gs-task-time {
   font-size: 10px; color: var(--text-tertiary); font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 .gs-task-dur {
   font-size: 10px; color: var(--text-tertiary); font-weight: 500;
@@ -1030,18 +1078,18 @@ body::after {
 }
 .gs-task-skip:hover { color: #FF8A8A; background: rgba(255,138,138,0.1); }
 
-/* Log Slot Button — manual fallback, subtle */
+/* Log Slot Button */
 .gs-log-btn {
-  display: block; width: 100%; padding: 10px;
+  display: block; width: 100%; padding: 12px;
   background: transparent;
-  border: 1px dashed rgba(255,255,255,0.08);
-  border-radius: 10px; color: var(--text-tertiary);
+  border: 1px dashed rgba(255,255,255,0.07);
+  border-radius: 14px; color: var(--text-tertiary);
   font-size: 11px; font-weight: 500; font-family: inherit;
-  cursor: pointer; margin-top: 8px; margin-bottom: 16px;
+  cursor: pointer; margin-top: 6px; margin-bottom: 10px;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em; text-transform: uppercase;
 }
-.gs-log-btn:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.15); color: var(--text-secondary); }
+.gs-log-btn:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.14); color: var(--text-secondary); }
 
 /* Feedback + Skip Modals */
 .gs-modal-bg {
@@ -1117,12 +1165,18 @@ body::after {
 /* EOD Summary */
 .gs-eod-wrap { padding: 4px 0 16px; }
 .gs-eod-title {
-  font-size: 14px; font-weight: 800; color: var(--text-primary);
-  margin-bottom: 12px; letter-spacing: -0.01em;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 10px;
 }
 .gs-eod-stat {
-  background: var(--bg-card); border-radius: 12px; padding: 12px 14px;
-  margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+  background: var(--bg-card);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  padding: 14px 18px;
+  margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
 .gs-coming-soon {
@@ -1132,11 +1186,13 @@ body::after {
 
 /* Current Focus Card */
 .gs-focus-card {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(110,231,183,0.08) 0%, rgba(125,211,252,0.05) 100%);
-  border: 1px solid rgba(110,231,183,0.25);
-  box-shadow: 0 0 28px rgba(110,231,183,0.08), 0 4px 20px rgba(0,0,0,0.35);
+  background: var(--bg-card);
+  border: 1px solid rgba(110,231,183,0.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(110,231,183,0.06);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
   overflow: hidden;
 }
 .gs-focus-now {
@@ -1210,24 +1266,28 @@ body::after {
   display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
 }
 .gw-cal-wrap {
-  border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 18px; overflow: hidden;
   background: var(--bg-card);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gw-cal-header {
-  display: grid; border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: grid; border-bottom: 1px solid rgba(255,255,255,0.05);
   /* columns set by JS: gutter + 7 day cols */
 }
 .gw-cal-header-gutter { width: 36px; flex-shrink: 0; }
 .gw-cal-day-head {
-  padding: 8px 4px 7px; text-align: center; border-left: 1px solid rgba(255,255,255,0.05);
+  padding: 10px 4px 9px; text-align: center; border-left: 1px solid rgba(255,255,255,0.05);
 }
 .gw-cal-day-letter {
-  display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  display: block; font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--text-tertiary);
 }
 .gw-cal-day-num {
-  display: block; font-size: 16px; font-weight: 800; color: var(--text-primary);
-  line-height: 1.2; margin-top: 1px;
+  display: block; font-size: 16px; font-weight: 700; color: var(--text-primary);
+  line-height: 1.2; margin-top: 2px;
+  font-variant-numeric: tabular-nums;
 }
 .gw-cal-day-head.today .gw-cal-day-letter { color: #6EE7B7; }
 .gw-cal-day-head.today .gw-cal-day-num {
@@ -1304,20 +1364,23 @@ body::after {
 /* Task popup */
 .gw-task-popup {
   margin-top: 12px; background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 18px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gw-task-popup-header {
-  display: flex; align-items: center; padding: 12px 14px 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.07); gap: 8px;
+  display: flex; align-items: center; padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05); gap: 8px;
 }
 .gw-task-popup-title {
-  flex: 1; font-size: 14px; font-weight: 700; color: var(--text-primary);
+  flex: 1; font-size: 14px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;
 }
-.gw-task-popup-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.gw-task-popup-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
 .gw-popup-field { display: flex; gap: 10px; align-items: flex-start; }
 .gw-popup-lbl {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--text-tertiary); width: 60px; flex-shrink: 0; padding-top: 1px;
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--text-tertiary); width: 60px; flex-shrink: 0; padding-top: 2px;
 }
 .gw-popup-val { font-size: 12px; color: var(--text-secondary); flex: 1; line-height: 1.5; }
 .gw-detail-close {
@@ -1337,54 +1400,68 @@ body::after {
 
 /* ===== PLAN TAB ===== */
 .gp-week-nav {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
 }
 .gp-week-btn {
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px; color: var(--text-secondary); font-size: 18px;
-  width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; color: var(--text-secondary); font-size: 18px;
+  width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background 0.15s; flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
-.gp-week-btn:hover { background: rgba(255,255,255,0.1); }
+.gp-week-btn:hover { background: rgba(255,255,255,0.07); }
 .gp-week-label {
-  flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--text-primary);
+  flex: 1; text-align: center; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary);
 }
 
 /* Thesis card */
 .gp-thesis-card {
-  background: linear-gradient(135deg, rgba(110,231,183,0.08), rgba(192,132,252,0.06));
-  border: 1px solid rgba(110,231,183,0.2); border-radius: 16px;
-  padding: 16px; margin-bottom: 16px; position: relative;
+  background: var(--bg-card);
+  border: 1px solid rgba(110,231,183,0.18); border-radius: 18px;
+  padding: 18px 20px; margin-bottom: 10px; position: relative;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gp-thesis-label {
-  font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: #6EE7B7;
-  text-transform: uppercase; display: block; margin-bottom: 6px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; color: #6EE7B7;
+  text-transform: uppercase; display: block; margin-bottom: 8px;
 }
 .gp-thesis-text {
-  font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.4;
+  font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.45;
+  letter-spacing: -0.01em;
 }
 .gp-replan-btn {
-  margin-top: 10px; font-size: 11px; font-weight: 600; color: var(--text-tertiary);
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; padding: 5px 12px; cursor: pointer; font-family: inherit;
+  margin-top: 12px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-tertiary); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 6px 14px; cursor: pointer; font-family: inherit;
   transition: all 0.15s;
 }
-.gp-replan-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.08); }
+.gp-replan-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.07); }
 
 /* Section label */
 .gp-section-label {
-  font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: var(--text-tertiary);
-  text-transform: uppercase; margin: 16px 0 8px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; color: var(--text-tertiary);
+  text-transform: uppercase; margin: 14px 0 8px;
 }
 
-/* Commitments */
-.gp-commitments-wrap { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+/* Commitments — unified card with internal dividers */
+.gp-commitments-wrap {
+  background: var(--bg-card); border-radius: 18px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 10px;
+}
 .gp-commit-chip {
   display: flex; align-items: center; gap: 10px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px; padding: 9px 12px; cursor: pointer; transition: background 0.15s;
+  padding: 13px 18px; cursor: pointer; transition: background 0.15s;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.gp-commit-chip:hover { background: rgba(255,255,255,0.07); }
+.gp-commit-chip:last-child { border-bottom: none; }
+.gp-commit-chip:hover { background: rgba(255,255,255,0.03); }
 .gp-commit-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .gp-commit-info { flex: 1; min-width: 0; }
 .gp-commit-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
@@ -1410,18 +1487,22 @@ body::after {
 
 /* Step 1 — brain dump */
 .gp-braindump-card {
-  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px; padding: 18px; margin-bottom: 12px;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 18px; padding: 20px; margin-bottom: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gp-braindump-heading {
-  font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;
+  font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px;
+  letter-spacing: -0.01em;
 }
 .gp-braindump-sub {
-  font-size: 12px; color: var(--text-tertiary); margin-bottom: 14px; line-height: 1.5;
+  font-size: 12px; color: var(--text-tertiary); margin-bottom: 14px; line-height: 1.55;
 }
 .gp-braindump-textarea {
   width: 100%; min-height: 120px; background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
   padding: 12px; color: var(--text-primary); font-size: 13px; line-height: 1.6;
   font-family: inherit; resize: none; box-sizing: border-box; transition: border-color 0.15s;
 }
@@ -1438,15 +1519,19 @@ body::after {
 
 /* Step 2 — AI interrogation */
 .gp-ai-card {
-  background: var(--bg-card); border: 1px solid rgba(192,132,252,0.2);
-  border-radius: 16px; padding: 18px; margin-bottom: 12px;
+  background: var(--bg-card); border: 1px solid rgba(192,132,252,0.15);
+  border-radius: 18px; padding: 20px; margin-bottom: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gp-ai-eyebrow {
-  font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: #C084FC;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; color: #C084FC;
   text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
 }
 .gp-ai-question {
   font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; line-height: 1.5;
+  letter-spacing: -0.01em;
 }
 .gp-ai-question-block { margin-bottom: 18px; }
 .gp-ai-question-block:last-child { margin-bottom: 0; }
@@ -1486,19 +1571,21 @@ body::after {
 
 /* Step 3 — Review */
 .gp-review-card {
-  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px; overflow: hidden; margin-bottom: 12px;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 18px; overflow: hidden; margin-bottom: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gp-review-day-header {
-  padding: 10px 14px; display: flex; align-items: center; gap: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  background: rgba(255,255,255,0.02);
+  padding: 13px 18px; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .gp-review-day-name {
-  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--text-primary); flex: 1;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); flex: 1;
 }
-.gp-review-day-date { font-size: 11px; color: var(--text-tertiary); }
+.gp-review-day-date { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .gp-review-tasks { padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 5px; }
 .gp-review-task {
   display: flex; align-items: center; gap: 8px; padding: 8px 10px;
@@ -1525,9 +1612,12 @@ body::after {
 
 /* Thinking spinner */
 .gp-thinking {
-  display: flex; align-items: center; gap: 10px; padding: 16px;
-  background: var(--bg-card); border: 1px solid rgba(192,132,252,0.15);
-  border-radius: 16px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px; padding: 18px 20px;
+  background: var(--bg-card); border: 1px solid rgba(192,132,252,0.12);
+  border-radius: 18px; margin-bottom: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gp-thinking-dots { display: flex; gap: 4px; }
 .gp-thinking-dots span {
@@ -1541,66 +1631,73 @@ body::after {
 
 /* Existing plan view */
 .gp-plan-day-card {
-  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px; overflow: hidden; margin-bottom: 8px;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 18px; overflow: hidden; margin-bottom: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
 .gp-plan-day-hdr {
-  display: flex; align-items: center; gap: 8px; padding: 11px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 8px; padding: 13px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .gp-plan-day-hdr.today-hdr { border-left: 3px solid #6EE7B7; }
-.gp-plan-day-dname { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; flex: 1; }
-.gp-plan-day-ddate { font-size: 11px; color: var(--text-tertiary); }
-.gp-plan-day-count { font-size: 10px; color: var(--text-tertiary); background: rgba(255,255,255,0.06); border-radius: 20px; padding: 1px 7px; }
-.gp-plan-tier-section { padding: 8px 12px 4px; }
+.gp-plan-day-dname {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); flex: 1;
+}
+.gp-plan-day-ddate { font-size: 12px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.gp-plan-day-count { font-size: 9px; color: var(--text-tertiary); background: rgba(255,255,255,0.06); border-radius: 20px; padding: 2px 8px; letter-spacing: 0.04em; }
+.gp-plan-tier-section { padding: 8px 18px 4px; }
 .gp-plan-tier-label {
-  font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--text-tertiary); margin-bottom: 5px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 6px;
 }
 .gp-plan-task-pill {
-  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
-  border-radius: 8px; border-left: 3px solid transparent; margin-bottom: 4px;
-  background: rgba(255,255,255,0.03); transition: background 0.15s; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04); border-left: 3px solid transparent;
+  margin-bottom: 0; transition: background 0.15s; cursor: pointer;
+  padding-left: 10px;
 }
-.gp-plan-task-pill:hover { background: rgba(255,255,255,0.06); }
-.gp-plan-task-title { flex: 1; font-size: 12px; font-weight: 600; color: var(--text-primary); }
-.gp-plan-task-time { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
-.gp-plan-add-row { padding: 0 12px 10px; }
+.gp-plan-task-pill:last-child { border-bottom: none; }
+.gp-plan-task-pill:hover { background: rgba(255,255,255,0.02); }
+.gp-plan-add-row { padding: 0 18px 12px; }
+.gp-plan-task-title { flex: 1; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.gp-plan-task-time { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* Shared field styles */
 .gp-field-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
 .gp-field-row { display: flex; gap: 10px; margin-bottom: 0; }
 .gp-field-row .gp-field-group { margin-bottom: 12px; }
-.gp-field-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+.gp-field-label { font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
 .gp-field-input, .gp-field-select, .gp-field-textarea {
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 9px; padding: 9px 11px; color: var(--text-primary); font-size: 13px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 9px 12px; color: var(--text-primary); font-size: 13px;
   font-family: inherit; width: 100%; box-sizing: border-box; transition: border-color 0.15s;
 }
 .gp-field-input:focus, .gp-field-select:focus, .gp-field-textarea:focus {
-  outline: none; border-color: rgba(110,231,183,0.4);
+  outline: none; border-color: rgba(110,231,183,0.35);
 }
 .gp-field-textarea { resize: vertical; }
 .gp-field-select option { background: #1a1a1e; }
 .gp-task-delete-btn {
   width: 100%; margin-top: 8px; padding: 10px; background: rgba(255,100,100,0.06);
-  border: 1px solid rgba(255,100,100,0.15); border-radius: 9px; color: #FF8A8A;
+  border: 1px solid rgba(255,100,100,0.12); border-radius: 10px; color: #FF8A8A;
   font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; transition: background 0.15s;
 }
 .gp-task-delete-btn:hover { background: rgba(255,100,100,0.12); }
 .gp-add-btn {
   display: flex; align-items: center; gap: 6px; width: 100%;
-  background: transparent; border: 1px dashed rgba(255,255,255,0.1);
-  border-radius: 9px; padding: 8px 11px; color: var(--text-tertiary);
+  background: transparent; border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 10px 12px; color: var(--text-tertiary);
   font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  letter-spacing: 0.06em; text-transform: uppercase;
 }
-.gp-add-btn:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.18); color: var(--text-secondary); }
+.gp-add-btn:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.16); color: var(--text-secondary); }
 .gp-tier-nonneg { background: #FF6B6B; }
 .gp-tier-priority { background: #FCD34D; }
 .gp-tier-optional { background: rgba(255,255,255,0.2); }
 
-/* Ring icon overlay */
-.gs-ring-icon { position: absolute; top: 13px; left: 50%; transform: translateX(-50%); font-size: 14px; pointer-events: none; }
 
 /* Custom checkbox */
 .gs-task-cb-wrap { display: flex; align-items: center; flex-shrink: 0; }
@@ -1623,15 +1720,19 @@ body::after {
 
 /* Reflections Log */
 .gs-reflections-wrap {
-  border: 1px solid rgba(255,255,255,0.07); border-radius: 14px;
-  background: rgba(255,255,255,0.02); margin-top: 8px; margin-bottom: 8px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 18px;
+  background: var(--bg-card);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  margin-top: 6px; margin-bottom: 10px; overflow: hidden;
 }
 .gs-reflections-header {
-  display: flex; align-items: center; gap: 8px; padding: 12px 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; padding: 14px 18px; cursor: pointer;
   user-select: none;
 }
 .gs-reflections-title {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--text-tertiary); flex: 1;
 }
 .gs-reflections-count {
@@ -1689,6 +1790,67 @@ body::after {
   font-size: 12px; color: #7DD3FC; line-height: 1.5;
   border-left: 2px solid rgba(125,211,252,0.3); padding-left: 8px;
 }
+
+/* Daily Journal */
+.gs-journal-wrap {
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 18px;
+  background: var(--bg-card);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  margin-top: 6px; margin-bottom: 10px; overflow: hidden;
+}
+.gs-journal-header {
+  display: flex; align-items: center; gap: 8px; padding: 14px 18px; cursor: pointer;
+  user-select: none;
+}
+.gs-journal-title {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); flex: 1;
+}
+.gs-journal-saved {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #6EE7B7; opacity: 0; transition: opacity 0.4s;
+}
+.gs-journal-saved.visible { opacity: 1; }
+.gs-journal-chevron {
+  font-size: 14px; color: var(--text-tertiary); transition: transform 0.2s; display: inline-block;
+}
+.gs-journal-chevron.open { transform: rotate(90deg); }
+.gs-journal-body {
+  padding: 0 18px 18px; display: flex; flex-direction: column; gap: 16px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.gs-journal-q { display: flex; flex-direction: column; gap: 6px; padding-top: 16px; }
+.gs-journal-q:first-child { padding-top: 16px; }
+.gs-journal-label {
+  font-size: 11px; font-weight: 600; color: var(--text-secondary); line-height: 1.5;
+}
+.gs-journal-ta {
+  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 11px 13px; color: var(--text-primary); font-size: 13px;
+  font-family: inherit; resize: none; box-sizing: border-box; line-height: 1.6;
+  transition: border-color 0.15s;
+}
+.gs-journal-ta:focus { outline: none; border-color: rgba(110,231,183,0.3); }
+.gs-journal-ta::placeholder { color: var(--text-tertiary); }
+.gs-journal-hours {
+  width: 100px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 10px 13px; color: var(--text-primary); font-size: 18px;
+  font-weight: 700; font-family: inherit; box-sizing: border-box;
+  font-variant-numeric: tabular-nums; transition: border-color 0.15s;
+}
+.gs-journal-hours:focus { outline: none; border-color: rgba(110,231,183,0.3); }
+.gs-journal-hours::-webkit-inner-spin-button,
+.gs-journal-hours::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.gs-journal-save-btn {
+  width: 100%; padding: 13px; background: rgba(110,231,183,0.1);
+  border: 1px solid rgba(110,231,183,0.2); border-radius: 14px;
+  color: #6EE7B7; font-size: 12px; font-weight: 700; font-family: inherit;
+  cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase;
+  transition: background 0.15s, border-color 0.15s; margin-top: 4px;
+}
+.gs-journal-save-btn:hover { background: rgba(110,231,183,0.16); border-color: rgba(110,231,183,0.3); }
 
 /* EOD Card */
 .gs-eod-card {
@@ -6472,6 +6634,34 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
+    <!-- Daily Journal -->
+    <div class="gs-journal-wrap" id="gsJournalWrap">
+      <div class="gs-journal-header" id="gsJournalHeader">
+        <span class="gs-journal-title">Journal Maxxing</span>
+        <span class="gs-journal-saved" id="gsJournalSaved"></span>
+        <span class="gs-journal-chevron" id="gsJournalChevron">›</span>
+      </div>
+      <div class="gs-journal-body" id="gsJournalBody" style="display:none">
+        <div class="gs-journal-q">
+          <label class="gs-journal-label">What did I experience today, and what systemic truth is the universe trying to teach me?</label>
+          <textarea class="gs-journal-ta" id="gjQ1" rows="3" placeholder="Be honest…"></textarea>
+        </div>
+        <div class="gs-journal-q">
+          <label class="gs-journal-label">What is the single biggest bottleneck limiting my progress right now, and did I spend time on it?</label>
+          <textarea class="gs-journal-ta" id="gjQ2" rows="3" placeholder="Name it clearly…"></textarea>
+        </div>
+        <div class="gs-journal-q">
+          <label class="gs-journal-label">If I repeated today's exact actions every day for a year, where would I end up?</label>
+          <textarea class="gs-journal-ta" id="gjQ3" rows="3" placeholder="Be brutally honest…"></textarea>
+        </div>
+        <div class="gs-journal-q">
+          <label class="gs-journal-label">Total hours of real work today</label>
+          <input class="gs-journal-hours" id="gjHours" type="number" min="0" max="24" step="0.5" placeholder="0.0">
+        </div>
+        <button class="gs-journal-save-btn" id="gsJournalSaveBtn">Save Journal</button>
+      </div>
+    </div>
+
     <!-- End of Day Summary (shown after 9pm) -->
     <div class="gs-eod-wrap" id="gsEodWrap" style="display:none"></div>
 
@@ -7920,19 +8110,22 @@ function gsRenderRings(tasks) {
     const { done, total } = counts[cat];
     const pct = total > 0 ? done / total : 0;
     const meta = GS_CAT_META[cat];
-    const r = 20, circ = 2 * Math.PI * r;
+    const r = 22, circ = 2 * Math.PI * r;
     const offset = circ * (1 - pct);
+    const label = cat === 'Going Abroad' ? 'Abroad' : cat;
+    const fraction = total > 0 ? `${done}/${total}` : '—';
+    const allDone = total > 0 && done === total;
     const item = document.createElement('div');
     item.className = 'gs-ring-item';
     item.innerHTML = `
-      <svg class="gs-ring-svg" viewBox="0 0 50 50" width="50" height="50">
-        <circle class="gs-ring-track" cx="25" cy="25" r="${r}"/>
-        <circle class="gs-ring-fill" cx="25" cy="25" r="${r}"
+      <svg class="gs-ring-svg" viewBox="0 0 58 58" width="58" height="58">
+        <circle class="gs-ring-track" cx="29" cy="29" r="${r}"/>
+        <circle class="gs-ring-fill" cx="29" cy="29" r="${r}"
           style="stroke:${meta.color};stroke-dasharray:${circ.toFixed(2)};stroke-dashoffset:${offset.toFixed(2)};transform:rotate(-90deg);transform-origin:center"/>
+        <text class="gs-ring-icon-svg" x="29" y="33" fill="rgba(255,255,255,0.75)">${meta.icon}</text>
       </svg>
-      <div class="gs-ring-icon">${meta.icon}</div>
-      <div class="gs-ring-pct">${total > 0 ? done + '/' + total : '—'}</div>
-      <div class="gs-ring-label">${cat === 'Going Abroad' ? 'Abroad' : cat}</div>`;
+      <div class="gs-ring-fraction" style="color:${allDone ? meta.color : ''}">${fraction}</div>
+      <div class="gs-ring-label">${label}</div>`;
     wrap.appendChild(item);
   });
 }
@@ -8408,6 +8601,92 @@ document.getElementById('gsReflectNext') && document.getElementById('gsReflectNe
   const idx = allDates.indexOf(gsReflectDateStr);
   if (idx < allDates.length - 1) { gsReflectDateStr = allDates[idx + 1]; gsRenderReflectionCards(gsReflectDateStr); }
 });
+
+// ============================================================
+// DAILY JOURNAL
+// ============================================================
+function gsJournalKey(dateStr) { return 'goals_journal_' + dateStr; }
+
+function gsLoadJournal(dateStr) {
+  const data = storeGet(gsJournalKey(dateStr)) || {};
+  const q1 = document.getElementById('gjQ1');
+  const q2 = document.getElementById('gjQ2');
+  const q3 = document.getElementById('gjQ3');
+  const hrs = document.getElementById('gjHours');
+  if (q1) q1.value = data.q1 || '';
+  if (q2) q2.value = data.q2 || '';
+  if (q3) q3.value = data.q3 || '';
+  if (hrs) hrs.value = data.hours || '';
+  const saved = document.getElementById('gsJournalSaved');
+  if (saved) { saved.textContent = data.savedAt ? 'Saved ' + data.savedAt : ''; saved.classList.toggle('visible', !!data.savedAt); }
+}
+
+/*
+ * JOURNAL SCHEMA — for AI Overseer (future integration)
+ * Stored in localStorage under key: goals_journal_YYYY-MM-DD
+ * Synced to Supabase via po-goals IIFE (isSyncKey catches goals_* prefix)
+ *
+ * Shape: {
+ *   q1: string,    // "What did I experience today, and what systemic truth is the universe trying to teach me?"
+ *   q2: string,    // "What is the single biggest bottleneck limiting my progress, and did I spend time on it?"
+ *   q3: string,    // "If I repeated today's exact actions every day for a year, where would I end up?"
+ *   hours: number, // Total hours of real work
+ *   savedAt: string, // "HH:MM" local time
+ *   date: string,  // "YYYY-MM-DD" — set on save for easy AI querying
+ * }
+ *
+ * AI Overseer usage:
+ *   const entries = Object.keys(localStorage)
+ *     .filter(k => k.startsWith('goals_journal_'))
+ *     .map(k => JSON.parse(localStorage.getItem(k)));
+ *   // Pass entries to Gemini for pattern analysis, EOD tips, trajectory feedback
+ */
+(function initJournal() {
+  const header = document.getElementById('gsJournalHeader');
+  const body = document.getElementById('gsJournalBody');
+  const chevron = document.getElementById('gsJournalChevron');
+  const saveBtn = document.getElementById('gsJournalSaveBtn');
+  if (!header) return;
+
+  header.addEventListener('click', () => {
+    const isOpen = body.style.display === 'flex';
+    body.style.display = isOpen ? 'none' : 'flex';
+    chevron.classList.toggle('open', !isOpen);
+    if (!isOpen) gsLoadJournal(gsDateKey());
+  });
+
+  function doSave(showFeedback) {
+    const dateStr = gsDateKey();
+    const now = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const data = {
+      q1: (document.getElementById('gjQ1').value || '').trim(),
+      q2: (document.getElementById('gjQ2').value || '').trim(),
+      q3: (document.getElementById('gjQ3').value || '').trim(),
+      hours: parseFloat(document.getElementById('gjHours').value) || 0,
+      savedAt: time,
+      date: dateStr
+    };
+    // Only save if at least one field has content
+    if (!data.q1 && !data.q2 && !data.q3 && !data.hours) return;
+    storeSet(gsJournalKey(dateStr), data);
+    if (showFeedback) {
+      const saved = document.getElementById('gsJournalSaved');
+      if (saved) {
+        saved.textContent = 'Saved ' + time;
+        saved.classList.add('visible');
+      }
+    }
+  }
+
+  // Auto-save on blur from any field
+  ['gjQ1', 'gjQ2', 'gjQ3', 'gjHours'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('blur', () => doSave(false));
+  });
+
+  saveBtn && saveBtn.addEventListener('click', () => doSave(true));
+})();
 
 // ============================================================
 // SHARED — WEEK / PLAN HELPERS (used by both tabs)
@@ -9469,15 +9748,18 @@ document.getElementById('gpLoadSeedBtn2') && document.getElementById('gpLoadSeed
 function gpLoadRecurringToWeek() {
   if (!gpCurrentWeekMonday) gpCurrentWeekMonday = gpGetWeekMonday(getActiveDateObj());
   storeDelete(GS_COMMITS_HIDDEN_KEY);
-  // Commitments already render as colored blocks in the week view — no need to also add them as tasks.
-  // Just ensure the template exists (empty per day) and show the blocks.
+  // Commitments already render as colored blocks — save an empty template and clear all daily
+  // snapshots so no stale task copies remain.
   const weekKey = gpWeekKey(gpCurrentWeekMonday);
-  const existing = storeGet(weekKey) || {};
   const plan = {};
-  GP_DAYS_ORDER.forEach(dayName => { plan[dayName] = existing[dayName] || []; });
+  GP_DAYS_ORDER.forEach((dayName, i) => {
+    plan[dayName] = [];
+    const dayDate = new Date(gpCurrentWeekMonday);
+    dayDate.setDate(gpCurrentWeekMonday.getDate() + i);
+    storeDelete(gsDailyKey(dateToYYYYMMDD(dayDate)));
+  });
   storeSet(weekKey, plan);
-  const todayWeekKey = gpWeekKey(gpGetWeekMonday(getActiveDateObj()));
-  if (weekKey === todayWeekKey) { storeDelete(gsDailyKey(gsDateKey())); loadGoalsToday(); }
+  loadGoalsToday();
   gpRenderPlan();
   if (typeof gwRenderWeek === 'function') gwRenderWeek();
 }
