@@ -977,12 +977,13 @@ body::after {
   border: 1px solid rgba(110,231,183,0.12);
   border-radius: 18px;
   padding: 16px 18px;
-  display: flex; align-items: flex-start; gap: 12px;
+  display: flex; flex-direction: column; gap: 0;
   margin-bottom: 10px;
   box-shadow: 0 12px 40px rgba(0,0,0,0.45);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
+.gs-insight-top { display: flex; align-items: flex-start; gap: 12px; }
 .gs-insight-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 .gs-insight-body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .gs-insight-label {
@@ -994,7 +995,7 @@ body::after {
   transition: opacity 0.3s ease;
 }
 .gs-insight-text.fading { opacity: 0; }
-.gs-insight-dots { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; align-self: center; }
+.gs-insight-dots { display: flex; flex-direction: row; gap: 4px; flex-shrink: 0; align-self: flex-end; margin-top: 8px; }
 .gs-insight-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.2s; }
 .gs-insight-dot.active { background: #6EE7B7; }
 
@@ -6641,10 +6642,12 @@ window.canonicalJson = function(obj) {
 
     <!-- Cycling Insight Card -->
     <div class="gs-insight-card" id="gsInsightCard" style="display:none">
-      <span class="gs-insight-icon" id="gsInsightIcon">💡</span>
-      <div class="gs-insight-body">
-        <span class="gs-insight-label" id="gsInsightLabel">Insight</span>
-        <div class="gs-insight-text" id="gsInsightText"></div>
+      <div class="gs-insight-top">
+        <span class="gs-insight-icon" id="gsInsightIcon">💡</span>
+        <div class="gs-insight-body">
+          <span class="gs-insight-label" id="gsInsightLabel">Insight</span>
+          <div class="gs-insight-text" id="gsInsightText"></div>
+        </div>
       </div>
       <div class="gs-insight-dots" id="gsInsightDots"></div>
     </div>
@@ -8493,6 +8496,29 @@ function gsRenderInsights(tasks) {
   if (topCat && topCat[1].done > 0) {
     const meta = GS_CAT_META[topCat[0]] || { icon: '•' };
     items.push({ icon: meta.icon, label: topCat[0], text: `Leading in ${topCat[0]} today — ${topCat[1].done}/${topCat[1].total} tasks done.` });
+  } else if (topCat) {
+    // No tasks done yet — show what category has the most work today
+    const meta = GS_CAT_META[topCat[0]] || { icon: '•' };
+    items.push({ icon: meta.icon, label: 'Focus Area', text: `${topCat[0]} has the most tasks today (${topCat[1].total}). Make it count.` });
+  }
+
+  // Skipped tasks insight
+  if (skipped > 0) {
+    items.push({ icon: '⏭', label: 'Skipped', text: `${skipped} task${skipped > 1 ? 's' : ''} skipped today. Review them tomorrow — patterns compound.` });
+  }
+
+  // Time of day motivational insight
+  const hour = new Date().getHours();
+  if (hour < 10) items.push({ icon: '🌅', label: 'Morning', text: 'Morning hours are your highest-leverage window. Protect them.' });
+  else if (hour < 14) items.push({ icon: '⚡', label: 'Peak Window', text: 'Mid-morning to noon is prime deep work time. Are you in it?' });
+  else if (hour < 18) items.push({ icon: '🎯', label: 'Afternoon', text: 'Afternoon is for execution. Clear the backlog before the wind-down.' });
+  else if (hour < 21) items.push({ icon: '🌙', label: 'Evening', text: 'Evening deep work window. Make the last push count before wind-down.' });
+  else items.push({ icon: '🛌', label: 'Wind Down', text: 'Protect your sleep. Finish up and prep for tomorrow.' });
+
+  // Streak-style: tasks remaining
+  const remaining = tasks.filter(t => !t.checked && !t.skipped);
+  if (remaining.length > 0 && checked > 0) {
+    items.push({ icon: '🏁', label: 'Remaining', text: `${remaining.length} task${remaining.length > 1 ? 's' : ''} left. ${checked} already in the bag — finish strong.` });
   }
 
   if (items.length === 0) return;
