@@ -1361,13 +1361,26 @@ body::after {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
 }
 
-/* Task popup */
+/* Task popup overlay */
+.gw-popup-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
 .gw-task-popup {
-  margin-top: 12px; background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.05); border-radius: 18px; overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  width: 100%; max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  animation: gw-popup-in 0.2s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes gw-popup-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .gw-task-popup-header {
   display: flex; align-items: center; padding: 14px 18px 12px;
@@ -6724,12 +6737,14 @@ window.canonicalJson = function(obj) {
     </div>
 
     <!-- Task detail popup -->
-    <div class="gw-task-popup" id="gwTaskPopup" style="display:none">
-      <div class="gw-task-popup-header">
-        <span class="gw-task-popup-title" id="gwPopupTitle"></span>
-        <button class="gw-detail-close" id="gwPopupClose">×</button>
+    <div class="gw-popup-overlay" id="gwTaskPopup" style="display:none">
+      <div class="gw-task-popup">
+        <div class="gw-task-popup-header">
+          <span class="gw-task-popup-title" id="gwPopupTitle"></span>
+          <button class="gw-detail-close" id="gwPopupClose">×</button>
+        </div>
+        <div class="gw-task-popup-body" id="gwPopupBody"></div>
       </div>
-      <div class="gw-task-popup-body" id="gwPopupBody"></div>
     </div>
 
   </div>
@@ -9003,9 +9018,13 @@ function gwShowTaskPopup(task, dateStr, hasDailyData) {
 }
 
 // Close task popup
-document.getElementById('gwPopupClose') && document.getElementById('gwPopupClose').addEventListener('click', () => {
+function gwClosePopup() {
   const popup = document.getElementById('gwTaskPopup');
   if (popup) popup.style.display = 'none';
+}
+document.getElementById('gwPopupClose') && document.getElementById('gwPopupClose').addEventListener('click', gwClosePopup);
+document.getElementById('gwTaskPopup') && document.getElementById('gwTaskPopup').addEventListener('click', e => {
+  if (e.target === e.currentTarget) gwClosePopup();
 });
 
 // Week nav
