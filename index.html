@@ -4856,6 +4856,15 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   flex-shrink: 0;
 }
 .nw-del:hover { color: var(--danger); }
+.nw-repaid-btn {
+  background: rgba(168,213,162,0.12); border: 1px solid rgba(168,213,162,0.3);
+  color: #a8d5a2; border-radius: 6px; cursor: pointer;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 8px; flex-shrink: 0; white-space: nowrap;
+  transition: background 0.15s;
+}
+.nw-repaid-btn:hover { background: rgba(168,213,162,0.22); }
+.nw-lent-date { font-size: 10px; color: var(--text-tertiary); flex-shrink: 0; white-space: nowrap; }
 
 .nw-subcard {
   background: rgba(255,255,255,0.025) !important;
@@ -7588,6 +7597,55 @@ window.canonicalJson = function(obj) {
           <input type="number" placeholder="Value" id="otherAmount" step="0.01" />
           <button class="quick-add-btn" id="otherAddBtn">+</button>
         </div>
+      </div>
+      <!-- Locked Assets (provident fund etc — excluded from liquid NW) -->
+      <div class="card nw-subcard">
+        <div class="label" style="display:flex;justify-content:space-between;align-items:center">
+          <span>🔒 Locked Assets</span>
+          <span id="lockedTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-tertiary);margin:0 0 8px;line-height:1.4">Provident fund, fixed deposits — not part of liquid net worth.</p>
+        <div id="lockedList" class="nw-list"></div>
+        <div class="quick-add">
+          <input type="text" placeholder="Asset name" id="lockedName" />
+          <input type="number" placeholder="Value" id="lockedAmount" step="0.01" />
+          <button class="quick-add-btn" id="lockedAddBtn">+</button>
+        </div>
+      </div>
+      <!-- Lent Out (money given to others — excluded from liquid NW) -->
+      <div class="card nw-subcard" style="grid-column:1/-1">
+        <div class="label" style="display:flex;justify-content:space-between;align-items:center">
+          <span>🤝 Lent Out</span>
+          <span id="lentTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-tertiary);margin:0 0 8px;line-height:1.4">Money lent to others. Mark as Repaid to automatically move it back to Bank.</p>
+        <div id="lentList" class="nw-list"></div>
+        <div class="quick-add" style="grid-template-columns:1.2fr 0.8fr 1fr auto">
+          <input type="text" placeholder="Person / description" id="lentName" />
+          <input type="number" placeholder="Amount" id="lentAmount" step="0.01" />
+          <input type="date" id="lentDate" style="background:var(--bg-input,rgba(255,255,255,0.06));border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text-primary);font-size:13px;font-family:inherit;outline:none" />
+          <button class="quick-add-btn" id="lentAddBtn">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Net Worth summary (liquid + locked + lent) -->
+    <div id="nwSummaryRow" style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:10px;margin-top:10px;align-items:center">
+      <div class="card nw-subcard" style="text-align:center;padding:14px 10px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Liquid NW</div>
+        <div id="nwSumLiquid" style="font-size:16px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">CHF 0</div>
+      </div>
+      <div class="card nw-subcard" style="text-align:center;padding:14px 10px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Locked</div>
+        <div id="nwSumLocked" style="font-size:16px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">CHF 0</div>
+      </div>
+      <div class="card nw-subcard" style="text-align:center;padding:14px 10px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Lent Out</div>
+        <div id="nwSumLent" style="font-size:16px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">CHF 0</div>
+      </div>
+      <div class="card nw-subcard" style="text-align:center;padding:14px 16px;border:1px solid rgba(255,255,255,0.10)">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Total NW</div>
+        <div id="nwSumTotal" style="font-size:18px;font-weight:700;color:#a8d5a2;font-variant-numeric:tabular-nums">CHF 0</div>
       </div>
     </div>
   </div>
@@ -14712,7 +14770,148 @@ function switchTab(tab) {
     if (typeof renderAssetsLiabilities === 'function') renderAssetsLiabilities();
     if (typeof updateOrdPreview === 'function') updateOrdPreview();
     if (typeof renderSpendingInsights === 'function') renderSpendingInsights();
+    renderNwExtras(grand);
   }
+
+  // ── Locked Assets & Lent Out ─────────────────────────────────────
+  function renderLockedList() {
+    const list = document.getElementById('lockedList');
+    const totalEl = document.getElementById('lockedTotal');
+    if (!list) return 0;
+    const items = storeGet('nw:locked') || [];
+    list.innerHTML = '';
+    let total = 0;
+    items.forEach((it, idx) => {
+      total += Number(it.amount) || 0;
+      const row = document.createElement('div');
+      row.className = 'nw-row';
+      const name = document.createElement('span');
+      name.className = 'nw-name nw-name-edit';
+      name.textContent = it.name;
+      name.title = 'Tap to rename';
+      name.addEventListener('click', () => beginNwNameEdit(name, items, idx, 'locked'));
+      const amt = document.createElement('span');
+      amt.className = 'nw-amt nw-amt-edit';
+      amt.textContent = fmtMoney(it.amount);
+      amt.title = 'Tap to edit';
+      amt.addEventListener('click', () => beginNwAmountEdit(amt, items, idx, 'locked'));
+      const del = document.createElement('button'); del.className = 'nw-del'; del.textContent = '×';
+      del.addEventListener('click', () => {
+        items.splice(idx, 1); storeSet('nw:locked', items);
+        renderNwExtras(nwGrandCHF());
+      });
+      row.appendChild(name); row.appendChild(amt); row.appendChild(del);
+      list.appendChild(row);
+    });
+    if (totalEl) totalEl.textContent = fmtMoney(total);
+    return total;
+  }
+
+  function renderLentList() {
+    const list = document.getElementById('lentList');
+    const totalEl = document.getElementById('lentTotal');
+    if (!list) return 0;
+    const items = storeGet('nw:lent') || [];
+    list.innerHTML = '';
+    let total = 0;
+    items.forEach((it, idx) => {
+      total += Number(it.amount) || 0;
+      const row = document.createElement('div');
+      row.className = 'nw-row';
+      const name = document.createElement('span');
+      name.className = 'nw-name';
+      name.textContent = it.name;
+      const dateSpan = document.createElement('span');
+      dateSpan.className = 'nw-lent-date';
+      dateSpan.textContent = it.date || '';
+      const amt = document.createElement('span');
+      amt.className = 'nw-amt';
+      amt.textContent = fmtMoney(it.amount);
+      const repaid = document.createElement('button');
+      repaid.className = 'nw-repaid-btn';
+      repaid.textContent = 'Repaid';
+      repaid.addEventListener('click', () => {
+        // Move amount to bank
+        const bank = storeGet('nw:bank') || [];
+        bank.push({ name: 'Repaid: ' + it.name, amount: it.amount });
+        storeSet('nw:bank', bank);
+        items.splice(idx, 1); storeSet('nw:lent', items);
+        renderAllNetWorth();
+      });
+      const del = document.createElement('button'); del.className = 'nw-del'; del.textContent = '×';
+      del.addEventListener('click', () => {
+        items.splice(idx, 1); storeSet('nw:lent', items);
+        renderNwExtras(nwGrandCHF());
+      });
+      row.appendChild(name); row.appendChild(dateSpan); row.appendChild(amt); row.appendChild(repaid); row.appendChild(del);
+      list.appendChild(row);
+    });
+    if (totalEl) totalEl.textContent = fmtMoney(total);
+    return total;
+  }
+
+  function renderNwExtras(liquidCHF) {
+    const lockedCHF = renderLockedList();
+    const lentCHF   = renderLentList();
+    const totalCHF  = (liquidCHF || nwGrandCHF()) + lockedCHF + lentCHF;
+    const liq  = document.getElementById('nwSumLiquid');
+    const lok  = document.getElementById('nwSumLocked');
+    const lnt  = document.getElementById('nwSumLent');
+    const tot  = document.getElementById('nwSumTotal');
+    if (liq) liq.textContent = fmtMoney(liquidCHF || nwGrandCHF());
+    if (lok) lok.textContent = fmtMoney(lockedCHF);
+    if (lnt) lnt.textContent = fmtMoney(lentCHF);
+    if (tot) tot.textContent = fmtMoney(totalCHF);
+  }
+
+  // Add-button handlers for locked / lent
+  (function() {
+    const lockedAddBtn = document.getElementById('lockedAddBtn');
+    if (lockedAddBtn) {
+      lockedAddBtn.addEventListener('click', () => {
+        const nameEl = document.getElementById('lockedName');
+        const amtEl  = document.getElementById('lockedAmount');
+        const name   = (nameEl ? nameEl.value.trim() : '');
+        const amt    = parseFloat(amtEl ? amtEl.value : '');
+        if (!name || isNaN(amt) || amt <= 0) return;
+        const symbol = currencyEl ? currencyEl.value : 'CHF';
+        const rate   = exchangeRates[symbol] || 1;
+        const amtCHF = amt / rate;
+        const items  = storeGet('nw:locked') || [];
+        items.push({ name, amount: amtCHF });
+        storeSet('nw:locked', items);
+        if (nameEl) nameEl.value = '';
+        if (amtEl)  amtEl.value  = '';
+        renderNwExtras(nwGrandCHF());
+      });
+    }
+
+    const lentAddBtn = document.getElementById('lentAddBtn');
+    if (lentAddBtn) {
+      lentAddBtn.addEventListener('click', () => {
+        const nameEl = document.getElementById('lentName');
+        const amtEl  = document.getElementById('lentAmount');
+        const dateEl = document.getElementById('lentDate');
+        const name   = (nameEl ? nameEl.value.trim() : '');
+        const amt    = parseFloat(amtEl ? amtEl.value : '');
+        const date   = dateEl ? dateEl.value : '';
+        if (!name || isNaN(amt) || amt <= 0 || !date) {
+          if (!date) { if (dateEl) dateEl.style.borderColor = 'rgba(255,100,100,0.6)'; }
+          return;
+        }
+        const symbol = currencyEl ? currencyEl.value : 'CHF';
+        const rate   = exchangeRates[symbol] || 1;
+        const amtCHF = amt / rate;
+        const items  = storeGet('nw:lent') || [];
+        items.push({ name, amount: amtCHF, date });
+        storeSet('nw:lent', items);
+        if (nameEl) nameEl.value = '';
+        if (amtEl)  amtEl.value  = '';
+        if (dateEl) { dateEl.value = ''; dateEl.style.borderColor = ''; }
+        renderNwExtras(nwGrandCHF());
+      });
+    }
+  })();
 
   // ── Savings Maxxing ──────────────────────────────────────────────
   function renderSavingsGoal() {
@@ -15021,14 +15220,6 @@ function switchTab(tab) {
         }
       });
     });
-    // Subs annualized — one aggregate slice (no per-sub breakdown here).
-    const subItems = storeGet('subs') || [];
-    const annualSubsCHF = subItems.reduce((s, it) => s + monthlyEquivalent(it) * 12, 0);
-    if (annualSubsCHF > 0) {
-      const meta = NW_SLICE_META.subs;
-      slices.push({ key: 'subs', name: meta.name, color: meta.color, value: annualSubsCHF });
-    }
-
     const sliceTotal = slices.reduce((s, x) => s + x.value, 0);
 
     if (!slices.length || sliceTotal <= 0) {
