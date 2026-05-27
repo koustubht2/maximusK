@@ -4866,6 +4866,58 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 .nw-repaid-btn:hover { background: rgba(168,213,162,0.22); }
 .nw-lent-date { font-size: 10px; color: var(--text-tertiary); flex-shrink: 0; white-space: nowrap; }
 
+/* ── NW Summary row (Oura-style unified card) ── */
+.nw-summary-card {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 12px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.035);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
+.nw-sum-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.nw-sum-cell:last-child { border-right: none; }
+.nw-sum-cell--total { background: rgba(168,213,162,0.05); }
+.nw-sum-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+.nw-sum-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.nw-sum-value--total { color: #a8d5a2; font-size: 16px; }
+@media (max-width: 600px) {
+  .nw-summary-card { grid-template-columns: repeat(2, 1fr); }
+  .nw-sum-cell:nth-child(2) { border-right: none; }
+  .nw-sum-cell:nth-child(1),
+  .nw-sum-cell:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.05); }
+}
+
 .nw-subcard {
   background: rgba(255,255,255,0.025) !important;
   border: none;
@@ -7630,22 +7682,22 @@ window.canonicalJson = function(obj) {
     </div>
 
     <!-- Total Net Worth summary (liquid + locked + lent) -->
-    <div id="nwSummaryRow" style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:10px;margin-top:10px;align-items:center">
-      <div class="card nw-subcard" style="text-align:center;padding:14px 10px">
-        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Liquid NW</div>
-        <div id="nwSumLiquid" style="font-size:16px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">CHF 0</div>
+    <div class="nw-summary-card" id="nwSummaryRow">
+      <div class="nw-sum-cell">
+        <div class="nw-sum-label">Liquid NW</div>
+        <div class="nw-sum-value" id="nwSumLiquid">CHF 0</div>
       </div>
-      <div class="card nw-subcard" style="text-align:center;padding:14px 10px">
-        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Locked</div>
-        <div id="nwSumLocked" style="font-size:16px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">CHF 0</div>
+      <div class="nw-sum-cell">
+        <div class="nw-sum-label">Locked</div>
+        <div class="nw-sum-value" id="nwSumLocked">CHF 0</div>
       </div>
-      <div class="card nw-subcard" style="text-align:center;padding:14px 10px">
-        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Lent Out</div>
-        <div id="nwSumLent" style="font-size:16px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">CHF 0</div>
+      <div class="nw-sum-cell">
+        <div class="nw-sum-label">Lent Out</div>
+        <div class="nw-sum-value" id="nwSumLent">CHF 0</div>
       </div>
-      <div class="card nw-subcard" style="text-align:center;padding:14px 16px;border:1px solid rgba(255,255,255,0.10)">
-        <div style="font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:5px">Total NW</div>
-        <div id="nwSumTotal" style="font-size:18px;font-weight:700;color:#a8d5a2;font-variant-numeric:tabular-nums">CHF 0</div>
+      <div class="nw-sum-cell nw-sum-cell--total">
+        <div class="nw-sum-label">Total NW</div>
+        <div class="nw-sum-value nw-sum-value--total" id="nwSumTotal">CHF 0</div>
       </div>
     </div>
   </div>
