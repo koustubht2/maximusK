@@ -4239,14 +4239,26 @@ html, body {
   font-size: 28px; font-weight: 600; line-height: 1;
   letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
 }
-.oura-score-num.good { color: var(--good); }
-.oura-score-num.warn { color: var(--warn); }
-.oura-score-num.bad { color: var(--bad); }
+.oura-score-num.zone-gold   { color: #F5C842; }
+.oura-score-num.zone-green  { color: #6EE7B7; }
+.oura-score-num.zone-yellow { color: #F2C063; }
+.oura-score-num.zone-red    { color: #FF8A8A; }
 .oura-score-num.na { color: var(--text-4); font-size: 22px; letter-spacing: 0; }
 .oura-score-desc {
   font-size: 9px; font-weight: 600; color: var(--text-3);
   margin-top: 5px; letter-spacing: 0.04em;
 }
+/* Zone dot — top-right of each score card */
+.oura-zone-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  position: absolute; top: 10px; right: 10px;
+  flex-shrink: 0;
+}
+.oura-score-card { position: relative; }
+.oura-zone-dot.zone-gold   { background: #F5C842; box-shadow: 0 0 7px rgba(245,200,66,0.7); }
+.oura-zone-dot.zone-green  { background: #6EE7B7; box-shadow: 0 0 7px rgba(110,231,183,0.6); }
+.oura-zone-dot.zone-yellow { background: #F2C063; box-shadow: 0 0 7px rgba(242,192,99,0.6); }
+.oura-zone-dot.zone-red    { background: #FF8A8A; box-shadow: 0 0 7px rgba(255,138,138,0.6); }
 
 /* Metric tiles — single card, 2 cols */
 .oura-metrics {
@@ -4322,7 +4334,189 @@ html, body {
   text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums;
 }
 
-/* Trend */
+/* Segmented sleep bar */
+.oura-sleep-seg-bar {
+  display: flex; height: 12px; border-radius: 999px;
+  overflow: hidden; margin: 0 0 14px; gap: 2px;
+}
+.oura-sleep-seg { height: 100%; border-radius: 999px; transition: width 0.6s cubic-bezier(0.22,1,0.36,1); }
+.oura-sleep-seg.deep  { background: #818cf8; }
+.oura-sleep-seg.rem   { background: #38bdf8; }
+.oura-sleep-seg.light { background: #6ee7b7; }
+.oura-sleep-seg.awake { background: rgba(255,255,255,0.18); }
+.oura-sleep-legend {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 6px;
+}
+.oura-sleep-leg-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.oura-sleep-leg-dot {
+  width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+}
+.oura-sleep-leg-dot.deep  { background: #818cf8; }
+.oura-sleep-leg-dot.rem   { background: #38bdf8; }
+.oura-sleep-leg-dot.light { background: #6ee7b7; }
+.oura-sleep-leg-dot.awake { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.12); }
+.oura-sleep-leg-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.oura-sleep-leg-time {
+  font-size: 12px; font-weight: 700; color: var(--text-1);
+  font-variant-numeric: tabular-nums; font-family: var(--font-mono);
+}
+@media (max-width: 380px) {
+  .oura-sleep-legend { grid-template-columns: repeat(2,1fr); }
+}
+
+/* Today's Call card */
+.oura-todays-call {
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  background: var(--bg-card);
+  border-left: 3px solid #6EE7B7;
+  overflow: hidden;
+  margin-bottom: 10px;
+  padding: 18px 20px 16px;
+  transition: border-color 0.4s;
+}
+.oura-todays-call.zone-gold   { border-left-color: #F5C842; }
+.oura-todays-call.zone-green  { border-left-color: #6EE7B7; }
+.oura-todays-call.zone-yellow { border-left-color: #F2C063; }
+.oura-todays-call.zone-red    { border-left-color: #FF8A8A; }
+.oura-call-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.oura-call-eyebrow {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.oura-call-badge {
+  font-size: 9px; font-weight: 800; padding: 3px 9px;
+  border-radius: 999px; letter-spacing: 0.12em;
+  text-transform: uppercase; border: 1px solid;
+}
+.oura-call-badge.zone-gold   { background: rgba(245,200,66,0.12);  border-color: rgba(245,200,66,0.4);  color: #F5C842; }
+.oura-call-badge.zone-green  { background: rgba(110,231,183,0.10); border-color: rgba(110,231,183,0.35); color: #6EE7B7; }
+.oura-call-badge.zone-yellow { background: rgba(242,192,99,0.10);  border-color: rgba(242,192,99,0.35); color: #F2C063; }
+.oura-call-badge.zone-red    { background: rgba(255,138,138,0.10); border-color: rgba(255,138,138,0.35); color: #FF8A8A; }
+.oura-call-headline {
+  font-size: 15px; font-weight: 600; color: var(--text-1);
+  line-height: 1.4; margin-bottom: 10px; letter-spacing: -0.01em;
+}
+.oura-call-reasons {
+  font-size: 12px; color: var(--text-2); line-height: 1.7;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.oura-call-reason::before { content: '·  '; color: var(--text-3); }
+.oura-call-avoid {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed rgba(255,255,255,0.08);
+  font-size: 12px; color: var(--text-2); line-height: 1.5;
+}
+.oura-call-avoid-label { color: #FF8A8A; font-weight: 700; }
+.oura-call-loading {
+  font-size: 11px; color: var(--text-3); font-style: italic;
+  letter-spacing: 0.04em; padding: 4px 0;
+}
+
+/* ── Hero readiness ring ── */
+.oura-hero-wrap {
+  position: relative; width: 200px; max-width: 70%;
+  margin: 0 auto 16px; aspect-ratio: 1;
+}
+.oura-hero-svg {
+  width: 100%; height: 100%;
+  transform: rotate(-90deg);
+  filter: drop-shadow(0 0 20px rgba(110,231,183,0.12));
+}
+.oura-hero-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 10; }
+.oura-hero-fill {
+  fill: none; stroke: #6EE7B7; stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 502.65;
+  stroke-dashoffset: 502.65;
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1), stroke 0.4s;
+}
+.oura-hero-fill.zone-gold   { stroke: #F5C842; filter: drop-shadow(0 0 8px rgba(245,200,66,0.5)); }
+.oura-hero-fill.zone-green  { stroke: #6EE7B7; filter: drop-shadow(0 0 8px rgba(110,231,183,0.4)); }
+.oura-hero-fill.zone-yellow { stroke: #F2C063; filter: drop-shadow(0 0 8px rgba(242,192,99,0.4)); }
+.oura-hero-fill.zone-red    { stroke: #FF8A8A; filter: drop-shadow(0 0 8px rgba(255,138,138,0.4)); }
+.oura-hero-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.oura-hero-num {
+  font-size: 52px; font-weight: 700; letter-spacing: -0.04em;
+  color: var(--text-primary); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.oura-hero-unit {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.20em;
+  text-transform: uppercase; color: var(--text-3); margin-top: 8px;
+}
+.oura-hero-label {
+  font-size: 12px; font-weight: 600; margin-top: 4px;
+  letter-spacing: -0.005em;
+}
+
+/* ── Week readiness calendar ── */
+.oura-week-cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  background: var(--bg-card);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 14px 12px;
+  margin-bottom: 10px;
+}
+.oura-week-day {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 5px;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.oura-week-day.is-today { opacity: 1; }
+.oura-week-ring-wrap {
+  position: relative; width: 36px; height: 36px;
+}
+.oura-week-ring-svg { width: 36px; height: 36px; display: block; }
+.oura-week-score {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.oura-week-label {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.10em;
+  color: var(--text-3); text-transform: uppercase;
+}
+.oura-week-day.is-today .oura-week-label { color: var(--text-primary); }
+
+/* ── Score card delta badge ── */
+.oura-score-delta {
+  font-size: 9px; font-weight: 700; margin-top: 3px;
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+}
+.oura-score-delta.up   { color: #6EE7B7; }
+.oura-score-delta.down { color: #FF8A8A; }
+.oura-score-delta.flat { color: var(--text-3); }
+
+/* ── HRV trend arrow ── */
+.oura-hrv-arrow { font-size: 11px; margin-left: 4px; font-weight: 700; }
+.oura-hrv-arrow.up   { color: #6EE7B7; }
+.oura-hrv-arrow.down { color: #FF8A8A; }
+.oura-hrv-arrow.flat { color: var(--text-3); }
+
+/* ── Tabbed trend chart ── */
 .oura-trend-wrap {
   background: var(--bg-card);
   border-radius: 18px;
@@ -4331,12 +4525,39 @@ html, body {
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   padding: 16px 18px;
 }
+.oura-trend-tabs {
+  display: flex; gap: 4px; margin-bottom: 12px;
+}
+.oura-trend-tab {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent; color: var(--text-3);
+  font-family: inherit; transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.oura-trend-tab.active {
+  background: rgba(110,231,183,0.12); border-color: rgba(110,231,183,0.3);
+  color: #6EE7B7;
+}
 .oura-trend-svg { width: 100%; height: 44px; display: block; }
-.oura-trend-line { fill: none; stroke: var(--good); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.oura-trend-line { fill: none; stroke: #6EE7B7; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .oura-trend-fill { fill: rgba(110,231,183,0.08); }
 .oura-trend-label {
   font-size: 9px; color: var(--text-3); text-align: center;
   margin-top: 6px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase;
+}
+
+/* ── Stack + Water frosted glass unification ── */
+.stack-card {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+.wc-card {
+  backdrop-filter: blur(24px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+  border-radius: 18px !important;
 }
 
 .oura-loading {
@@ -13311,8 +13532,36 @@ setInterval(updateDayBar, 60 * 1000);
   }
 
   // ── RENDERING ───────────────────────────────────────────
-  function scoreClass(s) { if (s >= 85) return 'good'; if (s >= 70) return 'warn'; return 'bad'; }
-  function scoreDesc(s) { if (s >= 85) return 'Optimal'; if (s >= 70) return 'Good'; if (s >= 50) return 'Pay attention'; return 'Low'; }
+  function scoreClass(s) {
+    if (s == null) return 'na';
+    if (s >= 90) return 'zone-gold';
+    if (s >= 70) return 'zone-green';
+    if (s >= 50) return 'zone-yellow';
+    return 'zone-red';
+  }
+  function scoreDesc(s) {
+    if (s == null) return 'No data';
+    if (s >= 90) return 'Peak';
+    if (s >= 70) return 'Good';
+    if (s >= 50) return 'Watch';
+    return 'Low';
+  }
+  function zoneFromHrv(hrv, avgHrv) {
+    if (!hrv || !avgHrv) return 'zone-green';
+    const ratio = hrv / avgHrv;
+    if (ratio >= 1.10) return 'zone-gold';
+    if (ratio >= 0.90) return 'zone-green';
+    if (ratio >= 0.80) return 'zone-yellow';
+    return 'zone-red';
+  }
+  function zoneFromRhr(rhr, avgRhr) {
+    if (!rhr || !avgRhr) return 'zone-green';
+    const diff = rhr - avgRhr;
+    if (diff <= 0)  return 'zone-gold';
+    if (diff <= 3)  return 'zone-green';
+    if (diff <= 6)  return 'zone-yellow';
+    return 'zone-red';
+  }
 
   function fmtMins(secs) {
     const m = Math.round((secs || 0) / 60);
@@ -13388,68 +13637,300 @@ setInterval(updateDayBar, 60 * 1000);
     }
     const sleepTotal = deep + rem + light + awake;
 
+    // Compute 7-day averages for HRV/RHR zone dots + HRV trend
+    const dSleepAll = (data.detailedSleep && data.detailedSleep.data) || [];
+    let hrvSum = 0, hrvCount = 0, rhrSum = 0, rhrCount = 0;
+    const hrvHistory = [];
+    dSleepAll.forEach(d => {
+      if (d.average_hrv != null) { hrvSum += d.average_hrv; hrvCount++; hrvHistory.push(d.average_hrv); }
+      if (d.lowest_heart_rate != null) { rhrSum += d.lowest_heart_rate; rhrCount++; }
+    });
+    const avgHrv = hrvCount > 0 ? hrvSum / hrvCount : null;
+    const avgRhr = rhrCount > 0 ? rhrSum / rhrCount : null;
+
+    // HRV 3-day trend arrow
+    let hrvArrowHtml = '';
+    if (hrvHistory.length >= 3) {
+      const last3 = hrvHistory.slice(-3);
+      const trend = last3[2] - last3[0];
+      if (trend > 2)       hrvArrowHtml = '<span class="oura-hrv-arrow up">↑</span>';
+      else if (trend < -2) hrvArrowHtml = '<span class="oura-hrv-arrow down">↓</span>';
+      else                 hrvArrowHtml = '<span class="oura-hrv-arrow flat">→</span>';
+    }
+
+    // Yesterday's scores for deltas
+    const findPrev = (arr, date) => {
+      const idx = arr.findIndex(e => e.day === date);
+      return idx > 0 ? arr[idx - 1] : (arr.length >= 2 ? arr[arr.length - 2] : null);
+    };
+    const prevSleep = findPrev(sleepArr, viewDate);
+    const prevRead  = findPrev(readArr, viewDate);
+    const prevAct   = findPrev(actArr, viewDate);
+
     // Build HTML
     let html = '';
 
-    // Score cards
-    html += '<div class="oura-scores">';
-    html += renderScoreCard('Sleep', sleepScore);
-    html += renderScoreCard('Readiness', readScore);
-    html += renderScoreCard('Activity', actScore);
-    html += '</div>';
+    // 1. Hero readiness ring — starts empty, animates in after paint
+    const ringZone = scoreClass(readScore);
+    const ringColor = ringZone === 'zone-gold' ? '#F5C842' : ringZone === 'zone-green' ? '#6EE7B7' : ringZone === 'zone-yellow' ? '#F2C063' : '#FF8A8A';
+    const circumference = 2 * Math.PI * 80;
+    const dashTarget = readScore != null ? circumference * (1 - readScore / 100) : circumference;
+    html += '<div class="oura-hero-wrap">'
+      + '<svg class="oura-hero-svg" viewBox="0 0 180 180" aria-hidden="true">'
+      + '<circle class="oura-hero-track" cx="90" cy="90" r="80"/>'
+      + '<circle class="oura-hero-fill ' + ringZone + '" id="ouraHeroFill" cx="90" cy="90" r="80"'
+      + ' style="stroke-dasharray:' + circumference.toFixed(2) + ';stroke-dashoffset:' + circumference.toFixed(2) + '"/>'
+      + '</svg>'
+      + '<div class="oura-hero-center">'
+      + '<div class="oura-hero-num" id="ouraHeroNum" style="color:' + ringColor + '">—</div>'
+      + '<div class="oura-hero-unit">Readiness</div>'
+      + '<div class="oura-hero-label" style="color:' + ringColor + '">' + scoreDesc(readScore) + '</div>'
+      + '</div></div>';
 
-    // Metrics row
-    html += '<div class="oura-metrics">';
-    html += renderMetric('Resting HR', restHr, 'bpm');
-    html += renderMetric('HRV', hrv, 'ms');
-    html += renderMetric('Steps', steps ? steps.toLocaleString() : null, '');
-    html += renderMetric('Active Cal', cal ? cal.toLocaleString() : null, 'kcal');
-    html += '</div>';
-
-    // Sleep breakdown
-    if (sleepTotal > 0) {
-      html += '<div class="oura-sleep-breakdown">';
-      html += '<div class="oura-sleep-title"><span class="oura-sleep-title-label">Sleep Breakdown</span><span class="oura-sleep-title-total">' + fmtMins(totalSleep) + ' total</span></div>';
-      const stages = [
-        { label: 'Deep', cls: 'deep', val: deep },
-        { label: 'REM', cls: 'rem', val: rem },
-        { label: 'Light', cls: 'light', val: light },
-        { label: 'Awake', cls: 'awake', val: awake },
-      ];
-      stages.forEach(s => {
-        const pct = sleepTotal > 0 ? (s.val / sleepTotal * 100) : 0;
-        html += '<div class="oura-sleep-bar-row">'
-          + '<span class="oura-sleep-bar-label">' + s.label + '</span>'
-          + '<div class="oura-sleep-bar-track"><div class="oura-sleep-bar-fill ' + s.cls + '" style="width:' + pct.toFixed(1) + '%"></div></div>'
-          + '<span class="oura-sleep-bar-time">' + fmtMins(s.val) + '</span>'
+    // Week-view readiness calendar
+    const calDays = readArr.slice(-7);
+    if (calDays.length) {
+      html += '<div class="oura-week-cal" id="ouraWeekCal">';
+      calDays.forEach(d => {
+        const z = scoreClass(d.score);
+        const color = z === 'zone-gold' ? '#F5C842' : z === 'zone-green' ? '#6EE7B7' : z === 'zone-yellow' ? '#F2C063' : '#FF8A8A';
+        const dayLabel = new Date(d.day + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 2);
+        const isView = d.day === viewDate;
+        html += '<div class="oura-week-day' + (isView ? ' is-today' : '') + '">'
+          + '<div class="oura-week-ring-wrap">'
+          + '<svg viewBox="0 0 36 36" class="oura-week-ring-svg" aria-hidden="true">'
+          + '<circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3"/>'
+          + '<circle cx="18" cy="18" r="14" fill="none" stroke="' + color + '" stroke-width="3"'
+          + ' stroke-linecap="round"'
+          + ' stroke-dasharray="' + (2 * Math.PI * 14).toFixed(2) + '"'
+          + ' stroke-dashoffset="' + (2 * Math.PI * 14 * (1 - (d.score || 0) / 100)).toFixed(2) + '"'
+          + ' transform="rotate(-90 18 18)"/>'
+          + '</svg>'
+          + '<span class="oura-week-score" style="color:' + color + '">' + (d.score || '—') + '</span>'
+          + '</div>'
+          + '<div class="oura-week-label">' + dayLabel + '</div>'
           + '</div>';
       });
       html += '</div>';
     }
 
-    // 7-day sleep trend
-    if (sleepArr.length >= 2) {
-      html += renderTrend(sleepArr.map(d => d.score).filter(Boolean));
+    // 2. Today's Call placeholder — filled async
+    html += '<div class="oura-todays-call" id="ouraTodaysCall">'
+      + '<div class="oura-call-head"><span class="oura-call-eyebrow">Today\'s Call</span></div>'
+      + '<div class="oura-call-loading">Analysing your data…</div>'
+      + '</div>';
+
+    // 3. Score cards (with deltas)
+    html += '<div class="oura-scores">';
+    html += renderScoreCard('Sleep',      sleepScore, prevSleep ? prevSleep.score : null);
+    html += renderScoreCard('Readiness',  readScore,  prevRead  ? prevRead.score  : null);
+    html += renderScoreCard('Activity',   actScore,   prevAct   ? prevAct.score   : null);
+    html += '</div>';
+
+    // 4. Metrics row
+    html += '<div class="oura-metrics">';
+    html += renderMetric('Resting HR', restHr, 'bpm', zoneFromRhr(restHr, avgRhr));
+    html += renderMetric('HRV', hrv, 'ms', zoneFromHrv(hrv, avgHrv), hrvArrowHtml);
+    html += renderMetric('Steps', steps ? steps.toLocaleString() : null, '');
+    html += renderMetric('Active Cal', cal ? cal.toLocaleString() : null, 'kcal');
+    html += '</div>';
+
+    // 5. Sleep breakdown — segmented bar
+    if (sleepTotal > 0) {
+      const stages = [
+        { label: 'Deep',  cls: 'deep',  val: deep },
+        { label: 'REM',   cls: 'rem',   val: rem },
+        { label: 'Light', cls: 'light', val: light },
+        { label: 'Awake', cls: 'awake', val: awake },
+      ];
+      html += '<div class="oura-sleep-breakdown">';
+      html += '<div class="oura-sleep-title"><span class="oura-sleep-title-label">Sleep Stages</span><span class="oura-sleep-title-total">' + fmtMins(totalSleep) + ' total</span></div>';
+      html += '<div class="oura-sleep-seg-bar">';
+      stages.forEach(s => {
+        const pct = sleepTotal > 0 ? (s.val / sleepTotal * 100) : 0;
+        html += '<div class="oura-sleep-seg ' + s.cls + '" style="width:' + pct.toFixed(1) + '%"></div>';
+      });
+      html += '</div>';
+      html += '<div class="oura-sleep-legend">';
+      stages.forEach(s => {
+        html += '<div class="oura-sleep-leg-item">'
+          + '<div class="oura-sleep-leg-dot ' + s.cls + '"></div>'
+          + '<div class="oura-sleep-leg-label">' + s.label + '</div>'
+          + '<div class="oura-sleep-leg-time">' + fmtMins(s.val) + '</div>'
+          + '</div>';
+      });
+      html += '</div></div>';
     }
+
+    // 6. Tabbed 7-day trend
+    html += renderTrend(sleepArr, readArr, actArr);
 
     body.innerHTML = html;
-  }
 
-  function renderScoreCard(label, score) {
-    if (score == null) {
-      return '<div class="oura-score-card"><div class="oura-score-label">' + label + '</div><div class="oura-score-num na">—</div><div class="oura-score-desc">No data</div></div>';
+    // Animate hero ring + count-up after paint
+    if (readScore != null) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const fill = document.getElementById('ouraHeroFill');
+          if (fill) fill.style.strokeDashoffset = dashTarget.toFixed(2);
+          // Count-up number
+          const numEl = document.getElementById('ouraHeroNum');
+          if (numEl) {
+            const duration = 900, start = performance.now();
+            function tick(now) {
+              const t = Math.min((now - start) / duration, 1);
+              const ease = 1 - Math.pow(1 - t, 3);
+              numEl.textContent = Math.round(ease * readScore);
+              if (t < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+          }
+        });
+      });
+    } else {
+      const numEl = document.getElementById('ouraHeroNum');
+      if (numEl) numEl.textContent = '—';
     }
+
+    // Wire trend tab clicks
+    wireTrendTabs(sleepArr, readArr, actArr);
+
+    // Fire Today's Call after DOM is painted
+    fetchTodaysCall({
+      readScore, sleepScore, actScore, hrv, avgHrv, restHr, avgRhr,
+      deep, rem, light, awake, steps
+    });
+  }
+
+  // ── TODAY'S CALL ─────────────────────────────────────────
+  const CALL_CACHE_KEY = 'oura_todays_call_v1';
+
+  async function fetchTodaysCall(d) {
+    const today = todayStr();
+    // Use cached result if from today
+    try {
+      const cached = JSON.parse(localStorage.getItem(CALL_CACHE_KEY));
+      if (cached && cached.date === today) { renderTodaysCall(cached.result); return; }
+    } catch {}
+
+    const prompt = `You are a personal performance coach. Given today's biometric data from an Oura Ring, return a JSON object only — no markdown, no extra text.
+
+Data:
+- Readiness: ${d.readScore ?? '—'}/100
+- Sleep score: ${d.sleepScore ?? '—'}/100
+- Activity score: ${d.actScore ?? '—'}/100
+- HRV: ${d.hrv ?? '—'}ms (7-day avg: ${d.avgHrv ? Math.round(d.avgHrv) : '—'}ms)
+- Resting HR: ${d.restHr ?? '—'}bpm (7-day avg: ${d.avgRhr ? Math.round(d.avgRhr) : '—'}bpm)
+- Deep sleep: ${d.deep ? Math.round(d.deep/60) : '—'}min, REM: ${d.rem ? Math.round(d.rem/60) : '—'}min, Light: ${d.light ? Math.round(d.light/60) : '—'}min
+- Steps so far: ${d.steps ?? '—'}
+
+Return exactly:
+{"zone":"peak|good|watch|low","badge":"2-3 word label","headline":"one sentence max 12 words, direct and specific","reasons":["specific reason referencing actual values","second reason"],"avoid":"one thing to avoid today, or null"}
+
+Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, else zone=low. Be specific to the numbers — never generic advice.`;
+
+    const callEl = document.getElementById('ouraTodaysCall');
+    const bodyEl = document.getElementById('ouraTodaysCallBody');
+
+    try {
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const raw = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      const result = JSON.parse(raw);
+      localStorage.setItem(CALL_CACHE_KEY, JSON.stringify({ date: today, result }));
+      renderTodaysCall(result);
+    } catch(e) {
+      // Fallback to rule-based
+      const result = ruleBasedCall(d);
+      renderTodaysCall(result);
+    }
+  }
+
+  function ruleBasedCall(d) {
+    const s = d.readScore || 0;
+    let zone, badge, headline, reasons = [], avoid = null;
+    if (s >= 90) {
+      zone = 'peak'; badge = 'Peak Form';
+      headline = 'Your body is primed — push hard today.';
+      if (d.hrv && d.avgHrv && d.hrv >= d.avgHrv) reasons.push('HRV ' + d.hrv + 'ms is at or above your average — nervous system recovered.');
+      if (d.deep) reasons.push('Deep sleep was ' + Math.round(d.deep/60) + ' min — solid cellular repair overnight.');
+    } else if (s >= 70) {
+      zone = 'good'; badge = 'Ready';
+      headline = 'Good readiness — train normally, stay consistent.';
+      reasons.push('Readiness ' + s + '/100 is in the healthy range.');
+      if (d.sleepScore) reasons.push('Sleep score ' + d.sleepScore + ' — adequate recovery.');
+    } else if (s >= 50) {
+      zone = 'watch'; badge = 'Take Care';
+      headline = 'Moderate readiness — keep intensity controlled today.';
+      reasons.push('Readiness at ' + s + ' — body is still recovering.');
+      if (d.hrv && d.avgHrv && d.hrv < d.avgHrv) reasons.push('HRV ' + d.hrv + 'ms is below your ' + Math.round(d.avgHrv) + 'ms average.');
+      avoid = 'High-intensity training or late nights';
+    } else {
+      zone = 'low'; badge = 'Rest Day';
+      headline = 'Low readiness — prioritise recovery over output.';
+      reasons.push('Readiness ' + s + '/100 signals your body needs rest.');
+      if (d.sleepScore && d.sleepScore < 70) reasons.push('Sleep score ' + d.sleepScore + ' — insufficient recovery last night.');
+      avoid = 'Heavy training, alcohol, late screens';
+    }
+    return { zone, badge, headline, reasons, avoid };
+  }
+
+  function renderTodaysCall(r) {
+    const callEl = document.getElementById('ouraTodaysCall');
+    if (!callEl) return;
+    const zone = r.zone === 'peak' ? 'zone-gold' : r.zone === 'good' ? 'zone-green' : r.zone === 'watch' ? 'zone-yellow' : 'zone-red';
+    callEl.className = 'oura-todays-call ' + zone;
+    const reasonsHtml = (r.reasons || []).map(s => '<div class="oura-call-reason">' + s + '</div>').join('');
+    const avoidHtml = r.avoid
+      ? '<div class="oura-call-avoid"><span class="oura-call-avoid-label">Avoid today: </span>' + r.avoid + '</div>'
+      : '';
+    callEl.innerHTML =
+      '<div class="oura-call-head">'
+      + '<span class="oura-call-eyebrow">Today\'s Call</span>'
+      + '<span class="oura-call-badge ' + zone + '">' + (r.badge || '') + '</span>'
+      + '</div>'
+      + '<div class="oura-call-headline">' + (r.headline || '') + '</div>'
+      + '<div class="oura-call-reasons">' + reasonsHtml + '</div>'
+      + avoidHtml;
+  }
+
+  function renderScoreCard(label, score, prevScore) {
     const cls = scoreClass(score);
-    return '<div class="oura-score-card"><div class="oura-score-label">' + label + '</div><div class="oura-score-num ' + cls + '">' + score + '</div><div class="oura-score-desc">' + scoreDesc(score) + '</div></div>';
+    const num = score != null ? score : '—';
+    const desc = scoreDesc(score);
+    const dot = score != null ? '<span class="oura-zone-dot ' + cls + '"></span>' : '';
+    let deltaHtml = '';
+    if (score != null && prevScore != null) {
+      const d = score - prevScore;
+      const dcls = d > 0 ? 'up' : d < 0 ? 'down' : 'flat';
+      const sign = d > 0 ? '+' : '';
+      deltaHtml = '<div class="oura-score-delta ' + dcls + '">' + sign + d + ' vs yesterday</div>';
+    }
+    return '<div class="oura-score-card">' + dot
+      + '<div class="oura-score-label">' + label + '</div>'
+      + '<div class="oura-score-num ' + cls + '">' + num + '</div>'
+      + '<div class="oura-score-desc">' + desc + '</div>'
+      + deltaHtml
+      + '</div>';
   }
 
-  function renderMetric(label, val, unit) {
+  function renderMetric(label, val, unit, zoneClass, arrowHtml) {
     const display = val != null ? val : '—';
-    return '<div class="oura-metric"><div class="oura-metric-top"><span class="oura-metric-val">' + display + '</span><span class="oura-metric-unit">' + unit + '</span></div><div class="oura-metric-label">' + label + '</div></div>';
+    const dot = zoneClass ? '<span class="oura-zone-dot ' + zoneClass + '" style="position:static;display:inline-block;margin-left:5px;vertical-align:middle"></span>' : '';
+    return '<div class="oura-metric" style="position:relative">'
+      + '<div class="oura-metric-top"><span class="oura-metric-val">' + display + '</span><span class="oura-metric-unit">' + unit + '</span>' + dot + (arrowHtml || '') + '</div>'
+      + '<div class="oura-metric-label">' + label + '</div>'
+      + '</div>';
   }
 
-  function renderTrend(scores) {
+  function trendSvgPath(scores) {
     const W = 280, H = 36, pad = 4;
+    if (!scores || scores.length < 2) return '';
     const min = Math.min.apply(null, scores);
     const max = Math.max.apply(null, scores);
     const range = max - min || 1;
@@ -13459,12 +13940,52 @@ setInterval(updateDayBar, 60 * 1000);
     }));
     const line = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
     const fill = line + ' L' + pts[pts.length - 1].x.toFixed(1) + ' ' + H + ' L' + pts[0].x.toFixed(1) + ' ' + H + ' Z';
-    return '<div class="oura-trend-wrap">'
-      + '<svg class="oura-trend-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">'
+    return '<svg class="oura-trend-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">'
       + '<path class="oura-trend-fill" d="' + fill + '"/>'
       + '<path class="oura-trend-line" d="' + line + '"/>'
-      + '</svg>'
-      + '<div class="oura-trend-label">7-DAY SLEEP SCORE TREND</div></div>';
+      + '</svg>';
+  }
+
+  function renderTrend(sleepArr, readArr, actArr) {
+    const datasets = {
+      Sleep:     sleepArr.map(d => d.score).filter(Boolean),
+      Readiness: readArr.map(d => d.score).filter(Boolean),
+      Activity:  actArr.map(d => d.score).filter(Boolean),
+    };
+    const tabs = Object.keys(datasets).filter(k => datasets[k].length >= 2);
+    if (!tabs.length) return '';
+    const activeKey = tabs[0];
+    let tabsHtml = '<div class="oura-trend-tabs" id="ouraTrendTabs">';
+    tabs.forEach(k => {
+      tabsHtml += '<button class="oura-trend-tab' + (k === activeKey ? ' active' : '') + '" data-key="' + k + '">' + k + '</button>';
+    });
+    tabsHtml += '</div>';
+    return '<div class="oura-trend-wrap">'
+      + tabsHtml
+      + '<div id="ouraTrendChart">' + trendSvgPath(datasets[activeKey]) + '</div>'
+      + '<div class="oura-trend-label" id="ouraTrendLabel">7-DAY ' + activeKey.toUpperCase() + ' TREND</div>'
+      + '</div>';
+  }
+
+  function wireTrendTabs(sleepArr, readArr, actArr) {
+    const container = document.getElementById('ouraTrendTabs');
+    if (!container) return;
+    const datasets = {
+      Sleep:     sleepArr.map(d => d.score).filter(Boolean),
+      Readiness: readArr.map(d => d.score).filter(Boolean),
+      Activity:  actArr.map(d => d.score).filter(Boolean),
+    };
+    container.addEventListener('click', (e) => {
+      const btn = e.target.closest('.oura-trend-tab');
+      if (!btn) return;
+      container.querySelectorAll('.oura-trend-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const key = btn.dataset.key;
+      const chart = document.getElementById('ouraTrendChart');
+      const label = document.getElementById('ouraTrendLabel');
+      if (chart) chart.innerHTML = trendSvgPath(datasets[key] || []);
+      if (label) label.textContent = '7-DAY ' + key.toUpperCase() + ' TREND';
+    });
   }
 
   // ── OURA DAILY SUPABASE UPSERT ──────────────────────────
