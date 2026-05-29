@@ -13816,7 +13816,9 @@ setInterval(updateDayBar, 60 * 1000);
   }
 
   // ── TODAY'S CALL ─────────────────────────────────────────
-  const CALL_CACHE_KEY = 'oura_todays_call_v1';
+  // goals_ prefix → picked up by existing goals sync IIFE → synced to Supabase across devices
+  const CALL_CACHE_KEY = 'goals_oura_call_v1';
+  let _callInFlight = false;
 
   async function fetchTodaysCall(d) {
     const today = todayStr();
@@ -13854,6 +13856,11 @@ Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, els
       return;
     }
 
+    // Prevent race: if stale-while-revalidate triggers two renders back-to-back,
+    // only the first one calls Gemini — the second waits and uses the cached result
+    if (_callInFlight) return;
+    _callInFlight = true;
+
     try {
       const res = await fetch('/api/gemini', {
         method: 'POST',
@@ -13867,9 +13874,10 @@ Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, els
       localStorage.setItem(CALL_CACHE_KEY, JSON.stringify({ date: today, result, hadRealData: hasRealData }));
       renderTodaysCall(result);
     } catch(e) {
-      // Fallback to rule-based
       const result = ruleBasedCall(d);
       renderTodaysCall(result);
+    } finally {
+      _callInFlight = false;
     }
   }
 
