@@ -13820,11 +13820,17 @@ setInterval(updateDayBar, 60 * 1000);
 
   async function fetchTodaysCall(d) {
     const today = todayStr();
-    // Use cached result if from today
+    // Cache is valid only if: same date AND was generated with real scores (not nulls)
     try {
       const cached = JSON.parse(localStorage.getItem(CALL_CACHE_KEY));
-      if (cached && cached.date === today) { renderTodaysCall(cached.result); return; }
+      if (cached && cached.date === today && cached.hadRealData) {
+        renderTodaysCall(cached.result); return;
+      }
     } catch {}
+
+    // If current data is still all nulls, use rule-based fallback but don't cache it
+    // so we retry once real data arrives
+    const hasRealData = d.readScore != null || d.sleepScore != null;
 
     const prompt = `You are a personal performance coach. Given today's biometric data from an Oura Ring, return a JSON object only — no markdown, no extra text.
 
@@ -13842,8 +13848,11 @@ Return exactly:
 
 Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, else zone=low. Be specific to the numbers — never generic advice.`;
 
-    const callEl = document.getElementById('ouraTodaysCall');
-    const bodyEl = document.getElementById('ouraTodaysCallBody');
+    // No real data yet — show rule-based without caching so we retry next render
+    if (!hasRealData) {
+      renderTodaysCall(ruleBasedCall(d));
+      return;
+    }
 
     try {
       const res = await fetch('/api/gemini', {
@@ -13855,7 +13864,7 @@ Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, els
       const data = await res.json();
       const raw = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
       const result = JSON.parse(raw);
-      localStorage.setItem(CALL_CACHE_KEY, JSON.stringify({ date: today, result }));
+      localStorage.setItem(CALL_CACHE_KEY, JSON.stringify({ date: today, result, hadRealData: hasRealData }));
       renderTodaysCall(result);
     } catch(e) {
       // Fallback to rule-based
