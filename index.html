@@ -933,6 +933,86 @@ body::after {
   border-color: rgba(110,231,183,0.15);
 }
 
+/* ── Word of the Day ── */
+.wotd-card {
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.05));
+  border: 1px solid rgba(139,92,246,0.18);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  padding: 16px 18px 14px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.wotd-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139,92,246,0.4), transparent);
+}
+.wotd-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.wotd-eyebrow {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: rgba(167,139,250,0.8);
+}
+.wotd-speak-btn {
+  background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.25);
+  color: rgba(167,139,250,0.9); border-radius: 8px;
+  width: 28px; height: 28px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.wotd-speak-btn:hover { background: rgba(139,92,246,0.22); }
+.wotd-word-row {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px;
+}
+.wotd-word {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--text-primary); line-height: 1;
+}
+.wotd-pos {
+  font-size: 10px; font-weight: 600; color: rgba(167,139,250,0.7);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  background: rgba(139,92,246,0.12); border-radius: 6px;
+  padding: 2px 7px;
+}
+.wotd-meaning {
+  font-size: 13px; color: var(--text-secondary); font-weight: 500;
+  margin-bottom: 12px; letter-spacing: -0.01em;
+}
+.wotd-sentence-wrap {
+  min-height: 42px;
+  animation: wotd-fade-in 0.4s ease;
+}
+@keyframes wotd-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.wotd-sentence {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  line-height: 1.5; margin-bottom: 3px;
+}
+.wotd-translation {
+  font-size: 11px; color: var(--text-tertiary);
+  font-style: italic; line-height: 1.4;
+}
+.wotd-dots {
+  display: flex; gap: 5px; margin-top: 10px; justify-content: center;
+}
+.wotd-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(139,92,246,0.2);
+  transition: background 0.3s, transform 0.3s;
+}
+.wotd-dot.active {
+  background: rgba(167,139,250,0.8);
+  transform: scale(1.3);
+}
+
 /* Category Rings — unified card like oura-metrics */
 .gs-rings-wrap {
   display: grid; grid-template-columns: repeat(3, 1fr);
@@ -6901,6 +6981,26 @@ window.canonicalJson = function(obj) {
   <!-- ===== TODAY TAB ===== -->
   <div class="goals-tab-content active" id="goalsTabToday">
 
+    <!-- Word of the Day -->
+    <div class="wotd-card" id="wotdCard">
+      <div class="wotd-top">
+        <span class="wotd-eyebrow">Mot du jour</span>
+        <button class="wotd-speak-btn" id="wotdSpeakBtn" title="Hear it" aria-label="Pronounce word">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+      </div>
+      <div class="wotd-word-row">
+        <span class="wotd-word" id="wotdWord">…</span>
+        <span class="wotd-pos" id="wotdPos"></span>
+      </div>
+      <div class="wotd-meaning" id="wotdMeaning"></div>
+      <div class="wotd-sentence-wrap">
+        <div class="wotd-sentence" id="wotdSentence"></div>
+        <div class="wotd-translation" id="wotdTranslation"></div>
+      </div>
+      <div class="wotd-dots" id="wotdDots"></div>
+    </div>
+
     <!-- Time Slot Banner -->
     <div class="gs-banner" id="gsBanner">
       <div class="gs-banner-slot" id="gsBannerSlot">Loading…</div>
@@ -8275,6 +8375,135 @@ function formatDate(d) {
 // ============================================================
 
 const GS_GEMINI_KEY = '';
+
+// ── WORD OF THE DAY ──────────────────────────────────────────────────────────
+(function() {
+  const WOTD_KEY_PREFIX = 'goals_wotd_';
+  let wotdSentences = [];
+  let wotdIndex = 0;
+  let wotdTimer = null;
+  let wotdPaused = false;
+
+  function todayKey() {
+    return WOTD_KEY_PREFIX + new Date().toISOString().slice(0, 10);
+  }
+
+  function render(data) {
+    const word    = document.getElementById('wotdWord');
+    const pos     = document.getElementById('wotdPos');
+    const meaning = document.getElementById('wotdMeaning');
+    const dots    = document.getElementById('wotdDots');
+    if (!word) return;
+    word.textContent    = data.word;
+    pos.textContent     = data.pos || '';
+    meaning.textContent = data.meaning;
+    wotdSentences = data.sentences || [];
+    // Build dots
+    dots.innerHTML = wotdSentences.map((_, i) =>
+      '<span class="wotd-dot' + (i === 0 ? ' active' : '') + '"></span>'
+    ).join('');
+    showSentence(0);
+    startRotation();
+  }
+
+  function showSentence(idx) {
+    const sentEl = document.getElementById('wotdSentence');
+    const transEl = document.getElementById('wotdTranslation');
+    const dotsEl  = document.getElementById('wotdDots');
+    if (!sentEl || !wotdSentences.length) return;
+    wotdIndex = idx % wotdSentences.length;
+    // Re-trigger animation
+    sentEl.style.animation = 'none';
+    sentEl.offsetHeight; // reflow
+    sentEl.style.animation = '';
+    sentEl.parentElement.style.animation = 'none';
+    sentEl.parentElement.offsetHeight;
+    sentEl.parentElement.style.animation = 'wotd-fade-in 0.4s ease';
+    sentEl.textContent   = wotdSentences[wotdIndex].fr;
+    transEl.textContent  = wotdSentences[wotdIndex].en;
+    dotsEl.querySelectorAll('.wotd-dot').forEach((d, i) =>
+      d.classList.toggle('active', i === wotdIndex)
+    );
+  }
+
+  function startRotation() {
+    if (wotdTimer) clearInterval(wotdTimer);
+    wotdTimer = setInterval(() => {
+      if (!wotdPaused) showSentence(wotdIndex + 1);
+    }, 4000);
+  }
+
+  // Tap to pause / resume
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#wotdCard') && !e.target.closest('#wotdSpeakBtn')) {
+      wotdPaused = !wotdPaused;
+    }
+  });
+
+  // Speak button — browser TTS with fr-FR voice
+  document.getElementById('wotdSpeakBtn')?.addEventListener('click', () => {
+    const word = document.getElementById('wotdWord')?.textContent;
+    if (!word || !window.speechSynthesis) return;
+    const utt = new SpeechSynthesisUtterance(word);
+    utt.lang = 'fr-FR'; utt.rate = 0.85;
+    const voices = window.speechSynthesis.getVoices();
+    const frVoice = voices.find(v => v.lang.startsWith('fr'));
+    if (frVoice) utt.voice = frVoice;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utt);
+  });
+
+  async function fetchWord() {
+    const key = todayKey();
+    // Use cached if available
+    try {
+      const cached = JSON.parse(localStorage.getItem(key));
+      if (cached && cached.word) { render(cached); return; }
+    } catch {}
+
+    const prompt = `You are a French language teacher. Generate one A2-level French word of the day.
+Return a JSON object only — no markdown, no extra text:
+{
+  "word": "the french word",
+  "pos": "noun/verb/adjective/adverb",
+  "meaning": "English meaning in 5 words or less",
+  "sentences": [
+    { "fr": "French sentence using the word naturally", "en": "English translation" },
+    { "fr": "Second French sentence in a different context", "en": "English translation" },
+    { "fr": "Third French sentence, slightly more complex", "en": "English translation" }
+  ]
+}
+Rules: A2 level vocabulary. Sentences must be practical and conversational. Vary the contexts (daily life, work, travel).`;
+
+    try {
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const raw = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '')
+        .replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const result = JSON.parse(raw);
+      localStorage.setItem(key, JSON.stringify(result));
+      render(result);
+    } catch(e) {
+      // Fallback word if Gemini fails
+      render({
+        word: 'bonjour', pos: 'interjection',
+        meaning: 'hello / good morning',
+        sentences: [
+          { fr: 'Bonjour, comment allez-vous ?', en: 'Hello, how are you?' },
+          { fr: 'Elle dit bonjour à ses collègues chaque matin.', en: 'She says hello to her colleagues every morning.' },
+          { fr: 'Bonjour ! Je voudrais un café, s\'il vous plaît.', en: 'Hello! I would like a coffee, please.' }
+        ]
+      });
+    }
+  }
+
+  fetchWord();
+})();
 
 // --- Data keys ---
 function gsDateKey(d) { return dateToYYYYMMDD(d || getActiveDateObj()); }
