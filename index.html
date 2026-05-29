@@ -4485,6 +4485,8 @@ html, body {
   transition: opacity 0.2s;
 }
 .oura-week-day.is-today { opacity: 1; }
+.oura-week-day.is-selected { opacity: 1; }
+.oura-week-day.is-selected .oura-week-label { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 3px; }
 .oura-week-ring-wrap {
   position: relative; width: 36px; height: 36px;
 }
@@ -13583,15 +13585,10 @@ setInterval(updateDayBar, 60 * 1000);
     const dSleepArr = (data.detailedSleep && data.detailedSleep.data) || [];
     const hrArr = (data.hr && data.hr.data) || [];
 
-    // Pick entries for the viewed date — no fallback so past dates show correct (or blank) data
+    // Pick entries for the viewed date — exact match only, no silent fallback to yesterday
     const viewDate = window.getViewDate ? window.getViewDate() : todayStr();
     const isToday = viewDate === todayStr();
-    const findByDate = (arr) => {
-      const exact = arr.find(e => e.day === viewDate);
-      if (exact) return exact;
-      // Only fall back to latest when viewing today and no exact match yet (data not synced)
-      return isToday ? (arr[arr.length - 1] || null) : null;
-    };
+    const findByDate = (arr) => arr.find(e => e.day === viewDate) || null;
 
     const todaySleep = findByDate(sleepArr);
     const todayRead = findByDate(readArr);
@@ -13601,12 +13598,6 @@ setInterval(updateDayBar, 60 * 1000);
     const findBestSleepForDate = (arr, date) => {
       const matches = arr.filter(e => e.day === date);
       if (matches.length > 0) return matches.reduce((a, b) => ((b.total_sleep_duration || 0) > (a.total_sleep_duration || 0) ? b : a));
-      if (isToday && arr.length > 0) {
-        // Today has no exact match yet — fall back to the most recent day's best session
-        const latestDay = arr[arr.length - 1].day;
-        const latestMatches = arr.filter(e => e.day === latestDay);
-        return latestMatches.reduce((a, b) => ((b.total_sleep_duration || 0) > (a.total_sleep_duration || 0) ? b : a));
-      }
       return null;
     };
     const lastSleepDetail = findBestSleepForDate(dSleepArr, viewDate);
@@ -13671,7 +13662,7 @@ setInterval(updateDayBar, 60 * 1000);
     let html = '';
 
     // 1. Hero readiness ring — starts empty, animates in after paint
-    const ringZone = scoreClass(readScore);
+    const ringZone = readScore != null ? scoreClass(readScore) : 'zone-green';
     const ringColor = ringZone === 'zone-gold' ? '#F5C842' : ringZone === 'zone-green' ? '#6EE7B7' : ringZone === 'zone-yellow' ? '#F2C063' : '#FF8A8A';
     const circumference = 2 * Math.PI * 80;
     const dashTarget = readScore != null ? circumference * (1 - readScore / 100) : circumference;
@@ -13684,29 +13675,47 @@ setInterval(updateDayBar, 60 * 1000);
       + '<div class="oura-hero-center">'
       + '<div class="oura-hero-num" id="ouraHeroNum" style="color:' + ringColor + '">—</div>'
       + '<div class="oura-hero-unit">Readiness</div>'
-      + '<div class="oura-hero-label" style="color:' + ringColor + '">' + scoreDesc(readScore) + '</div>'
+      + '<div class="oura-hero-label" style="color:' + (readScore != null ? ringColor : 'var(--text-3)') + '">' + (readScore != null ? scoreDesc(readScore) : (isToday ? 'Pending' : 'No data')) + '</div>'
       + '</div></div>';
 
     // Week-view readiness calendar
-    const calDays = readArr.slice(-7);
-    if (calDays.length) {
+    // Build a 7-day slot array: past days from API, today always present (may be pending)
+    const todayDateStr = todayStr();
+    const readByDay = {};
+    readArr.forEach(d => { readByDay[d.day] = d; });
+    const calSlots = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dayStr = d.toISOString().slice(0, 10);
+      calSlots.push({ day: dayStr, score: readByDay[dayStr] ? readByDay[dayStr].score : null });
+    }
+    if (calSlots.length) {
       html += '<div class="oura-week-cal" id="ouraWeekCal">';
-      calDays.forEach(d => {
-        const z = scoreClass(d.score);
-        const color = z === 'zone-gold' ? '#F5C842' : z === 'zone-green' ? '#6EE7B7' : z === 'zone-yellow' ? '#F2C063' : '#FF8A8A';
+      calSlots.forEach(d => {
+        const isPending = d.day === todayDateStr && d.score == null;
+        const z = d.score != null ? scoreClass(d.score) : 'zone-pending';
+        const color = z === 'zone-gold' ? '#F5C842' : z === 'zone-green' ? '#6EE7B7' : z === 'zone-yellow' ? '#F2C063' : z === 'zone-red' ? '#FF8A8A' : 'rgba(255,255,255,0.18)';
         const dayLabel = new Date(d.day + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 2);
-        const isView = d.day === viewDate;
-        html += '<div class="oura-week-day' + (isView ? ' is-today' : '') + '">'
+        const isRealToday = d.day === todayDateStr;
+        const isSelected = d.day === viewDate;
+        const fillOffset = d.score != null
+          ? (2 * Math.PI * 14 * (1 - d.score / 100)).toFixed(2)
+          : (2 * Math.PI * 14).toFixed(2);
+        let dayCls = 'oura-week-day';
+        if (isRealToday) dayCls += ' is-today';
+        if (isSelected && !isRealToday) dayCls += ' is-selected';
+        html += '<div class="' + dayCls + '">'
           + '<div class="oura-week-ring-wrap">'
           + '<svg viewBox="0 0 36 36" class="oura-week-ring-svg" aria-hidden="true">'
           + '<circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3"/>'
           + '<circle cx="18" cy="18" r="14" fill="none" stroke="' + color + '" stroke-width="3"'
           + ' stroke-linecap="round"'
           + ' stroke-dasharray="' + (2 * Math.PI * 14).toFixed(2) + '"'
-          + ' stroke-dashoffset="' + (2 * Math.PI * 14 * (1 - (d.score || 0) / 100)).toFixed(2) + '"'
-          + ' transform="rotate(-90 18 18)"/>'
+          + ' stroke-dashoffset="' + fillOffset + '"'
+          + ' transform="rotate(-90 18 18)"'
+          + (isPending ? ' stroke-dasharray="4 4"' : '') + '/>'
           + '</svg>'
-          + '<span class="oura-week-score" style="color:' + color + '">' + (d.score || '—') + '</span>'
+          + '<span class="oura-week-score" style="color:' + color + '">' + (d.score != null ? d.score : (isPending ? '·' : '—')) + '</span>'
           + '</div>'
           + '<div class="oura-week-label">' + dayLabel + '</div>'
           + '</div>';
@@ -13714,11 +13723,13 @@ setInterval(updateDayBar, 60 * 1000);
       html += '</div>';
     }
 
-    // 2. Today's Call placeholder — filled async
-    html += '<div class="oura-todays-call" id="ouraTodaysCall">'
-      + '<div class="oura-call-head"><span class="oura-call-eyebrow">Today\'s Call</span></div>'
-      + '<div class="oura-call-loading">Analysing your data…</div>'
-      + '</div>';
+    // 2. Today's Call — only shown when viewing today
+    if (isToday) {
+      html += '<div class="oura-todays-call" id="ouraTodaysCall">'
+        + '<div class="oura-call-head"><span class="oura-call-eyebrow">Today\'s Call</span></div>'
+        + '<div class="oura-call-loading">Analysing your data…</div>'
+        + '</div>';
+    }
 
     // 3. Score cards (with deltas)
     html += '<div class="oura-scores">';
@@ -13795,11 +13806,13 @@ setInterval(updateDayBar, 60 * 1000);
     // Wire trend tab clicks
     wireTrendTabs(sleepArr, readArr, actArr);
 
-    // Fire Today's Call after DOM is painted
-    fetchTodaysCall({
-      readScore, sleepScore, actScore, hrv, avgHrv, restHr, avgRhr,
-      deep, rem, light, awake, steps
-    });
+    // Fire Today's Call only when viewing today
+    if (isToday) {
+      fetchTodaysCall({
+        readScore, sleepScore, actScore, hrv, avgHrv, restHr, avgRhr,
+        deep, rem, light, awake, steps
+      });
+    }
   }
 
   // ── TODAY'S CALL ─────────────────────────────────────────
