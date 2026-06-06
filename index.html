@@ -1029,7 +1029,10 @@ body::after {
 .peak-caff-custom { display:flex; gap:8px; margin-top:10px; }
 .peak-caff-custom-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 12px; color:var(--text-primary); font-family:inherit; font-size:13px; outline:none; min-width:0; }
 .peak-caff-custom-mg { width:70px; flex-shrink:0; }
-.peak-caff-custom-time { width:90px; flex-shrink:0; color-scheme:dark; }
+.peak-caff-custom-time { width:100px; flex-shrink:0; color-scheme:dark; }
+.peak-caff-time-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.peak-caff-time-label { font-size:11px; font-weight:600; color:var(--text-tertiary); letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; }
+.peak-caff-time-hint { font-size:10px; color:var(--text-tertiary); opacity:0.6; }
 .peak-caff-add-btn { background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:#6EE7B7; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; white-space:nowrap; transition:all 0.15s; }
 .peak-caff-add-btn:hover { background:rgba(110,231,183,0.18); }
 .peak-caff-timing { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
@@ -8589,8 +8592,13 @@ window.canonicalJson = function(obj) {
 
     <div class="peak-card">
       <div class="peak-section-label">Caffeine</div>
+      <div class="peak-caff-time-row">
+        <span class="peak-caff-time-label">Time</span>
+        <input id="peakCustomTime" class="peak-caff-custom-input peak-caff-custom-time" type="time">
+        <span class="peak-caff-time-hint">leave blank to use current time</span>
+      </div>
       <div class="peak-caff-search-wrap">
-        <input id="peakCaffSearch" class="peak-caff-search" type="text" placeholder="Search drink… (espresso, matcha, Red Bull…)" autocomplete="off">
+        <input id="peakCaffSearch" class="peak-caff-search" type="text" placeholder="Search 50+ drinks… (espresso, matcha, Red Bull…)" autocomplete="off">
         <div id="peakCaffDropdown" class="peak-caff-dropdown"></div>
       </div>
       <div id="peakCaffLogs" class="peak-caff-logs"></div>
@@ -8621,7 +8629,6 @@ window.canonicalJson = function(obj) {
       <div class="peak-caff-custom">
         <input id="peakCustomName" class="peak-caff-custom-input" type="text" placeholder="Name">
         <input id="peakCustomMg" class="peak-caff-custom-input peak-caff-custom-mg" type="number" placeholder="mg" min="1" max="999">
-        <input id="peakCustomTime" class="peak-caff-custom-input peak-caff-custom-time" type="time">
         <button id="peakCustomAddBtn" class="peak-caff-add-btn" type="button">Add</button>
       </div>
     </div>
@@ -19861,6 +19868,8 @@ function switchTab(tab) {
           var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
           var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){return a+b;},0)/_hrvV.length : null;
           drawEnergyChart('peakEnergyCanvas', buildEnergyArray(wh, r, arr, _activeEnergyMode, _hrv, _aHrv), wh, arr, _activeEnergyMode);
+          drawCaffChart('peakCaffCanvas', arr);
+          renderCoffeeScore(arr, r);
         });
       });
     }
@@ -19919,6 +19928,7 @@ function switchTab(tab) {
     var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
     var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){return a+b;},0)/_hrvV.length : null;
     drawEnergyChart('peakEnergyCanvas', buildEnergyArray(wh, r, logs, _activeEnergyMode, _hrv, _aHrv), wh, logs, _activeEnergyMode);
+    drawCaffChart('peakCaffCanvas', logs);
     renderCoffeeScore(logs, r);
   }
 
