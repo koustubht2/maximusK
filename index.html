@@ -19695,9 +19695,9 @@ function switchTab(tab) {
       // Component 3: Evening wake-maintenance zone — secondary peak ~+9h after wake (+8pts)
       var circ = 55
         + 25  * Math.sin(PI * (hw - 0.5) / 9)                             // morning peak at +4h
-        - 18  * Math.pow(Math.max(0, Math.sin(PI * (hw - 4.0) / 3.0)), 2) // pm dip peaks at +5.5h (2:30pm for 9am waker)
-        + 12  * Math.exp(-0.5 * Math.pow((hw - 9.5) / 1.5, 2));           // evening WMZ at +9.5h (6:30pm for 9am waker)
-      circ = clamp(circ, 15, 92);
+        - 36  * Math.pow(Math.max(0, Math.sin(PI * (hw - 4.0) / 3.0)), 2) // pm dip peaks at +5.5h (2:30pm for 9am waker) — deep enough to break below threshold
+        + 14  * Math.exp(-0.5 * Math.pow((hw - 9.5) / 1.5, 2));           // evening WMZ at +9.5h (6:30pm for 9am waker)
+      circ = clamp(circ, 5, 92);
       // Readiness scales the circadian ceiling: readiness=100 → ×1.0, readiness=50 → ×0.72
       var rm = readiness / 100 * 0.28 + 0.72;
       var score = circ * rm + inertia + (mode !== 'core' ? hrvMod : 0);
@@ -19804,12 +19804,12 @@ function switchTab(tab) {
       }
     }
 
-    // Merge runs separated by just 1 hour (one brief dip shouldn't split a window)
+    // Only merge runs with zero gap (immediately adjacent) — a real dip should split windows
     var merged = [];
     runs.forEach(function(r) {
       if (!merged.length) { merged.push(r); return; }
       var prev = merged[merged.length - 1];
-      if (r.startI - prev.endI <= 2) {
+      if (r.startI - prev.endI <= 1) {
         // extend prev to include the gap + this run
         var newScores = [];
         for (var k = prev.startI; k <= r.endI; k++) newScores.push(arr[(wakeHour + k) % 24] || 0);
