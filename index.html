@@ -19146,6 +19146,7 @@ function switchTab(tab) {
   var _vitCoachFlight = false;
   var _activeEnergyMode = 'core';
   var _activeMealTab    = 'all';
+  var _wakeHour = 8; // updated by renderPeak from Oura — shared by all helpers
 
   // ── Caffeine database ──────────────────────────────────────
   var CAFF_DB = [
@@ -20071,7 +20072,7 @@ function switchTab(tab) {
       var caffSummary = caffLogs.length
         ? caffLogs.map(function(l){ return l.name+' '+l.mg+'mg at '+l.timeStr; }).join(', ')
         : 'none logged';
-      var wh = typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7;
+      var wh = _wakeHour;
       var curH = Math.floor(nowHour());
       var sleepDebt = calcSleepDebt(oura) || '0h';
       var bedStr = avgBed ? fmtHour24(avgBed) : '23:00';
@@ -20174,6 +20175,7 @@ function switchTab(tab) {
     // fix #20: avg bedtime
     var avgBed = avgBedtimeFromOura(oura);
 
+    _wakeHour = wakeHour; // persist for _refreshEnergyChart, insights, day-nav
     setText('peakChipHrv',      hrv       ? Math.round(hrv)  : '—');
     setText('peakChipRecovery', readiness ? readiness + '%'  : '—');
     setText('peakChipReadiness',readiness ? readiness        : '—');
@@ -20418,7 +20420,7 @@ function switchTab(tab) {
   // Central helper — refreshes both charts and coffee score from current data
   function _refreshEnergyChart(logs) {
     var oura = getOura();
-    var wh = typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7;
+    var wh = _wakeHour;
     var r = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
     var _hrv = oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
     var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){ return x.contributors && x.contributors.hrv_balance; }).filter(Boolean);
@@ -20717,7 +20719,7 @@ function switchTab(tab) {
   function renderPeakForOffset(offset) {
     _peakDayOffset = offset;
     var oura = getOura();
-    var wh = typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7;
+    var wh = _wakeHour;
     var r = oura.readiness && oura.readiness[Math.abs(offset)] && oura.readiness[Math.abs(offset)].score;
     var s = oura.sleep && oura.sleep[Math.abs(offset)] && oura.sleep[Math.abs(offset)].score;
     var dayLbl = document.getElementById('peakDayLabel');
