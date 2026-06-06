@@ -19536,65 +19536,76 @@ function switchTab(tab) {
   }
 
   // ── Food energy model ──────────────────────────────────────
-  // Returns per-hour modifier array (24 slots) based on what + when eaten.
-  // Science basis:
-  //   Carbs  → fast glucose spike: peak +45min, half-life ~1.5h, crash after ~2.5h
-  //   Protein→ slow sustained lift: peak +90min, half-life ~2.5h, no crash
-  //   Fat    → blunts glucose spike, extends digestion, slight dip at +30min
-  //   Large meal (>600 kcal) → post-meal dip at +20–40min (blood diverted to digestion)
-  //   Balanced (carbs+protein+fat) → smoother curve, no crash
-  function foodEnergyMod(vitLogs) {
+  // Context-aware: food effect depends on WHERE in the circadian cycle you eat.
+  //   Morning peak (hw 1–5):  carbs/protein add a small visible lift
+  //   PM trough   (hw 5–9):   heavy meal DEEPENS the dip — orexin suppression,
+  //                           blood diverted to gut, tryptophan→melatonin pathway
+  //   Evening     (hw 9–13):  moderate positive effect
+  function foodEnergyMod(vitLogs, wakeHour) {
     var arr = new Array(24).fill(0);
     if (!vitLogs || !vitLogs.length) return arr;
+    var wh = wakeHour != null ? wakeHour : 8;
     vitLogs.forEach(function(item) {
       var t = item.timeHour;
       if (t == null) {
-        // Fallback: infer from meal type
         t = item.meal === 'breakfast' ? 8 : item.meal === 'lunch' ? 13 : item.meal === 'dinner' ? 19 : 15;
       }
-      var kcal   = item.kcal   || 0;
+      var kcal    = item.kcal    || 0;
       var carbs   = item.carbs   || 0;
       var protein = item.protein || 0;
       var fat     = item.fat     || 0;
-      var total   = carbs + protein + fat;
 
-      // ── Carb component: sharp bell centred at t+0.75h, width ~2h ──
-      var carbPeak  = Math.min(carbs / 60, 1.0) * 14; // max +14pts from pure carbs
-      // ── Protein component: slow ramp centred at t+1.5h, width ~3h ──
-      var protPeak  = Math.min(protein / 40, 1.0) * 10; // max +10pts from protein
-      // ── Fat: slight early dip then neutral ──
-      var fatDip    = Math.min(fat / 30, 1.0) * -3;  // fat slows digestion slightly
+      // How deep into the PM circadian trough is this meal?
+      // inTrough = 0 (morning peak) → 1 (dead centre of trough at hw≈7)
+      var hw_meal = t - wh;
+      if (hw_meal < 0) hw_meal += 24;
+      var inTrough = Math.max(0, Math.exp(-0.5 * Math.pow((hw_meal - 7) / 2.2, 2)));
 
-      // ── Large meal dip: >600 kcal causes parasympathetic dip +20-40min ──
-      var bigMealDip = kcal > 600 ? -Math.min((kcal - 600) / 400, 1) * 8 : 0;
+      // Positive food effect is suppressed during trough — orexin suppression
+      // overwhelms the glucose lift. Morning: full. PM trough: 25% of normal.
+      var contextFactor = 1 - inTrough * 0.75;
 
-      // ── Carb crash: after the carb spike fades (~2.5h), small dip ──
-      var crashMag = carbs > 40 && protein < 15 ? -Math.min(carbs / 80, 1) * 6 : 0;
+      // Carb spike: smaller during trough (insulin/orexin interaction)
+      var carbPeak = Math.min(carbs / 60, 1.0) * 12 * contextFactor;
+
+      // Protein lift: slower, also reduced in trough
+      var protPeak = Math.min(protein / 40, 1.0) * 8 * contextFactor;
+
+      // Fat: slight early dip regardless of timing (gastric emptying delay)
+      var fatDip = Math.min(fat / 30, 1.0) * -3;
+
+      // Heavy meal dip: parasympathetic blood diversion at dh≈0.5
+      // In PM trough: massively amplified by orexin suppression + tryptophan pathway
+      // In morning: small dip only (circadian alerting overrides)
+      var baseDip    = kcal > 400 ? -Math.min((kcal - 400) / 350, 1.0) * 5 : 0;
+      var troughAmp  = kcal > 300 ? inTrough * Math.min((kcal - 300) / 300, 1.0) * -16 : 0;
+      var bigMealDip = baseDip + troughAmp;
+
+      // Dip duration: narrow in morning (30min), wide food-coma in trough (90–120min)
+      var dipWidth = 0.25 + inTrough * 1.4;
+
+      // Carb crash: rebound dip at +2.8h when high carb + low protein + low fat (no buffer)
+      var carbCrash = (carbs > 40 && protein < 15 && fat < 10)
+        ? -Math.min(carbs / 70, 1.0) * 7
+        : (carbs > 50 && protein < 20)
+          ? -Math.min(carbs / 90, 1.0) * 4
+          : 0;
 
       for (var h = 0; h < 24; h++) {
-        var dh = h + 0.5 - t; // centre of this hour slot relative to meal time
-        if (dh < -0.25) continue; // before eating
+        var dh = h + 0.5 - t;
+        if (dh < -0.25) continue;
 
-        // Carb wave: Gaussian-ish, peak at dh=0.75, sigma≈1
-        var carbWave = carbPeak * Math.exp(-Math.pow(dh - 0.75, 2) / 1.8);
-
-        // Protein wave: peak at dh=1.5, broader sigma≈2
-        var protWave = protPeak * Math.exp(-Math.pow(dh - 1.5, 2) / 5);
-
-        // Fat drag at dh 0–0.5
-        var fatWave = (dh >= 0 && dh < 0.75) ? fatDip * (1 - dh / 0.75) : 0;
-
-        // Big meal dip: peak at dh=0.4, narrow
-        var bigDipWave = bigMealDip * Math.exp(-Math.pow(dh - 0.4, 2) / 0.3);
-
-        // Carb crash: centred at dh=2.8, brief
-        var crashWave = crashMag * Math.exp(-Math.pow(dh - 2.8, 2) / 0.8);
+        var carbWave   = carbPeak  * Math.exp(-Math.pow(dh - 0.75, 2) / 1.8);
+        var protWave   = protPeak  * Math.exp(-Math.pow(dh - 1.5,  2) / 5.0);
+        var fatWave    = (dh >= 0 && dh < 0.75) ? fatDip * (1 - dh / 0.75) : 0;
+        var bigDipWave = bigMealDip * Math.exp(-Math.pow(dh - 0.5, 2) / dipWidth);
+        var crashWave  = carbCrash  * Math.exp(-Math.pow(dh - 2.8, 2) / 0.8);
 
         arr[h] += carbWave + protWave + fatWave + bigDipWave + crashWave;
       }
     });
-    // Clamp modifiers to ±20 so food never dominates the circadian base
-    return arr.map(function(v){ return Math.max(-20, Math.min(20, v)); });
+    // Allow ±25 so PM trough crashes are fully visible
+    return arr.map(function(v) { return Math.max(-25, Math.min(20, v)); });
   }
 
   // ── Energy curve model ─────────────────────────────────────
@@ -19603,7 +19614,7 @@ function switchTab(tab) {
     var arr = [];
     var PI = Math.PI;
     var hasOura = readiness != null;
-    var foodMod = foodEnergyMod(vitLogs || loadVit());
+    var foodMod = foodEnergyMod(vitLogs || loadVit(), wakeHour);
     // HRV modifier
     var hrvMod = 0;
     if (hrv && avgHrv && avgHrv > 0) {
@@ -19623,23 +19634,45 @@ function switchTab(tab) {
       if (hw < 0) hw += 24;
       // Without Oura data show a flat placeholder line at 15
       if (!hasOura && mode !== 'stack') { arr.push(15); continue; }
-      // Hours before wake: flat sleep-level baseline
-      if (hw >= 15) { arr.push(clamp(10 + foodMod[h], 0, 30)); continue; }
-      // Circadian base: compressed to 20-45 range so stimulants/food dominate visually
-      // sin1: gentle +15pt swell peaking at +4h after wake
-      // sin2: -6pt post-lunch dip at +5-7h
-      var circ = 28 + 15 * Math.sin(PI * (hw - 0.5) / 9) - 6 * Math.sin(PI * (hw - 5) / 4);
+      // Sleep / pre-wake zone: flat low until wake, then rapid inertia clearance
+      // hw >= 15 = more than 15h after wake = deep into sleep cycle
+      if (hw >= 15) {
+        // Slight pre-dawn rise (light sleep phase, closer to next wake), max +5
+        var preDawnRise = hw >= 22 ? (hw - 22) * 2.5 : 0;
+        arr.push(clamp(8 + preDawnRise + foodMod[h], 0, 25));
+        continue;
+      }
+      // Sleep inertia: grogginess peaks at wake (hw=0), clears exponentially by ~45 min
+      // At hw=0: -18pts drag. At hw=0.75: ~0pts. Formula: -18 * e^(-4.5*hw)
+      var inertia = -18 * Math.exp(-4.5 * hw);
+      // Circadian base (two-process model, Borbély):
+      // Component 1: Morning rise — peaks ~+4h after wake (+15pts)
+      // Component 2: Post-lunch dip — troughs ~+6h after wake (-10pts, adenosine rebound)
+      // Component 3: Evening wake-maintenance zone — secondary peak ~+9h after wake (+8pts)
+      var circ = 28
+        + 15  * Math.sin(PI * (hw - 0.5) / 9)      // morning peak at +4h
+        - 10  * Math.pow(Math.max(0, Math.sin(PI * (hw - 5.5) / 3.5)), 2) // pm dip at +6h
+        +  8  * Math.exp(-0.5 * Math.pow((hw - 9.5) / 1.5, 2));           // evening zone at +9.5h
       circ = clamp(circ, 10, 45);
-      // Readiness scales the circadian ceiling — tired day keeps you in the 20-35 range
+      // Readiness scales the circadian ceiling
       var rm = mode === 'core' ? (readiness / 100 * 0.25 + 0.75) : (readiness / 100 * 0.35 + 0.65);
-      var score = circ * rm + (mode !== 'core' ? hrvMod * 0.5 : 0);
+      var score = circ * rm + inertia + (mode !== 'core' ? hrvMod * 0.5 : 0);
       // Caffeine/stimulants: dominant spikes — multiplier 55 so 200mg = +27.5pts visible spike
+      // Fasted absorption: if no food eaten before caffeine, hits bloodstream in ~20min not 45min
       if (caffLogs && caffLogs.length) {
+        var _vitAll = vitLogs || loadVit();
         caffLogs.forEach(function(log) {
           var dh = (h + 1) - log.timeHour;
           if (dh <= 0) return;
-          var absorb = Math.min(dh / 0.75, 1);
-          var boost = (log.mg / 400) * 55 * absorb * Math.pow(0.5, Math.max(0, dh - 0.75) / 5.5);
+          // Check if any food was consumed within 2h before this caffeine dose
+          var hasFoodBefore = _vitAll && _vitAll.some(function(f) {
+            var ft = f.timeHour != null ? f.timeHour : (f.meal === 'breakfast' ? 8 : f.meal === 'lunch' ? 13 : 19);
+            return ft <= log.timeHour && ft >= log.timeHour - 2;
+          });
+          // Fasted: absorption ramp 0.33h (20min). Fed: 0.75h (45min)
+          var ramp = hasFoodBefore ? 0.75 : 0.33;
+          var absorb = Math.min(dh / ramp, 1);
+          var boost = (log.mg / 400) * 55 * absorb * Math.pow(0.5, Math.max(0, dh - ramp) / 5.5);
           score += boost;
         });
       }
