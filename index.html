@@ -19771,67 +19771,67 @@ function switchTab(tab) {
   // Returns up to 4 peak windows as contiguous runs above threshold
   // Each window: { start, end, avg, peak, label, zoneClass, color }
   function findBestWindows(arr, wakeHour) {
-    var THRESHOLD = 45; // min score to be considered a notable window
+    var THRESHOLD = 40;
+    // Work in linear index space 0..15 (16 waking hours), map to real hours via (wakeHour+i)%24
+    // This avoids all modulo loop bugs — i is always a simple integer
     var runs = [];
-    var inRun = false, runStart = 0;
+    var inRun = false, runStartI = 0;
 
-    // Scan only the wake→sleep span (first 16h after wake)
-    for (var i = 0; i <= 16; i++) {
+    for (var i = 0; i < 17; i++) {
       var h = (wakeHour + i) % 24;
       var v = arr[h] || 0;
-      if (v >= THRESHOLD && !inRun) { inRun = true; runStart = h; }
-      else if (v < THRESHOLD && inRun) {
-        var runEnd = (wakeHour + i - 1) % 24;
-        var hours = [];
-        for (var j = runStart; j !== (runEnd + 1) % 24; j = (j + 1) % 24) hours.push(j);
-        if (hours.length >= 1) {
-          var sum = hours.reduce(function(a, hh){ return a + (arr[hh] || 0); }, 0);
-          runs.push({ start: runStart, end: runEnd, hours: hours, avg: sum / hours.length, peak: Math.max.apply(null, hours.map(function(hh){ return arr[hh] || 0; })) });
+      if (!inRun && v >= THRESHOLD) {
+        inRun = true;
+        runStartI = i;
+      } else if (inRun && (v < THRESHOLD || i === 16)) {
+        // collect the run's hours (linear indices → real hours)
+        var endI = (v < THRESHOLD) ? i - 1 : i;
+        var scores = [], realHours = [];
+        for (var k = runStartI; k <= endI; k++) {
+          var rh = (wakeHour + k) % 24;
+          realHours.push(rh);
+          scores.push(arr[rh] || 0);
+        }
+        if (scores.length > 0) {
+          var avg = scores.reduce(function(a,b){ return a+b; }, 0) / scores.length;
+          var peak = Math.max.apply(null, scores);
+          runs.push({ startI: runStartI, endI: endI, start: (wakeHour + runStartI) % 24, end: (wakeHour + endI) % 24, avg: avg, peak: peak });
         }
         inRun = false;
       }
     }
-    // Close any open run at the 16h boundary
-    if (inRun) {
-      var runEnd2 = (wakeHour + 16) % 24;
-      var hours2 = [];
-      for (var j2 = runStart; j2 !== (runEnd2 + 1) % 24; j2 = (j2 + 1) % 24) hours2.push(j2);
-      if (hours2.length >= 1) {
-        var sum2 = hours2.reduce(function(a, hh){ return a + (arr[hh] || 0); }, 0);
-        runs.push({ start: runStart, end: runEnd2, hours: hours2, avg: sum2 / hours2.length, peak: Math.max.apply(null, hours2.map(function(hh){ return arr[hh] || 0; })) });
-      }
-    }
 
-    // Merge runs within 1h of each other
-    runs.sort(function(a, b){ return a.start - b.start; });
+    // Merge runs separated by just 1 hour (one brief dip shouldn't split a window)
     var merged = [];
     runs.forEach(function(r) {
       if (!merged.length) { merged.push(r); return; }
       var prev = merged[merged.length - 1];
-      var gap = (r.start - prev.end + 24) % 24;
-      if (gap <= 1) {
-        prev.end = r.end;
-        prev.hours = prev.hours.concat(r.hours);
-        prev.avg = prev.hours.reduce(function(a, hh){ return a + (arr[hh] || 0); }, 0) / prev.hours.length;
-        prev.peak = Math.max(prev.peak, r.peak);
+      if (r.startI - prev.endI <= 2) {
+        // extend prev to include the gap + this run
+        var newScores = [];
+        for (var k = prev.startI; k <= r.endI; k++) newScores.push(arr[(wakeHour + k) % 24] || 0);
+        prev.endI  = r.endI;
+        prev.end   = r.end;
+        prev.avg   = newScores.reduce(function(a,b){ return a+b; }, 0) / newScores.length;
+        prev.peak  = Math.max(prev.peak, r.peak);
       } else {
         merged.push(r);
       }
     });
 
-    // Label each window by avg score
-    function zoneLabel(s)    { return s >= 75 ? 'Peak' : s >= 60 ? 'High' : s >= 45 ? 'Focus' : 'Steady'; }
-    function zoneClass(s)    { return s >= 75 ? 'zone-gold' : s >= 60 ? 'zone-green' : s >= 45 ? 'zone-yellow' : ''; }
-    function zoneColor(s)    { return s >= 75 ? '#F5C842' : s >= 60 ? '#6EE7B7' : s >= 45 ? '#F2C063' : '#94a3b8'; }
+    function winLabel(s)  { return s >= 75 ? 'Peak' : s >= 60 ? 'High' : 'Focus'; }
+    function winClass(s)  { return s >= 75 ? 'zone-gold' : s >= 60 ? 'zone-green' : 'zone-yellow'; }
+    function winColor(s)  { return s >= 75 ? '#F5C842'   : s >= 60 ? '#6EE7B7'   : '#F2C063'; }
 
-    merged = merged.map(function(r) {
-      return { start: r.start, end: r.end, avg: r.avg, peak: r.peak,
-               label: zoneLabel(r.avg), zoneClass: zoneClass(r.avg), color: zoneColor(r.avg) };
+    var labelled = merged.map(function(r) {
+      return { start: r.start, end: r.end, startI: r.startI, endI: r.endI,
+               avg: r.avg, peak: r.peak,
+               label: winLabel(r.avg), zoneClass: winClass(r.avg), color: winColor(r.avg) };
     });
 
-    // Return top 4 by avg score
-    merged.sort(function(a, b){ return b.avg - a.avg; });
-    return merged.slice(0, 4);
+    // Sort by avg desc, return top 4
+    labelled.sort(function(a, b) { return b.avg - a.avg; });
+    return labelled.slice(0, 4);
   }
 
   // ── Render Best Hours card from windows ───────────────────
@@ -19978,9 +19978,9 @@ function switchTab(tab) {
       return 'rgba('+r+','+g+','+b+','+a+')';
     }
     _wins.forEach(function(win) {
-      var endH = (win.end + 1) % 24 === 0 ? 24 : win.end + 1;
-      var x1 = xAt(win.start + 0.5) - cw / 48; // align with pts offset
-      var x2 = xAt(endH - 0.5) + cw / 48;
+      // Use linear indices (startI/endI) relative to wakeHour for rock-solid x coords
+      var x1 = padL + (win.startI / 24) * cw;
+      var x2 = padL + ((win.endI + 1) / 24) * cw;
       if (x2 <= x1) x2 = x1 + cw / 24;
       var bandA = win.avg >= 75 ? 0.12 : win.avg >= 60 ? 0.08 : 0.05;
       var bGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
