@@ -8790,7 +8790,7 @@ window.canonicalJson = function(obj) {
         <div><div class="vit-form-label">Carbs (g)</div><input id="vitFoodCarbs" class="vit-form-input" type="number" placeholder="20" min="0"></div>
         <div><div class="vit-form-label">Fat (g)</div><input id="vitFoodFat" class="vit-form-input" type="number" placeholder="10" min="0"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
         <div><div class="vit-form-label">Meal</div>
           <select id="vitFoodMeal" class="vit-form-input">
             <option value="breakfast">Breakfast</option>
@@ -8801,6 +8801,9 @@ window.canonicalJson = function(obj) {
         </div>
         <div><div class="vit-form-label">Time eaten</div>
           <input id="vitFoodTime" class="vit-form-input" type="time">
+        </div>
+        <div><div class="vit-form-label">Qty / servings</div>
+          <input id="vitFoodQty" class="vit-form-input" type="number" placeholder="1" min="0.25" step="0.25" value="1">
         </div>
       </div>
       <button id="vitAddSubmitBtn" class="vit-submit-btn" type="button">Add to Log</button>
@@ -19206,6 +19209,7 @@ function switchTab(tab) {
     {name:'Chana Dal 1 bowl',kcal:200,protein:12,carbs:32,fat:3},
     {name:'Rajma 1 bowl',kcal:270,protein:14,carbs:42,fat:4},
     {name:'Chole / Chana Masala 1 bowl',kcal:280,protein:13,carbs:44,fat:6},
+    {name:'Chole Masala Sabji 1 bowl',kcal:300,protein:14,carbs:46,fat:8},
     {name:'Pav Bhaji (2 pav)',kcal:450,protein:10,carbs:68,fat:15},
     {name:'Sambar 1 bowl',kcal:120,protein:5,carbs:20,fat:2},
 
@@ -20535,6 +20539,7 @@ function switchTab(tab) {
     ['vitFoodName','vitFoodKcal','vitFoodProtein','vitFoodCarbs','vitFoodFat','vitFoodSearch','vitFoodTime'].forEach(function(id){
       var el = document.getElementById(id); if (el) el.value = '';
     });
+    var qtyEl = document.getElementById('vitFoodQty'); if (qtyEl) qtyEl.value = '1';
     var sr = document.getElementById('vitSearchResults');
     if (sr) sr.innerHTML = '';
   }
@@ -20554,6 +20559,8 @@ function switchTab(tab) {
         document.getElementById('vitFoodProtein').value = row.dataset.protein;
         document.getElementById('vitFoodCarbs').value   = row.dataset.carbs;
         document.getElementById('vitFoodFat').value     = row.dataset.fat;
+        var qtyEl = document.getElementById('vitFoodQty'); if (qtyEl) qtyEl.value = '1';
+        results.innerHTML = '';
       });
     });
   }
@@ -20810,6 +20817,12 @@ function switchTab(tab) {
         var protein = parseFloat(document.getElementById('vitFoodProtein').value) || 0;
         var carbs   = parseFloat(document.getElementById('vitFoodCarbs').value) || 0;
         var fat     = parseFloat(document.getElementById('vitFoodFat').value) || 0;
+        var qty     = parseFloat(document.getElementById('vitFoodQty').value) || 1;
+        if (qty <= 0) qty = 1;
+        kcal    = Math.round(kcal    * qty * 10) / 10;
+        protein = Math.round(protein * qty * 10) / 10;
+        carbs   = Math.round(carbs   * qty * 10) / 10;
+        fat     = Math.round(fat     * qty * 10) / 10;
         var mealEl  = document.getElementById('vitFoodMeal');
         var meal    = mealEl ? mealEl.value : 'snack';
         var timeEl  = document.getElementById('vitFoodTime');
@@ -20824,8 +20837,9 @@ function switchTab(tab) {
           rawT = String(_h).padStart(2,'0') + ':' + String(_m).padStart(2,'0');
         }
         if (!name) return;
+        var displayName = qty !== 1 ? name + ' ×' + qty : name;
         var items = loadVit();
-        items.push({id:uid(), name:name, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT});
+        items.push({id:uid(), name:displayName, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT, qty:qty});
         saveVit(items);
         closeVitModal();
         renderVitality();
