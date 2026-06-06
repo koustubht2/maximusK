@@ -8780,13 +8780,18 @@ window.canonicalJson = function(obj) {
         <div><div class="vit-form-label">Carbs (g)</div><input id="vitFoodCarbs" class="vit-form-input" type="number" placeholder="20" min="0"></div>
         <div><div class="vit-form-label">Fat (g)</div><input id="vitFoodFat" class="vit-form-input" type="number" placeholder="10" min="0"></div>
       </div>
-      <div style="margin-bottom:8px"><div class="vit-form-label">Meal</div>
-        <select id="vitFoodMeal" class="vit-form-input">
-          <option value="breakfast">Breakfast</option>
-          <option value="lunch">Lunch</option>
-          <option value="dinner">Dinner</option>
-          <option value="snack" selected>Snack</option>
-        </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><div class="vit-form-label">Meal</div>
+          <select id="vitFoodMeal" class="vit-form-input">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack" selected>Snack</option>
+          </select>
+        </div>
+        <div><div class="vit-form-label">Time eaten</div>
+          <input id="vitFoodTime" class="vit-form-input" type="time">
+        </div>
       </div>
       <button id="vitAddSubmitBtn" class="vit-submit-btn" type="button">Add to Log</button>
       <button id="vitModalCancelBtn" class="vit-cancel-btn" type="button">Cancel</button>
@@ -19264,12 +19269,75 @@ function switchTab(tab) {
     if (el) el.textContent = val;
   }
 
+  // ── Food energy model ──────────────────────────────────────
+  // Returns per-hour modifier array (24 slots) based on what + when eaten.
+  // Science basis:
+  //   Carbs  → fast glucose spike: peak +45min, half-life ~1.5h, crash after ~2.5h
+  //   Protein→ slow sustained lift: peak +90min, half-life ~2.5h, no crash
+  //   Fat    → blunts glucose spike, extends digestion, slight dip at +30min
+  //   Large meal (>600 kcal) → post-meal dip at +20–40min (blood diverted to digestion)
+  //   Balanced (carbs+protein+fat) → smoother curve, no crash
+  function foodEnergyMod(vitLogs) {
+    var arr = new Array(24).fill(0);
+    if (!vitLogs || !vitLogs.length) return arr;
+    vitLogs.forEach(function(item) {
+      var t = item.timeHour;
+      if (t == null) {
+        // Fallback: infer from meal type
+        t = item.meal === 'breakfast' ? 8 : item.meal === 'lunch' ? 13 : item.meal === 'dinner' ? 19 : 15;
+      }
+      var kcal   = item.kcal   || 0;
+      var carbs   = item.carbs   || 0;
+      var protein = item.protein || 0;
+      var fat     = item.fat     || 0;
+      var total   = carbs + protein + fat;
+
+      // ── Carb component: sharp bell centred at t+0.75h, width ~2h ──
+      var carbPeak  = Math.min(carbs / 60, 1.0) * 14; // max +14pts from pure carbs
+      // ── Protein component: slow ramp centred at t+1.5h, width ~3h ──
+      var protPeak  = Math.min(protein / 40, 1.0) * 10; // max +10pts from protein
+      // ── Fat: slight early dip then neutral ──
+      var fatDip    = Math.min(fat / 30, 1.0) * -3;  // fat slows digestion slightly
+
+      // ── Large meal dip: >600 kcal causes parasympathetic dip +20-40min ──
+      var bigMealDip = kcal > 600 ? -Math.min((kcal - 600) / 400, 1) * 8 : 0;
+
+      // ── Carb crash: after the carb spike fades (~2.5h), small dip ──
+      var crashMag = carbs > 40 && protein < 15 ? -Math.min(carbs / 80, 1) * 6 : 0;
+
+      for (var h = 0; h < 24; h++) {
+        var dh = h + 0.5 - t; // centre of this hour slot relative to meal time
+        if (dh < -0.25) continue; // before eating
+
+        // Carb wave: Gaussian-ish, peak at dh=0.75, sigma≈1
+        var carbWave = carbPeak * Math.exp(-Math.pow(dh - 0.75, 2) / 1.8);
+
+        // Protein wave: peak at dh=1.5, broader sigma≈2
+        var protWave = protPeak * Math.exp(-Math.pow(dh - 1.5, 2) / 5);
+
+        // Fat drag at dh 0–0.5
+        var fatWave = (dh >= 0 && dh < 0.75) ? fatDip * (1 - dh / 0.75) : 0;
+
+        // Big meal dip: peak at dh=0.4, narrow
+        var bigDipWave = bigMealDip * Math.exp(-Math.pow(dh - 0.4, 2) / 0.3);
+
+        // Carb crash: centred at dh=2.8, brief
+        var crashWave = crashMag * Math.exp(-Math.pow(dh - 2.8, 2) / 0.8);
+
+        arr[h] += carbWave + protWave + fatWave + bigDipWave + crashWave;
+      }
+    });
+    // Clamp modifiers to ±20 so food never dominates the circadian base
+    return arr.map(function(v){ return Math.max(-20, Math.min(20, v)); });
+  }
+
   // ── Energy curve model ─────────────────────────────────────
   // fix #18: HRV as separate quality modifier on peak height
-  function buildEnergyArray(wakeHour, readiness, caffLogs, mode, hrv, avgHrv) {
+  function buildEnergyArray(wakeHour, readiness, caffLogs, mode, hrv, avgHrv, vitLogs) {
     var arr = [];
     var PI = Math.PI;
     var hasOura = readiness != null;
+    var foodMod = foodEnergyMod(vitLogs || loadVit());
     // HRV modifier: if HRV > avg → bonus up to +8pts peak height; if < avg → penalty
     var hrvMod = 0;
     if (hrv && avgHrv && avgHrv > 0) {
@@ -19280,7 +19348,8 @@ function switchTab(tab) {
       if (hw < 0) hw += 24;
       // Without Oura data show a flat placeholder line at 30
       if (!hasOura && mode !== 'stack') { arr.push(30); continue; }
-      var base = 50 + 28 * Math.sin(PI * (hw - 3) / 11) + 8 * Math.sin(PI * (hw - 7) / 5);
+      // Two-process model: primary peak at +4h after wake, post-lunch dip at +7h, fade by +13h
+      var base = 50 + 32 * Math.sin(PI * (hw - 0.5) / 9) - 10 * Math.sin(PI * (hw - 5) / 4);
       base = clamp(base, 10, 100);
       // scale fully by real readiness; never fall back to 70 when we have no data
       var rm = mode === 'core' ? (readiness / 100 * 0.3 + 0.7) : (readiness / 100 * 0.45 + 0.55);
@@ -19294,6 +19363,8 @@ function switchTab(tab) {
           score += boost;
         });
       }
+      // Food modifier: applies in all modes
+      score += foodMod[h];
       arr.push(clamp(score, 0, 100));
     }
     return arr;
@@ -19485,6 +19556,59 @@ function switchTab(tab) {
     ctx.arc(xAt(now), yAt(arr[nowIdx] || 50), 4, 0, Math.PI*2);
     ctx.fillStyle = '#6EE7B7';
     ctx.fill();
+    // ── Meal markers ──────────────────────────────────────────
+    var vitItems = loadVit();
+    var mealColours = {breakfast:'#F5C842', lunch:'#6EE7B7', dinner:'#818cf8', snack:'#f87171'};
+    var mealEmoji   = {breakfast:'☀', lunch:'☀', dinner:'◉', snack:'·'};
+    vitItems.forEach(function(item) {
+      var mt = item.timeHour;
+      if (mt == null) {
+        mt = item.meal === 'breakfast' ? 8 : item.meal === 'lunch' ? 13 : item.meal === 'dinner' ? 19 : 15;
+      }
+      if (mt < 0 || mt > 23) return;
+      var mx = xAt(mt);
+      var mIdx = Math.min(23, Math.floor(mt));
+      var my = yAt(arr[mIdx]);
+      var col = mealColours[item.meal] || '#aaa';
+      // vertical tick
+      ctx.beginPath();
+      ctx.moveTo(mx, my - 8);
+      ctx.lineTo(mx, padT + ch);
+      ctx.strokeStyle = col + '40';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // dot on curve
+      ctx.beginPath();
+      ctx.arc(mx, my, 4, 0, Math.PI * 2);
+      ctx.fillStyle = col;
+      ctx.fill();
+      // label
+      ctx.font = 'bold 8px -apple-system, sans-serif';
+      ctx.fillStyle = col;
+      ctx.textAlign = 'center';
+      var lbl = item.meal.charAt(0).toUpperCase();
+      ctx.fillText(lbl, mx, my - 11);
+    });
+    // ── Caffeine markers ──────────────────────────────────────
+    if (caffLogs) {
+      caffLogs.forEach(function(log) {
+        var ct = log.timeHour;
+        if (ct == null || ct < 0 || ct > 23) return;
+        var cx2 = xAt(ct);
+        var cidx = Math.min(23, Math.floor(ct));
+        var cy2 = yAt(arr[cidx]);
+        ctx.beginPath();
+        ctx.arc(cx2, cy2, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#F5C842';
+        ctx.fill();
+        ctx.font = '7px -apple-system, sans-serif';
+        ctx.fillStyle = 'rgba(245,200,66,0.8)';
+        ctx.textAlign = 'center';
+        ctx.fillText('C', cx2, cy2 - 8);
+      });
+    }
     // Hour labels
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
     ctx.font = '9px -apple-system, sans-serif';
@@ -19686,7 +19810,15 @@ function switchTab(tab) {
     var readiness  = todayR && todayR.score;
     var hrv        = todayR && todayR.contributors && todayR.contributors.hrv_balance;
     var sleepScore = todayS && todayS.score;
-    var wakeHour   = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
+    // Derive actual wake time from Oura bedtime_end (most recent sleep session end)
+    var wakeHour = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
+    if (oura.detailedSleep && oura.detailedSleep.length) {
+      var ds = oura.detailedSleep[0];
+      if (ds.bedtime_end) {
+        var wakeDate = new Date(ds.bedtime_end);
+        wakeHour = wakeDate.getHours() + wakeDate.getMinutes() / 60;
+      }
+    }
 
     // fix #18: compute avg HRV for modifier
     var avgHrv = null;
@@ -20078,7 +20210,7 @@ function switchTab(tab) {
       foodList.innerHTML = filtered.map(function(f) {
         return '<div class="vit-food-item">' +
           '<div><div class="vit-food-name">'+escHtml(f.name)+'</div>' +
-          '<div class="vit-food-meta">P '+Math.round(f.protein||0)+'g · C '+Math.round(f.carbs||0)+'g · F '+Math.round(f.fat||0)+'g</div></div>' +
+          '<div class="vit-food-meta">'+(f.timeStr ? f.timeStr+' · ' : '')+'P '+Math.round(f.protein||0)+'g · C '+Math.round(f.carbs||0)+'g · F '+Math.round(f.fat||0)+'g</div></div>' +
           '<div class="vit-food-right">' +
           '<div class="vit-food-kcal">'+Math.round(f.kcal||0)+'</div>' +
           '<button class="vit-food-del" data-id="'+f.id+'" type="button">×</button>' +
@@ -20087,7 +20219,7 @@ function switchTab(tab) {
       foodList.querySelectorAll('.vit-food-del').forEach(function(btn) {
         btn.addEventListener('click', function() {
           var arr = loadVit().filter(function(x){ return x.id !== btn.dataset.id; });
-          saveVit(arr); renderVitality();
+          saveVit(arr); renderVitality(); _refreshEnergyChart(null);
         });
       });
     }
@@ -20117,11 +20249,17 @@ function switchTab(tab) {
     if (bg) bg.style.display = 'flex';
     var inp = document.getElementById('vitFoodSearch');
     if (inp) { inp.value = filter || ''; inp.focus(); searchVitFood(filter || ''); }
+    // Default time to now
+    var tEl = document.getElementById('vitFoodTime');
+    if (tEl && !tEl.value) {
+      var n = new Date();
+      tEl.value = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+    }
   }
   function closeVitModal() {
     var bg = document.getElementById('vitModalBg');
     if (bg) bg.style.display = 'none';
-    ['vitFoodName','vitFoodKcal','vitFoodProtein','vitFoodCarbs','vitFoodFat','vitFoodSearch'].forEach(function(id){
+    ['vitFoodName','vitFoodKcal','vitFoodProtein','vitFoodCarbs','vitFoodFat','vitFoodSearch','vitFoodTime'].forEach(function(id){
       var el = document.getElementById(id); if (el) el.value = '';
     });
     var sr = document.getElementById('vitSearchResults');
@@ -20373,12 +20511,24 @@ function switchTab(tab) {
         var fat     = parseFloat(document.getElementById('vitFoodFat').value) || 0;
         var mealEl  = document.getElementById('vitFoodMeal');
         var meal    = mealEl ? mealEl.value : 'snack';
+        var timeEl  = document.getElementById('vitFoodTime');
+        var rawT    = timeEl && timeEl.value;
+        var timeHour;
+        if (rawT && /^\d{2}:\d{2}$/.test(rawT)) {
+          var tp = rawT.split(':');
+          timeHour = parseInt(tp[0], 10) + parseInt(tp[1], 10) / 60;
+        } else {
+          timeHour = nowHour(); // default to now
+          var _h = Math.floor(timeHour), _m = Math.round((timeHour - _h) * 60);
+          rawT = String(_h).padStart(2,'0') + ':' + String(_m).padStart(2,'0');
+        }
         if (!name) return;
         var items = loadVit();
-        items.push({id:uid(), name:name, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal});
+        items.push({id:uid(), name:name, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT});
         saveVit(items);
         closeVitModal();
         renderVitality();
+        _refreshEnergyChart(null);
       });
     }
 
