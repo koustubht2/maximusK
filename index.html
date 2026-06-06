@@ -19771,7 +19771,10 @@ function switchTab(tab) {
   // Returns up to 4 peak windows as contiguous runs above threshold
   // Each window: { start, end, avg, peak, label, zoneClass, color }
   function findBestWindows(arr, wakeHour) {
-    var THRESHOLD = 40;
+    // Dynamic threshold: top 40% of the waking day — always finds windows regardless of readiness level
+    var maxScore = 0;
+    for (var i = 0; i < 16; i++) maxScore = Math.max(maxScore, arr[(wakeHour + i) % 24] || 0);
+    var THRESHOLD = Math.max(15, maxScore * 0.60);
     // Work in linear index space 0..15 (16 waking hours), map to real hours via (wakeHour+i)%24
     // This avoids all modulo loop bugs — i is always a simple integer
     var runs = [];
@@ -19831,7 +19834,9 @@ function switchTab(tab) {
 
     // Sort by avg desc, return top 4
     labelled.sort(function(a, b) { return b.avg - a.avg; });
-    return labelled.slice(0, 4);
+    var result = labelled.slice(0, 4);
+    console.log('[Peak] findBestWindows wakeHour=' + wakeHour + ' maxScore=' + maxScore.toFixed(1) + ' threshold=' + THRESHOLD.toFixed(1) + ' wins=' + result.length, result.map(function(w){ return w.start+'h–'+w.end+'h avg='+w.avg.toFixed(1); }));
+    return result;
   }
 
   // ── Render Best Hours card from windows ───────────────────
@@ -19978,9 +19983,12 @@ function switchTab(tab) {
       return 'rgba('+r+','+g+','+b+','+a+')';
     }
     _wins.forEach(function(win) {
-      // Use linear indices (startI/endI) relative to wakeHour for rock-solid x coords
-      var x1 = padL + (win.startI / 24) * cw;
-      var x2 = padL + ((win.endI + 1) / 24) * cw;
+      // Band spans the full hour columns: left edge of win.start, right edge of win.end
+      // Each hour column is cw/24 wide; xAt(h) = left edge of hour h's column
+      var x1 = xAt(win.start);
+      var endHr = win.end + 1; // first hour after window
+      if (endHr <= win.start) endHr += 24; // midnight wrap — push past 24 so x2 > x1
+      var x2 = xAt(Math.min(endHr, 24));
       if (x2 <= x1) x2 = x1 + cw / 24;
       var bandA = win.avg >= 75 ? 0.12 : win.avg >= 60 ? 0.08 : 0.05;
       var bGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
