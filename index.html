@@ -19621,29 +19621,31 @@ function switchTab(tab) {
     for (var h = 0; h < 24; h++) {
       var hw = h - wakeHour;
       if (hw < 0) hw += 24;
-      // Without Oura data show a flat placeholder line at 30
-      if (!hasOura && mode !== 'stack') { arr.push(30); continue; }
-      // Hours before wake: flat sleep-level baseline (not a rising curve)
-      // threshold 15 prevents the sin formula from wrapping into a ghost peak at ~hw=17-18
-      if (hw >= 15) { arr.push(foodMod[h] > 0 ? 10 + foodMod[h] : 10); continue; }
-      // Two-process model: primary peak at +4h after wake, post-lunch dip at +7h, fade by +13h
-      var base = 50 + 32 * Math.sin(PI * (hw - 0.5) / 9) - 10 * Math.sin(PI * (hw - 5) / 4);
-      base = clamp(base, 10, 100);
-      // scale fully by real readiness; never fall back to 70 when we have no data
-      var rm = mode === 'core' ? (readiness / 100 * 0.3 + 0.7) : (readiness / 100 * 0.45 + 0.55);
-      var score = base * rm + (mode !== 'core' ? hrvMod : 0);
-      if (mode === 'stack' && caffLogs && caffLogs.length) {
+      // Without Oura data show a flat placeholder line at 15
+      if (!hasOura && mode !== 'stack') { arr.push(15); continue; }
+      // Hours before wake: flat sleep-level baseline
+      if (hw >= 15) { arr.push(clamp(10 + foodMod[h], 0, 30)); continue; }
+      // Circadian base: compressed to 20-45 range so stimulants/food dominate visually
+      // sin1: gentle +15pt swell peaking at +4h after wake
+      // sin2: -6pt post-lunch dip at +5-7h
+      var circ = 28 + 15 * Math.sin(PI * (hw - 0.5) / 9) - 6 * Math.sin(PI * (hw - 5) / 4);
+      circ = clamp(circ, 10, 45);
+      // Readiness scales the circadian ceiling — tired day keeps you in the 20-35 range
+      var rm = mode === 'core' ? (readiness / 100 * 0.25 + 0.75) : (readiness / 100 * 0.35 + 0.65);
+      var score = circ * rm + (mode !== 'core' ? hrvMod * 0.5 : 0);
+      // Caffeine/stimulants: dominant spikes — multiplier 55 so 200mg = +27.5pts visible spike
+      if (caffLogs && caffLogs.length) {
         caffLogs.forEach(function(log) {
-          var dh = (h + 1) - log.timeHour; // end-of-hour, same fix as caffCurve
+          var dh = (h + 1) - log.timeHour;
           if (dh <= 0) return;
           var absorb = Math.min(dh / 0.75, 1);
-          var boost = (log.mg / 400) * 22 * absorb * Math.pow(0.5, Math.max(0, dh - 0.75) / 5.5);
+          var boost = (log.mg / 400) * 55 * absorb * Math.pow(0.5, Math.max(0, dh - 0.75) / 5.5);
           score += boost;
         });
       }
-      // Food modifier: applies in all modes
-      score += foodMod[h];
-      // Mood modifier: shifts entire curve based on how you feel right now
+      // Food modifier: doubled so meals are clearly visible
+      score += foodMod[h] * 2;
+      // Mood modifier
       score += moodShift;
       arr.push(clamp(score, 0, 100));
     }
@@ -19855,7 +19857,7 @@ function switchTab(tab) {
     } else {
       // ── STACK: caffeine lift overlay ──────────────────────────
       if (mode === 'stack' && caffLogs && caffLogs.length) {
-        var baseArr = buildEnergyArray(wakeHour, null, [], 'core');
+        var baseArr = buildEnergyArray(wakeHour, el._peakReadiness || 75, [], 'core');
         var basePts = baseArr.map(function(v,h){ return [xAt(h), yAt(v)]; });
         // fill between base and stack
         var caffFill = ctx.createLinearGradient(0, padT, 0, padT + ch);
@@ -19982,12 +19984,14 @@ function switchTab(tab) {
       ctx.fillText('C', cx2, cy2 - 9);
     });
 
-    // ── Hour labels ───────────────────────────────────────────
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    // ── Hour labels: midnight → midnight ─────────────────────
     ctx.font = '10px -apple-system,sans-serif';
     ctx.textAlign = 'center';
-    [0, 6, 12, 18, 23].forEach(function(h) {
-      var lbl = h === 0 ? '12a' : h < 12 ? h+'a' : h === 12 ? '12p' : h === 23 ? '11p' : (h-12)+'p';
+    [0, 3, 6, 9, 12, 15, 18, 21].forEach(function(h) {
+      var lbl = h === 0 ? '12a' : h < 12 ? h+'a' : h === 12 ? '12p' : (h-12)+'p';
+      // highlight current hour label
+      var isCurr = (h === Math.floor(now));
+      ctx.fillStyle = isCurr ? 'rgba(110,231,183,0.8)' : 'rgba(255,255,255,0.22)';
       ctx.fillText(lbl, xAt(h), H - 6);
     });
 
@@ -20330,6 +20334,8 @@ function switchTab(tab) {
     // fix #18: pass hrv+avgHrv to energy model
     var arr = buildEnergyArray(wakeHour, readiness, caffLogs, _activeEnergyMode, hrv, avgHrv);
     // fix #12: pass caffLogs + mode so overlay renders
+    var _pec = document.getElementById('peakEnergyCanvas');
+    if (_pec) _pec._peakReadiness = readiness || 75;
     drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode);
 
     var wins = findBestWindows(arr, wakeHour);
@@ -20520,6 +20526,8 @@ function switchTab(tab) {
     var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){ return a+b; }, 0) / _hrvV.length : null;
     if (!logs) logs = loadCaff();
     var arr = buildEnergyArray(wh, r, logs, _activeEnergyMode, _hrv, _aHrv);
+    var _canvas = document.getElementById('peakEnergyCanvas');
+    if (_canvas) _canvas._peakReadiness = r || 75;
     drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode);
     drawCaffChart('peakCaffCanvas', logs);
     renderCoffeeScore(logs, r);
@@ -20829,6 +20837,8 @@ function switchTab(tab) {
     var aHrv2 = hrvV2 && hrvV2.length ? hrvV2.reduce(function(a,b){return a+b;},0)/hrvV2.length : null;
     var cl2 = offset === 0 ? loadCaff() : [];
     var arr2 = buildEnergyArray(wh, r, cl2, _activeEnergyMode, hrv2, aHrv2);
+    var _pec2 = document.getElementById('peakEnergyCanvas');
+    if (_pec2) _pec2._peakReadiness = r || 75;
     drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode);
     var wins2 = findBestWindows(arr2, wh);
     if (wins2[0]) { setText('peakWin1Time', fmtHour(wins2[0].start)+'–'+fmtHour(wins2[0].start+2)); setText('peakWin1Score','Peak '+Math.round(wins2[0].avg)); }
