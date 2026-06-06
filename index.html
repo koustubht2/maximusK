@@ -8520,7 +8520,7 @@ window.canonicalJson = function(obj) {
       <div class="peak-chip"><span class="peak-chip-label">Sleep Debt</span><span class="peak-chip-val" id="peakChipSleepDebt">—</span></div>
       <div class="peak-chip"><span class="peak-chip-label">HRV Noise</span><span class="peak-chip-val" id="peakChipHrvNoise">—</span></div>
       <div class="peak-chip"><span class="peak-chip-label">Readiness</span><span class="peak-chip-val" id="peakChipReadiness">—</span></div>
-      <div class="peak-chip"><span class="peak-chip-label">Wake</span><span class="peak-chip-val" id="peakChipWake">—</span></div>
+      <div class="peak-chip" id="peakChipWakeWrap" title="Tap to correct wake time" style="cursor:pointer"><span class="peak-chip-label">Wake ✎</span><span class="peak-chip-val" id="peakChipWake">—</span></div>
     </div>
 
     <div class="peak-hero-wrap">
@@ -20150,15 +20150,26 @@ function switchTab(tab) {
           }
           return false;
         });
+        console.log('[Peak] detailedSleep candidates (todStr='+todStr+', yStr='+yStr+'):', candidates.map(function(s){ return {day:s.day, start:s.bedtime_start, end:s.bedtime_end, dur:s.total_sleep_duration}; }));
         if (!candidates.length) candidates = src.slice(0,1);
         if (!candidates.length) return;
-        // pick the one with the longest sleep (same as Health tab)
-        var best = candidates.reduce(function(a,b){ return (b.total_sleep_duration||0) > (a.total_sleep_duration||0) ? b : a; });
+        // Among candidates, prefer the one with the EARLIEST bedtime_end on today's date
+        // (true wake-up from overnight sleep, not a later nap or restless period).
+        // Fall back to longest duration if no bedtime_end fields present.
+        var withEnd = candidates.filter(function(s){ return !!s.bedtime_end; });
+        var best;
+        if (withEnd.length) {
+          best = withEnd.reduce(function(a,b){
+            return new Date(b.bedtime_end) < new Date(a.bedtime_end) ? b : a;
+          });
+        } else {
+          best = candidates.reduce(function(a,b){ return (b.total_sleep_duration||0) > (a.total_sleep_duration||0) ? b : a; });
+        }
         if (!best) return;
-        // bedtime_end is an ISO datetime string; new Date() converts to local time automatically
         if (best.bedtime_end) {
           var wk = new Date(best.bedtime_end);
           wakeHour = wk.getHours() + wk.getMinutes() / 60;
+          console.log('[Peak] wake from Oura bedtime_end:', best.bedtime_end, '→', wk.getHours() + ':' + String(wk.getMinutes()).padStart(2,'0'), 'session day:', best.day, 'duration_s:', best.total_sleep_duration);
         }
       })();
     }
@@ -20837,6 +20848,25 @@ function switchTab(tab) {
         _refreshEnergyChart(null); // mood shift updates the curve immediately
       });
     });
+
+    var wakeChip = document.getElementById('peakChipWakeWrap');
+    if (wakeChip) {
+      wakeChip.addEventListener('click', function() {
+        var current = localStorage.getItem('goals_peak_wake_override') || fmtHour24(_wakeHour);
+        var val = window.prompt('Correct wake time (HH:MM):', current);
+        if (!val) return;
+        val = val.trim();
+        if (!/^\d{1,2}:\d{2}$/.test(val)) { alert('Enter time as HH:MM e.g. 09:03'); return; }
+        var parts = val.split(':');
+        var h = parseInt(parts[0],10), m = parseInt(parts[1],10);
+        if (h < 0 || h > 23 || m < 0 || m > 59) { alert('Invalid time'); return; }
+        val = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+        localStorage.setItem('goals_peak_wake_override', val);
+        _wakeHour = h + m / 60;
+        setText('peakChipWake', val);
+        _refreshEnergyChart(null);
+      });
+    }
 
     var si = document.getElementById('peakScheduleInput');
     if (si) {
