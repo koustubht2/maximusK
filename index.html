@@ -19771,14 +19771,13 @@ function switchTab(tab) {
   // Returns up to 4 peak windows as contiguous runs above threshold
   // Each window: { start, end, avg, peak, label, zoneClass, color }
   function findBestWindows(arr, wakeHour) {
+    var wh = Math.floor(wakeHour); // arr is integer-indexed — float keys always return undefined
     var THRESHOLD = 50; // any hour below 50 ends the current zone
-    // Work in linear index space 0..15 (16 waking hours), map to real hours via (wakeHour+i)%24
-    // This avoids all modulo loop bugs — i is always a simple integer
     var runs = [];
     var inRun = false, runStartI = 0;
 
     for (var i = 0; i < 17; i++) {
-      var h = (wakeHour + i) % 24;
+      var h = (wh + i) % 24;
       var v = arr[h] || 0;
       if (!inRun && v >= THRESHOLD) {
         inRun = true;
@@ -19788,14 +19787,14 @@ function switchTab(tab) {
         var endI = (v < THRESHOLD) ? i - 1 : i;
         var scores = [], realHours = [];
         for (var k = runStartI; k <= endI; k++) {
-          var rh = (wakeHour + k) % 24;
+          var rh = (wh + k) % 24;
           realHours.push(rh);
           scores.push(arr[rh] || 0);
         }
         if (scores.length > 0) {
           var avg = scores.reduce(function(a,b){ return a+b; }, 0) / scores.length;
           var peak = Math.max.apply(null, scores);
-          runs.push({ startI: runStartI, endI: endI, start: (wakeHour + runStartI) % 24, end: (wakeHour + endI) % 24, avg: avg, peak: peak });
+          runs.push({ startI: runStartI, endI: endI, start: (wh + runStartI) % 24, end: (wh + endI) % 24, avg: avg, peak: peak });
         }
         inRun = false;
       }
@@ -19809,7 +19808,7 @@ function switchTab(tab) {
       if (r.startI - prev.endI <= 1) {
         // extend prev to include the gap + this run
         var newScores = [];
-        for (var k = prev.startI; k <= r.endI; k++) newScores.push(arr[(wakeHour + k) % 24] || 0);
+        for (var k = prev.startI; k <= r.endI; k++) newScores.push(arr[(wh + k) % 24] || 0);
         prev.endI  = r.endI;
         prev.end   = r.end;
         prev.avg   = newScores.reduce(function(a,b){ return a+b; }, 0) / newScores.length;
