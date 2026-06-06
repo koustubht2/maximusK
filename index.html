@@ -933,6 +933,205 @@ body::after {
   border-color: rgba(110,231,183,0.15);
 }
 
+/* ── Peak Tab ── */
+.peak-view { padding:20px 16px 100px; }
+.peak-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.peak-diamond-wrap { animation: peakDiamondSpin 12s linear infinite; flex-shrink:0; }
+@keyframes peakDiamondSpin { to { transform: rotate(360deg); } }
+.peak-page-title { font-size:22px; font-weight:800; letter-spacing:-0.03em; color:var(--text-primary); }
+.peak-page-date { font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.1em; margin-top:2px; }
+.peak-metrics-strip { display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-bottom:20px; }
+.peak-metrics-strip::-webkit-scrollbar { display:none; }
+.peak-chip { flex-shrink:0; display:flex; align-items:center; gap:8px; padding:7px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:999px; }
+.peak-chip-label { font-size:9px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-tertiary); font-weight:600; }
+.peak-chip-val { font-size:13px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.peak-hero-wrap { position:relative; width:200px; max-width:70%; margin:0 auto 24px; aspect-ratio:1; }
+.peak-hero-svg { width:100%; height:100%; display:block; overflow:visible; }
+.peak-hero-track { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:10; }
+.peak-hero-fill { fill:none; stroke:#6EE7B7; stroke-width:10; stroke-linecap:round; stroke-dasharray:502.65; stroke-dashoffset:502.65; transition:stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1); transform:rotate(-90deg); transform-origin:center; }
+.peak-hero-fill.zone-gold { stroke:#F5C842; }
+.peak-hero-fill.zone-green { stroke:#6EE7B7; }
+.peak-hero-fill.zone-yellow { stroke:#F2C063; }
+.peak-hero-fill.zone-red { stroke:#FF8A8A; }
+.peak-hero-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.peak-hero-score { font-size:52px; font-weight:800; letter-spacing:-0.04em; color:var(--text-primary); line-height:1; }
+.peak-hero-label { font-size:10px; text-transform:uppercase; letter-spacing:0.14em; color:var(--text-tertiary); margin-top:4px; }
+.peak-card { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,0.45); backdrop-filter:blur(24px) saturate(1.2); padding:18px; margin-bottom:16px; }
+.peak-section-label { font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px; }
+.peak-energy-tabs { display:flex; gap:6px; margin-bottom:10px; }
+.peak-etab { padding:5px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; font-weight:600; letter-spacing:0.08em; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.peak-etab.active { background:rgba(110,231,183,0.12); border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+.peak-energy-canvas-wrap { position:relative; width:100%; height:150px; }
+.peak-energy-canvas { width:100%; height:100%; display:block; }
+.peak-plan-tap { text-align:center; font-size:11px; color:var(--text-tertiary); letter-spacing:0.1em; text-transform:uppercase; margin-top:10px; cursor:pointer; padding:8px; border-radius:10px; border:1px dashed rgba(255,255,255,0.08); }
+.peak-plan-tap:hover { border-color:rgba(110,231,183,0.2); color:#6EE7B7; }
+.peak-window-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.peak-window-row:last-child { border-bottom:none; }
+.peak-window-time { font-size:20px; font-weight:700; letter-spacing:-0.02em; color:var(--text-primary); }
+.peak-window-sublabel { font-size:11px; color:var(--text-tertiary); margin-top:2px; }
+.peak-window-badge { font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; background:rgba(110,231,183,0.1); color:#6EE7B7; border:1px solid rgba(110,231,183,0.2); }
+.peak-window-badge.zone-gold { background:rgba(245,200,66,0.1); color:#F5C842; border-color:rgba(245,200,66,0.2); }
+.peak-rock-btn { font-size:11px; font-weight:700; color:#F5C842; background:rgba(245,200,66,0.08); border:1px solid rgba(245,200,66,0.22); border-radius:8px; padding:4px 10px; cursor:pointer; letter-spacing:0.04em; white-space:nowrap; transition:background 0.15s; font-family:inherit; }
+.peak-rock-btn:hover { background:rgba(245,200,66,0.18); }
+.peak-coffee-score-wrap { margin-top:10px; }
+.peak-coffee-score-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.peak-coffee-score-num { font-size:28px; font-weight:800; color:#F5C842; letter-spacing:-0.03em; }
+.peak-coffee-score-meta { display:flex; flex-direction:column; }
+.peak-coffee-score-lbl { font-size:11px; color:var(--text-tertiary); margin-top:1px; }
+.peak-day-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.peak-day-nav { background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--text-secondary); border-radius:8px; width:28px; height:28px; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; font-family:inherit; transition:border-color 0.15s,color 0.15s; }
+.peak-day-nav:hover { border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+.peak-lastweek-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:rgba(255,255,255,0.05); border-radius:12px; overflow:hidden; margin-bottom:14px; }
+.peak-lw-cell { background:rgba(255,255,255,0.02); padding:12px 10px; text-align:center; }
+.peak-lw-val { font-size:22px; font-weight:800; color:var(--text-primary); letter-spacing:-0.02em; }
+.peak-lw-lbl { font-size:10px; color:var(--text-tertiary); margin-top:3px; letter-spacing:0.06em; text-transform:uppercase; }
+.peak-lw-bars { display:flex; align-items:flex-end; gap:4px; height:52px; }
+.peak-lw-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
+.peak-lw-bar { width:100%; border-radius:4px 4px 0 0; min-height:4px; background:rgba(110,231,183,0.35); transition:height 0.4s; }
+.peak-lw-bar-day { font-size:9px; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase; }
+.peak-insight-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.peak-insight-row:last-child { border-bottom:none; }
+.peak-insight-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px; background:#6EE7B7; box-shadow:0 0 6px rgba(110,231,183,0.5); }
+.peak-insight-text { font-size:13px; color:var(--text-secondary); line-height:1.55; }
+.peak-mood-grid { display:flex; gap:6px; margin-top:8px; }
+.peak-mood-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; padding:10px 4px; border-radius:12px; background:transparent; border:1px solid rgba(255,255,255,0.07); cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.peak-mood-btn.selected { background:rgba(110,231,183,0.08); border-color:rgba(110,231,183,0.3); }
+.peak-mood-dot { width:8px; height:8px; border-radius:50%; }
+.peak-mood-dot.foggy { background:#94a3b8; }
+.peak-mood-dot.tired { background:#f87171; }
+.peak-mood-dot.steady { background:#F2C063; }
+.peak-mood-dot.good { background:#6EE7B7; }
+.peak-mood-dot.sharp { background:#F5C842; box-shadow:0 0 6px rgba(245,200,66,0.6); }
+.peak-mood-label { font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-tertiary); font-weight:600; }
+.peak-caff-search-wrap { position:relative; margin-bottom:10px; }
+.peak-caff-search { width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; color:var(--text-primary); font-family:inherit; font-size:14px; outline:none; transition:border-color 0.15s; }
+.peak-caff-search:focus { border-color:rgba(110,231,183,0.4); }
+.peak-caff-dropdown { position:absolute; top:calc(100% + 4px); left:0; right:0; background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:12px; max-height:220px; overflow-y:auto; z-index:100; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:none; }
+.peak-caff-dropdown.open { display:block; }
+.peak-caff-item { padding:10px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-primary); }
+.peak-caff-item:hover { background:rgba(255,255,255,0.06); }
+.peak-caff-item-mg { font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); }
+.peak-caff-logs { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.peak-caff-log-item { display:flex; justify-content:space-between; align-items:center; padding:9px 12px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.04); }
+.peak-caff-log-left { flex:1; }
+.peak-caff-log-name { font-size:13px; color:var(--text-primary); font-weight:500; }
+.peak-caff-log-meta { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); margin-top:2px; }
+.peak-caff-log-del { background:transparent; border:none; color:rgba(255,138,138,0.4); cursor:pointer; font-size:18px; padding:2px 6px; line-height:1; transition:color 0.15s; }
+.peak-caff-log-del:hover { color:#FF8A8A; }
+.peak-mg-bar-wrap { margin:4px 0 10px; }
+.peak-mg-bar-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); margin-bottom:5px; }
+.peak-mg-bar-track { height:8px; border-radius:999px; background:rgba(255,255,255,0.07); overflow:hidden; }
+.peak-mg-bar-fill { height:100%; border-radius:999px; transition:width 0.6s cubic-bezier(0.22,1,0.36,1), background 0.3s; }
+.peak-mg-bar-fill.green { background:linear-gradient(90deg,#6EE7B7,#34d399); }
+.peak-mg-bar-fill.yellow { background:linear-gradient(90deg,#F2C063,#fbbf24); }
+.peak-mg-bar-fill.red { background:linear-gradient(90deg,#FF8A8A,#f87171); }
+.peak-caff-warning { background:rgba(255,138,138,0.07); border:1px solid rgba(255,138,138,0.2); color:#FF8A8A; border-radius:10px; padding:10px 14px; font-size:12px; margin-bottom:10px; line-height:1.5; display:none; }
+.peak-caff-custom { display:flex; gap:8px; margin-top:10px; }
+.peak-caff-custom-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 12px; color:var(--text-primary); font-family:inherit; font-size:13px; outline:none; min-width:0; }
+.peak-caff-custom-mg { width:70px; flex-shrink:0; }
+.peak-caff-add-btn { background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:#6EE7B7; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; white-space:nowrap; transition:all 0.15s; }
+.peak-caff-add-btn:hover { background:rgba(110,231,183,0.18); }
+.peak-caff-timing { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+.peak-caff-timing-cell { text-align:center; padding:10px 8px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.04); }
+.peak-caff-timing-val { font-size:16px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.peak-caff-timing-lbl { font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-tertiary); margin-top:3px; font-weight:600; }
+.peak-caff-timeline-wrap { margin-top:14px; height:80px; position:relative; }
+.peak-caff-canvas { width:100%; height:100%; display:block; }
+.peak-coach-dode-wrap { width:90px; height:90px; perspective:360px; margin:0 auto 14px; cursor:pointer; }
+.peak-coach-dode { width:100%; height:100%; position:relative; transform-style:preserve-3d; animation:peakDodeRotate 10s linear infinite; }
+@keyframes peakDodeRotate { 0% { transform:rotateX(15deg) rotateY(0deg); } 100% { transform:rotateX(15deg) rotateY(360deg); } }
+.peak-dode-face { position:absolute; width:100%; height:100%; border:1px solid rgba(110,231,183,0.25); background:rgba(110,231,183,0.03); clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%); }
+.peak-dode-face:nth-child(1) { transform:rotateY(0deg) translateZ(30px); }
+.peak-dode-face:nth-child(2) { transform:rotateY(72deg) translateZ(30px); }
+.peak-dode-face:nth-child(3) { transform:rotateY(144deg) translateZ(30px); }
+.peak-dode-face:nth-child(4) { transform:rotateY(216deg) translateZ(30px); }
+.peak-dode-face:nth-child(5) { transform:rotateY(288deg) translateZ(30px); }
+.peak-coach-messages { max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:12px; scroll-behavior:smooth; }
+.peak-coach-msg { padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.55; max-width:88%; }
+.peak-coach-msg.user-msg { align-self:flex-end; background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:var(--text-primary); border-bottom-right-radius:4px; }
+.peak-coach-msg.coach-msg { align-self:flex-start; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); color:var(--text-secondary); border-bottom-left-radius:4px; }
+.peak-coach-tag { display:block; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; color:#6EE7B7; margin-bottom:5px; }
+.peak-coach-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.peak-coach-chip { border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; padding:5px 12px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.peak-coach-chip:hover { border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+.peak-coach-input-row { display:flex; gap:8px; }
+.peak-coach-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; color:var(--text-primary); font-family:inherit; font-size:13px; outline:none; transition:border-color 0.15s; }
+.peak-coach-input:focus { border-color:rgba(110,231,183,0.3); }
+.peak-coach-send { background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:#6EE7B7; border-radius:10px; padding:10px 14px; cursor:pointer; transition:all 0.15s; }
+.peak-coach-send:hover { background:rgba(110,231,183,0.18); }
+.peak-schedule-input { width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; color:var(--text-primary); font-family:inherit; font-size:13px; outline:none; resize:none; min-height:60px; transition:border-color 0.15s; }
+.peak-schedule-input:focus { border-color:rgba(110,231,183,0.3); }
+.peak-schedule-list { display:flex; flex-direction:column; gap:4px; margin-top:10px; }
+.peak-schedule-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px; font-size:13px; color:var(--text-secondary); }
+.peak-schedule-dot { width:6px; height:6px; border-radius:50%; background:#6EE7B7; flex-shrink:0; }
+/* Vitality */
+.vit-card { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,0.45); backdrop-filter:blur(24px) saturate(1.2); padding:18px; margin-bottom:16px; }
+.vit-section-label { font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px; }
+.vit-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.vit-streak { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:#F5C842; font-weight:700; }
+.vit-hero { display:flex; align-items:center; gap:20px; padding:0 0 16px; }
+.vit-cal-ring-wrap { position:relative; width:110px; height:110px; flex-shrink:0; }
+.vit-cal-svg { width:110px; height:110px; display:block; overflow:visible; }
+.vit-cal-track { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:8; }
+.vit-cal-fill { fill:none; stroke:#F2C063; stroke-width:8; stroke-linecap:round; stroke-dasharray:282.74; stroke-dashoffset:282.74; transition:stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1); transform:rotate(-90deg); transform-origin:55px 55px; }
+.vit-cal-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.vit-cal-eaten { font-size:26px; font-weight:800; letter-spacing:-0.04em; color:var(--text-primary); line-height:1; }
+.vit-cal-sublabel { font-size:8px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-tertiary); margin-top:2px; }
+.vit-cal-goal { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); }
+.vit-macros { flex:1; display:flex; flex-direction:column; gap:10px; }
+.vit-macro-row { display:flex; align-items:center; gap:8px; }
+.vit-macro-lbl { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-tertiary); width:54px; flex-shrink:0; font-weight:600; }
+.vit-macro-track { flex:1; height:6px; border-radius:999px; background:rgba(255,255,255,0.07); overflow:hidden; }
+.vit-macro-fill { height:100%; border-radius:999px; transition:width 0.6s cubic-bezier(0.22,1,0.36,1); }
+.vit-macro-fill.protein { background:#818cf8; }
+.vit-macro-fill.carbs { background:#F2C063; }
+.vit-macro-fill.fat { background:#fb923c; }
+.vit-macro-val { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); width:48px; text-align:right; flex-shrink:0; }
+.vit-meal-tabs { display:flex; gap:4px; margin-bottom:12px; overflow-x:auto; scrollbar-width:none; }
+.vit-meal-tabs::-webkit-scrollbar { display:none; }
+.vit-meal-tab { padding:5px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; flex-shrink:0; }
+.vit-meal-tab.active { background:rgba(110,231,183,0.12); border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+.vit-log-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+.vit-log-btn { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:14px; cursor:pointer; font-family:inherit; color:var(--text-tertiary); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; transition:all 0.15s; }
+.vit-log-btn:hover { background:rgba(110,231,183,0.06); border-color:rgba(110,231,183,0.2); color:#6EE7B7; }
+.vit-log-btn:hover svg { stroke:#6EE7B7 !important; }
+.vit-food-empty { text-align:center; color:var(--text-tertiary); font-size:13px; padding:24px 0; }
+.vit-food-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.vit-food-item:last-child { border-bottom:none; }
+.vit-food-name { font-size:13px; color:var(--text-primary); font-weight:500; }
+.vit-food-meta { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); margin-top:2px; }
+.vit-food-right { display:flex; align-items:center; gap:8px; }
+.vit-food-kcal { font-size:14px; font-weight:700; color:var(--text-primary); font-family:var(--font-mono); }
+.vit-food-del { background:transparent; border:none; color:rgba(255,138,138,0.4); cursor:pointer; font-size:18px; padding:2px 6px; line-height:1; transition:color 0.15s; }
+.vit-food-del:hover { color:#FF8A8A; }
+.vit-stats-bar { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(255,255,255,0.05); margin-top:14px; padding-top:14px; gap:4px; }
+.vit-stat-cell { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.vit-stat-val { font-size:16px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.vit-stat-lbl { font-size:8px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-tertiary); font-weight:600; text-align:center; }
+.vit-ai-card { margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.05); }
+.vit-ai-response { font-size:13px; color:var(--text-secondary); line-height:1.6; padding:8px 0; min-height:40px; }
+.vit-ai-response.loading { color:var(--text-tertiary); font-style:italic; }
+.vit-ai-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.vit-ai-chip { border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; padding:5px 12px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.vit-ai-chip:hover { border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+.vit-ai-input-row { display:flex; gap:8px; margin-top:10px; }
+.vit-ai-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:9px 14px; color:var(--text-primary); font-family:inherit; font-size:13px; outline:none; }
+.vit-ai-send { background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:#6EE7B7; border-radius:10px; padding:9px 14px; cursor:pointer; }
+.vit-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(10px); z-index:300; display:flex; align-items:center; justify-content:center; padding:20px; }
+.vit-modal { background:#111115; border:1px solid rgba(255,255,255,0.09); border-radius:22px; padding:24px; width:100%; max-width:420px; max-height:80vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,0.7); }
+.vit-modal-title { font-size:18px; font-weight:700; letter-spacing:-0.02em; color:var(--text-primary); margin-bottom:16px; }
+.vit-modal-search { width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:11px 14px; color:var(--text-primary); font-family:inherit; font-size:14px; outline:none; }
+.vit-modal-search:focus { border-color:rgba(110,231,183,0.4); }
+.vit-search-results { max-height:200px; overflow-y:auto; margin-top:8px; }
+.vit-search-result { padding:10px 14px; cursor:pointer; border-radius:10px; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-primary); transition:background 0.12s; }
+.vit-search-result:hover { background:rgba(255,255,255,0.05); }
+.vit-result-kcal { font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); }
+.vit-form-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-tertiary); font-weight:600; margin-bottom:5px; }
+.vit-form-input { width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px 12px; color:var(--text-primary); font-family:inherit; font-size:14px; outline:none; }
+.vit-form-2col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.vit-submit-btn { width:100%; background:rgba(110,231,183,0.12); border:1px solid rgba(110,231,183,0.3); color:#6EE7B7; border-radius:12px; padding:13px; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; margin-top:4px; }
+.vit-cancel-btn { width:100%; background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--text-tertiary); border-radius:12px; padding:11px; font-family:inherit; font-size:13px; cursor:pointer; margin-top:8px; }
+
 /* ── Word of the Day ── */
 .wotd-card {
   border-radius: 18px;
@@ -8293,10 +8492,306 @@ window.canonicalJson = function(obj) {
 </main>
 </div>
 
+<!-- ===== PEAK VIEW ===== -->
+<div id="peakView" class="view-container">
+  <div class="peak-view">
+
+    <div class="peak-header">
+      <div class="peak-diamond-wrap">
+        <svg viewBox="0 0 40 40" width="34" height="34" fill="none"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" stroke="#6EE7B7" stroke-width="1.5" fill="rgba(110,231,183,0.06)"/><polygon points="20,8 30,15 30,25 20,32 10,25 10,15" stroke="#6EE7B7" stroke-width="0.8" fill="rgba(110,231,183,0.03)"/></svg>
+      </div>
+      <div>
+        <div class="peak-page-title">Your peak today</div>
+        <div class="peak-page-date" id="peakPageDate">—</div>
+      </div>
+    </div>
+
+    <div class="peak-metrics-strip">
+      <div class="peak-chip"><span class="peak-chip-label">HRV</span><span class="peak-chip-val" id="peakChipHrv">—</span></div>
+      <div class="peak-chip"><span class="peak-chip-label">Hydration</span><span class="peak-chip-val" id="peakChipHydration">—</span></div>
+      <div class="peak-chip"><span class="peak-chip-label">Recovery</span><span class="peak-chip-val" id="peakChipRecovery">—</span></div>
+      <div class="peak-chip"><span class="peak-chip-label">Sleep Debt</span><span class="peak-chip-val" id="peakChipSleepDebt">—</span></div>
+      <div class="peak-chip"><span class="peak-chip-label">HRV Noise</span><span class="peak-chip-val" id="peakChipHrvNoise">—</span></div>
+      <div class="peak-chip"><span class="peak-chip-label">Readiness</span><span class="peak-chip-val" id="peakChipReadiness">—</span></div>
+      <div class="peak-chip"><span class="peak-chip-label">Wake</span><span class="peak-chip-val" id="peakChipWake">—</span></div>
+    </div>
+
+    <div class="peak-hero-wrap">
+      <svg class="peak-hero-svg" viewBox="0 0 200 200">
+        <circle class="peak-hero-track" cx="100" cy="100" r="80"/>
+        <circle id="peakHeroFill" class="peak-hero-fill" cx="100" cy="100" r="80"/>
+      </svg>
+      <div class="peak-hero-center">
+        <div class="peak-hero-score" id="peakHeroScore">—</div>
+        <div class="peak-hero-label" id="peakHeroLabel">Loading</div>
+      </div>
+    </div>
+
+    <div class="peak-card">
+      <div class="peak-day-header">
+        <button class="peak-day-nav" id="peakDayPrev" type="button">&#8249;</button>
+        <div class="peak-section-label" style="margin:0" id="peakDayLabel">Your Day</div>
+        <button class="peak-day-nav" id="peakDayNext" type="button">&#8250;</button>
+      </div>
+      <div class="peak-energy-tabs">
+        <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">CORE</button>
+        <button class="peak-etab" id="peakTabBase" data-mode="base" type="button">BASE</button>
+        <button class="peak-etab" id="peakTabStack" data-mode="stack" type="button">STACK</button>
+      </div>
+      <div class="peak-energy-canvas-wrap">
+        <canvas id="peakEnergyCanvas" class="peak-energy-canvas"></canvas>
+      </div>
+      <div class="peak-plan-tap" id="peakPlanTap">Nothing scheduled — tap to plan your day</div>
+    </div>
+
+    <div class="peak-card">
+      <div class="peak-section-label">Best Hours · 2 Windows</div>
+      <div class="peak-window-row">
+        <div>
+          <div class="peak-window-time" id="peakWin1Time">—</div>
+          <div class="peak-window-sublabel">peak window</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="peak-window-badge zone-gold" id="peakWin1Score">—</div>
+          <button class="peak-rock-btn" onclick="appendCoachMsg('user','Rock the '+document.getElementById(\'peakWin1Time\').textContent+\' window — what should I do?');sendCoachMessage()">Rock →</button>
+        </div>
+      </div>
+      <div class="peak-window-row">
+        <div>
+          <div class="peak-window-time" id="peakWin2Time">—</div>
+          <div class="peak-window-sublabel">focus window</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="peak-window-badge" id="peakWin2Score">—</div>
+          <button class="peak-rock-btn" onclick="appendCoachMsg('user','Rock the '+document.getElementById(\'peakWin2Time\').textContent+\' window — what should I do?');sendCoachMessage()">Rock →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="peak-card">
+      <div class="peak-section-label">Today</div>
+      <div id="peakInsightsList">
+        <div class="peak-insight-row"><div class="peak-insight-dot"></div><div class="peak-insight-text">Loading insights…</div></div>
+      </div>
+    </div>
+
+    <div class="peak-card">
+      <div class="peak-section-label">How are you feeling?</div>
+      <div class="peak-mood-grid">
+        <button class="peak-mood-btn" data-mood="foggy" type="button"><div class="peak-mood-dot foggy"></div><div class="peak-mood-label">Foggy</div></button>
+        <button class="peak-mood-btn" data-mood="tired" type="button"><div class="peak-mood-dot tired"></div><div class="peak-mood-label">Tired</div></button>
+        <button class="peak-mood-btn" data-mood="steady" type="button"><div class="peak-mood-dot steady"></div><div class="peak-mood-label">Steady</div></button>
+        <button class="peak-mood-btn" data-mood="good" type="button"><div class="peak-mood-dot good"></div><div class="peak-mood-label">Good</div></button>
+        <button class="peak-mood-btn" data-mood="sharp" type="button"><div class="peak-mood-dot sharp"></div><div class="peak-mood-label">Sharp</div></button>
+      </div>
+    </div>
+
+    <div class="peak-card">
+      <div class="peak-section-label">Caffeine</div>
+      <div class="peak-caff-search-wrap">
+        <input id="peakCaffSearch" class="peak-caff-search" type="text" placeholder="Search drink… (espresso, matcha, Red Bull…)" autocomplete="off">
+        <div id="peakCaffDropdown" class="peak-caff-dropdown"></div>
+      </div>
+      <div id="peakCaffLogs" class="peak-caff-logs"></div>
+      <div id="peakCaffWarning" class="peak-caff-warning"></div>
+      <div class="peak-mg-bar-wrap">
+        <div class="peak-mg-bar-labels"><span id="peakMgCurrent">0 mg active</span><span id="peakMgLimit">/ 400 mg</span></div>
+        <div class="peak-mg-bar-track"><div id="peakMgBarFill" class="peak-mg-bar-fill green" style="width:0%"></div></div>
+      </div>
+      <div id="peakCoffeeScoreWrap" class="peak-coffee-score-wrap">
+        <div class="peak-coffee-score-row">
+          <div class="peak-coffee-score-num" id="peakCoffeeScoreNum">—</div>
+          <div class="peak-coffee-score-meta">
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary)">Coffee Score</div>
+            <div class="peak-coffee-score-lbl" id="peakCoffeeScoreLbl">None logged</div>
+          </div>
+        </div>
+        <div class="peak-mg-bar-track" style="height:4px;margin-bottom:10px"><div id="peakCoffeeScoreBar" class="peak-mg-bar-fill green" style="width:0%"></div></div>
+      </div>
+      <div class="peak-caff-timing">
+        <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffPeakTime">—</div><div class="peak-caff-timing-lbl">Peak at</div></div>
+        <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffClearTime">—</div><div class="peak-caff-timing-lbl">Cleared</div></div>
+        <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffCutoff">—</div><div class="peak-caff-timing-lbl">Last coffee</div></div>
+      </div>
+      <div class="peak-caff-timeline-wrap">
+        <canvas id="peakCaffCanvas" class="peak-caff-canvas"></canvas>
+      </div>
+      <div class="peak-section-label" style="margin-top:14px">Custom drink</div>
+      <div class="peak-caff-custom">
+        <input id="peakCustomName" class="peak-caff-custom-input" type="text" placeholder="Name">
+        <input id="peakCustomMg" class="peak-caff-custom-input peak-caff-custom-mg" type="number" placeholder="mg" min="1" max="999">
+        <button id="peakCustomAddBtn" class="peak-caff-add-btn" type="button">Add</button>
+      </div>
+    </div>
+
+    <div class="peak-card">
+      <div class="peak-section-label">Your Coach</div>
+      <div class="peak-coach-dode-wrap">
+        <div class="peak-coach-dode">
+          <div class="peak-dode-face"></div>
+          <div class="peak-dode-face"></div>
+          <div class="peak-dode-face"></div>
+          <div class="peak-dode-face"></div>
+          <div class="peak-dode-face"></div>
+        </div>
+      </div>
+      <div class="peak-coach-messages" id="peakCoachMessages"></div>
+      <div class="peak-coach-chips">
+        <button class="peak-coach-chip" type="button" data-chip="when should I train today?">When to train?</button>
+        <button class="peak-coach-chip" type="button" data-chip="optimise my caffeine for today">Optimise caffeine</button>
+        <button class="peak-coach-chip" type="button" data-chip="how is my recovery looking?">Recovery check</button>
+      </div>
+      <div class="peak-coach-input-row">
+        <input id="peakCoachInput" class="peak-coach-input" type="text" placeholder="Ask your coach…">
+        <button id="peakCoachSend" class="peak-coach-send" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="peak-card" id="peakLastWeekCard">
+      <div class="peak-section-label">Last Week</div>
+      <div class="peak-lastweek-grid" id="peakLastWeekGrid">
+        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwAvgReadiness">—</div><div class="peak-lw-lbl">Avg Readiness</div></div>
+        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwAvgHrv">—</div><div class="peak-lw-lbl">Avg HRV</div></div>
+        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwAvgSleep">—</div><div class="peak-lw-lbl">Avg Sleep</div></div>
+        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwBestDay">—</div><div class="peak-lw-lbl">Best Day</div></div>
+      </div>
+      <div class="peak-lw-bars" id="peakLwBars"></div>
+    </div>
+
+    <div class="peak-card" id="peakScheduleCard">
+      <div class="peak-section-label">Today's Plan</div>
+      <textarea id="peakScheduleInput" class="peak-schedule-input" rows="2" placeholder="e.g. deep work 9–11, gym 7pm, read 1h…"></textarea>
+      <div id="peakScheduleList" class="peak-schedule-list"></div>
+    </div>
+
+    <div class="vit-card">
+      <div class="vit-header-row">
+        <div class="vit-section-label" style="margin-bottom:0">Fuel · Macros</div>
+        <div class="vit-streak">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="#F5C842" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span id="vitStreakLabel">0 day streak</span>
+        </div>
+      </div>
+      <div class="vit-hero">
+        <div class="vit-cal-ring-wrap">
+          <svg class="vit-cal-svg" viewBox="0 0 110 110">
+            <circle class="vit-cal-track" cx="55" cy="55" r="45"/>
+            <circle id="vitCalFill" class="vit-cal-fill" cx="55" cy="55" r="45"/>
+          </svg>
+          <div class="vit-cal-center">
+            <div class="vit-cal-eaten" id="vitCalEaten">0</div>
+            <div class="vit-cal-sublabel">KCAL</div>
+            <div class="vit-cal-goal" id="vitCalGoal">/ 2400</div>
+          </div>
+        </div>
+        <div class="vit-macros">
+          <div class="vit-macro-row">
+            <div class="vit-macro-lbl">Protein</div>
+            <div class="vit-macro-track"><div id="vitBarProtein" class="vit-macro-fill protein" style="width:0%"></div></div>
+            <div class="vit-macro-val" id="vitValProtein">0g</div>
+          </div>
+          <div class="vit-macro-row">
+            <div class="vit-macro-lbl">Carbs</div>
+            <div class="vit-macro-track"><div id="vitBarCarbs" class="vit-macro-fill carbs" style="width:0%"></div></div>
+            <div class="vit-macro-val" id="vitValCarbs">0g</div>
+          </div>
+          <div class="vit-macro-row">
+            <div class="vit-macro-lbl">Fat</div>
+            <div class="vit-macro-track"><div id="vitBarFat" class="vit-macro-fill fat" style="width:0%"></div></div>
+            <div class="vit-macro-val" id="vitValFat">0g</div>
+          </div>
+        </div>
+      </div>
+      <div class="vit-meal-tabs">
+        <button class="vit-meal-tab active" data-meal="all" type="button">All</button>
+        <button class="vit-meal-tab" data-meal="breakfast" type="button">Breakfast</button>
+        <button class="vit-meal-tab" data-meal="lunch" type="button">Lunch</button>
+        <button class="vit-meal-tab" data-meal="dinner" type="button">Dinner</button>
+        <button class="vit-meal-tab" data-meal="snack" type="button">Snack</button>
+      </div>
+      <div class="vit-log-actions">
+        <button class="vit-log-btn" id="vitSnapBtn" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Snap meal
+        </button>
+        <button class="vit-log-btn" id="vitAddFoodBtn" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add food
+        </button>
+        <button class="vit-log-btn" id="vitQuickDrinkBtn" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+          Quick drink
+        </button>
+      </div>
+      <div id="vitFoodEmpty" class="vit-food-empty">Nothing logged yet today</div>
+      <div id="vitFoodList" style="display:none"></div>
+      <div class="vit-stats-bar">
+        <div class="vit-stat-cell"><div class="vit-stat-val" id="vitStatMeals">0</div><div class="vit-stat-lbl">Logged</div></div>
+        <div class="vit-stat-cell"><div class="vit-stat-val" id="vitStatKcal">0</div><div class="vit-stat-lbl">Avg kcal</div></div>
+        <div class="vit-stat-cell"><div class="vit-stat-val" id="vitStatProtein">0</div><div class="vit-stat-lbl">Avg protein</div></div>
+        <div class="vit-stat-cell"><div class="vit-stat-val" id="vitStatHits">—</div><div class="vit-stat-lbl">Protein hits</div></div>
+      </div>
+      <div class="vit-ai-card">
+        <div class="vit-section-label">Nutrition Coach</div>
+        <div class="vit-ai-chips">
+          <button class="vit-ai-chip" type="button" data-q="enough protein today?">Enough protein?</button>
+          <button class="vit-ai-chip" type="button" data-q="what should I eat next?">What to eat next?</button>
+          <button class="vit-ai-chip" type="button" data-q="how am I tracking today?">How am I tracking?</button>
+        </div>
+        <div id="vitCoachResponse" class="vit-ai-response">Ask me anything about your nutrition today.</div>
+        <div class="vit-ai-input-row">
+          <input id="vitCoachInput" class="vit-ai-input" type="text" placeholder="Ask about your nutrition…">
+          <button id="vitCoachSend" class="vit-ai-send" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Vitality Add Food Modal -->
+<div id="vitModalBg" class="vit-modal-bg" style="display:none">
+  <div class="vit-modal">
+    <div class="vit-modal-title">Add Food</div>
+    <input id="vitFoodSearch" class="vit-modal-search" type="text" placeholder="Search 50+ foods…" autocomplete="off">
+    <div id="vitSearchResults" class="vit-search-results"></div>
+    <div style="margin-top:18px">
+      <div class="vit-section-label">Or add manually</div>
+      <div style="margin-bottom:10px"><div class="vit-form-label">Food name</div><input id="vitFoodName" class="vit-form-input" type="text" placeholder="e.g. Chicken breast"></div>
+      <div class="vit-form-2col" style="margin-bottom:10px">
+        <div><div class="vit-form-label">Calories (kcal)</div><input id="vitFoodKcal" class="vit-form-input" type="number" placeholder="350" min="0"></div>
+        <div><div class="vit-form-label">Protein (g)</div><input id="vitFoodProtein" class="vit-form-input" type="number" placeholder="30" min="0"></div>
+      </div>
+      <div class="vit-form-2col" style="margin-bottom:14px">
+        <div><div class="vit-form-label">Carbs (g)</div><input id="vitFoodCarbs" class="vit-form-input" type="number" placeholder="20" min="0"></div>
+        <div><div class="vit-form-label">Fat (g)</div><input id="vitFoodFat" class="vit-form-input" type="number" placeholder="10" min="0"></div>
+      </div>
+      <div style="margin-bottom:8px"><div class="vit-form-label">Meal</div>
+        <select id="vitFoodMeal" class="vit-form-input">
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="snack" selected>Snack</option>
+        </select>
+      </div>
+      <button id="vitAddSubmitBtn" class="vit-submit-btn" type="button">Add to Log</button>
+      <button id="vitModalCancelBtn" class="vit-cancel-btn" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Tab Bar -->
 
 <nav class="tabbar" id="mainTabbar">
   <div class="tabbar-inner">
+    <button class="tab" id="tabPeak" onclick="switchTab('peak')">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,15 7,8 11,12 15,5 22,10"/></svg></span>
+      Peak
+    </button>
     <button class="tab" id="tabHealth" onclick="switchTab('health')">
       <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
       Health
@@ -14063,6 +14558,11 @@ setInterval(updateDayBar, 60 * 1000);
     // so we retry once real data arrives
     const hasRealData = d.readScore != null || d.sleepScore != null;
 
+    // fix #21: inject caffeine log summary
+    const _caffLogs = (function(){ try { return JSON.parse(localStorage.getItem('goals_caffeine_' + today)) || []; } catch(e){ return []; } })();
+    const _caffStr = _caffLogs.length
+      ? _caffLogs.map(function(l){ return l.name + ' ' + l.mg + 'mg at ' + l.timeStr; }).join(', ')
+      : 'none';
     const prompt = `You are a personal performance coach. Given today's biometric data from an Oura Ring, return a JSON object only — no markdown, no extra text.
 
 Data:
@@ -14073,11 +14573,12 @@ Data:
 - Resting HR: ${d.restHr ?? '—'}bpm (7-day avg: ${d.avgRhr ? Math.round(d.avgRhr) : '—'}bpm)
 - Deep sleep: ${d.deep ? Math.round(d.deep/60) : '—'}min, REM: ${d.rem ? Math.round(d.rem/60) : '—'}min, Light: ${d.light ? Math.round(d.light/60) : '—'}min
 - Steps so far: ${d.steps ?? '—'}
+- Caffeine today: ${_caffStr}
 
 Return exactly:
 {"zone":"peak|good|watch|low","badge":"2-3 word label","headline":"one sentence max 12 words, direct and specific","reasons":["specific reason referencing actual values","second reason"],"avoid":"one thing to avoid today, or null"}
 
-Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, else zone=low. Be specific to the numbers — never generic advice.`;
+Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, else zone=low. Be specific to the numbers — never generic advice. If caffeine was logged, reference timing or total mg in reasons.`;
 
     // No real data yet — show rule-based without caching so we retry next render
     if (!hasRealData) {
@@ -15358,13 +15859,15 @@ function switchTab(tab) {
     health: document.getElementById('healthView'),
     dash: document.getElementById('dashView'),
     gym: document.getElementById('gymView'),
-    finance: document.getElementById('financeView')
+    finance: document.getElementById('financeView'),
+    peak: document.getElementById('peakView')
   };
   const tabs = {
     health: document.getElementById('tabHealth'),
     dash: document.getElementById('tabDash'),
     gym: document.getElementById('tabGym'),
-    finance: document.getElementById('tabFinance')
+    finance: document.getElementById('tabFinance'),
+    peak: document.getElementById('tabPeak')
   };
 
   // Hide all views, deactivate all tabs
@@ -18586,6 +19089,1268 @@ function switchTab(tab) {
       () => { return fsReady && window.canonicalJson(fcollect()) !== fsLastJson; }
     );
   }
+
+})();
+</script>
+
+<script>
+// ============================================================
+// PEAK TAB — Energy curve, Caffeine tracker, Coach, Vitality
+// ============================================================
+(function () {
+
+  // ── Constants ──────────────────────────────────────────────
+  var CAFF_KEY     = 'goals_caffeine_';
+  var MOOD_KEY     = 'goals_mood_';
+  var SCHED_KEY    = 'goals_schedule_';
+  var INSIGHTS_KEY = 'goals_peak_insights_v1';
+  var VIT_KEY      = 'goals_vitality_';
+
+  var _insightsFlight = false;
+  var _coachFlight    = false;
+  var _vitCoachFlight = false;
+  var _activeEnergyMode = 'core';
+  var _activeMealTab    = 'all';
+
+  // ── Caffeine database ──────────────────────────────────────
+  var CAFF_DB = [
+    {name:'Espresso',mg:63},{name:'Double Espresso',mg:126},{name:'Triple Espresso',mg:189},
+    {name:'Americano',mg:150},{name:'Flat White',mg:130},{name:'Latte',mg:75},
+    {name:'Cappuccino',mg:80},{name:'Cold Brew 250ml',mg:200},{name:'Filter Coffee',mg:95},
+    {name:'Drip Coffee',mg:120},{name:'French Press',mg:107},{name:'Macchiato',mg:63},
+    {name:'Cortado',mg:63},{name:'Turkish Coffee',mg:100},{name:'Instant Coffee',mg:65},
+    {name:'Decaf Coffee',mg:5},{name:'Oat Latte',mg:75},{name:'Iced Coffee',mg:95},
+    {name:'Red Bull 250ml',mg:80},{name:'Red Bull 473ml',mg:151},{name:'Monster Energy',mg:160},
+    {name:'Rockstar',mg:160},{name:'Bang Energy',mg:300},{name:'Ghost Energy',mg:200},
+    {name:'C4 Energy',mg:200},{name:'Prime Energy',mg:200},{name:'Celsius',mg:200},
+    {name:'Matcha Latte',mg:70},{name:'Matcha Shot',mg:35},{name:'Green Tea',mg:35},
+    {name:'Black Tea',mg:47},{name:'Earl Grey',mg:55},{name:'Oolong Tea',mg:37},
+    {name:'White Tea',mg:15},{name:'Chai Latte',mg:50},{name:'Yerba Mate 500ml',mg:80},
+    {name:'Pre-workout',mg:200},{name:'Jack3d',mg:150},{name:'Creatine + Caffeine',mg:150},
+    {name:'Coke 330ml',mg:34},{name:'Diet Coke 330ml',mg:46},{name:'Pepsi 330ml',mg:38},
+    {name:'Mountain Dew 330ml',mg:54},{name:'5-hour Energy',mg:200},{name:'NoDoz',mg:200},
+    {name:'Vivarin',mg:200},{name:'Dark Chocolate 40g',mg:24},{name:'Milk Chocolate 40g',mg:9},
+    {name:'Kombucha 350ml',mg:14},{name:'Sparkling Water',mg:0},{name:'Ginger Beer',mg:0}
+  ];
+
+  // ── Food database ──────────────────────────────────────────
+  var FOOD_DB = [
+    {name:'Chicken Breast 100g',kcal:165,protein:31,carbs:0,fat:3.6},
+    {name:'Salmon 100g',kcal:208,protein:20,carbs:0,fat:13},
+    {name:'Egg (large)',kcal:72,protein:6,carbs:0.4,fat:5},
+    {name:'Greek Yogurt 200g',kcal:130,protein:17,carbs:6,fat:3.5},
+    {name:'Oats 100g',kcal:389,protein:17,carbs:66,fat:7},
+    {name:'Rice 100g cooked',kcal:130,protein:2.7,carbs:28,fat:0.3},
+    {name:'Pasta 100g cooked',kcal:158,protein:5.8,carbs:31,fat:0.9},
+    {name:'Sweet Potato 100g',kcal:86,protein:1.6,carbs:20,fat:0.1},
+    {name:'Broccoli 100g',kcal:34,protein:2.8,carbs:7,fat:0.4},
+    {name:'Banana',kcal:89,protein:1.1,carbs:23,fat:0.3},
+    {name:'Apple',kcal:52,protein:0.3,carbs:14,fat:0.2},
+    {name:'Avocado 100g',kcal:160,protein:2,carbs:9,fat:15},
+    {name:'Almonds 30g',kcal:174,protein:6,carbs:6,fat:15},
+    {name:'Peanut Butter 2tbsp',kcal:190,protein:8,carbs:6,fat:16},
+    {name:'Bread 1 slice',kcal:79,protein:2.7,carbs:15,fat:1},
+    {name:'Whole Milk 250ml',kcal:149,protein:8,carbs:11.7,fat:8},
+    {name:'Whey Shake',kcal:120,protein:25,carbs:3,fat:1.5},
+    {name:'Beef 100g lean',kcal:215,protein:26,carbs:0,fat:12},
+    {name:'Tuna Can 130g',kcal:130,protein:29,carbs:0,fat:1},
+    {name:'Cottage Cheese 100g',kcal:98,protein:11,carbs:3.4,fat:4.3},
+    {name:'Quinoa 100g cooked',kcal:120,protein:4.4,carbs:21,fat:1.9},
+    {name:'Lentils 100g cooked',kcal:116,protein:9,carbs:20,fat:0.4},
+    {name:'Spinach 100g',kcal:23,protein:2.9,carbs:3.6,fat:0.4},
+    {name:'Cheddar 30g',kcal:121,protein:7,carbs:0.2,fat:10},
+    {name:'Turkey 100g',kcal:135,protein:30,carbs:0,fat:1},
+    {name:'Ham 50g',kcal:65,protein:10,carbs:1,fat:2.5},
+    {name:'Orange',kcal:62,protein:1.2,carbs:15,fat:0.2},
+    {name:'Blueberries 100g',kcal:57,protein:0.7,carbs:14,fat:0.3},
+    {name:'Mango 100g',kcal:60,protein:0.8,carbs:15,fat:0.4},
+    {name:'Olive Oil 1tbsp',kcal:119,protein:0,carbs:0,fat:13.5},
+    {name:'Hummus 50g',kcal:110,protein:3,carbs:9,fat:7},
+    {name:'Bagel',kcal:270,protein:10,carbs:53,fat:2},
+    {name:'Croissant',kcal:272,protein:5,carbs:31,fat:14},
+    {name:'Pizza slice',kcal:285,protein:12,carbs:36,fat:10},
+    {name:'Burger Patty 100g',kcal:295,protein:17,carbs:0,fat:25},
+    {name:'Fries 100g',kcal:312,protein:3.4,carbs:41,fat:15},
+    {name:'Sushi Roll 6pc',kcal:200,protein:8,carbs:36,fat:2},
+    {name:'Salad Bowl',kcal:120,protein:8,carbs:10,fat:5},
+    {name:'Smoothie 300ml',kcal:180,protein:5,carbs:38,fat:2},
+    {name:'Orange Juice 250ml',kcal:110,protein:1.7,carbs:26,fat:0.5},
+    {name:'Latte 350ml',kcal:190,protein:10,carbs:15,fat:8},
+    {name:'Dark Chocolate 30g',kcal:170,protein:2,carbs:13,fat:12},
+    {name:'Watermelon 100g',kcal:30,protein:0.6,carbs:7.6,fat:0.2},
+    {name:'Coconut Water 330ml',kcal:60,protein:0.7,carbs:14,fat:0.6},
+    {name:'Soup 300ml',kcal:90,protein:4,carbs:12,fat:2},
+    {name:'Stir Fry Veg 200g',kcal:80,protein:4,carbs:12,fat:2},
+    {name:'Scrambled Eggs 2',kcal:200,protein:14,carbs:1,fat:15},
+    {name:'Protein Bar',kcal:200,protein:20,carbs:22,fat:7},
+    {name:'Rice Cake',kcal:35,protein:0.7,carbs:7.3,fat:0.2},
+    {name:'Peanuts 30g',kcal:170,protein:7,carbs:5,fat:15}
+  ];
+
+  // ── Helpers ────────────────────────────────────────────────
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function nowHour() { return new Date().getHours() + new Date().getMinutes()/60; }
+  function fmtHour(h) {
+    var hh = Math.floor(h) % 24;
+    var ampm = hh < 12 ? 'a' : 'p';
+    var disp = hh % 12 || 12;
+    return disp + ampm;
+  }
+  function fmtHour24(h) {
+    var hh = Math.floor(h) % 24;
+    return String(hh).padStart(2,'0') + ':' + String(Math.round((h - Math.floor(h))*60)).padStart(2,'0');
+  }
+  function clamp(v,lo,hi) { return Math.max(lo, Math.min(hi, v)); }
+  function loadCaff() { return JSON.parse(localStorage.getItem(CAFF_KEY + today()) || '[]'); }
+  function saveCaff(arr) { localStorage.setItem(CAFF_KEY + today(), JSON.stringify(arr)); }
+  function loadVit() { return JSON.parse(localStorage.getItem(VIT_KEY + today()) || '[]'); }
+  function saveVit(arr) { localStorage.setItem(VIT_KEY + today(), JSON.stringify(arr)); }
+  function getOura() {
+    try { return JSON.parse(localStorage.getItem('oura_cache_v1')) || {}; } catch(e) { return {}; }
+  }
+  function getTargets() {
+    try { return JSON.parse(localStorage.getItem('peak_profile')) || {kcal:2400,protein:180,carbs:240,fat:80}; } catch(e) { return {kcal:2400,protein:180,carbs:240,fat:80}; }
+  }
+  function scoreLabel(s) {
+    if (s == null) return 'No data';
+    if (s >= 90) return 'Peak';
+    if (s >= 75) return 'Above the curve';
+    if (s >= 60) return 'Solid';
+    if (s >= 45) return 'Moderate';
+    return 'Low';
+  }
+  function scoreZoneClass(s) {
+    if (s == null) return '';
+    if (s >= 90) return 'zone-gold';
+    if (s >= 70) return 'zone-green';
+    if (s >= 50) return 'zone-yellow';
+    return 'zone-red';
+  }
+  function uid() { return Math.random().toString(36).slice(2,9); }
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  // ── Energy curve model ─────────────────────────────────────
+  // fix #18: HRV as separate quality modifier on peak height
+  function buildEnergyArray(wakeHour, readiness, caffLogs, mode, hrv, avgHrv) {
+    var arr = [];
+    var PI = Math.PI;
+    // HRV modifier: if HRV > avg → bonus up to +8pts peak height; if < avg → penalty
+    var hrvMod = 0;
+    if (hrv && avgHrv && avgHrv > 0) {
+      hrvMod = clamp((hrv - avgHrv) / avgHrv * 12, -8, 8);
+    }
+    for (var h = 0; h < 24; h++) {
+      var hw = h - wakeHour;
+      if (hw < 0) hw += 24;
+      var base = 50 + 28 * Math.sin(PI * (hw - 3) / 11) + 8 * Math.sin(PI * (hw - 7) / 5);
+      base = clamp(base, 10, 100);
+      var rm = mode === 'core' ? 0.7 : (readiness || 70) / 100 * 0.45 + 0.55;
+      var score = base * rm + (mode !== 'core' ? hrvMod : 0);
+      if (mode === 'stack' && caffLogs && caffLogs.length) {
+        caffLogs.forEach(function(log) {
+          var dh = h - log.timeHour;
+          if (dh < 0) return;
+          var boost = (log.mg / 400) * 22 * Math.max(0, 1 - Math.abs(dh - 0.75) / 3.5) * Math.pow(0.5, dh / 5.5);
+          score += boost;
+        });
+      }
+      arr.push(clamp(score, 0, 100));
+    }
+    return arr;
+  }
+
+  // fix #15: Coffee score 0–100
+  function coffeeScore(activeMg, limitMg) {
+    if (!activeMg) return 0;
+    var ratio = activeMg / limitMg;
+    // peaks at 40% of limit, degrades after
+    return Math.round(clamp(100 - Math.abs(ratio - 0.4) * 180, 0, 100));
+  }
+
+  // fix #20: avg sleep onset from Oura history
+  function avgBedtimeFromOura(oura) {
+    if (!oura || !oura.sleep || !oura.sleep.length) return 23;
+    var onsets = [];
+    oura.sleep.slice(0, 14).forEach(function(s) {
+      if (s.bedtime_start) {
+        var d = new Date(s.bedtime_start);
+        var h = d.getHours() + d.getMinutes() / 60;
+        if (h < 6) h += 24; // treat midnight-6am as 24-30
+        onsets.push(h);
+      }
+    });
+    if (!onsets.length) return 23;
+    return onsets.reduce(function(a, b) { return a + b; }, 0) / onsets.length;
+  }
+
+  // fix #19: sleep debt from Oura
+  function calcSleepDebt(oura) {
+    if (!oura || !oura.sleep || !oura.sleep.length) return null;
+    var recent = oura.sleep.slice(0, 7);
+    var totalMins = 0, count = 0;
+    recent.forEach(function(s) {
+      if (s.contributors && s.contributors.total_sleep) {
+        totalMins += s.contributors.total_sleep;
+        count++;
+      }
+    });
+    if (!count) return null;
+    var avgMins = totalMins / count;
+    var targetMins = 480; // 8h target
+    var debtMins = targetMins - avgMins;
+    if (debtMins <= 0) return null;
+    var h = Math.floor(debtMins / 60);
+    var m = Math.round(debtMins % 60);
+    return h + '.' + String(m).padStart(2,'0') + 'h';
+  }
+
+  function findBestWindows(arr, wakeHour) {
+    var windows = [];
+    for (var s = wakeHour; s < wakeHour + 18; s++) {
+      var h1 = s % 24, h2 = (s+1) % 24, h3 = (s+2) % 24;
+      windows.push({ start: h1, avg: (arr[h1] + arr[h2] + arr[h3]) / 3 });
+    }
+    windows.sort(function(a,b){ return b.avg - a.avg; });
+    var w1 = windows[0];
+    var w2 = null;
+    for (var i = 1; i < windows.length; i++) {
+      var gap = Math.abs(windows[i].start - w1.start);
+      if (gap > 3 && gap < 21) { w2 = windows[i]; break; }
+    }
+    return [w1, w2 || windows[Math.min(5, windows.length-1)]];
+  }
+
+  // ── Caffeine pharmacokinetics ──────────────────────────────
+  function caffCurve(logs) {
+    var arr = new Array(24).fill(0);
+    logs.forEach(function(log) {
+      for (var h = 0; h < 24; h++) {
+        var dh = h - log.timeHour;
+        if (dh < 0) continue;
+        arr[h] += log.mg * Math.pow(0.5, dh / 5.5);
+      }
+    });
+    return arr;
+  }
+
+  function peakCaffTime(logs) {
+    if (!logs.length) return null;
+    var largest = logs.reduce(function(a,b){ return a.mg > b.mg ? a : b; });
+    return largest.timeHour + 0.75;
+  }
+
+  function clearanceTime(logs) {
+    if (!logs.length) return null;
+    var curve = caffCurve(logs);
+    for (var h = 23; h >= 0; h--) {
+      if (curve[h] > 10) return h + 1;
+    }
+    return null;
+  }
+
+  function bedtimeCutoff(avgBedtimeHour) {
+    var cutoff = avgBedtimeHour - 8;
+    if (cutoff < 0) cutoff += 24;
+    return cutoff;
+  }
+
+  function caff_limitMg(readiness) {
+    if (readiness && readiness < 50) return 250;
+    if (readiness && readiness < 70) return 300;
+    return 400;
+  }
+
+  // ── Canvas: energy chart (fix #3 hover, fix #12 caff overlay) ─
+  var _energyHoverH = null;
+  function drawEnergyChart(canvasId, arr, wakeHour, caffLogs, mode) {
+    var el = document.getElementById(canvasId);
+    if (!el) return;
+    var dpr = window.devicePixelRatio || 1;
+    var W = el.offsetWidth || 300;
+    var H = el.offsetHeight || 150;
+    el.width  = W * dpr;
+    el.height = H * dpr;
+    var ctx = el.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0,0,W,H);
+    var padL = 8, padR = 8, padT = 10, padB = 22;
+    var cw = W - padL - padR;
+    var ch = H - padT - padB;
+    var now = nowHour();
+    function xAt(h) { return padL + (h / 24) * cw; }
+    function yAt(v) { return padT + ch - (v / 100) * ch; }
+
+    // fix #12: caffeine contribution overlay on STACK mode
+    if (mode === 'stack' && caffLogs && caffLogs.length) {
+      var baseArr = buildEnergyArray(wakeHour, null, [], 'core');
+      var caffGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+      caffGrad.addColorStop(0, 'rgba(245,200,66,0.12)');
+      caffGrad.addColorStop(1, 'rgba(245,200,66,0)');
+      ctx.beginPath();
+      ctx.moveTo(xAt(0), yAt(baseArr[0]));
+      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(baseArr[h])); }
+      for (var h = 23; h >= 0; h--) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+      ctx.closePath();
+      ctx.fillStyle = caffGrad;
+      ctx.fill();
+      // caffeine lift line
+      ctx.beginPath();
+      ctx.moveTo(xAt(0), yAt(arr[0]));
+      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+      ctx.strokeStyle = 'rgba(245,200,66,0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4,3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Main fill
+    var grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+    grad.addColorStop(0, 'rgba(110,231,183,0.18)');
+    grad.addColorStop(1, 'rgba(110,231,183,0)');
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), yAt(arr[0]));
+    for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+    ctx.lineTo(xAt(23), padT + ch);
+    ctx.lineTo(xAt(0), padT + ch);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // Main line
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), yAt(arr[0]));
+    for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+    ctx.strokeStyle = '#6EE7B7';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    // Now marker
+    ctx.beginPath();
+    ctx.setLineDash([3,4]);
+    ctx.moveTo(xAt(now), padT);
+    ctx.lineTo(xAt(now), padT + ch);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    var nowIdx = Math.min(23, Math.round(now));
+    ctx.beginPath();
+    ctx.arc(xAt(now), yAt(arr[nowIdx] || 50), 4, 0, Math.PI*2);
+    ctx.fillStyle = '#6EE7B7';
+    ctx.fill();
+    // Hour labels
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.font = '9px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    [0,4,8,12,16,20].forEach(function(h) { ctx.fillText(fmtHour(h), xAt(h), H - 4); });
+
+    // fix #3: hover scrub — draw tooltip at hovered hour
+    if (_energyHoverH !== null) {
+      var hh = _energyHoverH;
+      var hIdx = Math.min(23, Math.max(0, Math.round(hh)));
+      var hx = xAt(hh);
+      var hy = yAt(arr[hIdx]);
+      // vertical line
+      ctx.beginPath();
+      ctx.moveTo(hx, padT);
+      ctx.lineTo(hx, padT + ch);
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // dot
+      ctx.beginPath();
+      ctx.arc(hx, hy, 5, 0, Math.PI*2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      // tooltip bubble
+      var label = fmtHour(hIdx) + ' · ' + Math.round(arr[hIdx]);
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      var tw = ctx.measureText(label).width;
+      var tx = clamp(hx - tw/2 - 6, 0, W - tw - 12);
+      var ty = Math.max(padT + 4, hy - 28);
+      ctx.fillStyle = 'rgba(20,20,25,0.92)';
+      ctx.beginPath();
+      if (ctx.roundRect) { ctx.roundRect(tx, ty, tw + 12, 20, 5); } else { ctx.rect(tx, ty, tw + 12, 20); }
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, tx + 6, ty + 14);
+    }
+
+    // Wire hover events once
+    if (!el._peakHoverWired) {
+      el._peakHoverWired = true;
+      function getHourFromEvent(e) {
+        var rect = el.getBoundingClientRect();
+        var cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        return clamp((cx - padL) / cw * 24, 0, 23.99);
+      }
+      function onMove(e) {
+        _energyHoverH = getHourFromEvent(e);
+        // redraw with current stored arr — read from closure
+        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode);
+      }
+      function onLeave() {
+        _energyHoverH = null;
+        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode);
+      }
+      el.addEventListener('mousemove', onMove);
+      el.addEventListener('touchmove', function(e){ e.preventDefault(); onMove(e); }, {passive:false});
+      el.addEventListener('mouseleave', onLeave);
+      el.addEventListener('touchend', onLeave);
+    }
+    // Store latest data on element for hover redraws
+    el._peakArr = arr;
+    el._peakCaffLogs = caffLogs;
+    el._peakMode = mode;
+  }
+
+  // ── Canvas: caffeine bar chart ─────────────────────────────
+  function drawCaffChart(canvasId, logs) {
+    var el = document.getElementById(canvasId);
+    if (!el) return;
+    var dpr = window.devicePixelRatio || 1;
+    var W = el.offsetWidth || 300;
+    var H = el.offsetHeight || 80;
+    el.width  = W * dpr;
+    el.height = H * dpr;
+    var ctx = el.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0,0,W,H);
+    if (!logs.length) return;
+    var curve = caffCurve(logs);
+    var now = Math.floor(nowHour());
+    var startH = Math.max(0, now - 2);
+    var endH   = Math.min(23, now + 12);
+    var slotCount = endH - startH + 1;
+    var padL = 8, padR = 8, padT = 6, padB = 16;
+    var cw = W - padL - padR;
+    var ch = H - padT - padB;
+    var barW = cw / slotCount * 0.6;
+    var maxMg = Math.max(400, Math.max.apply(null, curve));
+    for (var i = 0; i <= slotCount; i++) {
+      var h = startH + i;
+      if (h > 23) break;
+      var mg = curve[h];
+      var x = padL + (i / slotCount) * cw;
+      var barH = (mg / maxMg) * ch;
+      ctx.fillStyle = mg < 200 ? 'rgba(110,231,183,0.6)' : mg < 350 ? 'rgba(242,192,99,0.7)' : 'rgba(255,138,138,0.7)';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(x - barW/2, padT + ch - barH, barW, barH, 3);
+      } else {
+        ctx.rect(x - barW/2, padT + ch - barH, barW, barH);
+      }
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.font = '8px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      if (i % 2 === 0) ctx.fillText(fmtHour(h), x, H - 2);
+    }
+    var nowX = padL + ((now - startH) / slotCount) * cw;
+    ctx.beginPath();
+    ctx.setLineDash([2,3]);
+    ctx.moveTo(nowX, padT);
+    ctx.lineTo(nowX, padT + ch);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── Gemini helper ──────────────────────────────────────────
+  async function gemini(prompt) {
+    var r = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}]})
+    });
+    var j = await r.json();
+    return (j.candidates && j.candidates[0] && j.candidates[0].content.parts[0].text) || '';
+  }
+
+  // ── Insights ───────────────────────────────────────────────
+  async function fetchInsights(oura, caffLogs, mood, avgBed) {
+    var cacheRaw = localStorage.getItem(INSIGHTS_KEY);
+    var cache = null;
+    try { cache = JSON.parse(cacheRaw); } catch(e){}
+    var tod = today();
+    if (cache && cache.date === tod && cache.hadRealData) { renderInsights(cache.items); return; }
+    if (_insightsFlight) return;
+    var readiness = oura && oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+    var hrv = oura && oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
+    var sleep = oura && oura.sleep && oura.sleep[0] && oura.sleep[0].score;
+    var hadReal = !!(readiness || hrv || sleep);
+    if (!hadReal) {
+      renderInsights(['No Oura data yet for today. Check back after your ring syncs.','Log caffeine above to see personalised timing advice.','Complete a mood check to help your coach calibrate.']);
+      return;
+    }
+    _insightsFlight = true;
+    try {
+      var caffSummary = caffLogs.length
+        ? caffLogs.map(function(l){ return l.name+' '+l.mg+'mg at '+l.timeStr; }).join(', ')
+        : 'none logged';
+      var wh = typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7;
+      var curH = Math.floor(nowHour());
+      var sleepDebt = calcSleepDebt(oura) || '0h';
+      var bedStr = avgBed ? fmtHour24(avgBed) : '23:00';
+      var prompt = 'You are a personal performance coach generating 3 sharp insight bullets for the user\'s Peak dashboard.\n'
+        + 'Rules:\n'
+        + '- Plain text only. No asterisks, dashes, bullet symbols, markdown.\n'
+        + '- Each insight must be 1-2 sentences, max 20 words.\n'
+        + '- At least one insight MUST reference caffeine specifically:\n'
+        + '  * If caffeine is "none logged" → suggest exact timing, e.g. "No coffee logged — a shot now adds ~+12 pts to your 10–12 window."\n'
+        + '  * If caffeine is logged → note pharmacokinetics effect, e.g. "Your 08:30 espresso peaks at 09:15 — ride this into deep work now."\n'
+        + '- If HRV is above personal baseline → mention BDNF/dopamine workout bonus.\n'
+        + '- Reference sleep debt if > 0.5h.\n'
+        + 'Data: readiness='+readiness+', HRV='+hrv+', sleep_score='+sleep+', sleep_debt='+sleepDebt
+        + ', caffeine_today=['+caffSummary+'], mood='+mood+', wake_hour='+wh+', current_hour='+curH+', avg_bedtime='+bedStr+'.\n'
+        + 'Return exactly 3 insights, one per line, nothing else.';
+      var text = await gemini(prompt);
+      var items = text.split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 10; }).slice(0,3);
+      if (items.length < 1) items = ['Your readiness score is available. Keep up the good habits.'];
+      localStorage.setItem(INSIGHTS_KEY, JSON.stringify({date:tod, items:items, hadRealData:true}));
+      renderInsights(items);
+    } catch(e) {
+      renderInsights(['Could not load insights — check your connection.']);
+    } finally { _insightsFlight = false; }
+  }
+
+  function renderInsights(items) {
+    var el = document.getElementById('peakInsightsList');
+    if (!el) return;
+    el.innerHTML = items.map(function(t){
+      return '<div class="peak-insight-row"><div class="peak-insight-dot"></div><div class="peak-insight-text">'+escHtml(t)+'</div></div>';
+    }).join('');
+  }
+
+  // ── Render peak ────────────────────────────────────────────
+  function renderPeak() {
+    var oura = getOura();
+    var tod = today();
+    var el = document.getElementById('peakPageDate');
+    if (el) {
+      var d = new Date();
+      el.textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    }
+    var todayR = null, todayS = null;
+    if (oura.readiness) todayR = oura.readiness.find(function(r){ return r.day === tod; }) || oura.readiness[0] || null;
+    if (oura.sleep)     todayS = oura.sleep.find(function(s){ return s.day === tod; }) || oura.sleep[0] || null;
+    var readiness  = todayR && todayR.score;
+    var hrv        = todayR && todayR.contributors && todayR.contributors.hrv_balance;
+    var sleepScore = todayS && todayS.score;
+    var wakeHour   = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
+
+    // fix #18: compute avg HRV for modifier
+    var avgHrv = null;
+    if (oura.readiness && oura.readiness.length > 1) {
+      var hrvVals = oura.readiness.slice(0,7).map(function(r){ return r.contributors && r.contributors.hrv_balance; }).filter(Boolean);
+      if (hrvVals.length) avgHrv = hrvVals.reduce(function(a,b){ return a+b; },0) / hrvVals.length;
+    }
+
+    // fix #19: sleep debt
+    var debtStr = calcSleepDebt(oura);
+    // fix #20: avg bedtime
+    var avgBed = avgBedtimeFromOura(oura);
+
+    setText('peakChipHrv',      hrv       ? Math.round(hrv)  : '—');
+    setText('peakChipRecovery', readiness ? readiness + '%'  : '—');
+    setText('peakChipReadiness',readiness ? readiness        : '—');
+    setText('peakChipSleepDebt', debtStr || '—');
+    setText('peakChipWake', fmtHour24(wakeHour));
+
+    // Hydration: derive from water logs if present, else compute from activity
+    var hydPct = null;
+    var actScore = oura && oura.activity && oura.activity[0] && oura.activity[0].score;
+    var steps = oura && oura.activity && oura.activity[0] && oura.activity[0].steps;
+    var waterLogs = (function(){ try { return JSON.parse(localStorage.getItem('goals_water_' + tod)) || []; } catch(e){ return []; } })();
+    if (waterLogs.length) {
+      var totalMl = waterLogs.reduce(function(a,b){ return a + (b.ml||0); }, 0);
+      hydPct = Math.min(Math.round(totalMl / 2500 * 100), 100);
+    } else if (steps) {
+      hydPct = Math.min(Math.round(steps / 10000 * 80 + 10), 95);
+    }
+    setText('peakChipHydration', hydPct != null ? hydPct + '%' : '—');
+
+    // HRV Noise: coefficient of variation from last 7 nights
+    var hrvNoise = null;
+    if (oura.readiness && oura.readiness.length >= 3) {
+      var hvArr = oura.readiness.slice(0,7).map(function(r){ return r.contributors && r.contributors.hrv_balance; }).filter(Boolean);
+      if (hvArr.length >= 2) {
+        var mean = hvArr.reduce(function(a,b){return a+b;},0)/hvArr.length;
+        var variance = hvArr.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/(hvArr.length-1);
+        hrvNoise = Math.round(Math.sqrt(variance));
+      }
+    }
+    setText('peakChipHrvNoise', hrvNoise != null ? '±' + hrvNoise : '—');
+
+    var score = readiness || 50;
+    var fill = document.getElementById('peakHeroFill');
+    if (fill) {
+      fill.className = 'peak-hero-fill ' + scoreZoneClass(score);
+      var circumference = 502.65;
+      var dashTarget = circumference * (1 - score/100);
+      fill.style.strokeDashoffset = String(circumference);
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          if (fill) fill.style.strokeDashoffset = dashTarget.toFixed(2);
+          var numEl = document.getElementById('peakHeroScore');
+          if (numEl) {
+            var startTs = performance.now();
+            var duration = 900;
+            (function tick(now) {
+              var t = Math.min((now - startTs) / duration, 1);
+              var ease = 1 - Math.pow(1 - t, 3);
+              numEl.textContent = Math.round(ease * score);
+              if (t < 1) requestAnimationFrame(tick);
+            })(startTs);
+          }
+          setText('peakHeroLabel', scoreLabel(score));
+        });
+      });
+    }
+
+    var caffLogs = loadCaff();
+    // fix #18: pass hrv+avgHrv to energy model
+    var arr = buildEnergyArray(wakeHour, readiness, caffLogs, _activeEnergyMode, hrv, avgHrv);
+    // fix #12: pass caffLogs + mode so overlay renders
+    drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode);
+
+    var wins = findBestWindows(arr, wakeHour);
+    if (wins[0]) {
+      setText('peakWin1Time', fmtHour(wins[0].start)+'–'+fmtHour(wins[0].start+2));
+      setText('peakWin1Score', 'Peak ' + Math.round(wins[0].avg));
+    }
+    if (wins[1]) {
+      setText('peakWin2Time', fmtHour(wins[1].start)+'–'+fmtHour(wins[1].start+2));
+      setText('peakWin2Score', 'Peak ' + Math.round(wins[1].avg));
+    }
+
+    // fix #20: pass real avg bedtime to renderCaffLogs
+    _avgBedtime = avgBed;
+    renderCaffLogs();
+
+    // fix #15: coffee score
+    renderCoffeeScore(caffLogs, readiness);
+
+    var savedMood = localStorage.getItem(MOOD_KEY + tod);
+    document.querySelectorAll('.peak-mood-btn').forEach(function(btn) {
+      btn.classList.toggle('selected', btn.dataset.mood === savedMood);
+    });
+    var sched = localStorage.getItem(SCHED_KEY + tod) || '';
+    var si = document.getElementById('peakScheduleInput');
+    if (si) si.value = sched;
+    renderScheduleItems(sched);
+    // fix #6: pass caffLogs to insights for specific phrasing
+    fetchInsights(oura, caffLogs, savedMood || 'unknown', avgBed);
+    renderLastWeek(oura);
+    restoreCoachHistory();
+    renderVitality();
+  }
+
+  var _avgBedtime = 23;
+
+  // fix #15: render coffee score card
+  function renderCoffeeScore(logs, readiness) {
+    var el = document.getElementById('peakCoffeeScoreWrap');
+    if (!el) return;
+    var limit = caff_limitMg(readiness);
+    var curve = caffCurve(logs);
+    var activeMg = curve[Math.min(23, Math.floor(nowHour()))] || 0;
+    var cs = coffeeScore(activeMg, limit);
+    var scoreEl = document.getElementById('peakCoffeeScoreNum');
+    if (scoreEl) scoreEl.textContent = cs;
+    var barEl = document.getElementById('peakCoffeeScoreBar');
+    if (barEl) {
+      barEl.style.width = cs + '%';
+      barEl.className = 'peak-mg-bar-fill ' + (cs >= 70 ? 'green' : cs >= 40 ? 'yellow' : 'red');
+    }
+    var lbl = cs >= 70 ? 'Optimal zone' : cs >= 40 ? 'Sub-optimal' : logs.length ? 'Over limit' : 'None logged';
+    setText('peakCoffeeScoreLbl', lbl);
+  }
+
+  // ── Last Week summary ──────────────────────────────────────
+  function renderLastWeek(oura) {
+    var days = ['M','T','W','T','F','S','S'];
+    var readArr = oura && oura.readiness ? oura.readiness.slice(0,7).reverse() : [];
+    var sleepArr = oura && oura.sleep ? oura.sleep.slice(0,7).reverse() : [];
+    if (!readArr.length) return;
+    var scores = readArr.map(function(r){ return r.score || 0; });
+    var avgR = Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length);
+    var hrvVals = readArr.map(function(r){ return r.contributors && r.contributors.hrv_balance; }).filter(Boolean);
+    var avgH = hrvVals.length ? Math.round(hrvVals.reduce(function(a,b){return a+b;},0)/hrvVals.length) : null;
+    var slScores = sleepArr.map(function(s){ return s.score || 0; });
+    var avgSl = slScores.length ? Math.round(slScores.reduce(function(a,b){return a+b;},0)/slScores.length) : null;
+    var maxIdx = scores.indexOf(Math.max.apply(null, scores));
+    var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var bestDayStr = '—';
+    if (readArr[maxIdx] && readArr[maxIdx].day) {
+      var dt = new Date(readArr[maxIdx].day + 'T12:00:00');
+      bestDayStr = dayNames[dt.getDay()];
+    }
+    setText('peakLwAvgReadiness', avgR || '—');
+    setText('peakLwAvgHrv', avgH != null ? avgH+'ms' : '—');
+    setText('peakLwAvgSleep', avgSl != null ? avgSl : '—');
+    setText('peakLwBestDay', bestDayStr);
+    var barsEl = document.getElementById('peakLwBars');
+    if (!barsEl) return;
+    var maxScore = Math.max.apply(null, scores.concat([1]));
+    barsEl.innerHTML = scores.map(function(s, i) {
+      var h = Math.round((s / maxScore) * 44) + 4;
+      var cls = s >= 90 ? 'zone-gold' : s >= 70 ? 'zone-green' : s >= 50 ? 'zone-yellow' : 'zone-red';
+      var colour = s >= 90 ? '#F5C842' : s >= 70 ? '#6EE7B7' : s >= 50 ? '#F2C063' : '#FF8A8A';
+      var label = days[i] || '';
+      return '<div class="peak-lw-bar-wrap"><div class="peak-lw-bar" style="height:'+h+'px;background:'+colour+'40;border-top:2px solid '+colour+'"></div><div class="peak-lw-bar-day">'+label+'</div></div>';
+    }).join('');
+  }
+
+  // ── Caffeine rendering ─────────────────────────────────────
+  function renderCaffLogs() {
+    var logs = loadCaff();
+    var list = document.getElementById('peakCaffLogs');
+    if (!list) return;
+    if (!logs.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);padding:6px 0">No drinks logged today</div>';
+    } else {
+      list.innerHTML = logs.map(function(log, i) {
+        return '<div class="peak-caff-log-item">' +
+          '<div class="peak-caff-log-left">' +
+          '<div class="peak-caff-log-name">'+escHtml(log.name)+'</div>' +
+          '<div class="peak-caff-log-meta">'+log.mg+' mg · '+log.timeStr+'</div>' +
+          '</div>' +
+          '<button class="peak-caff-log-del" data-idx="'+i+'" type="button">×</button>' +
+          '</div>';
+      }).join('');
+      list.querySelectorAll('.peak-caff-log-del').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var arr = loadCaff();
+          arr.splice(parseInt(btn.dataset.idx), 1);
+          saveCaff(arr);
+          renderCaffLogs();
+          var oura = getOura(); var wh = typeof WAKE_HOUR!=='undefined'?WAKE_HOUR:7;
+          var r = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+          var _hrv = oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
+          var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
+          var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){return a+b;},0)/_hrvV.length : null;
+          drawEnergyChart('peakEnergyCanvas', buildEnergyArray(wh, r, arr, _activeEnergyMode, _hrv, _aHrv), wh, arr, _activeEnergyMode);
+        });
+      });
+    }
+    var oura = getOura();
+    var readiness = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+    var limit = caff_limitMg(readiness);
+    var curve = caffCurve(logs);
+    var activeMg = Math.round(curve[Math.min(23, Math.floor(nowHour()))] || 0);
+    var pct = clamp(activeMg / limit * 100, 0, 100);
+    var fillEl = document.getElementById('peakMgBarFill');
+    if (fillEl) {
+      fillEl.style.width = pct + '%';
+      fillEl.className = 'peak-mg-bar-fill ' + (pct < 50 ? 'green' : pct < 85 ? 'yellow' : 'red');
+    }
+    setText('peakMgCurrent', activeMg + ' mg active');
+    setText('peakMgLimit', '/ ' + limit + ' mg');
+    var peakT  = peakCaffTime(logs);
+    var clearT = clearanceTime(logs);
+    setText('peakCaffPeakTime',  peakT  ? fmtHour24(peakT)  : '—');
+    setText('peakCaffClearTime', clearT ? fmtHour24(clearT) : '—');
+    setText('peakCaffCutoff', fmtHour24(bedtimeCutoff(_avgBedtime || 23)));
+    var warn = document.getElementById('peakCaffWarning');
+    if (warn) {
+      if (activeMg >= limit) {
+        warn.textContent = 'You\'ve hit your daily caffeine limit ('+limit+' mg). No more coffee recommended.';
+        warn.style.display = 'block';
+      } else if (readiness && readiness < 50 && logs.length > 0) {
+        warn.textContent = 'Low recovery today. Consider stopping caffeine early to protect tonight\'s sleep.';
+        warn.style.display = 'block';
+      } else {
+        warn.style.display = 'none';
+      }
+    }
+    drawCaffChart('peakCaffCanvas', logs);
+  }
+
+  function addCaffLog(name, mg) {
+    var logs = loadCaff();
+    var h = nowHour();
+    var hh = Math.floor(h);
+    var mm = Math.round((h - hh) * 60);
+    var timeStr = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+    logs.push({name:name, mg:mg, timeHour:h, timeStr:timeStr, id:uid()});
+    saveCaff(logs);
+    renderCaffLogs();
+    var oura = getOura(); var wh = typeof WAKE_HOUR!=='undefined'?WAKE_HOUR:7;
+    var r = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+    var _hrv = oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
+    var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
+    var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){return a+b;},0)/_hrvV.length : null;
+    drawEnergyChart('peakEnergyCanvas', buildEnergyArray(wh, r, logs, _activeEnergyMode, _hrv, _aHrv), wh, logs, _activeEnergyMode);
+    renderCoffeeScore(logs, r);
+  }
+
+  // ── Schedule ───────────────────────────────────────────────
+  function renderScheduleItems(text) {
+    var list = document.getElementById('peakScheduleList');
+    if (!list || !text.trim()) { if (list) list.innerHTML = ''; return; }
+    var lines = text.split(/[\n,]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+    list.innerHTML = lines.map(function(l){
+      return '<div class="peak-schedule-item"><div class="peak-schedule-dot"></div>'+escHtml(l)+'</div>';
+    }).join('');
+  }
+
+  // ── Coach ──────────────────────────────────────────────────
+  var COACH_KEY = 'goals_coach_';
+
+  function loadCoachHistory() {
+    try { return JSON.parse(localStorage.getItem(COACH_KEY + today()) || '[]'); } catch(e) { return []; }
+  }
+  function saveCoachHistory(arr) {
+    localStorage.setItem(COACH_KEY + today(), JSON.stringify(arr));
+  }
+
+  function appendCoachMsg(text, role) {
+    var msgs = document.getElementById('peakCoachMessages');
+    if (!msgs) return;
+    var div = document.createElement('div');
+    div.className = 'peak-coach-msg ' + (role === 'user' ? 'user-msg' : 'coach-msg');
+    if (role !== 'user') {
+      div.innerHTML = '<span class="peak-coach-tag">TEAM</span>' + escHtml(text);
+    } else {
+      div.textContent = text;
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    // persist to goals_ key → auto-syncs to Supabase
+    var history = loadCoachHistory();
+    history.push({ role: role, text: text, ts: Math.floor(nowHour() * 100) });
+    // cap at 40 messages per day to avoid bloat
+    if (history.length > 40) history = history.slice(history.length - 40);
+    saveCoachHistory(history);
+  }
+
+  function restoreCoachHistory() {
+    var msgs = document.getElementById('peakCoachMessages');
+    if (!msgs) return;
+    var history = loadCoachHistory();
+    if (!history.length) return;
+    msgs.innerHTML = '';
+    history.forEach(function(entry) {
+      var div = document.createElement('div');
+      div.className = 'peak-coach-msg ' + (entry.role === 'user' ? 'user-msg' : 'coach-msg');
+      if (entry.role !== 'user') {
+        div.innerHTML = '<span class="peak-coach-tag">TEAM</span>' + escHtml(entry.text);
+      } else {
+        div.textContent = entry.text;
+      }
+      msgs.appendChild(div);
+    });
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  async function sendCoachMessage(msg) {
+    if (!msg.trim() || _coachFlight) return;
+    _coachFlight = true;
+    appendCoachMsg(msg, 'user');
+    var oura = getOura();
+    var readiness = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+    var hrv = oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
+    var logs = loadCaff();
+    var caffSummary = logs.length ? logs.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
+    var mood = localStorage.getItem(MOOD_KEY + today()) || 'unknown';
+    var context = 'Oura readiness='+readiness+', HRV='+hrv+', caffeine='+caffSummary+', mood='+mood+', time='+Math.floor(nowHour())+':00';
+    var prompt = 'You are a personal performance coach. Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific and actionable.';
+    var loading = document.createElement('div');
+    loading.className = 'peak-coach-msg coach-msg';
+    loading.innerHTML = '<span class="peak-coach-tag">TEAM</span><span style="color:var(--text-tertiary);font-style:italic">Thinking…</span>';
+    var msgs = document.getElementById('peakCoachMessages');
+    if (msgs) { msgs.appendChild(loading); msgs.scrollTop = msgs.scrollHeight; }
+    try {
+      var reply = await gemini(prompt);
+      if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
+      appendCoachMsg(reply.trim(), 'coach');
+    } catch(e) {
+      if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
+      appendCoachMsg('Could not reach coach. Check your connection.', 'coach');
+    } finally { _coachFlight = false; }
+  }
+
+  // ── Vitality ───────────────────────────────────────────────
+  function renderVitality() {
+    var items = loadVit();
+    var targets = getTargets();
+    var tot = {kcal:0,protein:0,carbs:0,fat:0};
+    items.forEach(function(f){ tot.kcal+=f.kcal||0; tot.protein+=f.protein||0; tot.carbs+=f.carbs||0; tot.fat+=f.fat||0; });
+    var circ = 282.74;
+    var calFill = document.getElementById('vitCalFill');
+    if (calFill) {
+      var offset = circ * (1 - clamp(tot.kcal / targets.kcal, 0, 1));
+      calFill.style.strokeDashoffset = String(circ);
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){ if (calFill) calFill.style.strokeDashoffset = offset.toFixed(2); });
+      });
+    }
+    setText('vitCalEaten', Math.round(tot.kcal));
+    setText('vitCalGoal', '/ ' + targets.kcal);
+    function setBar(id, val, target) {
+      var el = document.getElementById(id);
+      if (el) el.style.width = clamp(val/target*100, 0, 100) + '%';
+    }
+    setBar('vitBarProtein', tot.protein, targets.protein);
+    setBar('vitBarCarbs',   tot.carbs,   targets.carbs);
+    setBar('vitBarFat',     tot.fat,     targets.fat);
+    setText('vitValProtein', Math.round(tot.protein) + 'g');
+    setText('vitValCarbs',   Math.round(tot.carbs)   + 'g');
+    setText('vitValFat',     Math.round(tot.fat)     + 'g');
+    var filtered = _activeMealTab === 'all' ? items : items.filter(function(f){ return f.meal === _activeMealTab; });
+    var empty = document.getElementById('vitFoodEmpty');
+    var foodList = document.getElementById('vitFoodList');
+    if (empty)    empty.style.display    = filtered.length ? 'none' : '';
+    if (foodList) {
+      foodList.style.display = filtered.length ? '' : 'none';
+      foodList.innerHTML = filtered.map(function(f) {
+        return '<div class="vit-food-item">' +
+          '<div><div class="vit-food-name">'+escHtml(f.name)+'</div>' +
+          '<div class="vit-food-meta">P '+Math.round(f.protein||0)+'g · C '+Math.round(f.carbs||0)+'g · F '+Math.round(f.fat||0)+'g</div></div>' +
+          '<div class="vit-food-right">' +
+          '<div class="vit-food-kcal">'+Math.round(f.kcal||0)+'</div>' +
+          '<button class="vit-food-del" data-id="'+f.id+'" type="button">×</button>' +
+          '</div></div>';
+      }).join('');
+      foodList.querySelectorAll('.vit-food-del').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var arr = loadVit().filter(function(x){ return x.id !== btn.dataset.id; });
+          saveVit(arr); renderVitality();
+        });
+      });
+    }
+    setText('vitStatMeals',   items.length);
+    setText('vitStatKcal',    items.length ? Math.round(tot.kcal/items.length) : 0);
+    setText('vitStatProtein', items.length ? Math.round(tot.protein/items.length) : 0);
+    setText('vitStatHits',    tot.protein >= targets.protein ? '✓' : '—');
+    var streak = calcVitStreak();
+    setText('vitStreakLabel', streak + ' day streak');
+  }
+
+  function calcVitStreak() {
+    var streak = 0;
+    var d = new Date();
+    while (streak < 365) {
+      var key = VIT_KEY + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      var its = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!its.length) break;
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function openVitModal(filter) {
+    var bg = document.getElementById('vitModalBg');
+    if (bg) bg.style.display = 'flex';
+    var inp = document.getElementById('vitFoodSearch');
+    if (inp) { inp.value = filter || ''; inp.focus(); searchVitFood(filter || ''); }
+  }
+  function closeVitModal() {
+    var bg = document.getElementById('vitModalBg');
+    if (bg) bg.style.display = 'none';
+    ['vitFoodName','vitFoodKcal','vitFoodProtein','vitFoodCarbs','vitFoodFat','vitFoodSearch'].forEach(function(id){
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    var sr = document.getElementById('vitSearchResults');
+    if (sr) sr.innerHTML = '';
+  }
+  function searchVitFood(q) {
+    var results = document.getElementById('vitSearchResults');
+    if (!results) return;
+    if (!q.trim()) { results.innerHTML = ''; return; }
+    var hits = FOOD_DB.filter(function(f){ return f.name.toLowerCase().indexOf(q.toLowerCase()) >= 0; }).slice(0,8);
+    results.innerHTML = hits.map(function(f){
+      return '<div class="vit-search-result" data-name="'+escHtml(f.name)+'" data-kcal="'+f.kcal+'" data-protein="'+f.protein+'" data-carbs="'+f.carbs+'" data-fat="'+f.fat+'">' +
+        escHtml(f.name)+'<span class="vit-result-kcal">'+f.kcal+' kcal</span></div>';
+    }).join('');
+    results.querySelectorAll('.vit-search-result').forEach(function(row) {
+      row.addEventListener('click', function() {
+        document.getElementById('vitFoodName').value    = row.dataset.name;
+        document.getElementById('vitFoodKcal').value    = row.dataset.kcal;
+        document.getElementById('vitFoodProtein').value = row.dataset.protein;
+        document.getElementById('vitFoodCarbs').value   = row.dataset.carbs;
+        document.getElementById('vitFoodFat').value     = row.dataset.fat;
+      });
+    });
+  }
+
+  async function askVitCoach(question) {
+    if (_vitCoachFlight) return;
+    _vitCoachFlight = true;
+    var resp = document.getElementById('vitCoachResponse');
+    if (resp) { resp.textContent = 'Thinking…'; resp.className = 'vit-ai-response loading'; }
+    var items = loadVit();
+    var targets = getTargets();
+    var tot = {kcal:0,protein:0,carbs:0,fat:0};
+    items.forEach(function(f){ tot.kcal+=f.kcal||0; tot.protein+=f.protein||0; tot.carbs+=f.carbs||0; tot.fat+=f.fat||0; });
+    var summary = 'Eaten today: '+Math.round(tot.kcal)+' kcal, '+Math.round(tot.protein)+'g protein, '+Math.round(tot.carbs)+'g carbs, '+Math.round(tot.fat)+'g fat. Targets: '+targets.kcal+' kcal, '+targets.protein+'g protein.';
+    try {
+      var reply = await gemini('You are a nutrition coach. '+summary+' Question: '+question+' Answer in 2-3 sentences, be specific and practical.');
+      if (resp) { resp.textContent = reply.trim(); resp.className = 'vit-ai-response'; }
+    } catch(e) {
+      if (resp) { resp.textContent = 'Could not load nutrition advice.'; resp.className = 'vit-ai-response'; }
+    } finally { _vitCoachFlight = false; }
+  }
+
+  async function snapMeal() {
+    var desc = prompt('Describe your meal and I\'ll estimate the macros:');
+    if (!desc) return;
+    var resp = document.getElementById('vitCoachResponse');
+    if (resp) { resp.textContent = 'Estimating…'; resp.className = 'vit-ai-response loading'; }
+    try {
+      var reply = await gemini('Estimate the calories and macros for this meal: "'+desc+'". Return ONLY JSON in this exact format with no other text: {"name":"meal name","kcal":350,"protein":25,"carbs":30,"fat":12}');
+      var match = reply.match(/\{[^}]+\}/);
+      if (match) {
+        var data = JSON.parse(match[0]);
+        openVitModal();
+        setTimeout(function() {
+          var n = document.getElementById('vitFoodName'); if (n) n.value = data.name || desc;
+          var k = document.getElementById('vitFoodKcal'); if (k) k.value = data.kcal || '';
+          var p = document.getElementById('vitFoodProtein'); if (p) p.value = data.protein || '';
+          var c = document.getElementById('vitFoodCarbs'); if (c) c.value = data.carbs || '';
+          var f = document.getElementById('vitFoodFat'); if (f) f.value = data.fat || '';
+        }, 50);
+      }
+      if (resp) { resp.textContent = 'Macros estimated — review in the form above.'; resp.className = 'vit-ai-response'; }
+    } catch(e) {
+      if (resp) { resp.textContent = 'Could not estimate macros.'; resp.className = 'vit-ai-response'; }
+    }
+  }
+
+  // ── Day navigation state ───────────────────────────────────
+  var _peakDayOffset = 0; // 0 = today, -1 = yesterday, etc.
+
+  function renderPeakForOffset(offset) {
+    _peakDayOffset = offset;
+    var oura = getOura();
+    var wh = typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7;
+    var r = oura.readiness && oura.readiness[Math.abs(offset)] && oura.readiness[Math.abs(offset)].score;
+    var s = oura.sleep && oura.sleep[Math.abs(offset)] && oura.sleep[Math.abs(offset)].score;
+    var dayLbl = document.getElementById('peakDayLabel');
+    if (dayLbl) {
+      if (offset === 0) {
+        dayLbl.textContent = 'Your Day';
+      } else {
+        var d2 = new Date(); d2.setDate(d2.getDate() + offset);
+        dayLbl.textContent = d2.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      }
+    }
+    var hrv2 = oura.readiness && oura.readiness[Math.abs(offset)] && oura.readiness[Math.abs(offset)].contributors && oura.readiness[Math.abs(offset)].contributors.hrv_balance;
+    var hrvV2 = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
+    var aHrv2 = hrvV2 && hrvV2.length ? hrvV2.reduce(function(a,b){return a+b;},0)/hrvV2.length : null;
+    var cl2 = offset === 0 ? loadCaff() : [];
+    var arr2 = buildEnergyArray(wh, r, cl2, _activeEnergyMode, hrv2, aHrv2);
+    drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode);
+    var wins2 = findBestWindows(arr2, wh);
+    if (wins2[0]) { setText('peakWin1Time', fmtHour(wins2[0].start)+'–'+fmtHour(wins2[0].start+2)); setText('peakWin1Score','Peak '+Math.round(wins2[0].avg)); }
+    if (wins2[1]) { setText('peakWin2Time', fmtHour(wins2[1].start)+'–'+fmtHour(wins2[1].start+2)); setText('peakWin2Score','Peak '+Math.round(wins2[1].avg)); }
+    // Show score ring for the navigated day
+    var score2 = r || 50;
+    var fill2 = document.getElementById('peakHeroFill');
+    if (fill2) {
+      fill2.className = 'peak-hero-fill ' + scoreZoneClass(score2);
+      var circ = 502.65;
+      fill2.style.strokeDashoffset = String(circ * (1 - score2/100));
+      setText('peakHeroScore', score2);
+      setText('peakHeroLabel', scoreLabel(score2));
+    }
+  }
+
+  // ── Event wiring ───────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+
+    // Day nav arrows
+    var prevBtn = document.getElementById('peakDayPrev');
+    var nextBtn = document.getElementById('peakDayNext');
+    if (prevBtn) prevBtn.addEventListener('click', function() {
+      var oura = getOura();
+      var maxBack = (oura.readiness ? oura.readiness.length - 1 : 0);
+      if (_peakDayOffset > -maxBack) renderPeakForOffset(_peakDayOffset - 1);
+    });
+    if (nextBtn) nextBtn.addEventListener('click', function() {
+      if (_peakDayOffset < 0) renderPeakForOffset(_peakDayOffset + 1);
+    });
+
+    document.querySelectorAll('.peak-etab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.peak-etab').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        _activeEnergyMode = btn.dataset.mode;
+        var oura = getOura(); var wh = typeof WAKE_HOUR!=='undefined'?WAKE_HOUR:7;
+        var r = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+        var _hrv = oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
+        var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
+        var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){return a+b;},0)/_hrvV.length : null;
+        var cl = loadCaff();
+        drawEnergyChart('peakEnergyCanvas', buildEnergyArray(wh, r, cl, _activeEnergyMode, _hrv, _aHrv), wh, cl, _activeEnergyMode);
+      });
+    });
+
+    var caffSearch = document.getElementById('peakCaffSearch');
+    var caffDrop   = document.getElementById('peakCaffDropdown');
+    if (caffSearch && caffDrop) {
+      caffSearch.addEventListener('input', function() {
+        var q = caffSearch.value.toLowerCase().trim();
+        if (!q) { caffDrop.classList.remove('open'); return; }
+        var hits = CAFF_DB.filter(function(d){ return d.name.toLowerCase().indexOf(q) >= 0; }).slice(0,8);
+        caffDrop.innerHTML = hits.map(function(d){
+          return '<div class="peak-caff-item" data-name="'+escHtml(d.name)+'" data-mg="'+d.mg+'">'+escHtml(d.name)+'<span class="peak-caff-item-mg">'+d.mg+' mg</span></div>';
+        }).join('');
+        caffDrop.classList.toggle('open', hits.length > 0);
+        caffDrop.querySelectorAll('.peak-caff-item').forEach(function(item) {
+          item.addEventListener('click', function() {
+            addCaffLog(item.dataset.name, parseInt(item.dataset.mg));
+            caffSearch.value = '';
+            caffDrop.classList.remove('open');
+          });
+        });
+      });
+      document.addEventListener('click', function(e) {
+        if (!caffSearch.contains(e.target) && !caffDrop.contains(e.target)) caffDrop.classList.remove('open');
+      });
+    }
+
+    var customBtn = document.getElementById('peakCustomAddBtn');
+    if (customBtn) {
+      customBtn.addEventListener('click', function() {
+        var nameEl = document.getElementById('peakCustomName');
+        var mgEl   = document.getElementById('peakCustomMg');
+        var name = nameEl && nameEl.value.trim();
+        var mg   = mgEl && parseInt(mgEl.value);
+        if (!name || !mg || mg < 1) return;
+        addCaffLog(name, mg);
+        if (nameEl) nameEl.value = '';
+        if (mgEl)   mgEl.value   = '';
+      });
+    }
+
+    document.querySelectorAll('.peak-mood-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.peak-mood-btn').forEach(function(b){ b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        localStorage.setItem(MOOD_KEY + today(), btn.dataset.mood);
+      });
+    });
+
+    var si = document.getElementById('peakScheduleInput');
+    if (si) {
+      si.addEventListener('blur', function() {
+        localStorage.setItem(SCHED_KEY + today(), si.value);
+        renderScheduleItems(si.value);
+      });
+    }
+    var planTap = document.getElementById('peakPlanTap');
+    if (planTap && si) planTap.addEventListener('click', function() { si.focus(); });
+
+    document.querySelectorAll('.peak-coach-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        var inp = document.getElementById('peakCoachInput');
+        if (inp) inp.value = chip.dataset.chip;
+        sendCoachMessage(chip.dataset.chip);
+      });
+    });
+
+    var coachSend = document.getElementById('peakCoachSend');
+    var coachInp  = document.getElementById('peakCoachInput');
+    if (coachSend && coachInp) {
+      coachSend.addEventListener('click', function() { var msg = coachInp.value.trim(); if (msg) { sendCoachMessage(msg); coachInp.value = ''; } });
+      coachInp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { var msg = coachInp.value.trim(); if (msg) { sendCoachMessage(msg); coachInp.value = ''; } } });
+    }
+
+    document.querySelectorAll('.vit-meal-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.vit-meal-tab').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        _activeMealTab = btn.dataset.meal;
+        renderVitality();
+      });
+    });
+
+    var addFoodBtn = document.getElementById('vitAddFoodBtn');
+    if (addFoodBtn) addFoodBtn.addEventListener('click', function(){ openVitModal(); });
+    var snapBtn = document.getElementById('vitSnapBtn');
+    if (snapBtn) snapBtn.addEventListener('click', snapMeal);
+    var quickDrink = document.getElementById('vitQuickDrinkBtn');
+    if (quickDrink) quickDrink.addEventListener('click', function(){ openVitModal(''); });
+
+    var cancelBtn = document.getElementById('vitModalCancelBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeVitModal);
+    var modalBg = document.getElementById('vitModalBg');
+    if (modalBg) modalBg.addEventListener('click', function(e){ if (e.target === modalBg) closeVitModal(); });
+
+    var vitSearch = document.getElementById('vitFoodSearch');
+    if (vitSearch) vitSearch.addEventListener('input', function(){ searchVitFood(vitSearch.value); });
+
+    var submitBtn = document.getElementById('vitAddSubmitBtn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function() {
+        var name    = (document.getElementById('vitFoodName').value || '').trim();
+        var kcal    = parseFloat(document.getElementById('vitFoodKcal').value) || 0;
+        var protein = parseFloat(document.getElementById('vitFoodProtein').value) || 0;
+        var carbs   = parseFloat(document.getElementById('vitFoodCarbs').value) || 0;
+        var fat     = parseFloat(document.getElementById('vitFoodFat').value) || 0;
+        var mealEl  = document.getElementById('vitFoodMeal');
+        var meal    = mealEl ? mealEl.value : 'snack';
+        if (!name) return;
+        var items = loadVit();
+        items.push({id:uid(), name:name, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal});
+        saveVit(items);
+        closeVitModal();
+        renderVitality();
+      });
+    }
+
+    document.querySelectorAll('.vit-ai-chip').forEach(function(chip) {
+      chip.addEventListener('click', function(){ askVitCoach(chip.dataset.q); });
+    });
+    var vitCoachSend = document.getElementById('vitCoachSend');
+    var vitCoachInp  = document.getElementById('vitCoachInput');
+    if (vitCoachSend && vitCoachInp) {
+      vitCoachSend.addEventListener('click', function(){ var q = vitCoachInp.value.trim(); if (q) { askVitCoach(q); vitCoachInp.value = ''; } });
+      vitCoachInp.addEventListener('keydown', function(e){ if (e.key === 'Enter') { var q = vitCoachInp.value.trim(); if (q) { askVitCoach(q); vitCoachInp.value = ''; } } });
+    }
+
+    // Hook into switchTab
+    var origSwitch = window.switchTab;
+    if (typeof origSwitch === 'function') {
+      window.switchTab = function(tab) {
+        origSwitch(tab);
+        if (tab === 'peak') setTimeout(renderPeak, 50);
+      };
+    }
+
+    if (localStorage.getItem('activeTab') === 'peak') {
+      setTimeout(renderPeak, 150);
+    }
+
+    window.addEventListener('resize', function() {
+      var v = document.getElementById('peakView');
+      if (v && v.classList.contains('active')) {
+        var oura = getOura(); var wh = typeof WAKE_HOUR!=='undefined'?WAKE_HOUR:7;
+        var r = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+        var _hrv = oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
+        var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
+        var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){return a+b;},0)/_hrvV.length : null;
+        var cl = loadCaff();
+        drawEnergyChart('peakEnergyCanvas', buildEnergyArray(wh, r, cl, _activeEnergyMode, _hrv, _aHrv), wh, cl, _activeEnergyMode);
+        drawCaffChart('peakCaffCanvas', cl);
+      }
+    });
+
+  }); // end DOMContentLoaded
 
 })();
 </script>
