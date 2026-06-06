@@ -19612,7 +19612,8 @@ function switchTab(tab) {
       // Without Oura data show a flat placeholder line at 30
       if (!hasOura && mode !== 'stack') { arr.push(30); continue; }
       // Hours before wake: flat sleep-level baseline (not a rising curve)
-      if (hw > 18) { arr.push(foodMod[h] > 0 ? 10 + foodMod[h] : 10); continue; }
+      // threshold 15 prevents the sin formula from wrapping into a ghost peak at ~hw=17-18
+      if (hw >= 15) { arr.push(foodMod[h] > 0 ? 10 + foodMod[h] : 10); continue; }
       // Two-process model: primary peak at +4h after wake, post-lunch dip at +7h, fade by +13h
       var base = 50 + 32 * Math.sin(PI * (hw - 0.5) / 9) - 10 * Math.sin(PI * (hw - 5) / 4);
       base = clamp(base, 10, 100);
@@ -20119,36 +20120,47 @@ function switchTab(tab) {
     var readiness  = todayR && todayR.score;
     var hrv        = todayR && todayR.contributors && todayR.contributors.hrv_balance;
     var sleepScore = todayS && todayS.score;
-    // Derive actual wake time from Oura bedtime_end — pick the most recent entry
-    // where bedtime_end is today or yesterday (handles overnight sleep crossing midnight)
+    // Derive wake time — mirror Health tab logic exactly:
+    // filter detailedSleep by day field, pick highest total_sleep_duration
     var wakeHour = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
-    (function() {
-      var src = (oura.detailedSleep && oura.detailedSleep.length) ? oura.detailedSleep : (oura.sleep && oura.sleep.length ? oura.sleep : null);
-      if (!src) return;
-      var todayStr = today();
-      var d1 = new Date(todayStr); d1.setDate(d1.getDate() - 1);
-      var yesterdayStr = d1.getFullYear() + '-' + String(d1.getMonth()+1).padStart(2,'0') + '-' + String(d1.getDate()).padStart(2,'0');
-      // Find the entry whose bedtime_end is today (woke up today)
-      var best = null;
-      for (var i = 0; i < src.length; i++) {
-        var s = src[i];
-        var endField = s.bedtime_end || s.day;
-        if (!endField) continue;
-        var endDate = new Date(endField);
-        var endDateStr = endDate.getFullYear() + '-' + String(endDate.getMonth()+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
-        if (endDateStr === todayStr || endDateStr === yesterdayStr) { best = s; break; }
-      }
-      // fallback: most recent entry
-      if (!best) best = src[0];
-      if (best) {
-        var endField = best.bedtime_end || best.day;
-        if (endField) {
-          var wakeDate = new Date(endField);
-          // bedtime_end is a datetime string — extract local time
-          wakeHour = wakeDate.getHours() + wakeDate.getMinutes() / 60;
+    // check for manual override first
+    var _manualWake = localStorage.getItem('goals_peak_wake_override');
+    if (_manualWake && /^\d{2}:\d{2}$/.test(_manualWake)) {
+      var _wp = _manualWake.split(':');
+      wakeHour = parseInt(_wp[0], 10) + parseInt(_wp[1], 10) / 60;
+    } else {
+      (function() {
+        var src = (oura.detailedSleep && oura.detailedSleep.length) ? oura.detailedSleep : null;
+        if (!src) return;
+        var todStr = today();
+        // yesterday string
+        var _d = new Date(todStr + 'T12:00:00'); _d.setDate(_d.getDate() - 1);
+        var yStr = _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
+        // Oura tags day = the date you went to sleep (not wake date).
+        // So for 1:34am→9:03am sleep on Jun 6, day = "2026-06-05" (yesterday).
+        // Also try matching bedtime_end date in case day = today.
+        var candidates = src.filter(function(s){
+          if (s.day === todStr || s.day === yStr) return true;
+          // also accept if bedtime_end falls today
+          if (s.bedtime_end) {
+            var wkD = new Date(s.bedtime_end);
+            var wkStr = wkD.getFullYear()+'-'+String(wkD.getMonth()+1).padStart(2,'0')+'-'+String(wkD.getDate()).padStart(2,'0');
+            if (wkStr === todStr) return true;
+          }
+          return false;
+        });
+        if (!candidates.length) candidates = src.slice(0,1);
+        if (!candidates.length) return;
+        // pick the one with the longest sleep (same as Health tab)
+        var best = candidates.reduce(function(a,b){ return (b.total_sleep_duration||0) > (a.total_sleep_duration||0) ? b : a; });
+        if (!best) return;
+        // bedtime_end is an ISO datetime string; new Date() converts to local time automatically
+        if (best.bedtime_end) {
+          var wk = new Date(best.bedtime_end);
+          wakeHour = wk.getHours() + wk.getMinutes() / 60;
         }
-      }
-    })();
+      })();
+    }
 
     // fix #18: compute avg HRV for modifier
     var avgHrv = null;
