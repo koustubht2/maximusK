@@ -14493,7 +14493,18 @@ setInterval(updateDayBar, 60 * 1000);
     html += '</div>';
 
     // 4. Metrics row
+    // Format bedtime_start / bedtime_end as local HH:MM
+    function fmtLocalTime(isoStr) {
+      if (!isoStr) return null;
+      const d = new Date(isoStr);
+      return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+    const sleptAt = lastSleepDetail ? fmtLocalTime(lastSleepDetail.bedtime_start) : null;
+    const wokeAt  = lastSleepDetail ? fmtLocalTime(lastSleepDetail.bedtime_end)   : null;
+
     html += '<div class="oura-metrics">';
+    html += renderMetric('Slept at',   sleptAt, '', '');
+    html += renderMetric('Woke up',    wokeAt,  '', '');
     html += renderMetric('Resting HR', restHr, 'bpm', zoneFromRhr(restHr, avgRhr));
     html += renderMetric('HRV', hrv, 'ms', zoneFromHrv(hrv, avgHrv), hrvArrowHtml);
     html += renderMetric('Steps', steps ? steps.toLocaleString() : null, '');
