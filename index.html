@@ -19693,14 +19693,14 @@ function switchTab(tab) {
       // Component 1: Morning rise — peaks ~+4h after wake (+15pts)
       // Component 2: Post-lunch dip — troughs ~+6h after wake (-10pts, adenosine rebound)
       // Component 3: Evening wake-maintenance zone — secondary peak ~+9h after wake (+8pts)
-      var circ = 28
-        + 15  * Math.sin(PI * (hw - 0.5) / 9)                             // morning peak at +4h
-        - 10  * Math.pow(Math.max(0, Math.sin(PI * (hw - 4.0) / 3.0)), 2) // pm dip peaks at +5.5h (2:30pm for 9am waker)
-        +  8  * Math.exp(-0.5 * Math.pow((hw - 9.5) / 1.5, 2));           // evening WMZ at +9.5h (6:30pm for 9am waker)
-      circ = clamp(circ, 10, 45);
-      // Readiness scales the circadian ceiling
-      var rm = mode === 'core' ? (readiness / 100 * 0.25 + 0.75) : (readiness / 100 * 0.35 + 0.65);
-      var score = circ * rm + inertia + (mode !== 'core' ? hrvMod * 0.5 : 0);
+      var circ = 55
+        + 25  * Math.sin(PI * (hw - 0.5) / 9)                             // morning peak at +4h
+        - 18  * Math.pow(Math.max(0, Math.sin(PI * (hw - 4.0) / 3.0)), 2) // pm dip peaks at +5.5h (2:30pm for 9am waker)
+        + 12  * Math.exp(-0.5 * Math.pow((hw - 9.5) / 1.5, 2));           // evening WMZ at +9.5h (6:30pm for 9am waker)
+      circ = clamp(circ, 15, 92);
+      // Readiness scales the circadian ceiling: readiness=100 → ×1.0, readiness=50 → ×0.72
+      var rm = readiness / 100 * 0.28 + 0.72;
+      var score = circ * rm + inertia + (mode !== 'core' ? hrvMod : 0);
       // Caffeine/stimulants applied per-log using eq multiplier + fasted absorption
       if (caffLogs && caffLogs.length) {
         caffLogs.forEach(function(log) {
@@ -20519,10 +20519,12 @@ function switchTab(tab) {
 
     var caffLogs = loadCaff();
     // fix #18: pass hrv+avgHrv to energy model
-    var arr = buildEnergyArray(wakeHour, readiness, caffLogs, _activeEnergyMode, hrv, avgHrv);
+    var _r = readiness != null ? readiness : 75; // fallback so curve is always real
+    var arr = buildEnergyArray(wakeHour, _r, caffLogs, _activeEnergyMode, hrv, avgHrv);
+    console.log('[Peak] renderPeak readiness=' + readiness + ' _r=' + _r + ' wakeHour=' + wakeHour + ' arr[wake..wake+8]=' + arr.slice(wakeHour, wakeHour+8).map(function(v){return Math.round(v);}));
     // fix #12: pass caffLogs + mode so overlay renders
     var _pec = document.getElementById('peakEnergyCanvas');
-    if (_pec) _pec._peakReadiness = readiness || 75;
+    if (_pec) _pec._peakReadiness = _r;
     drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode);
     var _nowH = nowHour();
     _updateEnergyRing(arr[Math.min(23, Math.floor(_nowH))] || 0, fmtHour(Math.floor(_nowH)), false);
@@ -20731,9 +20733,10 @@ function switchTab(tab) {
     var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){ return x.contributors && x.contributors.hrv_balance; }).filter(Boolean);
     var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){ return a+b; }, 0) / _hrvV.length : null;
     if (!logs) logs = loadCaff();
-    var arr = buildEnergyArray(wh, r, logs, _activeEnergyMode, _hrv, _aHrv);
+    var _r2 = r != null ? r : 75;
+    var arr = buildEnergyArray(wh, _r2, logs, _activeEnergyMode, _hrv, _aHrv);
     var _canvas = document.getElementById('peakEnergyCanvas');
-    if (_canvas) _canvas._peakReadiness = r || 75;
+    if (_canvas) _canvas._peakReadiness = _r2;
     drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode);
     drawCaffChart('peakCaffCanvas', logs);
     renderCoffeeScore(logs, r);
@@ -21047,9 +21050,10 @@ function switchTab(tab) {
     var hrvV2 = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
     var aHrv2 = hrvV2 && hrvV2.length ? hrvV2.reduce(function(a,b){return a+b;},0)/hrvV2.length : null;
     var cl2 = offset === 0 ? loadCaff() : [];
-    var arr2 = buildEnergyArray(wh, r, cl2, _activeEnergyMode, hrv2, aHrv2);
+    var _r3 = r != null ? r : 75;
+    var arr2 = buildEnergyArray(wh, _r3, cl2, _activeEnergyMode, hrv2, aHrv2);
     var _pec2 = document.getElementById('peakEnergyCanvas');
-    if (_pec2) _pec2._peakReadiness = r || 75;
+    if (_pec2) _pec2._peakReadiness = _r3;
     drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode);
     var _nh2 = nowHour();
     _updateEnergyRing(arr2[Math.min(23, Math.floor(_nh2))] || 0, fmtHour(Math.floor(_nh2)), false);
