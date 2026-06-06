@@ -1110,6 +1110,10 @@ body::after {
 .prof-stat:nth-last-child(-n+2) { border-bottom:none; }
 .prof-stat-val { font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
 .prof-stat-lbl { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-tertiary); margin-top:3px; font-weight:600; }
+.prof-macro-preview { justify-content:space-between; padding:12px 16px; background:rgba(110,231,183,0.04); }
+.prof-macro-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.prof-macro-val { font-size:16px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.prof-macro-lbl { font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-tertiary); font-weight:600; }
 .prof-save-btn { width:100%; margin-top:24px; background:rgba(110,231,183,0.12); border:1px solid rgba(110,231,183,0.25); border-radius:14px; padding:14px; color:#6EE7B7; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.15s; }
 .prof-save-btn:hover { background:rgba(110,231,183,0.2); }
 .prof-save-msg { text-align:center; font-size:12px; color:#6EE7B7; margin-top:10px; height:16px; transition:opacity 0.3s; }
@@ -8937,6 +8941,32 @@ window.canonicalJson = function(obj) {
     </div>
 
     <!-- Lifestyle -->
+    <div class="prof-section-label">Goal &amp; Diet</div>
+    <div class="prof-card">
+      <div class="prof-row">
+        <div class="prof-row-label">Goal</div>
+        <div class="prof-seg" id="profGoal">
+          <button class="prof-seg-btn" data-val="cut">Cut</button>
+          <button class="prof-seg-btn" data-val="maintain">Maintain</button>
+          <button class="prof-seg-btn" data-val="build">Build</button>
+        </div>
+      </div>
+      <div class="prof-row">
+        <div class="prof-row-label">Diet style</div>
+        <div class="prof-seg" id="profDiet">
+          <button class="prof-seg-btn" data-val="balanced">Balanced</button>
+          <button class="prof-seg-btn" data-val="highcarb">High carb</button>
+          <button class="prof-seg-btn" data-val="highfat">High fat</button>
+        </div>
+      </div>
+      <div class="prof-row prof-macro-preview">
+        <div class="prof-macro-item"><span class="prof-macro-val" id="profPrevKcal">—</span><span class="prof-macro-lbl">kcal</span></div>
+        <div class="prof-macro-item"><span class="prof-macro-val" id="profPrevProtein">—</span><span class="prof-macro-lbl">protein</span></div>
+        <div class="prof-macro-item"><span class="prof-macro-val" id="profPrevCarbs">—</span><span class="prof-macro-lbl">carbs</span></div>
+        <div class="prof-macro-item"><span class="prof-macro-val" id="profPrevFat">—</span><span class="prof-macro-lbl">fat</span></div>
+      </div>
+    </div>
+
     <div class="prof-section-label">Lifestyle</div>
     <div class="prof-card">
       <div class="prof-row">
@@ -19622,32 +19652,54 @@ function switchTab(tab) {
     } catch(e) { return {}; }
   }
   function _calcBaseTargets() {
-    // Read from new profile store
     var prof = {};
     try { prof = JSON.parse(localStorage.getItem('goals_user_profile')) || {}; } catch(e) {}
     var weightKg = prof.weight ? (prof.weightUnit === 'lb' ? prof.weight / 2.20462 : prof.weight) : 75;
     var heightCm = prof.height ? (prof.heightUnit === 'ft' ? prof.height * 30.48 : prof.height) : 175;
-    var age      = prof.age  || 25;
-    var sex      = prof.sex  || 'm';
+    var age      = prof.age      || 25;
+    var sex      = prof.sex      || 'm';
     var actHrsWk = prof.activity || 5;
+    var goal     = prof.goal     || 'maintain'; // cut | maintain | build
+    var diet     = prof.diet     || 'balanced'; // balanced | highcarb | highfat
 
     // Mifflin-St Jeor BMR
     var bmr = sex === 'f'
       ? 10 * weightKg + 6.25 * heightCm - 5 * age - 161
       : 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
 
-    // Activity multiplier (Harris-Benedict scale)
+    // Activity multiplier
     var actMult = actHrsWk <= 1 ? 1.2 : actHrsWk <= 3 ? 1.375 : actHrsWk <= 5 ? 1.55 : actHrsWk <= 10 ? 1.725 : 1.9;
-    var tdee = Math.round(bmr * actMult);
+    var tdee = bmr * actMult;
 
-    // Protein: 2.0–2.2g/kg for active individuals
-    var protein = Math.round(weightKg * (actHrsWk >= 5 ? 2.2 : 2.0));
-    // Fat: 28% of kcal
-    var fat     = Math.round(tdee * 0.28 / 9);
-    // Carbs: remainder
-    var carbs   = Math.round((tdee - protein * 4 - fat * 9) / 4);
+    // Goal: adjust total kcal
+    // Cut: -20% (aggressive but safe deficit), Build: +10% (lean bulk), Maintain: 0
+    var kcalMult = goal === 'cut' ? 0.80 : goal === 'build' ? 1.10 : 1.0;
+    var kcal = Math.round(tdee * kcalMult);
 
-    return { kcal: tdee, protein: protein, carbs: Math.max(carbs, 100), fat: fat, weightKg: weightKg, actHrsWk: actHrsWk };
+    // Protein: higher when cutting (muscle preservation) or building
+    // Cut: 2.4g/kg, Build: 2.0g/kg, Maintain: 1.8g/kg
+    var protRate = goal === 'cut' ? 2.4 : goal === 'build' ? 2.0 : 1.8;
+    var protein  = Math.round(weightKg * protRate);
+
+    // Fat & carbs split based on diet style
+    var protKcal = protein * 4;
+    var remaining = kcal - protKcal;
+    var fat, carbs;
+    if (diet === 'highfat') {
+      // ~50% of remaining from fat, rest carbs
+      fat   = Math.round(remaining * 0.50 / 9);
+      carbs = Math.round((remaining - fat * 9) / 4);
+    } else if (diet === 'highcarb') {
+      // ~20% of remaining from fat, rest carbs
+      fat   = Math.round(remaining * 0.20 / 9);
+      carbs = Math.round((remaining - fat * 9) / 4);
+    } else {
+      // balanced: ~30% of remaining from fat
+      fat   = Math.round(remaining * 0.30 / 9);
+      carbs = Math.round((remaining - fat * 9) / 4);
+    }
+
+    return { kcal: kcal, protein: protein, carbs: Math.max(carbs, 80), fat: Math.max(fat, 30), weightKg: weightKg, actHrsWk: actHrsWk };
   }
 
   function getTargets() {
@@ -21550,13 +21602,16 @@ function switchTab(tab) {
 
   function updateDerived() {
     var p = {
-      weight: parseFloat(document.getElementById('profWeight').value) || 0,
+      weight:     parseFloat(document.getElementById('profWeight').value) || 0,
       weightUnit: getSegVal('profWeightUnit', 'kg'),
-      height: parseFloat(document.getElementById('profHeight').value) || 0,
+      height:     parseFloat(document.getElementById('profHeight').value) || 0,
       heightUnit: getSegVal('profHeightUnit', 'cm'),
-      age:    parseInt(document.getElementById('profAge').value)    || 25,
-      sex:    getSegVal('profSex', 'm'),
-      activity: parseFloat(document.getElementById('profActivity').value) || 0
+      age:        parseInt(document.getElementById('profAge').value)      || 25,
+      sex:        getSegVal('profSex', 'm'),
+      activity:   parseFloat(document.getElementById('profActivity').value) || 0,
+      goal:       getSegVal('profGoal', 'maintain'),
+      diet:       getSegVal('profDiet', 'balanced'),
+      caffSens:   getSegVal('profCaffSens', 'normal')
     };
     var bmi = calcBmi(p);
     document.getElementById('profBmi').textContent     = bmi ? bmi.toFixed(1) : '—';
@@ -21570,21 +21625,35 @@ function switchTab(tab) {
     if (p.caffSens === 'high') caffBase *= 0.75; else if (p.caffSens === 'low') caffBase *= 1.15;
     document.getElementById('profCaffLimit').textContent = Math.round(Math.min(caffBase, 500)) + ' mg';
 
-    // macro targets from Mifflin-St Jeor
-    var hCm = p.heightUnit === 'ft' ? (p.height || 175) * 30.48 : (p.height || 175);
-    var age  = p.age || 25;
-    var sex  = p.sex || 'm';
+    // macro targets — use _calcBaseTargets() which reads from goals_user_profile
+    // but we need live values from unsaved form state, so compute inline
+    var hCm  = p.heightUnit === 'ft' ? (p.height || 175) * 30.48 : (p.height || 175);
+    var age2 = p.age || 25;
+    var sex2 = p.sex || 'm';
     var act  = p.activity || 5;
-    var bmr  = sex === 'f' ? 10*kg + 6.25*hCm - 5*age - 161 : 10*kg + 6.25*hCm - 5*age + 5;
+    var goal = p.goal || 'maintain';
+    var diet = p.diet || 'balanced';
+    var bmr  = sex2 === 'f' ? 10*kg + 6.25*hCm - 5*age2 - 161 : 10*kg + 6.25*hCm - 5*age2 + 5;
     var mult = act <= 1 ? 1.2 : act <= 3 ? 1.375 : act <= 5 ? 1.55 : act <= 10 ? 1.725 : 1.9;
-    var tdee = Math.round(bmr * mult);
-    var prot = Math.round(kg * (act >= 5 ? 2.2 : 2.0));
-    var fat  = Math.round(tdee * 0.28 / 9);
-    var carb = Math.round((tdee - prot * 4 - fat * 9) / 4);
-    document.getElementById('profTdee').textContent    = p.weight ? tdee + '' : '—';
-    document.getElementById('profProtein').textContent = p.weight ? prot + 'g' : '—';
-    document.getElementById('profCarbs').textContent   = p.weight ? Math.max(carb,100) + 'g' : '—';
-    document.getElementById('profFat').textContent     = p.weight ? fat + 'g' : '—';
+    var tdee = bmr * mult;
+    var kcalMult = goal === 'cut' ? 0.80 : goal === 'build' ? 1.10 : 1.0;
+    var kcal = Math.round(tdee * kcalMult);
+    var protRate = goal === 'cut' ? 2.4 : goal === 'build' ? 2.0 : 1.8;
+    var prot = Math.round(kg * protRate);
+    var rem  = kcal - prot * 4;
+    var fatPct = diet === 'highfat' ? 0.50 : diet === 'highcarb' ? 0.20 : 0.30;
+    var fat  = Math.round(rem * fatPct / 9);
+    var carb = Math.round((rem - fat * 9) / 4);
+    var has = !!p.weight;
+    document.getElementById('profTdee').textContent       = has ? tdee + '' : '—';
+    document.getElementById('profProtein').textContent    = has ? prot + 'g' : '—';
+    document.getElementById('profCarbs').textContent      = has ? Math.max(carb,80) + 'g' : '—';
+    document.getElementById('profFat').textContent        = has ? Math.max(fat,30) + 'g' : '—';
+    // macro preview row (live)
+    var pv = document.getElementById('profPrevKcal');    if (pv) pv.textContent = has ? kcal+'' : '—';
+    var pp = document.getElementById('profPrevProtein'); if (pp) pp.textContent = has ? prot+'g' : '—';
+    var pc = document.getElementById('profPrevCarbs');   if (pc) pc.textContent = has ? Math.max(carb,80)+'g' : '—';
+    var pf = document.getElementById('profPrevFat');     if (pf) pf.textContent = has ? Math.max(fat,30)+'g' : '—';
     var name = (document.getElementById('profName').value || '').trim();
     var initials = name ? name.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase() : '—';
     document.getElementById('profAvatar').textContent = initials;
@@ -21609,12 +21678,14 @@ function switchTab(tab) {
     setSegActive('profWeightUnit', p.weightUnit || 'kg');
     setSegActive('profHeightUnit', p.heightUnit || 'cm');
     setSegActive('profCaffSens',   p.caffSens   || 'normal');
+    setSegActive('profGoal',       p.goal       || 'maintain');
+    setSegActive('profDiet',       p.diet       || 'balanced');
     updateDerived();
   };
 
   document.addEventListener('DOMContentLoaded', function() {
     // seg button clicks
-    ['profSex','profWeightUnit','profHeightUnit','profCaffSens'].forEach(function(id) {
+    ['profSex','profWeightUnit','profHeightUnit','profCaffSens','profGoal','profDiet'].forEach(function(id) {
       var c = document.getElementById(id);
       if (!c) return;
       c.querySelectorAll('.prof-seg-btn').forEach(function(btn) {
@@ -21644,7 +21715,9 @@ function switchTab(tab) {
           heightUnit:  getSegVal('profHeightUnit', 'cm'),
           activity:    parseFloat(document.getElementById('profActivity').value) || 0,
           sleepTarget: parseFloat(document.getElementById('profSleepTarget').value) || 8,
-          caffSens:    getSegVal('profCaffSens', 'normal')
+          caffSens:    getSegVal('profCaffSens', 'normal'),
+          goal:        getSegVal('profGoal', 'maintain'),
+          diet:        getSegVal('profDiet', 'balanced')
         };
         saveProf(p);
         var msg = document.getElementById('profSaveMsg');
