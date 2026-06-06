@@ -1085,6 +1085,34 @@ body::after {
 .peak-coach-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
 .peak-coach-chip { border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; padding:5px 12px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
 .peak-coach-chip:hover { border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+/* ── Profile tab ──────────────────────────────────────────── */
+.prof-page { max-width:480px; margin:0 auto; padding:20px 16px 100px; }
+.prof-header { text-align:center; margin-bottom:28px; }
+.prof-avatar { width:72px; height:72px; border-radius:50%; background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.25); display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; color:#6EE7B7; margin:0 auto 12px; }
+.prof-header-name { font-size:20px; font-weight:700; color:var(--text-primary); }
+.prof-header-sub { font-size:12px; color:var(--text-tertiary); margin-top:4px; line-height:1.4; }
+.prof-section-label { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-tertiary); margin:20px 0 8px 4px; }
+.prof-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:16px; overflow:hidden; margin-bottom:4px; }
+.prof-row { display:flex; align-items:center; gap:10px; padding:13px 16px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.prof-row:last-child { border-bottom:none; }
+.prof-row-label { font-size:13px; color:var(--text-secondary); font-weight:500; flex:0 0 110px; }
+.prof-input { flex:1; background:transparent; border:none; outline:none; color:var(--text-primary); font-family:inherit; font-size:14px; font-weight:600; text-align:right; min-width:0; }
+.prof-input::placeholder { color:var(--text-tertiary); font-weight:400; }
+.prof-input-sm { flex:0 0 70px; text-align:right; }
+.prof-unit { font-size:12px; color:var(--text-tertiary); flex-shrink:0; }
+.prof-seg { display:flex; gap:4px; margin-left:auto; }
+.prof-seg-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 12px; color:var(--text-tertiary); font-size:12px; font-weight:600; font-family:inherit; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+.prof-seg-btn.active { background:rgba(110,231,183,0.12); border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+.prof-seg-sm .prof-seg-btn { padding:5px 8px; }
+.prof-stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:0; }
+.prof-stat { padding:14px 16px; text-align:center; border-right:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05); }
+.prof-stat:nth-child(2n) { border-right:none; }
+.prof-stat:nth-last-child(-n+2) { border-bottom:none; }
+.prof-stat-val { font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.prof-stat-lbl { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-tertiary); margin-top:3px; font-weight:600; }
+.prof-save-btn { width:100%; margin-top:24px; background:rgba(110,231,183,0.12); border:1px solid rgba(110,231,183,0.25); border-radius:14px; padding:14px; color:#6EE7B7; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.15s; }
+.prof-save-btn:hover { background:rgba(110,231,183,0.2); }
+.prof-save-msg { text-align:center; font-size:12px; color:#6EE7B7; margin-top:10px; height:16px; transition:opacity 0.3s; }
 .peak-coach-input-row { display:flex; gap:8px; }
 .peak-coach-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; color:var(--text-primary); font-family:inherit; font-size:13px; outline:none; transition:border-color 0.15s; }
 .peak-coach-input:focus { border-color:rgba(110,231,183,0.3); }
@@ -8842,6 +8870,94 @@ window.canonicalJson = function(obj) {
 
 <!-- Tab Bar -->
 
+<!-- ========== PROFILE VIEW ========== -->
+<div id="profileView" class="view">
+  <div class="prof-page">
+    <div class="prof-header">
+      <div class="prof-avatar" id="profAvatar">—</div>
+      <div class="prof-header-name" id="profDisplayName">Your Profile</div>
+      <div class="prof-header-sub">Used to personalise caffeine limits, hydration targets &amp; energy model</div>
+    </div>
+
+    <!-- Body -->
+    <div class="prof-section-label">Body</div>
+    <div class="prof-card">
+      <div class="prof-row">
+        <div class="prof-row-label">Name</div>
+        <input class="prof-input" id="profName" type="text" placeholder="Your name" autocomplete="off">
+      </div>
+      <div class="prof-row">
+        <div class="prof-row-label">Age</div>
+        <input class="prof-input prof-input-sm" id="profAge" type="number" min="13" max="100" placeholder="25">
+        <span class="prof-unit">yrs</span>
+      </div>
+      <div class="prof-row">
+        <div class="prof-row-label">Sex</div>
+        <div class="prof-seg" id="profSex">
+          <button class="prof-seg-btn" data-val="m">Male</button>
+          <button class="prof-seg-btn" data-val="f">Female</button>
+          <button class="prof-seg-btn" data-val="o">Other</button>
+        </div>
+      </div>
+      <div class="prof-row">
+        <div class="prof-row-label">Weight</div>
+        <input class="prof-input prof-input-sm" id="profWeight" type="number" min="30" max="250" step="0.1" placeholder="75">
+        <div class="prof-seg prof-seg-sm" id="profWeightUnit">
+          <button class="prof-seg-btn" data-val="kg">kg</button>
+          <button class="prof-seg-btn" data-val="lb">lb</button>
+        </div>
+      </div>
+      <div class="prof-row">
+        <div class="prof-row-label">Height</div>
+        <input class="prof-input prof-input-sm" id="profHeight" type="number" min="100" max="250" step="1" placeholder="175">
+        <div class="prof-seg prof-seg-sm" id="profHeightUnit">
+          <button class="prof-seg-btn" data-val="cm">cm</button>
+          <button class="prof-seg-btn" data-val="ft">ft</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derived stats -->
+    <div class="prof-section-label">Derived</div>
+    <div class="prof-card prof-stats-grid">
+      <div class="prof-stat"><div class="prof-stat-val" id="profBmi">—</div><div class="prof-stat-lbl">BMI</div></div>
+      <div class="prof-stat"><div class="prof-stat-val" id="profBmiCat">—</div><div class="prof-stat-lbl">Category</div></div>
+      <div class="prof-stat"><div class="prof-stat-val" id="profCaffLimit">—</div><div class="prof-stat-lbl">Caffeine limit</div></div>
+      <div class="prof-stat"><div class="prof-stat-val" id="profWaterTarget">—</div><div class="prof-stat-lbl">Water target</div></div>
+      <div class="prof-stat"><div class="prof-stat-val" id="profTdee">—</div><div class="prof-stat-lbl">TDEE (kcal)</div></div>
+      <div class="prof-stat"><div class="prof-stat-val" id="profProtein">—</div><div class="prof-stat-lbl">Protein target</div></div>
+      <div class="prof-stat"><div class="prof-stat-val" id="profCarbs">—</div><div class="prof-stat-lbl">Carbs target</div></div>
+      <div class="prof-stat"><div class="prof-stat-val" id="profFat">—</div><div class="prof-stat-lbl">Fat target</div></div>
+    </div>
+
+    <!-- Lifestyle -->
+    <div class="prof-section-label">Lifestyle</div>
+    <div class="prof-card">
+      <div class="prof-row">
+        <div class="prof-row-label">Activity</div>
+        <input class="prof-input prof-input-sm" id="profActivity" type="number" min="0" max="30" step="0.5" placeholder="5">
+        <span class="prof-unit">hrs/wk</span>
+      </div>
+      <div class="prof-row">
+        <div class="prof-row-label">Sleep target</div>
+        <input class="prof-input prof-input-sm" id="profSleepTarget" type="number" min="5" max="12" step="0.5" placeholder="8">
+        <span class="prof-unit">hrs</span>
+      </div>
+      <div class="prof-row">
+        <div class="prof-row-label">Caffeine sensitivity</div>
+        <div class="prof-seg" id="profCaffSens">
+          <button class="prof-seg-btn" data-val="low">Low</button>
+          <button class="prof-seg-btn" data-val="normal">Normal</button>
+          <button class="prof-seg-btn" data-val="high">High</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="prof-save-btn" id="profSaveBtn">Save Profile</button>
+    <div class="prof-save-msg" id="profSaveMsg"></div>
+  </div>
+</div>
+
 <nav class="tabbar" id="mainTabbar">
   <div class="tabbar-inner">
     <button class="tab" id="tabPeak" onclick="switchTab('peak')">
@@ -8863,6 +8979,10 @@ window.canonicalJson = function(obj) {
     <button class="tab" id="tabFinance" onclick="switchTab('finance')">
       <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
       Finance
+    </button>
+    <button class="tab" id="tabProfile" onclick="switchTab('profile')">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+      Profile
     </button>
   </div>
 </nav>
@@ -15927,14 +16047,16 @@ function switchTab(tab) {
     dash: document.getElementById('dashView'),
     gym: document.getElementById('gymView'),
     finance: document.getElementById('financeView'),
-    peak: document.getElementById('peakView')
+    peak: document.getElementById('peakView'),
+    profile: document.getElementById('profileView')
   };
   const tabs = {
     health: document.getElementById('tabHealth'),
     dash: document.getElementById('tabDash'),
     gym: document.getElementById('tabGym'),
     finance: document.getElementById('tabFinance'),
-    peak: document.getElementById('tabPeak')
+    peak: document.getElementById('tabPeak'),
+    profile: document.getElementById('tabProfile')
   };
 
   // Hide all views, deactivate all tabs
@@ -15949,6 +16071,9 @@ function switchTab(tab) {
   // Re-render Peak canvases every time the tab opens (they need offsetWidth > 0)
   if (tab === 'peak' && typeof renderPeak === 'function') {
     setTimeout(renderPeak, 0);
+  }
+  if (tab === 'profile' && typeof renderProfile === 'function') {
+    renderProfile();
   }
 }
 
@@ -19494,13 +19619,44 @@ function switchTab(tab) {
       };
     } catch(e) { return {}; }
   }
+  function _calcBaseTargets() {
+    // Read from new profile store
+    var prof = {};
+    try { prof = JSON.parse(localStorage.getItem('goals_user_profile')) || {}; } catch(e) {}
+    var weightKg = prof.weight ? (prof.weightUnit === 'lb' ? prof.weight / 2.20462 : prof.weight) : 75;
+    var heightCm = prof.height ? (prof.heightUnit === 'ft' ? prof.height * 30.48 : prof.height) : 175;
+    var age      = prof.age  || 25;
+    var sex      = prof.sex  || 'm';
+    var actHrsWk = prof.activity || 5;
+
+    // Mifflin-St Jeor BMR
+    var bmr = sex === 'f'
+      ? 10 * weightKg + 6.25 * heightCm - 5 * age - 161
+      : 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
+
+    // Activity multiplier (Harris-Benedict scale)
+    var actMult = actHrsWk <= 1 ? 1.2 : actHrsWk <= 3 ? 1.375 : actHrsWk <= 5 ? 1.55 : actHrsWk <= 10 ? 1.725 : 1.9;
+    var tdee = Math.round(bmr * actMult);
+
+    // Protein: 2.0–2.2g/kg for active individuals
+    var protein = Math.round(weightKg * (actHrsWk >= 5 ? 2.2 : 2.0));
+    // Fat: 28% of kcal
+    var fat     = Math.round(tdee * 0.28 / 9);
+    // Carbs: remainder
+    var carbs   = Math.round((tdee - protein * 4 - fat * 9) / 4);
+
+    return { kcal: tdee, protein: protein, carbs: Math.max(carbs, 100), fat: fat, weightKg: weightKg, actHrsWk: actHrsWk };
+  }
+
   function getTargets() {
     var d = today();
     try {
       var daily = JSON.parse(localStorage.getItem(VIT_TARGETS_KEY + d));
       if (daily && daily.kcal) return daily;
     } catch(e) {}
-    try { return JSON.parse(localStorage.getItem('peak_profile')) || {kcal:2400,protein:180,carbs:240,fat:80}; } catch(e) { return {kcal:2400,protein:180,carbs:240,fat:80}; }
+    // Fall back to science-based calculation from profile
+    var base = _calcBaseTargets();
+    return { kcal: base.kcal, protein: base.protein, carbs: base.carbs, fat: base.fat };
   }
 
   var _targetsFlight = false;
@@ -19515,25 +19671,27 @@ function switchTab(tab) {
     _targetsFlight = true;
     try {
       var oura = getOura();
-      var readiness = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
-      var sleep = oura.sleep && oura.sleep[0] && oura.sleep[0].score;
-      var activity = oura.activity && oura.activity[0] && oura.activity[0].score;
-      var profile = {};
-      try { profile = JSON.parse(localStorage.getItem('peak_profile')) || {}; } catch(e) {}
-      var baseKcal = profile.kcal || 2400;
-      var baseProt = profile.protein || 180;
+      var tod2 = today();
+      var _todR2 = oura.readiness && oura.readiness.find(function(r){ return r.day === tod2; });
+      var _todS2 = oura.sleep     && oura.sleep.find(function(s){ return s.day === tod2; });
+      var readiness = _todR2 && _todR2.score;
+      var sleep     = _todS2 && _todS2.score;
+      var activity  = oura.activity && oura.activity[0] && oura.activity[0].score;
+      var base = _calcBaseTargets();
 
-      var prompt = 'You are a sports nutritionist AI. Set personalised daily macro targets for today.\n' +
-        'User data: Readiness score=' + (readiness || 'unknown') + '/100, Sleep score=' + (sleep || 'unknown') + '/100, Activity score=' + (activity || 'unknown') + '/100.\n' +
-        'Base targets from profile: ' + baseKcal + ' kcal, ' + baseProt + 'g protein.\n' +
-        'Rules:\n' +
-        '- If readiness < 60: reduce kcal by 5-10%, keep protein same, reduce carbs\n' +
-        '- If readiness >= 85: increase kcal by 5-8%, increase carbs for performance\n' +
-        '- If sleep < 60: add 100-150 kcal, keep protein high (aids recovery)\n' +
-        '- If activity > 80: increase carbs by 15-20%\n' +
-        '- Protein = bodyweight-based, assume 75kg if unknown, 2.0-2.4g/kg\n' +
-        '- Fat = 25-30% of total kcal\n' +
-        'Return ONLY this JSON, no other text: {"kcal":2400,"protein":180,"carbs":240,"fat":80,"note":"one line reason e.g. Readiness low — reduced carbs for recovery day"}';
+      var prompt = 'You are a sports nutritionist AI. Adjust today\'s macro targets based on biometric data.\n' +
+        'User biometrics: weight=' + Math.round(base.weightKg) + 'kg, activity=' + base.actHrsWk + 'hrs/wk.\n' +
+        'Calculated TDEE base: ' + base.kcal + ' kcal, protein=' + base.protein + 'g, carbs=' + base.carbs + 'g, fat=' + base.fat + 'g.\n' +
+        'Today\'s Oura scores: Readiness=' + (readiness || 'unknown') + '/100, Sleep=' + (sleep || 'unknown') + '/100, Activity=' + (activity || 'unknown') + '/100.\n' +
+        'Adjustment rules:\n' +
+        '- Readiness < 50: rest day — cut kcal 10%, drop carbs 20%, keep protein, note recovery\n' +
+        '- Readiness 50-69: moderate day — cut carbs 10%, keep everything else\n' +
+        '- Readiness 70-84: normal — use base targets\n' +
+        '- Readiness >= 85: performance day — add 5-8% kcal, boost carbs 15%\n' +
+        '- Sleep < 60: poor sleep — add 100 kcal (hunger hormone spike), prioritise protein\n' +
+        '- Activity score > 80: high movement — add 15% carbs for glycogen\n' +
+        '- Always keep protein within 10% of base (muscle preservation)\n' +
+        'Return ONLY this JSON: {"kcal":2400,"protein":180,"carbs":240,"fat":80,"note":"one-line reason"}';
 
       var reply = await gemini(prompt);
       var match = reply.match(/\{[\s\S]*\}/);
@@ -19730,10 +19888,11 @@ function switchTab(tab) {
 
   // fix #15: Coffee score 0–100
   function coffeeScore(activeMg, limitMg) {
-    if (!activeMg) return 0;
+    if (!activeMg || activeMg < 1) return 0;
     var ratio = activeMg / limitMg;
-    // peaks at 40% of limit, degrades after
-    return Math.round(clamp(100 - Math.abs(ratio - 0.4) * 180, 0, 100));
+    // Peaks at 55% of personal limit — sweet spot for focus without anxiety
+    // Gentler slope: ×120 instead of ×180 so score doesn't tank immediately past peak
+    return Math.round(clamp(100 - Math.abs(ratio - 0.55) * 120, 0, 100));
   }
 
   // fix #20: avg sleep onset from Oura detailed sleep history
@@ -19753,25 +19912,25 @@ function switchTab(tab) {
     return onsets.reduce(function(a, b) { return a + b; }, 0) / onsets.length;
   }
 
-  // fix #19: sleep debt from Oura
   function calcSleepDebt(oura) {
     if (!oura || !oura.sleep || !oura.sleep.length) return null;
     var recent = oura.sleep.slice(0, 7);
-    var totalMins = 0, count = 0;
+    var totalSecs = 0, count = 0;
     recent.forEach(function(s) {
-      if (s.contributors && s.contributors.total_sleep) {
-        totalMins += s.contributors.total_sleep;
+      // total_sleep_duration is actual seconds slept (e.g. 27000 = 7.5h)
+      if (s.total_sleep_duration && s.total_sleep_duration > 0) {
+        totalSecs += s.total_sleep_duration;
         count++;
       }
     });
     if (!count) return null;
-    var avgMins = totalMins / count;
+    var avgMins = (totalSecs / count) / 60;
     var targetMins = 480; // 8h target
     var debtMins = targetMins - avgMins;
     if (debtMins <= 0) return null;
     var h = Math.floor(debtMins / 60);
     var m = Math.round(debtMins % 60);
-    return h + '.' + String(m).padStart(2,'0') + 'h';
+    return h + 'h ' + String(m).padStart(2,'0') + 'm';
   }
 
   // Returns up to 4 peak windows as contiguous runs above threshold
@@ -19911,10 +20070,39 @@ function switchTab(tab) {
     return cutoff;
   }
 
+  function _getUserProfile() {
+    // prefer the dedicated profile store; fall back to water tracker state
+    try {
+      var prof = JSON.parse(localStorage.getItem('goals_user_profile'));
+      if (prof && prof.weight) {
+        var kg = prof.weightUnit === 'lb' ? prof.weight / 2.20462 : prof.weight;
+        return { weightKg: kg, age: prof.age || 25, sex: prof.sex || 'm', caffSens: prof.caffSens || 'normal' };
+      }
+    } catch(e) {}
+    try { var s = JSON.parse(localStorage.getItem('po_water_v1')); return (s && s.profile) || {}; } catch(e) { return {}; }
+  }
   function caff_limitMg(readiness) {
-    if (readiness && readiness < 50) return 250;
-    if (readiness && readiness < 70) return 300;
-    return 400;
+    var p = _getUserProfile();
+    var weightKg = p.weightKg || 75;
+    var age      = p.age      || 25;
+    var sex      = p.sex      || 'm';
+    // EFSA: 5.7 mg/kg is the safe single-dose threshold; ~400mg is the daily ceiling for 70kg adult
+    var base = weightKg * 5.7;
+    // Age: CYP1A2 enzyme activity slows after 55 — metabolise caffeine ~20% slower
+    if (age >= 55) base *= 0.80;
+    else if (age >= 45) base *= 0.90;
+    // Sex: women metabolise ~10% slower on average (hormonal CYP1A2 modulation)
+    if (sex === 'f') base *= 0.90;
+    // Caffeine sensitivity from profile
+    var sens = p.caffSens || 'normal';
+    if (sens === 'high') base *= 0.75;   // sensitive: lower limit, feels effects strongly
+    else if (sens === 'low') base *= 1.15; // tolerant: higher limit, needs more for effect
+    // Readiness: tired body = lower tolerance
+    var readinessMult = 1.0;
+    if (readiness && readiness < 50) readinessMult = 0.65;
+    else if (readiness && readiness < 70) readinessMult = 0.80;
+    // Hard cap at 500mg regardless
+    return Math.round(Math.min(base * readinessMult, 500));
   }
 
   // ── Canvas: energy chart ──────────────────────────────────
@@ -21298,6 +21486,176 @@ function switchTab(tab) {
   // Expose renderPeak so switchTab can call it after the view becomes visible
   window.renderPeak = renderPeak;
 
+})();
+</script>
+
+<script>
+// ============================================================
+// PROFILE TAB
+// ============================================================
+(function() {
+  var PROF_KEY = 'goals_user_profile';
+
+  function loadProf() {
+    try { return JSON.parse(localStorage.getItem(PROF_KEY)) || {}; } catch(e) { return {}; }
+  }
+  function saveProf(p) {
+    localStorage.setItem(PROF_KEY, JSON.stringify(p));
+    // also sync weight+age into po_water_v1 so caffeine limit + hydration target stay consistent
+    try {
+      var wtr = JSON.parse(localStorage.getItem('po_water_v1')) || {};
+      if (!wtr.profile) wtr.profile = {};
+      wtr.profile.weightKg = p.weightUnit === 'lb' ? (p.weight || 75) / 2.20462 : (p.weight || 75);
+      wtr.profile.age  = p.age  || 25;
+      wtr.profile.sex  = p.sex  || 'm';
+      wtr.profile.activityHrsPerWeek = p.activity || 5;
+      localStorage.setItem('po_water_v1', JSON.stringify(wtr));
+    } catch(e) {}
+  }
+
+  function calcBmi(p) {
+    var kg = p.weightUnit === 'lb' ? (p.weight || 0) / 2.20462 : (p.weight || 0);
+    var hm = p.heightUnit === 'ft' ? (p.height || 0) * 0.3048 : (p.height || 0) / 100;
+    if (!kg || !hm) return null;
+    return kg / (hm * hm);
+  }
+  function bmiCat(bmi) {
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25)   return 'Normal';
+    if (bmi < 30)   return 'Overweight';
+    return 'Obese';
+  }
+  function waterTargetL(p) {
+    var kg = p.weightUnit === 'lb' ? (p.weight || 75) / 2.20462 : (p.weight || 75);
+    var base = kg * 0.033;
+    var act  = (p.activity || 0) / 7 * 0.5;
+    return (base + act).toFixed(1);
+  }
+
+  function setSegActive(containerId, val) {
+    var c = document.getElementById(containerId);
+    if (!c) return;
+    c.querySelectorAll('.prof-seg-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.val === val);
+    });
+  }
+  function getSegVal(containerId, fallback) {
+    var c = document.getElementById(containerId);
+    if (!c) return fallback;
+    var a = c.querySelector('.prof-seg-btn.active');
+    return a ? a.dataset.val : fallback;
+  }
+
+  function updateDerived() {
+    var p = {
+      weight: parseFloat(document.getElementById('profWeight').value) || 0,
+      weightUnit: getSegVal('profWeightUnit', 'kg'),
+      height: parseFloat(document.getElementById('profHeight').value) || 0,
+      heightUnit: getSegVal('profHeightUnit', 'cm'),
+      age:    parseInt(document.getElementById('profAge').value)    || 25,
+      sex:    getSegVal('profSex', 'm'),
+      activity: parseFloat(document.getElementById('profActivity').value) || 0
+    };
+    var bmi = calcBmi(p);
+    document.getElementById('profBmi').textContent     = bmi ? bmi.toFixed(1) : '—';
+    document.getElementById('profBmiCat').textContent  = bmi ? bmiCat(bmi) : '—';
+    document.getElementById('profWaterTarget').textContent = p.weight ? waterTargetL(p) + ' L' : '—';
+    // caffeine limit preview
+    var kg = p.weightUnit === 'lb' ? (p.weight || 75) / 2.20462 : (p.weight || 75);
+    var caffBase = kg * 5.7;
+    if (p.age >= 55) caffBase *= 0.80; else if (p.age >= 45) caffBase *= 0.90;
+    if (p.sex === 'f') caffBase *= 0.90;
+    if (p.caffSens === 'high') caffBase *= 0.75; else if (p.caffSens === 'low') caffBase *= 1.15;
+    document.getElementById('profCaffLimit').textContent = Math.round(Math.min(caffBase, 500)) + ' mg';
+
+    // macro targets from Mifflin-St Jeor
+    var hCm = p.heightUnit === 'ft' ? (p.height || 175) * 30.48 : (p.height || 175);
+    var age  = p.age || 25;
+    var sex  = p.sex || 'm';
+    var act  = p.activity || 5;
+    var bmr  = sex === 'f' ? 10*kg + 6.25*hCm - 5*age - 161 : 10*kg + 6.25*hCm - 5*age + 5;
+    var mult = act <= 1 ? 1.2 : act <= 3 ? 1.375 : act <= 5 ? 1.55 : act <= 10 ? 1.725 : 1.9;
+    var tdee = Math.round(bmr * mult);
+    var prot = Math.round(kg * (act >= 5 ? 2.2 : 2.0));
+    var fat  = Math.round(tdee * 0.28 / 9);
+    var carb = Math.round((tdee - prot * 4 - fat * 9) / 4);
+    document.getElementById('profTdee').textContent    = p.weight ? tdee + '' : '—';
+    document.getElementById('profProtein').textContent = p.weight ? prot + 'g' : '—';
+    document.getElementById('profCarbs').textContent   = p.weight ? Math.max(carb,100) + 'g' : '—';
+    document.getElementById('profFat').textContent     = p.weight ? fat + 'g' : '—';
+    var name = (document.getElementById('profName').value || '').trim();
+    var initials = name ? name.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase() : '—';
+    document.getElementById('profAvatar').textContent = initials;
+    document.getElementById('profDisplayName').textContent = name || 'Your Profile';
+  }
+
+  window.renderProfile = function() {
+    var p = loadProf();
+    var nameEl = document.getElementById('profName');
+    if (nameEl) nameEl.value = p.name || '';
+    var ageEl = document.getElementById('profAge');
+    if (ageEl) ageEl.value = p.age || '';
+    var wEl = document.getElementById('profWeight');
+    if (wEl) wEl.value = p.weight || '';
+    var hEl = document.getElementById('profHeight');
+    if (hEl) hEl.value = p.height || '';
+    var actEl = document.getElementById('profActivity');
+    if (actEl) actEl.value = p.activity || '';
+    var sleepEl = document.getElementById('profSleepTarget');
+    if (sleepEl) sleepEl.value = p.sleepTarget || 8;
+    setSegActive('profSex',        p.sex        || 'm');
+    setSegActive('profWeightUnit', p.weightUnit || 'kg');
+    setSegActive('profHeightUnit', p.heightUnit || 'cm');
+    setSegActive('profCaffSens',   p.caffSens   || 'normal');
+    updateDerived();
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // seg button clicks
+    ['profSex','profWeightUnit','profHeightUnit','profCaffSens'].forEach(function(id) {
+      var c = document.getElementById(id);
+      if (!c) return;
+      c.querySelectorAll('.prof-seg-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          c.querySelectorAll('.prof-seg-btn').forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          updateDerived();
+        });
+      });
+    });
+    // live update on input
+    ['profName','profAge','profWeight','profHeight','profActivity','profSleepTarget'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', updateDerived);
+    });
+    // save
+    var saveBtn = document.getElementById('profSaveBtn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function() {
+        var p = {
+          name:        (document.getElementById('profName').value || '').trim(),
+          age:         parseInt(document.getElementById('profAge').value)    || 25,
+          sex:         getSegVal('profSex', 'm'),
+          weight:      parseFloat(document.getElementById('profWeight').value) || 75,
+          weightUnit:  getSegVal('profWeightUnit', 'kg'),
+          height:      parseFloat(document.getElementById('profHeight').value) || 175,
+          heightUnit:  getSegVal('profHeightUnit', 'cm'),
+          activity:    parseFloat(document.getElementById('profActivity').value) || 0,
+          sleepTarget: parseFloat(document.getElementById('profSleepTarget').value) || 8,
+          caffSens:    getSegVal('profCaffSens', 'normal')
+        };
+        saveProf(p);
+        var msg = document.getElementById('profSaveMsg');
+        if (msg) {
+          msg.textContent = 'Saved ✓';
+          msg.style.opacity = '1';
+          setTimeout(function(){ msg.style.opacity = '0'; }, 2000);
+        }
+      });
+    }
+    // init if already on profile tab
+    if (localStorage.getItem('activeTab') === 'profile') window.renderProfile();
+  });
 })();
 </script>
 
