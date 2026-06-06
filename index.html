@@ -1052,26 +1052,14 @@ body::after {
 .peak-caff-custom-time { width:100px; flex-shrink:0; color-scheme:dark; }
 .peak-caff-time-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
 .peak-caff-time-label { font-size:11px; font-weight:600; color:var(--text-tertiary); letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; }
-.peak-caff-time-now { display:none; } /* hidden — replaced by pill */
-/* one-line log row */
-.peak-caff-log-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.peak-caff-log-row .peak-caff-search-wrap { flex:1; margin-bottom:0; }
-.peak-caff-time-pill { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:7px 12px; color:var(--text-secondary); font-size:12px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.15s; }
-.peak-caff-time-pill:hover,.peak-caff-time-pill.active { background:rgba(110,231,183,0.1); border-color:rgba(110,231,183,0.35); color:#6EE7B7; }
-/* time picker popup */
-.peak-time-picker { background:#16161a; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
-.peak-time-picker-inner { display:flex; align-items:flex-start; gap:4px; justify-content:center; margin-bottom:14px; }
-.peak-time-picker-col { display:flex; flex-direction:column; gap:2px; max-height:200px; overflow-y:auto; scroll-snap-type:y mandatory; scrollbar-width:none; border-radius:10px; }
-.peak-time-picker-col::-webkit-scrollbar { display:none; }
-.peak-time-picker-item { scroll-snap-align:center; padding:8px 20px; border-radius:8px; font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-tertiary); cursor:pointer; text-align:center; transition:all 0.1s; white-space:nowrap; }
-.peak-time-picker-item:hover { color:var(--text-secondary); background:rgba(255,255,255,0.04); }
-.peak-time-picker-item.selected { color:#fff; background:rgba(110,231,183,0.12); }
-.peak-time-picker-sep { font-size:22px; font-weight:700; color:var(--text-tertiary); padding:8px 2px; align-self:center; }
-.peak-time-picker-actions { display:flex; gap:8px; }
-.peak-time-picker-cancel { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:9px; color:var(--text-tertiary); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; }
-.peak-time-picker-cancel:hover { color:var(--text-secondary); }
-.peak-time-picker-confirm { flex:1; background:rgba(110,231,183,0.12); border:1px solid rgba(110,231,183,0.25); border-radius:10px; padding:9px; color:#6EE7B7; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; }
-.peak-time-picker-confirm:hover { background:rgba(110,231,183,0.2); }
+/* one-line log row: [search flex-1] [time] [Now] — never wraps */
+.peak-caff-log-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:nowrap; }
+.peak-caff-log-row .peak-caff-search-wrap { flex:1; min-width:0; margin-bottom:0; }
+.peak-caff-log-row .peak-caff-search { width:100%; box-sizing:border-box; }
+.peak-caff-time-input { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:7px 8px; color:var(--text-secondary); font-family:inherit; font-size:12px; font-weight:600; outline:none; color-scheme:dark; flex-shrink:0; width:82px; text-align:center; cursor:pointer; }
+.peak-caff-time-input:focus { border-color:rgba(110,231,183,0.35); color:#6EE7B7; }
+.peak-caff-time-now { font-size:11px; font-weight:600; color:var(--text-tertiary); background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:7px 12px; cursor:pointer; font-family:inherit; white-space:nowrap; flex-shrink:0; transition:all 0.15s; }
+.peak-caff-time-now:hover { color:#6EE7B7; border-color:rgba(110,231,183,0.3); }
 .peak-caff-add-btn { background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:#6EE7B7; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; white-space:nowrap; transition:all 0.15s; }
 .peak-caff-add-btn:hover { background:rgba(110,231,183,0.18); }
 .peak-caff-timing { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
@@ -8640,25 +8628,8 @@ window.canonicalJson = function(obj) {
           <input id="peakCaffSearch" class="peak-caff-search" type="text" placeholder="Search drinks…" autocomplete="off">
           <div id="peakCaffDropdown" class="peak-caff-dropdown"></div>
         </div>
-        <button class="peak-caff-time-pill" id="peakTimePill" type="button">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5V6.2L7.8 7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          <span id="peakTimePillLabel">Now</span>
-        </button>
+        <input id="peakCustomTime" class="peak-caff-time-input" type="time">
         <button class="peak-caff-time-now" id="peakTimeNowBtn" type="button">Now</button>
-      </div>
-      <!-- hidden real time value, kept for addCaffLog compatibility -->
-      <input id="peakCustomTime" type="hidden">
-      <!-- scrollable time picker popup -->
-      <div id="peakTimePicker" class="peak-time-picker" style="display:none">
-        <div class="peak-time-picker-inner">
-          <div class="peak-time-picker-col" id="peakTimePickerHours"></div>
-          <div class="peak-time-picker-sep">:</div>
-          <div class="peak-time-picker-col" id="peakTimePickerMins"></div>
-        </div>
-        <div class="peak-time-picker-actions">
-          <button class="peak-time-picker-cancel" id="peakTimePickerCancel" type="button">Cancel</button>
-          <button class="peak-time-picker-confirm" id="peakTimePickerConfirm" type="button">Set time</button>
-        </div>
       </div>
       <div id="peakCaffLogs" class="peak-caff-logs"></div>
       <div id="peakCaffWarning" class="peak-caff-warning"></div>
@@ -21116,99 +21087,15 @@ function switchTab(tab) {
       if (_peakDayOffset < 0) renderPeakForOffset(_peakDayOffset + 1);
     });
 
-    // ── Time picker ────────────────────────────────────────────
-    var _pickerH = new Date().getHours();
-    var _pickerM = Math.round(new Date().getMinutes() / 5) * 5 % 60;
-
     function setTimeToNow() {
-      var n = new Date();
-      _pickerH = n.getHours();
-      _pickerM = Math.round(n.getMinutes() / 5) * 5 % 60;
-      _applyPickerValue();
-    }
-
-    function _applyPickerValue() {
-      var hh = String(_pickerH).padStart(2,'0');
-      var mm = String(_pickerM).padStart(2,'0');
       var tEl = document.getElementById('peakCustomTime');
-      if (tEl) tEl.value = hh + ':' + mm;
-      var lbl = document.getElementById('peakTimePillLabel');
-      var now = new Date();
-      var isNow = (_pickerH === now.getHours() && Math.abs(_pickerM - now.getMinutes()) <= 5);
-      if (lbl) lbl.textContent = isNow ? 'Now' : hh + ':' + mm;
-      var pill = document.getElementById('peakTimePill');
-      if (pill) pill.classList.toggle('active', !isNow);
+      if (!tEl) return;
+      var n = new Date();
+      tEl.value = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
     }
-
-    function _buildPickerCols() {
-      var hCol = document.getElementById('peakTimePickerHours');
-      var mCol = document.getElementById('peakTimePickerMins');
-      if (!hCol || !mCol) return;
-      hCol.innerHTML = '';
-      mCol.innerHTML = '';
-      for (var h = 0; h < 24; h++) {
-        var d = document.createElement('div');
-        d.className = 'peak-time-picker-item' + (h === _pickerH ? ' selected' : '');
-        d.textContent = String(h).padStart(2,'0');
-        d.dataset.val = h;
-        d.addEventListener('click', function() {
-          _pickerH = parseInt(this.dataset.val);
-          hCol.querySelectorAll('.peak-time-picker-item').forEach(function(x){ x.classList.remove('selected'); });
-          this.classList.add('selected');
-        });
-        hCol.appendChild(d);
-      }
-      for (var m = 0; m < 60; m += 5) {
-        var dm = document.createElement('div');
-        dm.className = 'peak-time-picker-item' + (m === _pickerM ? ' selected' : '');
-        dm.textContent = String(m).padStart(2,'0');
-        dm.dataset.val = m;
-        dm.addEventListener('click', function() {
-          _pickerM = parseInt(this.dataset.val);
-          mCol.querySelectorAll('.peak-time-picker-item').forEach(function(x){ x.classList.remove('selected'); });
-          this.classList.add('selected');
-        });
-        mCol.appendChild(dm);
-      }
-      // scroll selected items into centre
-      setTimeout(function() {
-        var selH = hCol.querySelector('.selected');
-        if (selH) selH.scrollIntoView({block:'center', behavior:'instant'});
-        var selM = mCol.querySelector('.selected');
-        if (selM) selM.scrollIntoView({block:'center', behavior:'instant'});
-      }, 0);
-    }
-
-    var pill = document.getElementById('peakTimePill');
-    var picker = document.getElementById('peakTimePicker');
-    if (pill && picker) {
-      pill.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var open = picker.style.display !== 'none';
-        picker.style.display = open ? 'none' : 'block';
-        pill.classList.toggle('active', !open);
-        if (!open) _buildPickerCols();
-      });
-      document.getElementById('peakTimePickerCancel').addEventListener('click', function() {
-        picker.style.display = 'none';
-        pill.classList.remove('active');
-      });
-      document.getElementById('peakTimePickerConfirm').addEventListener('click', function() {
-        _applyPickerValue();
-        picker.style.display = 'none';
-        pill.classList.remove('active');
-      });
-      document.addEventListener('click', function(e) {
-        if (!pill.contains(e.target) && !picker.contains(e.target)) {
-          picker.style.display = 'none';
-          pill.classList.remove('active');
-        }
-      });
-    }
-
+    setTimeToNow();
     var nowBtn = document.getElementById('peakTimeNowBtn');
     if (nowBtn) nowBtn.addEventListener('click', setTimeToNow);
-    setTimeToNow();
 
     document.querySelectorAll('.peak-etab').forEach(function(btn) {
       btn.addEventListener('click', function() {
