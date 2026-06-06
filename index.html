@@ -8592,27 +8592,8 @@ window.canonicalJson = function(obj) {
     </div>
 
     <div class="peak-card">
-      <div class="peak-section-label">Best Hours · 2 Windows</div>
-      <div class="peak-window-row">
-        <div>
-          <div class="peak-window-time" id="peakWin1Time">—</div>
-          <div class="peak-window-sublabel">peak window</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div class="peak-window-badge zone-gold" id="peakWin1Score">—</div>
-          <button class="peak-rock-btn" onclick="appendCoachMsg('user','Rock the '+document.getElementById(\'peakWin1Time\').textContent+\' window — what should I do?');sendCoachMessage()">Rock →</button>
-        </div>
-      </div>
-      <div class="peak-window-row">
-        <div>
-          <div class="peak-window-time" id="peakWin2Time">—</div>
-          <div class="peak-window-sublabel">focus window</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div class="peak-window-badge" id="peakWin2Score">—</div>
-          <button class="peak-rock-btn" onclick="appendCoachMsg('user','Rock the '+document.getElementById(\'peakWin2Time\').textContent+\' window — what should I do?');sendCoachMessage()">Rock →</button>
-        </div>
-      </div>
+      <div class="peak-section-label" id="peakWinsLabel">Best Hours</div>
+      <div id="peakWinsContainer"></div>
     </div>
 
     <div class="peak-card">
@@ -19787,20 +19768,97 @@ function switchTab(tab) {
     return h + '.' + String(m).padStart(2,'0') + 'h';
   }
 
+  // Returns up to 4 peak windows as contiguous runs above threshold
+  // Each window: { start, end, avg, peak, label, zoneClass, color }
   function findBestWindows(arr, wakeHour) {
-    var windows = [];
-    for (var s = wakeHour; s < wakeHour + 18; s++) {
-      var h1 = s % 24, h2 = (s+1) % 24, h3 = (s+2) % 24;
-      windows.push({ start: h1, avg: (arr[h1] + arr[h2] + arr[h3]) / 3 });
+    var THRESHOLD = 45; // min score to be considered a notable window
+    var runs = [];
+    var inRun = false, runStart = 0;
+
+    // Scan only the wake→sleep span (first 16h after wake)
+    for (var i = 0; i <= 16; i++) {
+      var h = (wakeHour + i) % 24;
+      var v = arr[h] || 0;
+      if (v >= THRESHOLD && !inRun) { inRun = true; runStart = h; }
+      else if (v < THRESHOLD && inRun) {
+        var runEnd = (wakeHour + i - 1) % 24;
+        var hours = [];
+        for (var j = runStart; j !== (runEnd + 1) % 24; j = (j + 1) % 24) hours.push(j);
+        if (hours.length >= 1) {
+          var sum = hours.reduce(function(a, hh){ return a + (arr[hh] || 0); }, 0);
+          runs.push({ start: runStart, end: runEnd, hours: hours, avg: sum / hours.length, peak: Math.max.apply(null, hours.map(function(hh){ return arr[hh] || 0; })) });
+        }
+        inRun = false;
+      }
     }
-    windows.sort(function(a,b){ return b.avg - a.avg; });
-    var w1 = windows[0];
-    var w2 = null;
-    for (var i = 1; i < windows.length; i++) {
-      var gap = Math.abs(windows[i].start - w1.start);
-      if (gap > 3 && gap < 21) { w2 = windows[i]; break; }
+    // Close any open run at the 16h boundary
+    if (inRun) {
+      var runEnd2 = (wakeHour + 16) % 24;
+      var hours2 = [];
+      for (var j2 = runStart; j2 !== (runEnd2 + 1) % 24; j2 = (j2 + 1) % 24) hours2.push(j2);
+      if (hours2.length >= 1) {
+        var sum2 = hours2.reduce(function(a, hh){ return a + (arr[hh] || 0); }, 0);
+        runs.push({ start: runStart, end: runEnd2, hours: hours2, avg: sum2 / hours2.length, peak: Math.max.apply(null, hours2.map(function(hh){ return arr[hh] || 0; })) });
+      }
     }
-    return [w1, w2 || windows[Math.min(5, windows.length-1)]];
+
+    // Merge runs within 1h of each other
+    runs.sort(function(a, b){ return a.start - b.start; });
+    var merged = [];
+    runs.forEach(function(r) {
+      if (!merged.length) { merged.push(r); return; }
+      var prev = merged[merged.length - 1];
+      var gap = (r.start - prev.end + 24) % 24;
+      if (gap <= 1) {
+        prev.end = r.end;
+        prev.hours = prev.hours.concat(r.hours);
+        prev.avg = prev.hours.reduce(function(a, hh){ return a + (arr[hh] || 0); }, 0) / prev.hours.length;
+        prev.peak = Math.max(prev.peak, r.peak);
+      } else {
+        merged.push(r);
+      }
+    });
+
+    // Label each window by avg score
+    function zoneLabel(s)    { return s >= 75 ? 'Peak' : s >= 60 ? 'High' : s >= 45 ? 'Focus' : 'Steady'; }
+    function zoneClass(s)    { return s >= 75 ? 'zone-gold' : s >= 60 ? 'zone-green' : s >= 45 ? 'zone-yellow' : ''; }
+    function zoneColor(s)    { return s >= 75 ? '#F5C842' : s >= 60 ? '#6EE7B7' : s >= 45 ? '#F2C063' : '#94a3b8'; }
+
+    merged = merged.map(function(r) {
+      return { start: r.start, end: r.end, avg: r.avg, peak: r.peak,
+               label: zoneLabel(r.avg), zoneClass: zoneClass(r.avg), color: zoneColor(r.avg) };
+    });
+
+    // Return top 4 by avg score
+    merged.sort(function(a, b){ return b.avg - a.avg; });
+    return merged.slice(0, 4);
+  }
+
+  // ── Render Best Hours card from windows ───────────────────
+  function _renderBestWindows(wins) {
+    var container = document.getElementById('peakWinsContainer');
+    var label     = document.getElementById('peakWinsLabel');
+    if (!container) return;
+    var activeWins = wins.filter(function(w){ return w; });
+    if (label) label.textContent = 'Best Hours · ' + activeWins.length + ' Window' + (activeWins.length !== 1 ? 's' : '');
+    var winLabels = ['peak window','focus window','secondary window','evening window'];
+    container.innerHTML = activeWins.map(function(win, i) {
+      var startLbl = fmtHour(win.start);
+      var endLbl   = fmtHour((win.end + 1) % 24);
+      var timeStr  = startLbl + '–' + endLbl;
+      var scoreStr = win.label + ' ' + Math.round(win.avg);
+      var rockMsg  = escHtml('Rock the ' + timeStr + ' window — what should I do?');
+      return '<div class="peak-window-row">' +
+        '<div>' +
+          '<div class="peak-window-time" style="color:' + win.color + '">' + timeStr + '</div>' +
+          '<div class="peak-window-sublabel">' + (winLabels[i] || 'window') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<div class="peak-window-badge ' + win.zoneClass + '">' + scoreStr + '</div>' +
+          '<button class="peak-rock-btn" onclick="appendCoachMsg(\'user\',\'' + rockMsg + '\');sendCoachMessage()" type="button">Rock →</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
 
   // ── Caffeine pharmacokinetics ──────────────────────────────
@@ -19910,6 +19968,32 @@ function switchTab(tab) {
       var frac = fh - Math.floor(fh);
       return frac > 0 && i < 23 ? arr[i] * (1 - frac) + arr[i + 1] * frac : arr[i];
     }
+
+    // ── Peak zone bands on canvas ─────────────────────────────
+    // Draw shaded vertical bands for each detected high-score window
+    var _wins = findBestWindows(arr, wakeHour);
+    // hex color → rgba helper for canvas
+    function hexAlpha(hex, a) {
+      var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      return 'rgba('+r+','+g+','+b+','+a+')';
+    }
+    _wins.forEach(function(win) {
+      var endH = (win.end + 1) % 24 === 0 ? 24 : win.end + 1;
+      var x1 = xAt(win.start + 0.5) - cw / 48; // align with pts offset
+      var x2 = xAt(endH - 0.5) + cw / 48;
+      if (x2 <= x1) x2 = x1 + cw / 24;
+      var bandA = win.avg >= 75 ? 0.12 : win.avg >= 60 ? 0.08 : 0.05;
+      var bGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+      bGrad.addColorStop(0, hexAlpha(win.color, bandA));
+      bGrad.addColorStop(1, hexAlpha(win.color, 0));
+      ctx.fillStyle = bGrad;
+      ctx.fillRect(x1, padT, x2 - x1, ch);
+      // Zone label at top of band
+      ctx.font = 'bold 9px -apple-system,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = hexAlpha(win.color, 0.8);
+      ctx.fillText(win.label, (x1 + x2) / 2, padT + 11);
+    });
 
     // ── STACK mode: gold fill between base and full curve ─────
     if (mode === 'stack' && caffLogs && caffLogs.length) {
@@ -20435,15 +20519,7 @@ function switchTab(tab) {
     var _nowH = nowHour();
     _updateEnergyRing(arr[Math.min(23, Math.floor(_nowH))] || 0, fmtHour(Math.floor(_nowH)), false);
 
-    var wins = findBestWindows(arr, wakeHour);
-    if (wins[0]) {
-      setText('peakWin1Time', fmtHour(wins[0].start)+'–'+fmtHour(wins[0].start+2));
-      setText('peakWin1Score', 'Peak ' + Math.round(wins[0].avg));
-    }
-    if (wins[1]) {
-      setText('peakWin2Time', fmtHour(wins[1].start)+'–'+fmtHour(wins[1].start+2));
-      setText('peakWin2Score', 'Peak ' + Math.round(wins[1].avg));
-    }
+    _renderBestWindows(findBestWindows(arr, wakeHour));
 
     // fix #20: pass real avg bedtime to renderCaffLogs
     _avgBedtime = avgBed;
@@ -20657,6 +20733,7 @@ function switchTab(tab) {
     var nowH = nowHour();
     var nowScore = arr[Math.min(23, Math.floor(nowH))] || 0;
     _updateEnergyRing(nowScore, fmtHour(Math.floor(nowH)), false);
+    _renderBestWindows(findBestWindows(arr, wh));
   }
 
   // ── Schedule ───────────────────────────────────────────────
@@ -20968,9 +21045,7 @@ function switchTab(tab) {
     drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode);
     var _nh2 = nowHour();
     _updateEnergyRing(arr2[Math.min(23, Math.floor(_nh2))] || 0, fmtHour(Math.floor(_nh2)), false);
-    var wins2 = findBestWindows(arr2, wh);
-    if (wins2[0]) { setText('peakWin1Time', fmtHour(wins2[0].start)+'–'+fmtHour(wins2[0].start+2)); setText('peakWin1Score','Peak '+Math.round(wins2[0].avg)); }
-    if (wins2[1]) { setText('peakWin2Time', fmtHour(wins2[1].start)+'–'+fmtHour(wins2[1].start+2)); setText('peakWin2Score','Peak '+Math.round(wins2[1].avg)); }
+    _renderBestWindows(findBestWindows(arr2, wh));
     // Show score ring for the navigated day
     var score2 = r || 50;
     var fill2 = document.getElementById('peakHeroFill');
