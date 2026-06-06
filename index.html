@@ -19832,7 +19832,7 @@ function switchTab(tab) {
     // Sort by avg desc, return top 4
     labelled.sort(function(a, b) { return b.avg - a.avg; });
     var result = labelled.slice(0, 4);
-    console.log('[Peak] findBestWindows wakeHour=' + wakeHour + ' maxScore=' + maxScore.toFixed(1) + ' threshold=' + THRESHOLD.toFixed(1) + ' wins=' + result.length, result.map(function(w){ return w.start+'h–'+w.end+'h avg='+w.avg.toFixed(1); }));
+    console.log('[Peak] findBestWindows wakeHour=' + wakeHour + ' threshold=' + THRESHOLD + ' wins=' + result.length, result.map(function(w){ return w.start+'h–'+w.end+'h avg='+w.avg.toFixed(1); }));
     return result;
   }
 
