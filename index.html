@@ -961,7 +961,7 @@ body::after {
 .peak-energy-tabs { display:flex; gap:6px; margin-bottom:10px; }
 .peak-etab { padding:5px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; font-weight:600; letter-spacing:0.08em; cursor:pointer; font-family:inherit; transition:all 0.15s; }
 .peak-etab.active { background:rgba(110,231,183,0.12); border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
-.peak-energy-canvas-wrap { position:relative; width:100%; height:220px; }
+.peak-energy-canvas-wrap { position:relative; width:100%; height:300px; }
 .peak-energy-canvas { width:100%; height:100%; display:block; }
 .peak-plan-tap { text-align:center; font-size:11px; color:var(--text-tertiary); letter-spacing:0.1em; text-transform:uppercase; margin-top:10px; cursor:pointer; padding:8px; border-radius:10px; border:1px dashed rgba(255,255,255,0.08); }
 .peak-plan-tap:hover { border-color:rgba(110,231,183,0.2); color:#6EE7B7; }
@@ -19800,64 +19800,51 @@ function switchTab(tab) {
     if (!el) return;
     var dpr = window.devicePixelRatio || 1;
     var W = el.offsetWidth || 340;
-    var H = el.offsetHeight || 220;
+    var H = el.offsetHeight || 300;
     el.width  = W * dpr;
     el.height = H * dpr;
     var ctx = el.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.clearRect(0,0,W,H);
 
-    var padL = 0, padR = 0, padT = 16, padB = 28;
+    var padL = 4, padR = 4, padT = 20, padB = 30;
     var cw = W - padL - padR;
     var ch = H - padT - padB;
     var now = nowHour();
 
-    function xAt(h) { return padL + (h / 24) * cw; }
-    function yAt(v) { return padT + ch - (v / 100) * ch; }
+    // ── Dynamic Y scale: curve fills the canvas based on readiness ──
+    // Floor = always 0 (sleep zone). Ceiling = readiness-scaled.
+    // readiness 100 → ceiling 100, readiness 50 → ceiling ~70.
+    // This means a person with readiness 75 has their peak near the top,
+    // not squashed at 75% height — making the chart feel alive.
+    var readiness = el._peakReadiness || 75;
+    var yMax = Math.max(clamp(readiness * 1.1 + 10, 55, 100), Math.max.apply(null, arr) + 5);
+    yMax = Math.min(yMax, 100);
+    var yMin = 0;
 
-    // ── Smooth bezier path builder ────────────────────────────
+    function xAt(h) { return padL + (h / 24) * cw; }
+    function yAt(v) { return padT + ch - ((v - yMin) / (yMax - yMin)) * ch; }
+
+    // ── Catmull-Rom smooth path (tension 0.4) ─────────────────
+    // Much silkier than midpoint bezier — matches reference image curve
     function buildPath(points) {
+      if (points.length < 2) return;
       ctx.beginPath();
       ctx.moveTo(points[0][0], points[0][1]);
       for (var i = 0; i < points.length - 1; i++) {
-        var x0 = points[i][0],   y0 = points[i][1];
-        var x1 = points[i+1][0], y1 = points[i+1][1];
-        var cpx = (x0 + x1) / 2;
-        ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+        var p0 = points[Math.max(0, i - 1)];
+        var p1 = points[i];
+        var p2 = points[i + 1];
+        var p3 = points[Math.min(points.length - 1, i + 2)];
+        var tension = 0.4;
+        var cp1x = p1[0] + (p2[0] - p0[0]) * tension / 2;
+        var cp1y = p1[1] + (p2[1] - p0[1]) * tension / 2;
+        var cp2x = p2[0] - (p3[0] - p1[0]) * tension / 2;
+        var cp2y = p2[1] - (p3[1] - p1[1]) * tension / 2;
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2[0], p2[1]);
       }
     }
-    var pts = arr.map(function(v,h){ return [xAt(h), yAt(v)]; });
-
-    // ── Peak zone band (top 70-100%) ──────────────────────────
-    var zoneY0 = yAt(100);
-    var zoneY1 = yAt(70);
-    var zoneBand = ctx.createLinearGradient(0, zoneY0, 0, zoneY1);
-    zoneBand.addColorStop(0, 'rgba(110,231,183,0.07)');
-    zoneBand.addColorStop(1, 'rgba(110,231,183,0.0)');
-    ctx.fillStyle = zoneBand;
-    ctx.fillRect(0, zoneY0, W, zoneY1 - zoneY0);
-    // subtle dashed zone line at 70
-    ctx.beginPath();
-    ctx.setLineDash([3,6]);
-    ctx.moveTo(0, zoneY1);
-    ctx.lineTo(W, zoneY1);
-    ctx.strokeStyle = 'rgba(110,231,183,0.15)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // ── Faint horizontal grid lines ───────────────────────────
-    ctx.font = '9px -apple-system, sans-serif';
-    ctx.textAlign = 'right';
-    [25, 50, 75].forEach(function(v) {
-      var gy = yAt(v);
-      ctx.beginPath();
-      ctx.moveTo(padL, gy);
-      ctx.lineTo(W - padR, gy);
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    });
+    var pts = arr.map(function(v,h){ return [xAt(h + 0.5), yAt(v)]; });
 
     // ── BARS mode ─────────────────────────────────────────────
     if (mode === 'base') {
@@ -19866,7 +19853,7 @@ function switchTab(tab) {
       for (var h = 0; h < 24; h++) {
         var v   = arr[h];
         var bx  = xAt(h) + (slotW - barW) / 2;
-        var bh  = Math.max(2, (v / 100) * ch);
+        var bh  = Math.max(2, ((v - yMin) / (yMax - yMin)) * ch);
         var by  = padT + ch - bh;
         var col = v >= 80 ? '#F5C842' : v >= 60 ? '#6EE7B7' : v >= 40 ? '#F2C063' : '#475569';
         var bg  = ctx.createLinearGradient(0, by, 0, by + bh);
@@ -19877,7 +19864,6 @@ function switchTab(tab) {
         if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3,3,0,0]);
         else ctx.rect(bx, by, barW, bh);
         ctx.fill();
-        // current hour highlight
         if (h === Math.floor(now)) {
           ctx.strokeStyle = 'rgba(255,255,255,0.6)';
           ctx.lineWidth = 1.5;
@@ -19891,50 +19877,54 @@ function switchTab(tab) {
       // ── STACK: caffeine lift overlay ──────────────────────────
       if (mode === 'stack' && caffLogs && caffLogs.length) {
         var baseArr = buildEnergyArray(wakeHour, el._peakReadiness || 75, [], 'core');
-        var basePts = baseArr.map(function(v,h){ return [xAt(h), yAt(v)]; });
-        // fill between base and stack
+        var basePts = baseArr.map(function(v,h){ return [xAt(h + 0.5), yAt(v)]; });
         var caffFill = ctx.createLinearGradient(0, padT, 0, padT + ch);
         caffFill.addColorStop(0, 'rgba(245,200,66,0.18)');
         caffFill.addColorStop(1, 'rgba(245,200,66,0.0)');
         buildPath(pts);
-        for (var h = 23; h >= 0; h--) ctx.lineTo(basePts[h][0], basePts[h][1]);
+        for (var bh2 = basePts.length - 1; bh2 >= 0; bh2--) ctx.lineTo(basePts[bh2][0], basePts[bh2][1]);
         ctx.closePath();
         ctx.fillStyle = caffFill;
         ctx.fill();
       }
 
-      // ── Main area fill ────────────────────────────────────────
+      // ── Under-curve area fill ─────────────────────────────────
       var areaGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
-      areaGrad.addColorStop(0,   'rgba(110,231,183,0.30)');
-      areaGrad.addColorStop(0.5, 'rgba(110,231,183,0.10)');
+      areaGrad.addColorStop(0,   'rgba(110,231,183,0.28)');
+      areaGrad.addColorStop(0.55,'rgba(110,231,183,0.08)');
       areaGrad.addColorStop(1,   'rgba(110,231,183,0.00)');
       buildPath(pts);
-      ctx.lineTo(xAt(23), padT + ch);
-      ctx.lineTo(xAt(0),  padT + ch);
+      ctx.lineTo(pts[pts.length-1][0], padT + ch);
+      ctx.lineTo(pts[0][0], padT + ch);
       ctx.closePath();
       ctx.fillStyle = areaGrad;
       ctx.fill();
 
-      // ── Glow shadow under line ────────────────────────────────
+      // ── Outer glow pass (wide, soft) ─────────────────────────
       ctx.save();
-      ctx.shadowColor  = 'rgba(110,231,183,0.55)';
-      ctx.shadowBlur   = 12;
-      ctx.shadowOffsetY = 2;
+      ctx.shadowColor  = 'rgba(110,231,183,0.5)';
+      ctx.shadowBlur   = 22;
       buildPath(pts);
-      ctx.strokeStyle = '#6EE7B7';
-      ctx.lineWidth   = 3;
+      ctx.strokeStyle = 'rgba(110,231,183,0.45)';
+      ctx.lineWidth   = 6;
       ctx.lineJoin    = 'round';
+      ctx.lineCap     = 'round';
       ctx.stroke();
       ctx.restore();
 
-      // ── Crisp line on top ─────────────────────────────────────
+      // ── Inner crisp line ──────────────────────────────────────
+      ctx.save();
+      ctx.shadowColor  = 'rgba(110,231,183,0.8)';
+      ctx.shadowBlur   = 8;
       buildPath(pts);
       ctx.strokeStyle = '#6EE7B7';
       ctx.lineWidth   = 2.5;
       ctx.lineJoin    = 'round';
+      ctx.lineCap     = 'round';
       ctx.stroke();
+      ctx.restore();
 
-      // STACK: dashed gold line
+      // STACK: dashed gold overlay line
       if (mode === 'stack' && caffLogs && caffLogs.length) {
         buildPath(pts);
         ctx.strokeStyle = 'rgba(245,200,66,0.55)';
@@ -19948,27 +19938,24 @@ function switchTab(tab) {
     // ── Now marker ────────────────────────────────────────────
     var nowIdx = Math.min(23, Math.round(now));
     var nx = xAt(now), ny = yAt(arr[nowIdx] || 50);
-    // vertical dashed line
     ctx.beginPath();
     ctx.setLineDash([3,5]);
     ctx.moveTo(nx, padT);
     ctx.lineTo(nx, padT + ch);
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.setLineDash([]);
-    // outer glow ring
     ctx.save();
-    ctx.shadowColor = 'rgba(255,255,255,0.8)';
-    ctx.shadowBlur  = 10;
+    ctx.shadowColor = 'rgba(110,231,183,0.9)';
+    ctx.shadowBlur  = 14;
     ctx.beginPath();
-    ctx.arc(nx, ny, 5, 0, Math.PI*2);
+    ctx.arc(nx, ny, 5.5, 0, Math.PI*2);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
     ctx.restore();
-    // inner dot
     ctx.beginPath();
-    ctx.arc(nx, ny, 3, 0, Math.PI*2);
+    ctx.arc(nx, ny, 3.5, 0, Math.PI*2);
     ctx.fillStyle = '#6EE7B7';
     ctx.fill();
 
