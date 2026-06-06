@@ -961,7 +961,7 @@ body::after {
 .peak-energy-tabs { display:flex; gap:6px; margin-bottom:10px; }
 .peak-etab { padding:5px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; font-weight:600; letter-spacing:0.08em; cursor:pointer; font-family:inherit; transition:all 0.15s; }
 .peak-etab.active { background:rgba(110,231,183,0.12); border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
-.peak-energy-canvas-wrap { position:relative; width:100%; height:150px; }
+.peak-energy-canvas-wrap { position:relative; width:100%; height:220px; }
 .peak-energy-canvas { width:100%; height:100%; display:block; }
 .peak-plan-tap { text-align:center; font-size:11px; color:var(--text-tertiary); letter-spacing:0.1em; text-transform:uppercase; margin-top:10px; cursor:pointer; padding:8px; border-radius:10px; border:1px dashed rgba(255,255,255,0.08); }
 .peak-plan-tap:hover { border-color:rgba(110,231,183,0.2); color:#6EE7B7; }
@@ -19758,203 +19758,274 @@ function switchTab(tab) {
     return 400;
   }
 
-  // ── Canvas: energy chart (fix #3 hover, fix #12 caff overlay) ─
+  // ── Canvas: energy chart ──────────────────────────────────
   var _energyHoverH = null;
   function drawEnergyChart(canvasId, arr, wakeHour, caffLogs, mode) {
     var el = document.getElementById(canvasId);
     if (!el) return;
     var dpr = window.devicePixelRatio || 1;
-    var W = el.offsetWidth || 300;
-    var H = el.offsetHeight || 150;
+    var W = el.offsetWidth || 340;
+    var H = el.offsetHeight || 220;
     el.width  = W * dpr;
     el.height = H * dpr;
     var ctx = el.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.clearRect(0,0,W,H);
-    var padL = 8, padR = 8, padT = 10, padB = 22;
+
+    var padL = 0, padR = 0, padT = 16, padB = 28;
     var cw = W - padL - padR;
     var ch = H - padT - padB;
     var now = nowHour();
+
     function xAt(h) { return padL + (h / 24) * cw; }
     function yAt(v) { return padT + ch - (v / 100) * ch; }
 
-    // fix #12: caffeine contribution overlay on STACK mode
-    if (mode === 'stack' && caffLogs && caffLogs.length) {
-      var baseArr = buildEnergyArray(wakeHour, null, [], 'core');
-      var caffGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
-      caffGrad.addColorStop(0, 'rgba(245,200,66,0.12)');
-      caffGrad.addColorStop(1, 'rgba(245,200,66,0)');
+    // ── Smooth bezier path builder ────────────────────────────
+    function buildPath(points) {
       ctx.beginPath();
-      ctx.moveTo(xAt(0), yAt(baseArr[0]));
-      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(baseArr[h])); }
-      for (var h = 23; h >= 0; h--) { ctx.lineTo(xAt(h), yAt(arr[h])); }
-      ctx.closePath();
-      ctx.fillStyle = caffGrad;
-      ctx.fill();
-      // caffeine lift line
-      ctx.beginPath();
-      ctx.moveTo(xAt(0), yAt(arr[0]));
-      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
-      ctx.strokeStyle = 'rgba(245,200,66,0.6)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4,3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (var i = 0; i < points.length - 1; i++) {
+        var x0 = points[i][0],   y0 = points[i][1];
+        var x1 = points[i+1][0], y1 = points[i+1][1];
+        var cpx = (x0 + x1) / 2;
+        ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+      }
     }
+    var pts = arr.map(function(v,h){ return [xAt(h), yAt(v)]; });
 
+    // ── Peak zone band (top 70-100%) ──────────────────────────
+    var zoneY0 = yAt(100);
+    var zoneY1 = yAt(70);
+    var zoneBand = ctx.createLinearGradient(0, zoneY0, 0, zoneY1);
+    zoneBand.addColorStop(0, 'rgba(110,231,183,0.07)');
+    zoneBand.addColorStop(1, 'rgba(110,231,183,0.0)');
+    ctx.fillStyle = zoneBand;
+    ctx.fillRect(0, zoneY0, W, zoneY1 - zoneY0);
+    // subtle dashed zone line at 70
+    ctx.beginPath();
+    ctx.setLineDash([3,6]);
+    ctx.moveTo(0, zoneY1);
+    ctx.lineTo(W, zoneY1);
+    ctx.strokeStyle = 'rgba(110,231,183,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── Faint horizontal grid lines ───────────────────────────
+    ctx.font = '9px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    [25, 50, 75].forEach(function(v) {
+      var gy = yAt(v);
+      ctx.beginPath();
+      ctx.moveTo(padL, gy);
+      ctx.lineTo(W - padR, gy);
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // ── BARS mode ─────────────────────────────────────────────
     if (mode === 'base') {
-      // BARS mode: hourly vertical bars coloured by energy level
-      var barW = Math.max(2, cw / 24 - 2);
+      var slotW = cw / 24;
+      var barW  = Math.max(3, slotW - 3);
       for (var h = 0; h < 24; h++) {
-        var v = arr[h];
-        var bx = xAt(h) + (cw / 24 - barW) / 2;
-        var bh = (v / 100) * ch;
-        var by = padT + ch - bh;
-        // colour by zone
-        var barCol = v >= 80 ? '#F5C842' : v >= 60 ? '#6EE7B7' : v >= 40 ? '#F2C063' : '#94a3b8';
-        var barGrad = ctx.createLinearGradient(0, by, 0, by + bh);
-        barGrad.addColorStop(0, barCol);
-        barGrad.addColorStop(1, barCol.replace(')', ',0.2)').replace('rgb', 'rgba'));
-        ctx.fillStyle = barGrad;
+        var v   = arr[h];
+        var bx  = xAt(h) + (slotW - barW) / 2;
+        var bh  = Math.max(2, (v / 100) * ch);
+        var by  = padT + ch - bh;
+        var col = v >= 80 ? '#F5C842' : v >= 60 ? '#6EE7B7' : v >= 40 ? '#F2C063' : '#475569';
+        var bg  = ctx.createLinearGradient(0, by, 0, by + bh);
+        bg.addColorStop(0, col);
+        bg.addColorStop(1, col + '33');
+        ctx.fillStyle = bg;
         ctx.beginPath();
-        ctx.roundRect ? ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]) : ctx.rect(bx, by, barW, bh);
+        if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3,3,0,0]);
+        else ctx.rect(bx, by, barW, bh);
         ctx.fill();
-        // highlight current hour
-        var nowH = Math.floor(nowHour());
-        if (h === nowH) {
-          ctx.strokeStyle = '#fff';
+        // current hour highlight
+        if (h === Math.floor(now)) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.6)';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.roundRect ? ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]) : ctx.rect(bx, by, barW, bh);
+          if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3,3,0,0]);
+          else ctx.rect(bx, by, barW, bh);
           ctx.stroke();
         }
       }
     } else {
-      // LINE / STACK mode: filled area + line
-      var grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
-      grad.addColorStop(0, 'rgba(110,231,183,0.18)');
-      grad.addColorStop(1, 'rgba(110,231,183,0)');
-      ctx.beginPath();
-      ctx.moveTo(xAt(0), yAt(arr[0]));
-      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+      // ── STACK: caffeine lift overlay ──────────────────────────
+      if (mode === 'stack' && caffLogs && caffLogs.length) {
+        var baseArr = buildEnergyArray(wakeHour, null, [], 'core');
+        var basePts = baseArr.map(function(v,h){ return [xAt(h), yAt(v)]; });
+        // fill between base and stack
+        var caffFill = ctx.createLinearGradient(0, padT, 0, padT + ch);
+        caffFill.addColorStop(0, 'rgba(245,200,66,0.18)');
+        caffFill.addColorStop(1, 'rgba(245,200,66,0.0)');
+        buildPath(pts);
+        for (var h = 23; h >= 0; h--) ctx.lineTo(basePts[h][0], basePts[h][1]);
+        ctx.closePath();
+        ctx.fillStyle = caffFill;
+        ctx.fill();
+      }
+
+      // ── Main area fill ────────────────────────────────────────
+      var areaGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+      areaGrad.addColorStop(0,   'rgba(110,231,183,0.30)');
+      areaGrad.addColorStop(0.5, 'rgba(110,231,183,0.10)');
+      areaGrad.addColorStop(1,   'rgba(110,231,183,0.00)');
+      buildPath(pts);
       ctx.lineTo(xAt(23), padT + ch);
-      ctx.lineTo(xAt(0), padT + ch);
+      ctx.lineTo(xAt(0),  padT + ch);
       ctx.closePath();
-      ctx.fillStyle = grad;
+      ctx.fillStyle = areaGrad;
       ctx.fill();
-      // Main line
-      ctx.beginPath();
-      ctx.moveTo(xAt(0), yAt(arr[0]));
-      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+
+      // ── Glow shadow under line ────────────────────────────────
+      ctx.save();
+      ctx.shadowColor  = 'rgba(110,231,183,0.55)';
+      ctx.shadowBlur   = 12;
+      ctx.shadowOffsetY = 2;
+      buildPath(pts);
       ctx.strokeStyle = '#6EE7B7';
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'round';
+      ctx.lineWidth   = 3;
+      ctx.lineJoin    = 'round';
       ctx.stroke();
+      ctx.restore();
+
+      // ── Crisp line on top ─────────────────────────────────────
+      buildPath(pts);
+      ctx.strokeStyle = '#6EE7B7';
+      ctx.lineWidth   = 2.5;
+      ctx.lineJoin    = 'round';
+      ctx.stroke();
+
+      // STACK: dashed gold line
+      if (mode === 'stack' && caffLogs && caffLogs.length) {
+        buildPath(pts);
+        ctx.strokeStyle = 'rgba(245,200,66,0.55)';
+        ctx.lineWidth   = 1.5;
+        ctx.setLineDash([4,4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     }
-    // Now marker
+
+    // ── Now marker ────────────────────────────────────────────
+    var nowIdx = Math.min(23, Math.round(now));
+    var nx = xAt(now), ny = yAt(arr[nowIdx] || 50);
+    // vertical dashed line
     ctx.beginPath();
-    ctx.setLineDash([3,4]);
-    ctx.moveTo(xAt(now), padT);
-    ctx.lineTo(xAt(now), padT + ch);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.setLineDash([3,5]);
+    ctx.moveTo(nx, padT);
+    ctx.lineTo(nx, padT + ch);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.setLineDash([]);
-    var nowIdx = Math.min(23, Math.round(now));
+    // outer glow ring
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,0.8)';
+    ctx.shadowBlur  = 10;
     ctx.beginPath();
-    ctx.arc(xAt(now), yAt(arr[nowIdx] || 50), 4, 0, Math.PI*2);
+    ctx.arc(nx, ny, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.restore();
+    // inner dot
+    ctx.beginPath();
+    ctx.arc(nx, ny, 3, 0, Math.PI*2);
     ctx.fillStyle = '#6EE7B7';
     ctx.fill();
+
     // ── Meal markers ──────────────────────────────────────────
     var vitItems = loadVit();
     var mealColours = {breakfast:'#F5C842', lunch:'#6EE7B7', dinner:'#818cf8', snack:'#f87171'};
-    var mealEmoji   = {breakfast:'☀', lunch:'☀', dinner:'◉', snack:'·'};
     vitItems.forEach(function(item) {
       var mt = item.timeHour;
-      if (mt == null) {
-        mt = item.meal === 'breakfast' ? 8 : item.meal === 'lunch' ? 13 : item.meal === 'dinner' ? 19 : 15;
-      }
+      if (mt == null) mt = item.meal === 'breakfast' ? 8 : item.meal === 'lunch' ? 13 : item.meal === 'dinner' ? 19 : 15;
       if (mt < 0 || mt > 23) return;
-      var mx = xAt(mt);
-      var mIdx = Math.min(23, Math.floor(mt));
-      var my = yAt(arr[mIdx]);
+      var mx2 = xAt(mt);
+      var mIdx2 = Math.min(23, Math.floor(mt));
+      var my2 = yAt(arr[mIdx2]);
       var col = mealColours[item.meal] || '#aaa';
-      // vertical tick
       ctx.beginPath();
-      ctx.moveTo(mx, my - 8);
-      ctx.lineTo(mx, padT + ch);
-      ctx.strokeStyle = col + '40';
+      ctx.setLineDash([2,4]);
+      ctx.moveTo(mx2, my2 + 6);
+      ctx.lineTo(mx2, padT + ch);
+      ctx.strokeStyle = col + '50';
       ctx.lineWidth = 1;
-      ctx.setLineDash([2, 3]);
       ctx.stroke();
       ctx.setLineDash([]);
-      // dot on curve
       ctx.beginPath();
-      ctx.arc(mx, my, 4, 0, Math.PI * 2);
+      ctx.arc(mx2, my2, 4, 0, Math.PI*2);
       ctx.fillStyle = col;
       ctx.fill();
-      // label
-      ctx.font = 'bold 8px -apple-system, sans-serif';
+      ctx.font = 'bold 9px -apple-system,sans-serif';
       ctx.fillStyle = col;
       ctx.textAlign = 'center';
-      var lbl = item.meal.charAt(0).toUpperCase();
-      ctx.fillText(lbl, mx, my - 11);
+      ctx.fillText(item.meal.charAt(0).toUpperCase(), mx2, my2 - 9);
     });
-    // ── Caffeine markers ──────────────────────────────────────
-    if (caffLogs) {
-      caffLogs.forEach(function(log) {
-        var ct = log.timeHour;
-        if (ct == null || ct < 0 || ct > 23) return;
-        var cx2 = xAt(ct);
-        var cidx = Math.min(23, Math.floor(ct));
-        var cy2 = yAt(arr[cidx]);
-        ctx.beginPath();
-        ctx.arc(cx2, cy2, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#F5C842';
-        ctx.fill();
-        ctx.font = '7px -apple-system, sans-serif';
-        ctx.fillStyle = 'rgba(245,200,66,0.8)';
-        ctx.textAlign = 'center';
-        ctx.fillText('C', cx2, cy2 - 8);
-      });
-    }
-    // Hour labels
-    ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.font = '9px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    [0,4,8,12,16,20].forEach(function(h) { ctx.fillText(fmtHour(h), xAt(h), H - 4); });
 
-    // fix #3: hover scrub — draw tooltip at hovered hour
+    // ── Caffeine markers ──────────────────────────────────────
+    if (caffLogs) caffLogs.forEach(function(log) {
+      var ct = log.timeHour;
+      if (ct == null || ct < 0 || ct > 23) return;
+      var cx2 = xAt(ct), cidx = Math.min(23, Math.floor(ct));
+      var cy2 = yAt(arr[cidx]);
+      ctx.beginPath();
+      ctx.arc(cx2, cy2, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = '#F5C842';
+      ctx.fill();
+      ctx.font = 'bold 8px -apple-system,sans-serif';
+      ctx.fillStyle = 'rgba(245,200,66,0.9)';
+      ctx.textAlign = 'center';
+      ctx.fillText('C', cx2, cy2 - 9);
+    });
+
+    // ── Hour labels ───────────────────────────────────────────
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    ctx.font = '10px -apple-system,sans-serif';
+    ctx.textAlign = 'center';
+    [0, 6, 12, 18, 23].forEach(function(h) {
+      var lbl = h === 0 ? '12a' : h < 12 ? h+'a' : h === 12 ? '12p' : h === 23 ? '11p' : (h-12)+'p';
+      ctx.fillText(lbl, xAt(h), H - 6);
+    });
+
+    // ── Hover scrub tooltip ───────────────────────────────────
     if (_energyHoverH !== null) {
-      var hh = _energyHoverH;
+      var hh  = _energyHoverH;
       var hIdx = Math.min(23, Math.max(0, Math.round(hh)));
-      var hx = xAt(hh);
-      var hy = yAt(arr[hIdx]);
-      // vertical line
+      var hx  = xAt(hh);
+      var hy  = yAt(arr[hIdx]);
       ctx.beginPath();
       ctx.moveTo(hx, padT);
       ctx.lineTo(hx, padT + ch);
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      // dot
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,255,255,0.6)';
+      ctx.shadowBlur  = 8;
       ctx.beginPath();
       ctx.arc(hx, hy, 5, 0, Math.PI*2);
       ctx.fillStyle = '#fff';
       ctx.fill();
-      // tooltip bubble
-      var label = fmtHour(hIdx) + ' · ' + Math.round(arr[hIdx]);
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      var tw = ctx.measureText(label).width;
-      var tx = clamp(hx - tw/2 - 6, 0, W - tw - 12);
-      var ty = Math.max(padT + 4, hy - 28);
-      ctx.fillStyle = 'rgba(20,20,25,0.92)';
+      ctx.restore();
+      var score  = Math.round(arr[hIdx]);
+      var zone   = score >= 80 ? 'Peak' : score >= 60 ? 'High' : score >= 40 ? 'Mid' : 'Low';
+      var zCol   = score >= 80 ? '#F5C842' : score >= 60 ? '#6EE7B7' : score >= 40 ? '#F2C063' : '#94a3b8';
+      var label  = fmtHour(hIdx) + '  ' + score + '  ' + zone;
+      ctx.font = 'bold 11px -apple-system,sans-serif';
+      var tw = ctx.measureText(label).width + 20;
+      var tx = clamp(hx - tw/2, 2, W - tw - 2);
+      var ty = Math.max(padT + 2, hy - 34);
+      ctx.fillStyle = 'rgba(12,12,18,0.92)';
       ctx.beginPath();
-      if (ctx.roundRect) { ctx.roundRect(tx, ty, tw + 12, 20, 5); } else { ctx.rect(tx, ty, tw + 12, 20); }
+      if (ctx.roundRect) ctx.roundRect(tx, ty, tw, 22, 6); else ctx.rect(tx, ty, tw, 22);
       ctx.fill();
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = zCol;
       ctx.textAlign = 'left';
-      ctx.fillText(label, tx + 6, ty + 14);
+      ctx.fillText(label, tx + 10, ty + 15);
     }
 
     // Wire hover events once
