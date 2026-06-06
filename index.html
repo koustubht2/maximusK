@@ -956,6 +956,22 @@ body::after {
 .peak-hero-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .peak-hero-score { font-size:52px; font-weight:800; letter-spacing:-0.04em; color:var(--text-primary); line-height:1; }
 .peak-hero-label { font-size:10px; text-transform:uppercase; letter-spacing:0.14em; color:var(--text-tertiary); margin-top:4px; }
+/* ── Inline energy ring (inside chart card header) ── */
+.peak-energy-ring-wrap { position:relative; width:72px; height:72px; flex-shrink:0; }
+.peak-energy-ring-svg { width:100%; height:100%; display:block; overflow:visible; }
+.peak-energy-ring-track { fill:none; stroke:rgba(255,255,255,0.07); stroke-width:6; }
+.peak-energy-ring-fill { fill:none; stroke:#6EE7B7; stroke-width:6; stroke-linecap:round; stroke-dasharray:175.93; stroke-dashoffset:175.93; transition:stroke-dashoffset 0.7s cubic-bezier(0.22,1,0.36,1); transform:rotate(-90deg); transform-origin:center; }
+.peak-energy-ring-fill.zone-gold   { stroke:#F5C842; }
+.peak-energy-ring-fill.zone-green  { stroke:#6EE7B7; }
+.peak-energy-ring-fill.zone-yellow { stroke:#F2C063; }
+.peak-energy-ring-fill.zone-red    { stroke:#FF8A8A; }
+.peak-energy-ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.peak-energy-ring-score { font-size:22px; font-weight:800; letter-spacing:-0.03em; color:var(--text-primary); line-height:1; }
+.peak-energy-ring-meta { display:flex; flex-direction:column; justify-content:center; gap:3px; }
+.peak-energy-ring-zone { font-size:16px; font-weight:700; color:var(--text-primary); line-height:1; }
+.peak-energy-ring-time { font-size:11px; font-weight:600; color:var(--text-tertiary); letter-spacing:0.04em; }
+.peak-energy-ring-status { font-size:10px; color:var(--text-tertiary); letter-spacing:0.02em; display:flex; align-items:center; gap:4px; }
+.peak-energy-ring-dot { width:6px; height:6px; border-radius:50%; background:#6EE7B7; display:inline-block; flex-shrink:0; }
 .peak-card { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,0.45); backdrop-filter:blur(24px) saturate(1.2); padding:18px; margin-bottom:16px; }
 .peak-section-label { font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px; }
 .peak-energy-tabs { display:flex; gap:6px; margin-bottom:10px; }
@@ -8539,17 +8555,34 @@ window.canonicalJson = function(obj) {
 
     <div class="peak-card">
       <div class="peak-chart-header">
-        <div class="peak-chart-header-left">
-          <div class="peak-day-header" style="margin:0 0 2px">
+        <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+          <!-- Inline energy score ring -->
+          <div class="peak-energy-ring-wrap">
+            <svg class="peak-energy-ring-svg" viewBox="0 0 72 72">
+              <circle class="peak-energy-ring-track" cx="36" cy="36" r="28"/>
+              <circle id="peakEnergyRingFill" class="peak-energy-ring-fill zone-green" cx="36" cy="36" r="28"/>
+            </svg>
+            <div class="peak-energy-ring-center">
+              <div class="peak-energy-ring-score" id="peakEnergyRingScore">—</div>
+            </div>
+          </div>
+          <!-- Zone label + time + scrub status -->
+          <div class="peak-energy-ring-meta">
+            <div class="peak-energy-ring-zone" id="peakEnergyRingZone">—</div>
+            <div class="peak-energy-ring-time" id="peakEnergyRingTime">—</div>
+            <div class="peak-energy-ring-status"><span class="peak-energy-ring-dot" id="peakEnergyRingDot"></span><span id="peakEnergyRingStatus">Live</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+          <div class="peak-energy-tabs" style="margin-bottom:0;">
+            <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">LINE</button>
+            <button class="peak-etab" id="peakTabStack" data-mode="stack" type="button">STACK</button>
+          </div>
+          <div class="peak-day-header" style="margin:0;justify-content:flex-end;">
             <button class="peak-day-nav" id="peakDayPrev" type="button">&#8249;</button>
             <div class="peak-section-label" style="margin:0" id="peakDayLabel">Your Day</div>
             <button class="peak-day-nav" id="peakDayNext" type="button">&#8250;</button>
           </div>
-          <div class="peak-chart-subtitle">Your predicted score, hour by hour. Hover the curve to scrub.</div>
-        </div>
-        <div class="peak-energy-tabs">
-          <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">LINE</button>
-          <button class="peak-etab" id="peakTabStack" data-mode="stack" type="button">STACK</button>
         </div>
       </div>
       <div class="peak-energy-canvas-wrap">
@@ -19906,11 +19939,11 @@ function switchTab(tab) {
 
     // ── Outer glow pass ───────────────────────────────────────
     ctx.save();
-    ctx.shadowColor = 'rgba(110,231,183,0.5)';
-    ctx.shadowBlur  = 22;
+    ctx.shadowColor = 'rgba(110,231,183,0.35)';
+    ctx.shadowBlur  = 12;
     buildPath(pts);
-    ctx.strokeStyle = 'rgba(110,231,183,0.45)';
-    ctx.lineWidth   = 6;
+    ctx.strokeStyle = 'rgba(110,231,183,0.25)';
+    ctx.lineWidth   = 3;
     ctx.lineJoin    = 'round';
     ctx.lineCap     = 'round';
     ctx.stroke();
@@ -19918,11 +19951,11 @@ function switchTab(tab) {
 
     // ── Crisp inner line ──────────────────────────────────────
     ctx.save();
-    ctx.shadowColor = 'rgba(110,231,183,0.8)';
-    ctx.shadowBlur  = 8;
+    ctx.shadowColor = 'rgba(110,231,183,0.6)';
+    ctx.shadowBlur  = 4;
     buildPath(pts);
     ctx.strokeStyle = '#6EE7B7';
-    ctx.lineWidth   = 2.5;
+    ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
     ctx.lineCap     = 'round';
     ctx.stroke();
@@ -20084,11 +20117,8 @@ function switchTab(tab) {
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
       ctx.fillText(timeStr, tx + pillW / 2, ty + 42);
 
-      // Update the hero label if scrubbing (reference image: "82 Peak • AT 11 AM • Scrubbing")
-      var heroVal = document.getElementById('peakHeroVal');
-      var heroLabel = document.getElementById('peakHeroLabel');
-      if (heroVal) heroVal.textContent = score;
-      if (heroLabel) heroLabel.textContent = zone + ' · ' + timeStr;
+      // Update inline energy ring while scrubbing
+      if (typeof _updateEnergyRing === 'function') _updateEnergyRing(score, timeStr, true);
     }
 
     // Wire hover events once per canvas element
@@ -20106,13 +20136,11 @@ function switchTab(tab) {
       }
       function onLeave() {
         _energyHoverH = null;
-        // restore hero to current moment values
-        var heroVal = document.getElementById('peakHeroVal');
-        var heroLabel = document.getElementById('peakHeroLabel');
-        if (heroVal && el._peakArr) {
-          var curScore = Math.round(el._peakArr[Math.min(23, Math.floor(nowHour()))]);
-          heroVal.textContent = curScore;
-          heroLabel.textContent = curScore >= 80 ? 'Peak' : curScore >= 60 ? 'Above the Curve' : curScore >= 40 ? 'Steady' : 'Low';
+        // Restore ring to live current-hour value
+        if (typeof _updateEnergyRing === 'function' && el._peakArr) {
+          var _nh = nowHour();
+          var _ns = el._peakArr[Math.min(23, Math.floor(_nh))] || 0;
+          _updateEnergyRing(_ns, fmtHour(Math.floor(_nh)), false);
         }
         drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode);
       }
@@ -20404,6 +20432,8 @@ function switchTab(tab) {
     var _pec = document.getElementById('peakEnergyCanvas');
     if (_pec) _pec._peakReadiness = readiness || 75;
     drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode);
+    var _nowH = nowHour();
+    _updateEnergyRing(arr[Math.min(23, Math.floor(_nowH))] || 0, fmtHour(Math.floor(_nowH)), false);
 
     var wins = findBestWindows(arr, wakeHour);
     if (wins[0]) {
@@ -20584,6 +20614,31 @@ function switchTab(tab) {
   }
 
   // Central helper — refreshes both charts and coffee score from current data
+  // ── Inline energy ring updater ────────────────────────────
+  function _updateEnergyRing(score, timeLabel, isScrubbing) {
+    var ringFill  = document.getElementById('peakEnergyRingFill');
+    var ringScore = document.getElementById('peakEnergyRingScore');
+    var ringZone  = document.getElementById('peakEnergyRingZone');
+    var ringTime  = document.getElementById('peakEnergyRingTime');
+    var ringStatus = document.getElementById('peakEnergyRingStatus');
+    var ringDot   = document.getElementById('peakEnergyRingDot');
+    if (!ringFill) return;
+    var s = Math.round(score);
+    var zone  = s >= 80 ? 'Peak' : s >= 60 ? 'Above the Curve' : s >= 40 ? 'Steady' : 'Low';
+    var zCls  = s >= 80 ? 'zone-gold' : s >= 60 ? 'zone-green' : s >= 40 ? 'zone-yellow' : 'zone-red';
+    var zCol  = s >= 80 ? '#F5C842'   : s >= 60 ? '#6EE7B7'    : s >= 40 ? '#F2C063'     : '#FF8A8A';
+    // r=28, circumference = 2π*28 ≈ 175.93
+    var circ = 175.93;
+    var offset = circ - (s / 100) * circ;
+    ringFill.style.strokeDashoffset = offset;
+    ringFill.className = 'peak-energy-ring-fill ' + zCls;
+    if (ringScore) ringScore.textContent = s;
+    if (ringZone)  { ringZone.textContent = zone; ringZone.style.color = zCol; }
+    if (ringTime)  ringTime.textContent = 'AT ' + timeLabel;
+    if (ringStatus) ringStatus.textContent = isScrubbing ? 'Scrubbing' : 'Live';
+    if (ringDot)   ringDot.style.background = isScrubbing ? '#F5C842' : zCol;
+  }
+
   function _refreshEnergyChart(logs) {
     var oura = getOura();
     var wh = _wakeHour;
@@ -20598,6 +20653,10 @@ function switchTab(tab) {
     drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode);
     drawCaffChart('peakCaffCanvas', logs);
     renderCoffeeScore(logs, r);
+    // Update inline ring with current-hour energy score
+    var nowH = nowHour();
+    var nowScore = arr[Math.min(23, Math.floor(nowH))] || 0;
+    _updateEnergyRing(nowScore, fmtHour(Math.floor(nowH)), false);
   }
 
   // ── Schedule ───────────────────────────────────────────────
@@ -20907,6 +20966,8 @@ function switchTab(tab) {
     var _pec2 = document.getElementById('peakEnergyCanvas');
     if (_pec2) _pec2._peakReadiness = r || 75;
     drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode);
+    var _nh2 = nowHour();
+    _updateEnergyRing(arr2[Math.min(23, Math.floor(_nh2))] || 0, fmtHour(Math.floor(_nh2)), false);
     var wins2 = findBestWindows(arr2, wh);
     if (wins2[0]) { setText('peakWin1Time', fmtHour(wins2[0].start)+'–'+fmtHour(wins2[0].start+2)); setText('peakWin1Score','Peak '+Math.round(wins2[0].avg)); }
     if (wins2[1]) { setText('peakWin2Time', fmtHour(wins2[1].start)+'–'+fmtHour(wins2[1].start+2)); setText('peakWin2Score','Peak '+Math.round(wins2[1].avg)); }
