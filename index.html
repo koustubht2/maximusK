@@ -1002,6 +1002,7 @@ body::after {
 .peak-mood-dot.steady { background:#F2C063; }
 .peak-mood-dot.good { background:#6EE7B7; }
 .peak-mood-dot.sharp { background:#F5C842; box-shadow:0 0 6px rgba(245,200,66,0.6); }
+.peak-mood-dot.peak  { background:#fff; box-shadow:0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(110,231,183,0.6); }
 .peak-mood-label { font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-tertiary); font-weight:600; }
 .peak-caff-search-wrap { position:relative; margin-bottom:10px; }
 .peak-caff-search { width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; color:var(--text-primary); font-family:inherit; font-size:14px; outline:none; transition:border-color 0.15s; }
@@ -8540,8 +8541,8 @@ window.canonicalJson = function(obj) {
         <button class="peak-day-nav" id="peakDayNext" type="button">&#8250;</button>
       </div>
       <div class="peak-energy-tabs">
-        <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">CORE</button>
-        <button class="peak-etab" id="peakTabBase" data-mode="base" type="button">BASE</button>
+        <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">LINE</button>
+        <button class="peak-etab" id="peakTabBase" data-mode="base" type="button">BARS</button>
         <button class="peak-etab" id="peakTabStack" data-mode="stack" type="button">STACK</button>
       </div>
       <div class="peak-energy-canvas-wrap">
@@ -8589,6 +8590,7 @@ window.canonicalJson = function(obj) {
         <button class="peak-mood-btn" data-mood="steady" type="button"><div class="peak-mood-dot steady"></div><div class="peak-mood-label">Steady</div></button>
         <button class="peak-mood-btn" data-mood="good" type="button"><div class="peak-mood-dot good"></div><div class="peak-mood-label">Good</div></button>
         <button class="peak-mood-btn" data-mood="sharp" type="button"><div class="peak-mood-dot sharp"></div><div class="peak-mood-label">Sharp</div></button>
+        <button class="peak-mood-btn" data-mood="peak" type="button"><div class="peak-mood-dot peak"></div><div class="peak-mood-label">Peak</div></button>
       </div>
     </div>
 
@@ -19590,16 +19592,27 @@ function switchTab(tab) {
     var PI = Math.PI;
     var hasOura = readiness != null;
     var foodMod = foodEnergyMod(vitLogs || loadVit());
-    // HRV modifier: if HRV > avg → bonus up to +8pts peak height; if < avg → penalty
+    // HRV modifier
     var hrvMod = 0;
     if (hrv && avgHrv && avgHrv > 0) {
       hrvMod = clamp((hrv - avgHrv) / avgHrv * 12, -8, 8);
     }
+    // Mood modifier: subjective feeling shifts curve up/down uniformly
+    var moodShift = 0;
+    var _mood = localStorage.getItem(MOOD_KEY + today()) || '';
+    if      (_mood === 'peak')   moodShift =  15;
+    else if (_mood === 'sharp')  moodShift =  8;
+    else if (_mood === 'good')   moodShift =  4;
+    else if (_mood === 'steady') moodShift =  0;
+    else if (_mood === 'tired')  moodShift = -6;
+    else if (_mood === 'foggy')  moodShift = -12;
     for (var h = 0; h < 24; h++) {
       var hw = h - wakeHour;
       if (hw < 0) hw += 24;
       // Without Oura data show a flat placeholder line at 30
       if (!hasOura && mode !== 'stack') { arr.push(30); continue; }
+      // Hours before wake: flat sleep-level baseline (not a rising curve)
+      if (hw > 18) { arr.push(foodMod[h] > 0 ? 10 + foodMod[h] : 10); continue; }
       // Two-process model: primary peak at +4h after wake, post-lunch dip at +7h, fade by +13h
       var base = 50 + 32 * Math.sin(PI * (hw - 0.5) / 9) - 10 * Math.sin(PI * (hw - 5) / 4);
       base = clamp(base, 10, 100);
@@ -19617,6 +19630,8 @@ function switchTab(tab) {
       }
       // Food modifier: applies in all modes
       score += foodMod[h];
+      // Mood modifier: shifts entire curve based on how you feel right now
+      score += moodShift;
       arr.push(clamp(score, 0, 100));
     }
     return arr;
@@ -19774,26 +19789,55 @@ function switchTab(tab) {
       ctx.setLineDash([]);
     }
 
-    // Main fill
-    var grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
-    grad.addColorStop(0, 'rgba(110,231,183,0.18)');
-    grad.addColorStop(1, 'rgba(110,231,183,0)');
-    ctx.beginPath();
-    ctx.moveTo(xAt(0), yAt(arr[0]));
-    for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
-    ctx.lineTo(xAt(23), padT + ch);
-    ctx.lineTo(xAt(0), padT + ch);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
-    // Main line
-    ctx.beginPath();
-    ctx.moveTo(xAt(0), yAt(arr[0]));
-    for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
-    ctx.strokeStyle = '#6EE7B7';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.stroke();
+    if (mode === 'base') {
+      // BARS mode: hourly vertical bars coloured by energy level
+      var barW = Math.max(2, cw / 24 - 2);
+      for (var h = 0; h < 24; h++) {
+        var v = arr[h];
+        var bx = xAt(h) + (cw / 24 - barW) / 2;
+        var bh = (v / 100) * ch;
+        var by = padT + ch - bh;
+        // colour by zone
+        var barCol = v >= 80 ? '#F5C842' : v >= 60 ? '#6EE7B7' : v >= 40 ? '#F2C063' : '#94a3b8';
+        var barGrad = ctx.createLinearGradient(0, by, 0, by + bh);
+        barGrad.addColorStop(0, barCol);
+        barGrad.addColorStop(1, barCol.replace(')', ',0.2)').replace('rgb', 'rgba'));
+        ctx.fillStyle = barGrad;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]) : ctx.rect(bx, by, barW, bh);
+        ctx.fill();
+        // highlight current hour
+        var nowH = Math.floor(nowHour());
+        if (h === nowH) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(bx, by, barW, bh, [3, 3, 0, 0]) : ctx.rect(bx, by, barW, bh);
+          ctx.stroke();
+        }
+      }
+    } else {
+      // LINE / STACK mode: filled area + line
+      var grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+      grad.addColorStop(0, 'rgba(110,231,183,0.18)');
+      grad.addColorStop(1, 'rgba(110,231,183,0)');
+      ctx.beginPath();
+      ctx.moveTo(xAt(0), yAt(arr[0]));
+      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+      ctx.lineTo(xAt(23), padT + ch);
+      ctx.lineTo(xAt(0), padT + ch);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+      // Main line
+      ctx.beginPath();
+      ctx.moveTo(xAt(0), yAt(arr[0]));
+      for (var h = 1; h < 24; h++) { ctx.lineTo(xAt(h), yAt(arr[h])); }
+      ctx.strokeStyle = '#6EE7B7';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
     // Now marker
     ctx.beginPath();
     ctx.setLineDash([3,4]);
@@ -20075,15 +20119,36 @@ function switchTab(tab) {
     var readiness  = todayR && todayR.score;
     var hrv        = todayR && todayR.contributors && todayR.contributors.hrv_balance;
     var sleepScore = todayS && todayS.score;
-    // Derive actual wake time from Oura bedtime_end (most recent sleep session end)
+    // Derive actual wake time from Oura bedtime_end — pick the most recent entry
+    // where bedtime_end is today or yesterday (handles overnight sleep crossing midnight)
     var wakeHour = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
-    if (oura.detailedSleep && oura.detailedSleep.length) {
-      var ds = oura.detailedSleep[0];
-      if (ds.bedtime_end) {
-        var wakeDate = new Date(ds.bedtime_end);
-        wakeHour = wakeDate.getHours() + wakeDate.getMinutes() / 60;
+    (function() {
+      var src = (oura.detailedSleep && oura.detailedSleep.length) ? oura.detailedSleep : (oura.sleep && oura.sleep.length ? oura.sleep : null);
+      if (!src) return;
+      var todayStr = today();
+      var d1 = new Date(todayStr); d1.setDate(d1.getDate() - 1);
+      var yesterdayStr = d1.getFullYear() + '-' + String(d1.getMonth()+1).padStart(2,'0') + '-' + String(d1.getDate()).padStart(2,'0');
+      // Find the entry whose bedtime_end is today (woke up today)
+      var best = null;
+      for (var i = 0; i < src.length; i++) {
+        var s = src[i];
+        var endField = s.bedtime_end || s.day;
+        if (!endField) continue;
+        var endDate = new Date(endField);
+        var endDateStr = endDate.getFullYear() + '-' + String(endDate.getMonth()+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
+        if (endDateStr === todayStr || endDateStr === yesterdayStr) { best = s; break; }
       }
-    }
+      // fallback: most recent entry
+      if (!best) best = src[0];
+      if (best) {
+        var endField = best.bedtime_end || best.day;
+        if (endField) {
+          var wakeDate = new Date(endField);
+          // bedtime_end is a datetime string — extract local time
+          wakeHour = wakeDate.getHours() + wakeDate.getMinutes() / 60;
+        }
+      }
+    })();
 
     // fix #18: compute avg HRV for modifier
     var avgHrv = null;
@@ -20755,6 +20820,7 @@ function switchTab(tab) {
         document.querySelectorAll('.peak-mood-btn').forEach(function(b){ b.classList.remove('selected'); });
         btn.classList.add('selected');
         localStorage.setItem(MOOD_KEY + today(), btn.dataset.mood);
+        _refreshEnergyChart(null); // mood shift updates the curve immediately
       });
     });
 
