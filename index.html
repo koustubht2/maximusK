@@ -1091,7 +1091,8 @@ body::after {
 .vit-macro-fill.protein { background:#818cf8; }
 .vit-macro-fill.carbs { background:#F2C063; }
 .vit-macro-fill.fat { background:#fb923c; }
-.vit-macro-val { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); width:48px; text-align:right; flex-shrink:0; }
+.vit-macro-val { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); width:36px; text-align:right; flex-shrink:0; }
+.vit-macro-target { font-size:9px; color:rgba(255,255,255,0.18); font-family:var(--font-mono); width:32px; text-align:right; flex-shrink:0; }
 .vit-meal-tabs { display:flex; gap:4px; margin-bottom:12px; overflow-x:auto; scrollbar-width:none; }
 .vit-meal-tabs::-webkit-scrollbar { display:none; }
 .vit-meal-tab { padding:5px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; flex-shrink:0; }
@@ -8701,16 +8702,19 @@ window.canonicalJson = function(obj) {
             <div class="vit-macro-lbl">Protein</div>
             <div class="vit-macro-track"><div id="vitBarProtein" class="vit-macro-fill protein" style="width:0%"></div></div>
             <div class="vit-macro-val" id="vitValProtein">0g</div>
+            <div class="vit-macro-target" id="vitTargetProtein">180g</div>
           </div>
           <div class="vit-macro-row">
             <div class="vit-macro-lbl">Carbs</div>
             <div class="vit-macro-track"><div id="vitBarCarbs" class="vit-macro-fill carbs" style="width:0%"></div></div>
             <div class="vit-macro-val" id="vitValCarbs">0g</div>
+            <div class="vit-macro-target" id="vitTargetCarbs">240g</div>
           </div>
           <div class="vit-macro-row">
             <div class="vit-macro-lbl">Fat</div>
             <div class="vit-macro-track"><div id="vitBarFat" class="vit-macro-fill fat" style="width:0%"></div></div>
             <div class="vit-macro-val" id="vitValFat">0g</div>
+            <div class="vit-macro-target" id="vitTargetFat">80g</div>
           </div>
         </div>
       </div>
@@ -8721,6 +8725,12 @@ window.canonicalJson = function(obj) {
         <button class="vit-meal-tab" data-meal="dinner" type="button">Dinner</button>
         <button class="vit-meal-tab" data-meal="snack" type="button">Snack</button>
       </div>
+      <!-- hidden file picker for snap meal -->
+      <input id="vitSnapFileInput" type="file" accept="image/*" capture="environment" style="display:none">
+      <!-- snap preview thumbnail -->
+      <img id="vitSnapThumb" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.08)">
+      <!-- AI target note -->
+      <div id="vitTargetBadge" style="display:none;font-size:11px;color:rgba(110,231,183,0.7);font-family:var(--font-mono);background:rgba(110,231,183,0.07);border:1px solid rgba(110,231,183,0.15);border-radius:8px;padding:6px 10px;margin-bottom:10px;"></div>
       <div class="vit-log-actions">
         <button class="vit-log-btn" id="vitSnapBtn" type="button">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -8767,7 +8777,7 @@ window.canonicalJson = function(obj) {
 <div id="vitModalBg" class="vit-modal-bg" style="display:none">
   <div class="vit-modal">
     <div class="vit-modal-title">Add Food</div>
-    <input id="vitFoodSearch" class="vit-modal-search" type="text" placeholder="Search 50+ foods…" autocomplete="off">
+    <input id="vitFoodSearch" class="vit-modal-search" type="text" placeholder="Search 200+ foods…" autocomplete="off">
     <div id="vitSearchResults" class="vit-search-results"></div>
     <div style="margin-top:18px">
       <div class="vit-section-label">Or add manually</div>
@@ -19119,11 +19129,12 @@ function switchTab(tab) {
 (function () {
 
   // ── Constants ──────────────────────────────────────────────
-  var CAFF_KEY     = 'goals_caffeine_';
-  var MOOD_KEY     = 'goals_mood_';
-  var SCHED_KEY    = 'goals_schedule_';
-  var INSIGHTS_KEY = 'goals_peak_insights_v1';
-  var VIT_KEY      = 'goals_vitality_';
+  var CAFF_KEY        = 'goals_caffeine_';
+  var MOOD_KEY        = 'goals_mood_';
+  var SCHED_KEY       = 'goals_schedule_';
+  var INSIGHTS_KEY    = 'goals_peak_insights_v1';
+  var VIT_KEY         = 'goals_vitality_';
+  var VIT_TARGETS_KEY = 'goals_vit_targets_';
 
   var _insightsFlight = false;
   var _coachFlight    = false;
@@ -19154,56 +19165,241 @@ function switchTab(tab) {
 
   // ── Food database ──────────────────────────────────────────
   var FOOD_DB = [
+    // ── Eggs ──
+    {name:'Egg (large)',kcal:72,protein:6,carbs:0.4,fat:5},
+    {name:'Boiled Egg',kcal:68,protein:6,carbs:0.5,fat:4.8},
+    {name:'Scrambled Eggs 2',kcal:200,protein:14,carbs:1,fat:15},
+    {name:'Omelette 2 eggs',kcal:185,protein:13,carbs:1,fat:14},
+    {name:'Egg Bhurji 2 eggs',kcal:210,protein:13,carbs:3,fat:16},
+
+    // ── Indian breakfast ──
+    {name:'Idli 2 pc',kcal:130,protein:4,carbs:26,fat:0.5},
+    {name:'Idli 4 pc',kcal:260,protein:8,carbs:52,fat:1},
+    {name:'Dosa (plain)',kcal:168,protein:3.5,carbs:33,fat:2.5},
+    {name:'Masala Dosa',kcal:280,protein:5,carbs:45,fat:9},
+    {name:'Uttapam',kcal:200,protein:5,carbs:36,fat:5},
+    {name:'Poha 1 plate',kcal:250,protein:5,carbs:46,fat:5},
+    {name:'Upma 1 plate',kcal:220,protein:5,carbs:38,fat:6},
+    {name:'Medu Vada 2 pc',kcal:260,protein:8,carbs:34,fat:11},
+    {name:'Paratha (plain)',kcal:200,protein:4,carbs:32,fat:7},
+    {name:'Aloo Paratha',kcal:300,protein:6,carbs:48,fat:10},
+    {name:'Chapati / Roti',kcal:104,protein:3,carbs:20,fat:1.5},
+    {name:'Chapati with ghee',kcal:130,protein:3,carbs:20,fat:4.5},
+    {name:'Puri 2 pc',kcal:200,protein:3.5,carbs:28,fat:9},
+    {name:'Bhakri (jowar)',kcal:95,protein:3,carbs:18,fat:1},
+
+    // ── Indian rice dishes ──
+    {name:'Steamed Rice 1 cup',kcal:206,protein:4.3,carbs:45,fat:0.4},
+    {name:'Indrayani Rice 1 cup',kcal:210,protein:4,carbs:46,fat:0.4},
+    {name:'Jeera Rice',kcal:230,protein:4,carbs:46,fat:4},
+    {name:'Veg Pulao',kcal:280,protein:6,carbs:50,fat:7},
+    {name:'Curd Rice',kcal:220,protein:7,carbs:40,fat:4},
+    {name:'Lemon Rice',kcal:215,protein:4,carbs:42,fat:5},
+    {name:'Biryani (veg) 1 plate',kcal:350,protein:8,carbs:60,fat:9},
+    {name:'Biryani (chicken) 1 plate',kcal:480,protein:28,carbs:55,fat:14},
+    {name:'Khichdi 1 bowl',kcal:260,protein:9,carbs:46,fat:5},
+
+    // ── Dal & legumes ──
+    {name:'Dal Tadka 1 bowl',kcal:180,protein:10,carbs:28,fat:4},
+    {name:'Dal Makhani 1 bowl',kcal:280,protein:12,carbs:32,fat:11},
+    {name:'Moong Dal 1 bowl',kcal:150,protein:9,carbs:26,fat:1},
+    {name:'Chana Dal 1 bowl',kcal:200,protein:12,carbs:32,fat:3},
+    {name:'Rajma 1 bowl',kcal:270,protein:14,carbs:42,fat:4},
+    {name:'Chole / Chana Masala 1 bowl',kcal:280,protein:13,carbs:44,fat:6},
+    {name:'Pav Bhaji (2 pav)',kcal:450,protein:10,carbs:68,fat:15},
+    {name:'Sambar 1 bowl',kcal:120,protein:5,carbs:20,fat:2},
+
+    // ── Sprouts ──
+    {name:'Moong Sprouts 100g raw',kcal:30,protein:3,carbs:6,fat:0.2},
+    {name:'Moong Sprouts cooked 1 bowl',kcal:105,protein:8,carbs:18,fat:0.5},
+    {name:'Mixed Sprouts 1 bowl',kcal:120,protein:9,carbs:20,fat:1},
+    {name:'Matki Sprouts 100g',kcal:35,protein:3.5,carbs:6.5,fat:0.3},
+
+    // ── Paneer sabji ──
+    {name:'Paneer Butter Masala 1 bowl',kcal:380,protein:18,carbs:15,fat:28},
+    {name:'Palak Paneer 1 bowl',kcal:290,protein:16,carbs:12,fat:20},
+    {name:'Paneer Bhurji',kcal:260,protein:17,carbs:5,fat:19},
+    {name:'Paneer Tikka Masala 1 bowl',kcal:360,protein:20,carbs:14,fat:26},
+    {name:'Shahi Paneer 1 bowl',kcal:410,protein:18,carbs:16,fat:32},
+    {name:'Kadai Paneer 1 bowl',kcal:340,protein:19,carbs:12,fat:25},
+    {name:'Matar Paneer 1 bowl',kcal:310,protein:17,carbs:20,fat:20},
+
+    // ── Veg sabji ──
+    {name:'Aloo Gobi 1 bowl',kcal:180,protein:4,carbs:28,fat:7},
+    {name:'Gobi Sabji 1 bowl',kcal:140,protein:4,carbs:18,fat:6},
+    {name:'Aloo Capsicum 1 bowl',kcal:175,protein:3,carbs:26,fat:7},
+    {name:'Capsicum Sabji 1 bowl',kcal:120,protein:2.5,carbs:16,fat:5},
+    {name:'Cabbage Sabji 1 bowl',kcal:130,protein:3,carbs:16,fat:6},
+    {name:'Cabbage Peas Sabji 1 bowl',kcal:155,protein:5,carbs:20,fat:6},
+    {name:'Bhindi Masala 1 bowl',kcal:150,protein:3,carbs:18,fat:7},
+    {name:'Bhindi Fry 1 bowl',kcal:165,protein:3,carbs:18,fat:9},
+    {name:'Baingan Bharta 1 bowl',kcal:160,protein:3,carbs:20,fat:7},
+    {name:'Baingan Masala 1 bowl',kcal:150,protein:3,carbs:18,fat:7},
+    {name:'Methi Sabji 1 bowl',kcal:140,protein:4,carbs:15,fat:7},
+    {name:'Palak Sabji 1 bowl',kcal:120,protein:4,carbs:12,fat:6},
+    {name:'Tinda Sabji 1 bowl',kcal:110,protein:2,carbs:14,fat:5},
+    {name:'Lauki Sabji 1 bowl',kcal:100,protein:2,carbs:14,fat:4},
+    {name:'Karela Sabji 1 bowl',kcal:115,protein:2.5,carbs:14,fat:5},
+    {name:'Matar Aloo 1 bowl',kcal:200,protein:5,carbs:30,fat:7},
+    {name:'Matar (peas) 1 bowl',kcal:130,protein:7,carbs:20,fat:3},
+    {name:'Mix Veg Sabji 1 bowl',kcal:165,protein:4,carbs:22,fat:7},
+    {name:'Aloo Jeera 1 bowl',kcal:190,protein:3,carbs:30,fat:7},
+    {name:'Aloo Tamatar 1 bowl',kcal:170,protein:3,carbs:26,fat:6},
+
+    // ── Chicken dishes ──
+    {name:'Chicken Curry 1 bowl',kcal:320,protein:28,carbs:8,fat:18},
+    {name:'Butter Chicken 1 bowl',kcal:380,protein:30,carbs:12,fat:22},
+    {name:'Chicken Tikka 6 pc',kcal:280,protein:34,carbs:5,fat:13},
+    {name:'Chicken Tikka Masala 1 bowl',kcal:360,protein:32,carbs:12,fat:20},
+    {name:'Chicken Kadai 1 bowl',kcal:340,protein:30,carbs:10,fat:20},
+    {name:'Chicken Saag 1 bowl',kcal:300,protein:28,carbs:8,fat:17},
+    {name:'Tandoori Chicken 2 pc',kcal:260,protein:36,carbs:4,fat:11},
+    {name:'Chicken 65 100g',kcal:280,protein:26,carbs:12,fat:14},
+    {name:'Chicken Keema 1 bowl',kcal:350,protein:32,carbs:8,fat:22},
+
+    // ── Mutton & other meat ──
+    {name:'Mutton Curry 1 bowl',kcal:420,protein:32,carbs:6,fat:28},
+    {name:'Mutton Rogan Josh 1 bowl',kcal:440,protein:34,carbs:8,fat:30},
+    {name:'Mutton Keema 1 bowl',kcal:400,protein:30,carbs:6,fat:28},
+
+    // ── Fish & seafood ──
+    {name:'Fish Curry 1 bowl',kcal:300,protein:26,carbs:8,fat:16},
+    {name:'Fish Fry 2 pc',kcal:240,protein:24,carbs:8,fat:13},
+    {name:'Prawn Masala 1 bowl',kcal:270,protein:24,carbs:10,fat:14},
+
+    // ── Egg dishes ──
+    {name:'Egg Curry 2 eggs',kcal:280,protein:15,carbs:10,fat:20},
+    {name:'Egg Masala 2 eggs',kcal:260,protein:15,carbs:8,fat:18},
+
+    // ── Aloo dishes ──
+    {name:'Aloo Sabji 1 bowl',kcal:185,protein:3,carbs:30,fat:7},
+    {name:'Aloo Jeera 1 bowl',kcal:190,protein:3,carbs:30,fat:7},
+    {name:'Aloo Tamatar 1 bowl',kcal:170,protein:3,carbs:26,fat:6},
+    {name:'Aloo Gobi 1 bowl',kcal:180,protein:4,carbs:28,fat:7},
+    {name:'Aloo Matar 1 bowl',kcal:200,protein:5,carbs:30,fat:7},
+    {name:'Aloo Capsicum 1 bowl',kcal:175,protein:3,carbs:26,fat:7},
+    {name:'Dum Aloo 1 bowl',kcal:260,protein:4,carbs:36,fat:12},
+
+    // ── Mumbai street food ──
+    {name:'Vada Pav',kcal:290,protein:6,carbs:45,fat:10},
+    {name:'Vada Pav with chutney',kcal:320,protein:7,carbs:48,fat:12},
+    {name:'Kanda Bhaji 100g',kcal:250,protein:5,carbs:30,fat:13},
+    {name:'Kanda Bhaji plate',kcal:350,protein:7,carbs:42,fat:18},
+    {name:'Misal Pav (1 pav)',kcal:320,protein:12,carbs:50,fat:8},
+    {name:'Misal Pav (2 pav)',kcal:450,protein:16,carbs:70,fat:12},
+    {name:'Pav Bhaji (1 pav)',kcal:280,protein:6,carbs:45,fat:10},
+    {name:'Pav Bhaji (2 pav)',kcal:450,protein:10,carbs:68,fat:15},
+    {name:'Dabeli',kcal:260,protein:5,carbs:42,fat:9},
+    {name:'Batata Vada 1 pc',kcal:130,protein:3,carbs:18,fat:6},
+
+    // ── Chaat ──
+    {name:'Pani Puri 6 pc',kcal:180,protein:4,carbs:32,fat:4},
+    {name:'Sev Puri 1 plate',kcal:220,protein:5,carbs:34,fat:8},
+    {name:'Bhel Puri 1 plate',kcal:200,protein:5,carbs:36,fat:5},
+    {name:'Dahi Puri 6 pc',kcal:240,protein:6,carbs:38,fat:7},
+    {name:'Ragda Patice 1 plate',kcal:350,protein:10,carbs:54,fat:11},
+    {name:'Ragda Puri 6 pc',kcal:280,protein:8,carbs:46,fat:7},
+    {name:'Dahi Bhalla 2 pc',kcal:220,protein:7,carbs:34,fat:6},
+    {name:'Aloo Chaat 1 plate',kcal:210,protein:4,carbs:36,fat:6},
+    {name:'Papdi Chaat 1 plate',kcal:280,protein:7,carbs:42,fat:10},
+    {name:'Chaat 1 plate',kcal:230,protein:5,carbs:38,fat:7},
+
+    // ── Other Indian snacks ──
+    {name:'Samosa 1 pc',kcal:150,protein:3,carbs:20,fat:7},
+    {name:'Samosa 2 pc',kcal:300,protein:6,carbs:40,fat:14},
+    {name:'Pakora 4 pc',kcal:200,protein:5,carbs:25,fat:9},
+    {name:'Dhokla 3 pc',kcal:170,protein:6,carbs:30,fat:3},
+    {name:'Chivda 30g',kcal:140,protein:4,carbs:18,fat:6},
+    {name:'Chakli 4 pc',kcal:180,protein:3,carbs:22,fat:9},
+    {name:'Chikki 1 pc',kcal:120,protein:3,carbs:16,fat:5},
+    {name:'Murukku 30g',kcal:160,protein:3,carbs:20,fat:8},
+
+    // ── Beverages ──
+    {name:'Chai (with milk & sugar)',kcal:60,protein:2,carbs:10,fat:2},
+    {name:'Chai 2 cups',kcal:120,protein:4,carbs:20,fat:4},
+    {name:'Masala Chai',kcal:70,protein:2,carbs:11,fat:2.5},
+    {name:'Black Tea (no sugar)',kcal:5,protein:0,carbs:1,fat:0},
+    {name:'Filter Coffee',kcal:55,protein:2,carbs:8,fat:2},
+
+    // ── Pizza ──
+    {name:'Pizza slice (plain cheese)',kcal:285,protein:12,carbs:36,fat:10},
+    {name:'Pizza slice (veg)',kcal:260,protein:10,carbs:34,fat:9},
+    {name:'Pizza slice (chicken)',kcal:310,protein:16,carbs:34,fat:12},
+    {name:'Pizza 8" personal (veg)',kcal:700,protein:26,carbs:90,fat:26},
+    {name:'Pizza 8" personal (chicken)',kcal:780,protein:38,carbs:88,fat:28},
+
+    // ── Burgers ──
+    {name:'McSpicy Chicken Burger',kcal:490,protein:27,carbs:48,fat:21},
+    {name:'McSpicy Paneer Burger',kcal:430,protein:16,carbs:52,fat:18},
+    {name:'McAloo Tikki Burger',kcal:340,protein:7,carbs:48,fat:14},
+    {name:'Veg Burger',kcal:320,protein:8,carbs:44,fat:12},
+    {name:'Chicken Burger',kcal:420,protein:24,carbs:42,fat:18},
+    {name:'Double Chicken Burger',kcal:580,protein:38,carbs:44,fat:26},
+    {name:'Zinger Burger (KFC)',kcal:450,protein:26,carbs:46,fat:18},
+    {name:'Whopper (Burger King)',kcal:630,protein:28,carbs:50,fat:36},
+    {name:'Burger with fries',kcal:680,protein:22,carbs:80,fat:30},
+
+    // ── Dairy & sides ──
+    {name:'Curd / Dahi 100g',kcal:61,protein:3.5,carbs:5,fat:3},
+    {name:'Raita 100g',kcal:55,protein:3,carbs:5,fat:2.5},
+    {name:'Lassi 300ml',kcal:220,protein:8,carbs:34,fat:6},
+    {name:'Buttermilk 250ml',kcal:60,protein:3,carbs:6,fat:2},
+    {name:'Paneer 100g',kcal:265,protein:18,carbs:3,fat:20},
+    {name:'Ghee 1 tsp',kcal:45,protein:0,carbs:0,fat:5},
+    {name:'Whole Milk 250ml',kcal:149,protein:8,carbs:11.7,fat:8},
+
+    // ── Indian sweets & desserts ──
+    {name:'Kheer 1 bowl',kcal:250,protein:7,carbs:40,fat:8},
+    {name:'Gulab Jamun 2 pc',kcal:280,protein:4,carbs:44,fat:10},
+    {name:'Halwa 100g',kcal:280,protein:4,carbs:42,fat:11},
+    {name:'Ladoo 1 pc',kcal:180,protein:3,carbs:28,fat:7},
+
+    // ── International proteins ──
     {name:'Chicken Breast 100g',kcal:165,protein:31,carbs:0,fat:3.6},
     {name:'Salmon 100g',kcal:208,protein:20,carbs:0,fat:13},
-    {name:'Egg (large)',kcal:72,protein:6,carbs:0.4,fat:5},
-    {name:'Greek Yogurt 200g',kcal:130,protein:17,carbs:6,fat:3.5},
-    {name:'Oats 100g',kcal:389,protein:17,carbs:66,fat:7},
-    {name:'Rice 100g cooked',kcal:130,protein:2.7,carbs:28,fat:0.3},
-    {name:'Pasta 100g cooked',kcal:158,protein:5.8,carbs:31,fat:0.9},
-    {name:'Sweet Potato 100g',kcal:86,protein:1.6,carbs:20,fat:0.1},
-    {name:'Broccoli 100g',kcal:34,protein:2.8,carbs:7,fat:0.4},
-    {name:'Banana',kcal:89,protein:1.1,carbs:23,fat:0.3},
-    {name:'Apple',kcal:52,protein:0.3,carbs:14,fat:0.2},
-    {name:'Avocado 100g',kcal:160,protein:2,carbs:9,fat:15},
-    {name:'Almonds 30g',kcal:174,protein:6,carbs:6,fat:15},
-    {name:'Peanut Butter 2tbsp',kcal:190,protein:8,carbs:6,fat:16},
-    {name:'Bread 1 slice',kcal:79,protein:2.7,carbs:15,fat:1},
-    {name:'Whole Milk 250ml',kcal:149,protein:8,carbs:11.7,fat:8},
-    {name:'Whey Shake',kcal:120,protein:25,carbs:3,fat:1.5},
     {name:'Beef 100g lean',kcal:215,protein:26,carbs:0,fat:12},
     {name:'Tuna Can 130g',kcal:130,protein:29,carbs:0,fat:1},
-    {name:'Cottage Cheese 100g',kcal:98,protein:11,carbs:3.4,fat:4.3},
-    {name:'Quinoa 100g cooked',kcal:120,protein:4.4,carbs:21,fat:1.9},
-    {name:'Lentils 100g cooked',kcal:116,protein:9,carbs:20,fat:0.4},
-    {name:'Spinach 100g',kcal:23,protein:2.9,carbs:3.6,fat:0.4},
-    {name:'Cheddar 30g',kcal:121,protein:7,carbs:0.2,fat:10},
     {name:'Turkey 100g',kcal:135,protein:30,carbs:0,fat:1},
-    {name:'Ham 50g',kcal:65,protein:10,carbs:1,fat:2.5},
+    {name:'Whey Shake',kcal:120,protein:25,carbs:3,fat:1.5},
+    {name:'Protein Bar',kcal:200,protein:20,carbs:22,fat:7},
+
+    // ── Grains & carbs ──
+    {name:'Oats 100g',kcal:389,protein:17,carbs:66,fat:7},
+    {name:'Pasta 100g cooked',kcal:158,protein:5.8,carbs:31,fat:0.9},
+    {name:'Sweet Potato 100g',kcal:86,protein:1.6,carbs:20,fat:0.1},
+    {name:'Quinoa 100g cooked',kcal:120,protein:4.4,carbs:21,fat:1.9},
+    {name:'Bread 1 slice',kcal:79,protein:2.7,carbs:15,fat:1},
+    {name:'Lentils 100g cooked',kcal:116,protein:9,carbs:20,fat:0.4},
+
+    // ── Fruits & veg ──
+    {name:'Banana',kcal:89,protein:1.1,carbs:23,fat:0.3},
+    {name:'Apple',kcal:52,protein:0.3,carbs:14,fat:0.2},
+    {name:'Mango 100g',kcal:60,protein:0.8,carbs:15,fat:0.4},
+    {name:'Papaya 100g',kcal:43,protein:0.5,carbs:11,fat:0.3},
+    {name:'Guava 100g',kcal:68,protein:2.6,carbs:14,fat:1},
+    {name:'Pomegranate 100g',kcal:83,protein:1.7,carbs:19,fat:1.2},
     {name:'Orange',kcal:62,protein:1.2,carbs:15,fat:0.2},
     {name:'Blueberries 100g',kcal:57,protein:0.7,carbs:14,fat:0.3},
-    {name:'Mango 100g',kcal:60,protein:0.8,carbs:15,fat:0.4},
+    {name:'Watermelon 100g',kcal:30,protein:0.6,carbs:7.6,fat:0.2},
+    {name:'Broccoli 100g',kcal:34,protein:2.8,carbs:7,fat:0.4},
+    {name:'Spinach 100g',kcal:23,protein:2.9,carbs:3.6,fat:0.4},
+    {name:'Avocado 100g',kcal:160,protein:2,carbs:9,fat:15},
+
+    // ── Nuts, fats & misc ──
+    {name:'Almonds 30g',kcal:174,protein:6,carbs:6,fat:15},
+    {name:'Peanuts 30g',kcal:170,protein:7,carbs:5,fat:15},
+    {name:'Peanut Butter 2tbsp',kcal:190,protein:8,carbs:6,fat:16},
     {name:'Olive Oil 1tbsp',kcal:119,protein:0,carbs:0,fat:13.5},
-    {name:'Hummus 50g',kcal:110,protein:3,carbs:9,fat:7},
-    {name:'Bagel',kcal:270,protein:10,carbs:53,fat:2},
-    {name:'Croissant',kcal:272,protein:5,carbs:31,fat:14},
-    {name:'Pizza slice',kcal:285,protein:12,carbs:36,fat:10},
-    {name:'Burger Patty 100g',kcal:295,protein:17,carbs:0,fat:25},
-    {name:'Fries 100g',kcal:312,protein:3.4,carbs:41,fat:15},
-    {name:'Sushi Roll 6pc',kcal:200,protein:8,carbs:36,fat:2},
-    {name:'Salad Bowl',kcal:120,protein:8,carbs:10,fat:5},
-    {name:'Smoothie 300ml',kcal:180,protein:5,carbs:38,fat:2},
+    {name:'Greek Yogurt 200g',kcal:130,protein:17,carbs:6,fat:3.5},
+    {name:'Cottage Cheese 100g',kcal:98,protein:11,carbs:3.4,fat:4.3},
+    {name:'Cheddar 30g',kcal:121,protein:7,carbs:0.2,fat:10},
+    {name:'Dark Chocolate 30g',kcal:170,protein:2,carbs:13,fat:12},
+    {name:'Coconut Water 330ml',kcal:60,protein:0.7,carbs:14,fat:0.6},
     {name:'Orange Juice 250ml',kcal:110,protein:1.7,carbs:26,fat:0.5},
     {name:'Latte 350ml',kcal:190,protein:10,carbs:15,fat:8},
-    {name:'Dark Chocolate 30g',kcal:170,protein:2,carbs:13,fat:12},
-    {name:'Watermelon 100g',kcal:30,protein:0.6,carbs:7.6,fat:0.2},
-    {name:'Coconut Water 330ml',kcal:60,protein:0.7,carbs:14,fat:0.6},
-    {name:'Soup 300ml',kcal:90,protein:4,carbs:12,fat:2},
-    {name:'Stir Fry Veg 200g',kcal:80,protein:4,carbs:12,fat:2},
-    {name:'Scrambled Eggs 2',kcal:200,protein:14,carbs:1,fat:15},
-    {name:'Protein Bar',kcal:200,protein:20,carbs:22,fat:7},
+    {name:'Smoothie 300ml',kcal:180,protein:5,carbs:38,fat:2},
     {name:'Rice Cake',kcal:35,protein:0.7,carbs:7.3,fat:0.2},
-    {name:'Peanuts 30g',kcal:170,protein:7,carbs:5,fat:15}
+    {name:'Salad Bowl',kcal:120,protein:8,carbs:10,fat:5}
   ];
 
   // ── Helpers ────────────────────────────────────────────────
@@ -19243,7 +19439,59 @@ function switchTab(tab) {
     } catch(e) { return {}; }
   }
   function getTargets() {
+    var d = today();
+    try {
+      var daily = JSON.parse(localStorage.getItem(VIT_TARGETS_KEY + d));
+      if (daily && daily.kcal) return daily;
+    } catch(e) {}
     try { return JSON.parse(localStorage.getItem('peak_profile')) || {kcal:2400,protein:180,carbs:240,fat:80}; } catch(e) { return {kcal:2400,protein:180,carbs:240,fat:80}; }
+  }
+
+  var _targetsFlight = false;
+  async function fetchDailyTargets() {
+    var d = today();
+    var key = VIT_TARGETS_KEY + d;
+    try {
+      var cached = JSON.parse(localStorage.getItem(key));
+      if (cached && cached.kcal) return; // already set for today
+    } catch(e) {}
+    if (_targetsFlight) return;
+    _targetsFlight = true;
+    try {
+      var oura = getOura();
+      var readiness = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+      var sleep = oura.sleep && oura.sleep[0] && oura.sleep[0].score;
+      var activity = oura.activity && oura.activity[0] && oura.activity[0].score;
+      var profile = {};
+      try { profile = JSON.parse(localStorage.getItem('peak_profile')) || {}; } catch(e) {}
+      var baseKcal = profile.kcal || 2400;
+      var baseProt = profile.protein || 180;
+
+      var prompt = 'You are a sports nutritionist AI. Set personalised daily macro targets for today.\n' +
+        'User data: Readiness score=' + (readiness || 'unknown') + '/100, Sleep score=' + (sleep || 'unknown') + '/100, Activity score=' + (activity || 'unknown') + '/100.\n' +
+        'Base targets from profile: ' + baseKcal + ' kcal, ' + baseProt + 'g protein.\n' +
+        'Rules:\n' +
+        '- If readiness < 60: reduce kcal by 5-10%, keep protein same, reduce carbs\n' +
+        '- If readiness >= 85: increase kcal by 5-8%, increase carbs for performance\n' +
+        '- If sleep < 60: add 100-150 kcal, keep protein high (aids recovery)\n' +
+        '- If activity > 80: increase carbs by 15-20%\n' +
+        '- Protein = bodyweight-based, assume 75kg if unknown, 2.0-2.4g/kg\n' +
+        '- Fat = 25-30% of total kcal\n' +
+        'Return ONLY this JSON, no other text: {"kcal":2400,"protein":180,"carbs":240,"fat":80,"note":"one line reason e.g. Readiness low — reduced carbs for recovery day"}';
+
+      var reply = await gemini(prompt);
+      var match = reply.match(/\{[\s\S]*\}/);
+      if (match) {
+        var t = JSON.parse(match[0]);
+        if (t.kcal && t.protein && t.carbs && t.fat) {
+          localStorage.setItem(key, JSON.stringify(t));
+          renderVitality();
+          var badge = document.getElementById('vitTargetBadge');
+          if (badge) { badge.textContent = t.note || 'AI targets set'; badge.style.display = ''; }
+        }
+      }
+    } catch(err) {}
+    _targetsFlight = false;
   }
   function scoreLabel(s) {
     if (s == null) return 'No data';
@@ -19729,12 +19977,25 @@ function switchTab(tab) {
     ctx.setLineDash([]);
   }
 
-  // ── Gemini helper ──────────────────────────────────────────
+  // ── Gemini helpers ─────────────────────────────────────────
   async function gemini(prompt) {
     var r = await fetch('/api/gemini', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}]})
+    });
+    var j = await r.json();
+    return (j.candidates && j.candidates[0] && j.candidates[0].content.parts[0].text) || '';
+  }
+
+  async function geminiVision(base64, mimeType, textPrompt) {
+    var r = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{role:'user',parts:[
+        {inlineData:{mimeType:mimeType, data:base64}},
+        {text:textPrompt}
+      ]}]})
     });
     var j = await r.json();
     return (j.candidates && j.candidates[0] && j.candidates[0].content.parts[0].text) || '';
@@ -20229,6 +20490,18 @@ function switchTab(tab) {
     setText('vitStatHits',    tot.protein >= targets.protein ? '✓' : '—');
     var streak = calcVitStreak();
     setText('vitStreakLabel', streak + ' day streak');
+    // update macro target labels so user can see today's goals
+    setText('vitTargetProtein', targets.protein + 'g');
+    setText('vitTargetCarbs',   targets.carbs   + 'g');
+    setText('vitTargetFat',     targets.fat     + 'g');
+    // show AI badge if targets were already set today
+    try {
+      var cached = JSON.parse(localStorage.getItem(VIT_TARGETS_KEY + today()));
+      var badge = document.getElementById('vitTargetBadge');
+      if (badge && cached && cached.note) { badge.textContent = cached.note; badge.style.display = ''; }
+    } catch(e) {}
+    // fetch AI targets in background (no-op if already set today)
+    fetchDailyTargets();
   }
 
   function calcVitStreak() {
@@ -20303,29 +20576,55 @@ function switchTab(tab) {
     } finally { _vitCoachFlight = false; }
   }
 
-  async function snapMeal() {
-    var desc = prompt('Describe your meal and I\'ll estimate the macros:');
-    if (!desc) return;
+  function snapMeal() {
+    var inp = document.getElementById('vitSnapFileInput');
+    if (inp) inp.click();
+  }
+
+  async function _handleSnapFile(file) {
+    if (!file) return;
     var resp = document.getElementById('vitCoachResponse');
-    if (resp) { resp.textContent = 'Estimating…'; resp.className = 'vit-ai-response loading'; }
-    try {
-      var reply = await gemini('Estimate the calories and macros for this meal: "'+desc+'". Return ONLY JSON in this exact format with no other text: {"name":"meal name","kcal":350,"protein":25,"carbs":30,"fat":12}');
-      var match = reply.match(/\{[^}]+\}/);
-      if (match) {
-        var data = JSON.parse(match[0]);
-        openVitModal();
-        setTimeout(function() {
-          var n = document.getElementById('vitFoodName'); if (n) n.value = data.name || desc;
-          var k = document.getElementById('vitFoodKcal'); if (k) k.value = data.kcal || '';
-          var p = document.getElementById('vitFoodProtein'); if (p) p.value = data.protein || '';
-          var c = document.getElementById('vitFoodCarbs'); if (c) c.value = data.carbs || '';
-          var f = document.getElementById('vitFoodFat'); if (f) f.value = data.fat || '';
-        }, 50);
+    if (resp) { resp.textContent = 'Analysing your meal…'; resp.className = 'vit-ai-response loading'; }
+
+    // Show preview thumbnail
+    var thumb = document.getElementById('vitSnapThumb');
+    var prevUrl = URL.createObjectURL(file);
+    if (thumb) { thumb.src = prevUrl; thumb.style.display = 'block'; }
+
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        var dataUrl = e.target.result;
+        var base64 = dataUrl.split(',')[1];
+        var mime = file.type || 'image/jpeg';
+        var reply = await geminiVision(base64, mime,
+          'Look at this meal photo. Identify every food item and estimate the total serving sizes based on visual portion cues (plate size, utensil scale, etc). ' +
+          'Return ONLY a JSON object in this exact format, no other text: ' +
+          '{"name":"short meal name","kcal":400,"protein":28,"carbs":45,"fat":12,"breakdown":"brief breakdown e.g. rice 200g, dal 150ml, sabji 100g"}');
+        var match = reply.match(/\{[\s\S]*\}/);
+        if (match) {
+          var data = JSON.parse(match[0]);
+          openVitModal();
+          setTimeout(function() {
+            var n = document.getElementById('vitFoodName'); if (n) n.value = data.name || file.name;
+            var k = document.getElementById('vitFoodKcal'); if (k) k.value = data.kcal || '';
+            var p = document.getElementById('vitFoodProtein'); if (p) p.value = data.protein || '';
+            var c = document.getElementById('vitFoodCarbs'); if (c) c.value = data.carbs || '';
+            var f = document.getElementById('vitFoodFat'); if (f) f.value = data.fat || '';
+            if (data.breakdown) {
+              var nameEl = document.getElementById('vitFoodName');
+              if (nameEl) nameEl.title = data.breakdown;
+            }
+          }, 50);
+          if (resp) { resp.textContent = 'Photo analysed — review the estimated macros in the form.'; resp.className = 'vit-ai-response'; }
+        } else {
+          if (resp) { resp.textContent = 'Could not read the photo — try better lighting or add manually.'; resp.className = 'vit-ai-response'; }
+        }
+      } catch(err) {
+        if (resp) { resp.textContent = 'Photo analysis failed — add manually above.'; resp.className = 'vit-ai-response'; }
       }
-      if (resp) { resp.textContent = 'Macros estimated — review in the form above.'; resp.className = 'vit-ai-response'; }
-    } catch(e) {
-      if (resp) { resp.textContent = 'Could not estimate macros.'; resp.className = 'vit-ai-response'; }
-    }
+    };
+    reader.readAsDataURL(file);
   }
 
   // ── Day navigation state ───────────────────────────────────
@@ -20490,6 +20789,8 @@ function switchTab(tab) {
     if (addFoodBtn) addFoodBtn.addEventListener('click', function(){ openVitModal(); });
     var snapBtn = document.getElementById('vitSnapBtn');
     if (snapBtn) snapBtn.addEventListener('click', snapMeal);
+    var snapFileInput = document.getElementById('vitSnapFileInput');
+    if (snapFileInput) snapFileInput.addEventListener('change', function(){ _handleSnapFile(snapFileInput.files && snapFileInput.files[0]); snapFileInput.value = ''; });
     var quickDrink = document.getElementById('vitQuickDrinkBtn');
     if (quickDrink) quickDrink.addEventListener('click', function(){ openVitModal(''); });
 
