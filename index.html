@@ -934,7 +934,7 @@ body::after {
 }
 
 /* ── Peak Tab ── */
-.peak-view { padding:20px 16px 100px; }
+.peak-view { padding:20px 16px 100px; max-width:720px; margin-left:auto; margin-right:auto; box-sizing:border-box; }
 .peak-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
 .peak-diamond-wrap { animation: peakDiamondSpin 12s linear infinite; flex-shrink:0; }
 @keyframes peakDiamondSpin { to { transform: rotate(360deg); } }
@@ -1029,6 +1029,7 @@ body::after {
 .peak-caff-custom { display:flex; gap:8px; margin-top:10px; }
 .peak-caff-custom-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:8px 12px; color:var(--text-primary); font-family:inherit; font-size:13px; outline:none; min-width:0; }
 .peak-caff-custom-mg { width:70px; flex-shrink:0; }
+.peak-caff-custom-time { width:90px; flex-shrink:0; color-scheme:dark; }
 .peak-caff-add-btn { background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:#6EE7B7; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; white-space:nowrap; transition:all 0.15s; }
 .peak-caff-add-btn:hover { background:rgba(110,231,183,0.18); }
 .peak-caff-timing { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
@@ -8620,6 +8621,7 @@ window.canonicalJson = function(obj) {
       <div class="peak-caff-custom">
         <input id="peakCustomName" class="peak-caff-custom-input" type="text" placeholder="Name">
         <input id="peakCustomMg" class="peak-caff-custom-input peak-caff-custom-mg" type="number" placeholder="mg" min="1" max="999">
+        <input id="peakCustomTime" class="peak-caff-custom-input peak-caff-custom-time" type="time">
         <button id="peakCustomAddBtn" class="peak-caff-add-btn" type="button">Add</button>
       </div>
     </div>
@@ -19209,7 +19211,19 @@ function switchTab(tab) {
   function loadVit() { return JSON.parse(localStorage.getItem(VIT_KEY + today()) || '[]'); }
   function saveVit(arr) { localStorage.setItem(VIT_KEY + today(), JSON.stringify(arr)); }
   function getOura() {
-    try { return JSON.parse(localStorage.getItem('oura_cache_v1')) || {}; } catch(e) { return {}; }
+    try {
+      var raw = JSON.parse(localStorage.getItem('oura_cache_v2'));
+      if (!raw) return {};
+      // Oura cache stores {sleep:{data:[]}, readiness:{data:[]}, activity:{data:[]}, ...}
+      // Normalize to flat arrays so Peak code can do oura.readiness[0] etc.
+      return {
+        readiness:    (raw.readiness    && raw.readiness.data)    || [],
+        sleep:        (raw.sleep        && raw.sleep.data)        || [],
+        activity:     (raw.activity     && raw.activity.data)     || [],
+        detailedSleep:(raw.detailedSleep&& raw.detailedSleep.data)|| [],
+        hr:           (raw.hr           && raw.hr.data)           || []
+      };
+    } catch(e) { return {}; }
   }
   function getTargets() {
     try { return JSON.parse(localStorage.getItem('peak_profile')) || {kcal:2400,protein:180,carbs:240,fat:80}; } catch(e) { return {kcal:2400,protein:180,carbs:240,fat:80}; }
@@ -19243,6 +19257,7 @@ function switchTab(tab) {
   function buildEnergyArray(wakeHour, readiness, caffLogs, mode, hrv, avgHrv) {
     var arr = [];
     var PI = Math.PI;
+    var hasOura = readiness != null;
     // HRV modifier: if HRV > avg → bonus up to +8pts peak height; if < avg → penalty
     var hrvMod = 0;
     if (hrv && avgHrv && avgHrv > 0) {
@@ -19251,9 +19266,12 @@ function switchTab(tab) {
     for (var h = 0; h < 24; h++) {
       var hw = h - wakeHour;
       if (hw < 0) hw += 24;
+      // Without Oura data show a flat placeholder line at 30
+      if (!hasOura && mode !== 'stack') { arr.push(30); continue; }
       var base = 50 + 28 * Math.sin(PI * (hw - 3) / 11) + 8 * Math.sin(PI * (hw - 7) / 5);
       base = clamp(base, 10, 100);
-      var rm = mode === 'core' ? 0.7 : (readiness || 70) / 100 * 0.45 + 0.55;
+      // scale fully by real readiness; never fall back to 70 when we have no data
+      var rm = mode === 'core' ? (readiness / 100 * 0.3 + 0.7) : (readiness / 100 * 0.45 + 0.55);
       var score = base * rm + (mode !== 'core' ? hrvMod : 0);
       if (mode === 'stack' && caffLogs && caffLogs.length) {
         caffLogs.forEach(function(log) {
@@ -19276,15 +19294,16 @@ function switchTab(tab) {
     return Math.round(clamp(100 - Math.abs(ratio - 0.4) * 180, 0, 100));
   }
 
-  // fix #20: avg sleep onset from Oura history
+  // fix #20: avg sleep onset from Oura detailed sleep history
   function avgBedtimeFromOura(oura) {
-    if (!oura || !oura.sleep || !oura.sleep.length) return 23;
+    var src = (oura && oura.detailedSleep && oura.detailedSleep.length) ? oura.detailedSleep : (oura && oura.sleep);
+    if (!src || !src.length) return 23;
     var onsets = [];
-    oura.sleep.slice(0, 14).forEach(function(s) {
+    src.slice(0, 14).forEach(function(s) {
       if (s.bedtime_start) {
         var d = new Date(s.bedtime_start);
         var h = d.getHours() + d.getMinutes() / 60;
-        if (h < 6) h += 24; // treat midnight-6am as 24-30
+        if (h < 6) h += 24;
         onsets.push(h);
       }
     });
@@ -19878,12 +19897,19 @@ function switchTab(tab) {
     drawCaffChart('peakCaffCanvas', logs);
   }
 
-  function addCaffLog(name, mg) {
+  function addCaffLog(name, mg, timeOverride) {
     var logs = loadCaff();
-    var h = nowHour();
-    var hh = Math.floor(h);
-    var mm = Math.round((h - hh) * 60);
-    var timeStr = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+    var h, timeStr;
+    if (timeOverride && /^\d{1,2}:\d{2}$/.test(timeOverride)) {
+      var parts = timeOverride.split(':');
+      h = parseInt(parts[0]) + parseInt(parts[1]) / 60;
+      timeStr = timeOverride;
+    } else {
+      h = nowHour();
+      var hh = Math.floor(h);
+      var mm = Math.round((h - hh) * 60);
+      timeStr = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+    }
     logs.push({name:name, mg:mg, timeHour:h, timeStr:timeStr, id:uid()});
     saveCaff(logs);
     renderCaffLogs();
@@ -20212,8 +20238,10 @@ function switchTab(tab) {
         caffDrop.classList.toggle('open', hits.length > 0);
         caffDrop.querySelectorAll('.peak-caff-item').forEach(function(item) {
           item.addEventListener('click', function() {
-            addCaffLog(item.dataset.name, parseInt(item.dataset.mg));
+            var tEl = document.getElementById('peakCustomTime');
+            addCaffLog(item.dataset.name, parseInt(item.dataset.mg), tEl && tEl.value);
             caffSearch.value = '';
+            if (tEl) tEl.value = '';
             caffDrop.classList.remove('open');
           });
         });
@@ -20228,12 +20256,14 @@ function switchTab(tab) {
       customBtn.addEventListener('click', function() {
         var nameEl = document.getElementById('peakCustomName');
         var mgEl   = document.getElementById('peakCustomMg');
+        var timeEl = document.getElementById('peakCustomTime');
         var name = nameEl && nameEl.value.trim();
         var mg   = mgEl && parseInt(mgEl.value);
         if (!name || !mg || mg < 1) return;
-        addCaffLog(name, mg);
+        addCaffLog(name, mg, timeEl && timeEl.value);
         if (nameEl) nameEl.value = '';
         if (mgEl)   mgEl.value   = '';
+        if (timeEl) timeEl.value = '';
       });
     }
 
