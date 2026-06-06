@@ -19771,10 +19771,7 @@ function switchTab(tab) {
   // Returns up to 4 peak windows as contiguous runs above threshold
   // Each window: { start, end, avg, peak, label, zoneClass, color }
   function findBestWindows(arr, wakeHour) {
-    // Dynamic threshold: top 40% of the waking day — always finds windows regardless of readiness level
-    var maxScore = 0;
-    for (var i = 0; i < 16; i++) maxScore = Math.max(maxScore, arr[(wakeHour + i) % 24] || 0);
-    var THRESHOLD = Math.max(15, maxScore * 0.60);
+    var THRESHOLD = 50; // any hour below 50 ends the current zone
     // Work in linear index space 0..15 (16 waking hours), map to real hours via (wakeHour+i)%24
     // This avoids all modulo loop bugs — i is always a simple integer
     var runs = [];
