@@ -15888,6 +15888,10 @@ function switchTab(tab) {
   if (tabs[tab]) tabs[tab].setAttribute('aria-current', 'page');
   localStorage.setItem('activeTab', tab);
   window.scrollTo(0, 0);
+  // Re-render Peak canvases every time the tab opens (they need offsetWidth > 0)
+  if (tab === 'peak' && typeof renderPeak === 'function') {
+    setTimeout(renderPeak, 0);
+  }
 }
 
 // Restore last active tab
@@ -19282,9 +19286,10 @@ function switchTab(tab) {
       var score = base * rm + (mode !== 'core' ? hrvMod : 0);
       if (mode === 'stack' && caffLogs && caffLogs.length) {
         caffLogs.forEach(function(log) {
-          var dh = h - log.timeHour;
-          if (dh < 0) return;
-          var boost = (log.mg / 400) * 22 * Math.max(0, 1 - Math.abs(dh - 0.75) / 3.5) * Math.pow(0.5, dh / 5.5);
+          var dh = (h + 1) - log.timeHour; // end-of-hour, same fix as caffCurve
+          if (dh <= 0) return;
+          var absorb = Math.min(dh / 0.75, 1);
+          var boost = (log.mg / 400) * 22 * absorb * Math.pow(0.5, Math.max(0, dh - 0.75) / 5.5);
           score += boost;
         });
       }
@@ -19359,10 +19364,16 @@ function switchTab(tab) {
   function caffCurve(logs) {
     var arr = new Array(24).fill(0);
     logs.forEach(function(log) {
+      // timeHour may be fractional (e.g. 15.25 for 3:15pm).
+      // We start filling from the same integer hour — dh is measured
+      // from the exact logged time so the current hour always shows full mg.
+      var logH = log.timeHour; // exact float hour
       for (var h = 0; h < 24; h++) {
-        var dh = h - log.timeHour;
-        if (dh < 0) continue;
-        arr[h] += log.mg * Math.pow(0.5, dh / 5.5);
+        var dh = h + 1 - logH; // "+1" so hour h represents the END of that hour slot
+        if (dh <= 0) continue; // hasn't been consumed yet
+        // peak absorption at ~45 min after ingestion, then half-life decay
+        var absorb = Math.min(dh / 0.75, 1); // ramp up over first 45 min
+        arr[h] += log.mg * absorb * Math.pow(0.5, Math.max(0, dh - 0.75) / 5.5);
       }
     });
     return arr;
@@ -20391,6 +20402,9 @@ function switchTab(tab) {
     });
 
   }); // end DOMContentLoaded
+
+  // Expose renderPeak so switchTab can call it after the view becomes visible
+  window.renderPeak = renderPeak;
 
 })();
 </script>
