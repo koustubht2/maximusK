@@ -2336,12 +2336,13 @@ img, video, canvas, svg { max-width: 100%; }
 .tab {
   flex: 1 1 0;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 14px;
+  gap: 3px;
+  padding: 8px 4px;
   border-radius: 13px;
-  font-size: 14px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--text-2);
@@ -2351,6 +2352,7 @@ img, video, canvas, svg { max-width: 100%; }
   transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
+.tab-icon { display: flex; align-items: center; justify-content: center; }
 .tab:hover { color: var(--text-1); }
 .tab[aria-current="page"] {
   color: var(--text-1);
@@ -8871,7 +8873,7 @@ window.canonicalJson = function(obj) {
 <!-- Tab Bar -->
 
 <!-- ========== PROFILE VIEW ========== -->
-<div id="profileView" class="view">
+<div id="profileView" class="view-container">
   <div class="prof-page">
     <div class="prof-header">
       <div class="prof-avatar" id="profAvatar">—</div>
