@@ -961,6 +961,9 @@ body::after {
 .peak-energy-tabs { display:flex; gap:6px; margin-bottom:10px; }
 .peak-etab { padding:5px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; font-weight:600; letter-spacing:0.08em; cursor:pointer; font-family:inherit; transition:all 0.15s; }
 .peak-etab.active { background:rgba(110,231,183,0.12); border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
+.peak-chart-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:12px; }
+.peak-chart-header-left { display:flex; flex-direction:column; gap:4px; }
+.peak-chart-subtitle { font-size:11px; color:var(--text-tertiary); letter-spacing:0.01em; }
 .peak-energy-canvas-wrap { position:relative; width:100%; height:300px; }
 .peak-energy-canvas { width:100%; height:100%; display:block; }
 .peak-plan-tap { text-align:center; font-size:11px; color:var(--text-tertiary); letter-spacing:0.1em; text-transform:uppercase; margin-top:10px; cursor:pointer; padding:8px; border-radius:10px; border:1px dashed rgba(255,255,255,0.08); }
@@ -8535,15 +8538,19 @@ window.canonicalJson = function(obj) {
     </div>
 
     <div class="peak-card">
-      <div class="peak-day-header">
-        <button class="peak-day-nav" id="peakDayPrev" type="button">&#8249;</button>
-        <div class="peak-section-label" style="margin:0" id="peakDayLabel">Your Day</div>
-        <button class="peak-day-nav" id="peakDayNext" type="button">&#8250;</button>
-      </div>
-      <div class="peak-energy-tabs">
-        <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">LINE</button>
-        <button class="peak-etab" id="peakTabBase" data-mode="base" type="button">BARS</button>
-        <button class="peak-etab" id="peakTabStack" data-mode="stack" type="button">STACK</button>
+      <div class="peak-chart-header">
+        <div class="peak-chart-header-left">
+          <div class="peak-day-header" style="margin:0 0 2px">
+            <button class="peak-day-nav" id="peakDayPrev" type="button">&#8249;</button>
+            <div class="peak-section-label" style="margin:0" id="peakDayLabel">Your Day</div>
+            <button class="peak-day-nav" id="peakDayNext" type="button">&#8250;</button>
+          </div>
+          <div class="peak-chart-subtitle">Your predicted score, hour by hour. Hover the curve to scrub.</div>
+        </div>
+        <div class="peak-energy-tabs">
+          <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">LINE</button>
+          <button class="peak-etab" id="peakTabStack" data-mode="stack" type="button">STACK</button>
+        </div>
       </div>
       <div class="peak-energy-canvas-wrap">
         <canvas id="peakEnergyCanvas" class="peak-energy-canvas"></canvas>
@@ -19160,6 +19167,7 @@ function switchTab(tab) {
   var _wakeHour = 8; // updated by renderPeak from Oura — shared by all helpers
 
   // ── Caffeine database ──────────────────────────────────────
+  // eq: energy equivalent multiplier — accounts for taurine/B-vitamin synergy beyond raw caffeine
   var CAFF_DB = [
     {name:'Espresso',mg:63},{name:'Double Espresso',mg:126},{name:'Triple Espresso',mg:189},
     {name:'Americano',mg:150},{name:'Flat White',mg:130},{name:'Latte',mg:75},
@@ -19167,15 +19175,19 @@ function switchTab(tab) {
     {name:'Drip Coffee',mg:120},{name:'French Press',mg:107},{name:'Macchiato',mg:63},
     {name:'Cortado',mg:63},{name:'Turkish Coffee',mg:100},{name:'Instant Coffee',mg:65},
     {name:'Decaf Coffee',mg:5},{name:'Oat Latte',mg:75},{name:'Iced Coffee',mg:95},
-    {name:'Red Bull 250ml',mg:80},{name:'Red Bull 473ml',mg:151},{name:'Monster Energy',mg:160},
-    {name:'Rockstar',mg:160},{name:'Bang Energy',mg:300},{name:'Ghost Energy',mg:200},
-    {name:'C4 Energy',mg:200},{name:'Prime Energy',mg:200},{name:'Celsius',mg:200},
-    {name:'Matcha Latte',mg:70},{name:'Matcha Shot',mg:35},{name:'Green Tea',mg:35},
-    {name:'Black Tea',mg:47},{name:'Earl Grey',mg:55},{name:'Oolong Tea',mg:37},
-    {name:'White Tea',mg:15},{name:'Chai Latte',mg:50},{name:'Yerba Mate 500ml',mg:80},
-    {name:'Pre-workout',mg:200},{name:'Jack3d',mg:150},{name:'Creatine + Caffeine',mg:150},
-    {name:'Coke 330ml',mg:34},{name:'Diet Coke 330ml',mg:46},{name:'Pepsi 330ml',mg:38},
-    {name:'Mountain Dew 330ml',mg:54},{name:'5-hour Energy',mg:200},{name:'NoDoz',mg:200},
+    {name:'Red Bull 250ml',mg:80,eq:1.35},{name:'Red Bull 473ml',mg:151,eq:1.35},
+    {name:'Monster Energy',mg:160,eq:1.2},{name:'Rockstar',mg:160,eq:1.2},
+    {name:'Bang Energy',mg:300,eq:1.1},{name:'Ghost Energy',mg:200,eq:1.15},
+    {name:'C4 Energy',mg:200,eq:1.2},{name:'Prime Energy',mg:200,eq:1.15},
+    {name:'Celsius',mg:200,eq:1.15},{name:'5-hour Energy',mg:200,eq:1.3},
+    {name:'Matcha Latte',mg:70,eq:1.1},{name:'Matcha Shot',mg:35,eq:1.1},
+    {name:'Green Tea',mg:35,eq:1.05},{name:'Black Tea',mg:47},
+    {name:'Earl Grey',mg:55},{name:'Oolong Tea',mg:37},
+    {name:'White Tea',mg:15},{name:'Chai Latte',mg:50},{name:'Yerba Mate 500ml',mg:80,eq:1.1},
+    {name:'Pre-workout',mg:200,eq:1.2},{name:'Jack3d',mg:150,eq:1.15},
+    {name:'Creatine + Caffeine',mg:150},{name:'Coke 330ml',mg:34},
+    {name:'Diet Coke 330ml',mg:46},{name:'Pepsi 330ml',mg:38},
+    {name:'Mountain Dew 330ml',mg:54},{name:'NoDoz',mg:200},
     {name:'Vivarin',mg:200},{name:'Dark Chocolate 40g',mg:24},{name:'Milk Chocolate 40g',mg:9},
     {name:'Kombucha 350ml',mg:14},{name:'Sparkling Water',mg:0},{name:'Ginger Beer',mg:0}
   ];
@@ -19191,6 +19203,7 @@ function switchTab(tab) {
 
     // ── Indian breakfast ──
     {name:'Idli 2 pc',kcal:130,protein:4,carbs:26,fat:0.5},
+    {name:'Idli 3 pc',kcal:195,protein:6,carbs:39,fat:0.8},
     {name:'Idli 4 pc',kcal:260,protein:8,carbs:52,fat:1},
     {name:'Dosa (plain)',kcal:168,protein:3.5,carbs:33,fat:2.5},
     {name:'Masala Dosa',kcal:280,protein:5,carbs:45,fat:9},
@@ -19245,7 +19258,6 @@ function switchTab(tab) {
     // ── Veg sabji ──
     {name:'Aloo Gobi 1 bowl',kcal:180,protein:4,carbs:28,fat:7},
     {name:'Gobi Sabji 1 bowl',kcal:140,protein:4,carbs:18,fat:6},
-    {name:'Aloo Capsicum 1 bowl',kcal:175,protein:3,carbs:26,fat:7},
     {name:'Capsicum Sabji 1 bowl',kcal:120,protein:2.5,carbs:16,fat:5},
     {name:'Cabbage Sabji 1 bowl',kcal:130,protein:3,carbs:16,fat:6},
     {name:'Cabbage Peas Sabji 1 bowl',kcal:155,protein:5,carbs:20,fat:6},
@@ -19263,6 +19275,10 @@ function switchTab(tab) {
     {name:'Mix Veg Sabji 1 bowl',kcal:165,protein:4,carbs:22,fat:7},
     {name:'Aloo Jeera 1 bowl',kcal:190,protein:3,carbs:30,fat:7},
     {name:'Aloo Tamatar 1 bowl',kcal:170,protein:3,carbs:26,fat:6},
+    {name:'Aloo Capsicum 1 bowl',kcal:175,protein:3,carbs:26,fat:7},
+    {name:'Aloo Matar 1 bowl',kcal:200,protein:5,carbs:30,fat:7},
+    {name:'Zunka 1 bowl',kcal:160,protein:6,carbs:20,fat:6},
+    {name:'Shev Bhaji 1 bowl',kcal:175,protein:4,carbs:22,fat:8},
 
     // ── Chicken dishes ──
     {name:'Chicken Curry 1 bowl',kcal:320,protein:28,carbs:8,fat:18},
@@ -19291,11 +19307,6 @@ function switchTab(tab) {
 
     // ── Aloo dishes ──
     {name:'Aloo Sabji 1 bowl',kcal:185,protein:3,carbs:30,fat:7},
-    {name:'Aloo Jeera 1 bowl',kcal:190,protein:3,carbs:30,fat:7},
-    {name:'Aloo Tamatar 1 bowl',kcal:170,protein:3,carbs:26,fat:6},
-    {name:'Aloo Gobi 1 bowl',kcal:180,protein:4,carbs:28,fat:7},
-    {name:'Aloo Matar 1 bowl',kcal:200,protein:5,carbs:30,fat:7},
-    {name:'Aloo Capsicum 1 bowl',kcal:175,protein:3,carbs:26,fat:7},
     {name:'Dum Aloo 1 bowl',kcal:260,protein:4,carbs:36,fat:12},
 
     // ── Mumbai street food ──
@@ -19331,6 +19342,13 @@ function switchTab(tab) {
     {name:'Chakli 4 pc',kcal:180,protein:3,carbs:22,fat:9},
     {name:'Chikki 1 pc',kcal:120,protein:3,carbs:16,fat:5},
     {name:'Murukku 30g',kcal:160,protein:3,carbs:20,fat:8},
+
+    // ── Indian extras ──
+    {name:'Bread Omelette',kcal:310,protein:15,carbs:28,fat:16},
+    {name:'Sol Kadhi 200ml',kcal:55,protein:1,carbs:8,fat:2},
+    {name:'Amul Butter 10g',kcal:74,protein:0.1,carbs:0.1,fat:8.2},
+    {name:'Coconut Chutney 2tbsp',kcal:60,protein:1,carbs:4,fat:5},
+    {name:'Tomato Chutney 2tbsp',kcal:35,protein:0.5,carbs:6,fat:1},
 
     // ── Beverages ──
     {name:'Chai (with milk & sugar)',kcal:60,protein:2,carbs:10,fat:2},
@@ -19556,10 +19574,10 @@ function switchTab(tab) {
       var fat     = item.fat     || 0;
 
       // How deep into the PM circadian trough is this meal?
-      // inTrough = 0 (morning peak) → 1 (dead centre of trough at hw≈7)
+      // Trough centre = hw 5.5 (2:30pm for 9am waker). inTrough: 0=morning, 1=dead centre
       var hw_meal = t - wh;
       if (hw_meal < 0) hw_meal += 24;
-      var inTrough = Math.max(0, Math.exp(-0.5 * Math.pow((hw_meal - 7) / 2.2, 2)));
+      var inTrough = Math.max(0, Math.exp(-0.5 * Math.pow((hw_meal - 5.5) / 2.2, 2)));
 
       // Positive food effect is suppressed during trough — orexin suppression
       // overwhelms the glucose lift. Morning: full. PM trough: 25% of normal.
@@ -19604,8 +19622,8 @@ function switchTab(tab) {
         arr[h] += carbWave + protWave + fatWave + bigDipWave + crashWave;
       }
     });
-    // Allow ±25 so PM trough crashes are fully visible
-    return arr.map(function(v) { return Math.max(-25, Math.min(20, v)); });
+    // ±15 before *2 multiplier in buildEnergyArray = ±30 real effect. Prevents floor-zero crashes.
+    return arr.map(function(v) { return Math.max(-15, Math.min(15, v)); });
   }
 
   // ── Energy curve model ─────────────────────────────────────
@@ -19614,7 +19632,19 @@ function switchTab(tab) {
     var arr = [];
     var PI = Math.PI;
     var hasOura = readiness != null;
-    var foodMod = foodEnergyMod(vitLogs || loadVit(), wakeHour);
+    var _vitAll = vitLogs || loadVit();
+    var foodMod = foodEnergyMod(_vitAll, wakeHour); // uses pre-loaded _vitAll, not loadVit() again
+    // Pre-compute fasted/fed ramp per caffeine log (hoisted out of 24-iteration loop)
+    var _caffRamps = {};
+    if (caffLogs && caffLogs.length) {
+      caffLogs.forEach(function(log) {
+        var hasFoodBefore = _vitAll && _vitAll.some(function(f) {
+          var ft = f.timeHour != null ? f.timeHour : (f.meal === 'breakfast' ? 8 : f.meal === 'lunch' ? 13 : 19);
+          return ft <= log.timeHour && ft >= log.timeHour - 2;
+        });
+        _caffRamps[log.timeHour] = hasFoodBefore ? 0.75 : 0.33;
+      });
+    }
     // HRV modifier
     var hrvMod = 0;
     if (hrv && avgHrv && avgHrv > 0) {
@@ -19650,29 +19680,22 @@ function switchTab(tab) {
       // Component 2: Post-lunch dip — troughs ~+6h after wake (-10pts, adenosine rebound)
       // Component 3: Evening wake-maintenance zone — secondary peak ~+9h after wake (+8pts)
       var circ = 28
-        + 15  * Math.sin(PI * (hw - 0.5) / 9)      // morning peak at +4h
-        - 10  * Math.pow(Math.max(0, Math.sin(PI * (hw - 5.5) / 3.5)), 2) // pm dip at +6h
-        +  8  * Math.exp(-0.5 * Math.pow((hw - 9.5) / 1.5, 2));           // evening zone at +9.5h
+        + 15  * Math.sin(PI * (hw - 0.5) / 9)                             // morning peak at +4h
+        - 10  * Math.pow(Math.max(0, Math.sin(PI * (hw - 4.0) / 3.0)), 2) // pm dip peaks at +5.5h (2:30pm for 9am waker)
+        +  8  * Math.exp(-0.5 * Math.pow((hw - 9.5) / 1.5, 2));           // evening WMZ at +9.5h (6:30pm for 9am waker)
       circ = clamp(circ, 10, 45);
       // Readiness scales the circadian ceiling
       var rm = mode === 'core' ? (readiness / 100 * 0.25 + 0.75) : (readiness / 100 * 0.35 + 0.65);
       var score = circ * rm + inertia + (mode !== 'core' ? hrvMod * 0.5 : 0);
-      // Caffeine/stimulants: dominant spikes — multiplier 55 so 200mg = +27.5pts visible spike
-      // Fasted absorption: if no food eaten before caffeine, hits bloodstream in ~20min not 45min
+      // Caffeine/stimulants applied per-log using eq multiplier + fasted absorption
       if (caffLogs && caffLogs.length) {
-        var _vitAll = vitLogs || loadVit();
         caffLogs.forEach(function(log) {
           var dh = (h + 1) - log.timeHour;
           if (dh <= 0) return;
-          // Check if any food was consumed within 2h before this caffeine dose
-          var hasFoodBefore = _vitAll && _vitAll.some(function(f) {
-            var ft = f.timeHour != null ? f.timeHour : (f.meal === 'breakfast' ? 8 : f.meal === 'lunch' ? 13 : 19);
-            return ft <= log.timeHour && ft >= log.timeHour - 2;
-          });
-          // Fasted: absorption ramp 0.33h (20min). Fed: 0.75h (45min)
-          var ramp = hasFoodBefore ? 0.75 : 0.33;
+          var eq = log.eq || 1;
+          var ramp = _caffRamps[log.timeHour] || 0.75;
           var absorb = Math.min(dh / ramp, 1);
-          var boost = (log.mg / 400) * 55 * absorb * Math.pow(0.5, Math.max(0, dh - ramp) / 5.5);
+          var boost = (log.mg * eq / 400) * 55 * absorb * Math.pow(0.5, Math.max(0, dh - ramp) / 5.5);
           score += boost;
         });
       }
@@ -19748,19 +19771,23 @@ function switchTab(tab) {
   }
 
   // ── Caffeine pharmacokinetics ──────────────────────────────
-  function caffCurve(logs) {
+  function caffCurve(logs, vitLogs) {
     var arr = new Array(24).fill(0);
+    var food = vitLogs || loadVit();
     logs.forEach(function(log) {
-      // timeHour may be fractional (e.g. 15.25 for 3:15pm).
-      // We start filling from the same integer hour — dh is measured
-      // from the exact logged time so the current hour always shows full mg.
-      var logH = log.timeHour; // exact float hour
+      var logH = log.timeHour;
+      var eq = log.eq || 1; // energy equivalent multiplier (taurine/synergy)
+      // Fasted: ramp 0.33h (20min). Fed: ramp 0.75h (45min)
+      var hasFoodBefore = food && food.some(function(f) {
+        var ft = f.timeHour != null ? f.timeHour : (f.meal === 'breakfast' ? 8 : f.meal === 'lunch' ? 13 : 19);
+        return ft <= logH && ft >= logH - 2;
+      });
+      var ramp = hasFoodBefore ? 0.75 : 0.33;
       for (var h = 0; h < 24; h++) {
-        var dh = h + 1 - logH; // "+1" so hour h represents the END of that hour slot
-        if (dh <= 0) continue; // hasn't been consumed yet
-        // peak absorption at ~45 min after ingestion, then half-life decay
-        var absorb = Math.min(dh / 0.75, 1); // ramp up over first 45 min
-        arr[h] += log.mg * absorb * Math.pow(0.5, Math.max(0, dh - 0.75) / 5.5);
+        var dh = h + 1 - logH;
+        if (dh <= 0) continue;
+        var absorb = Math.min(dh / ramp, 1);
+        arr[h] += log.mg * eq * absorb * Math.pow(0.5, Math.max(0, dh - ramp) / 5.5);
       }
     });
     return arr;
@@ -19807,26 +19834,22 @@ function switchTab(tab) {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0,0,W,H);
 
-    var padL = 4, padR = 4, padT = 20, padB = 30;
+    var padL = 4, padR = 4, padT = 20, padB = 28;
     var cw = W - padL - padR;
     var ch = H - padT - padB;
     var now = nowHour();
 
-    // ── Dynamic Y scale: curve fills the canvas based on readiness ──
-    // Floor = always 0 (sleep zone). Ceiling = readiness-scaled.
-    // readiness 100 → ceiling 100, readiness 50 → ceiling ~70.
-    // This means a person with readiness 75 has their peak near the top,
-    // not squashed at 75% height — making the chart feel alive.
+    // Dynamic Y ceiling: readiness-scaled so peak rides near top of canvas
     var readiness = el._peakReadiness || 75;
-    var yMax = Math.max(clamp(readiness * 1.1 + 10, 55, 100), Math.max.apply(null, arr) + 5);
-    yMax = Math.min(yMax, 100);
+    var yMax = Math.min(100, Math.max(clamp(readiness * 1.1 + 10, 55, 100), Math.max.apply(null, arr) + 5));
     var yMin = 0;
 
+    // xAt maps hour 0–24 across full canvas width, centred on each hour slot
+    // pts use h+0.5 so hour 9 dot sits at 9.5/24 of width (centre of the hour band)
     function xAt(h) { return padL + (h / 24) * cw; }
     function yAt(v) { return padT + ch - ((v - yMin) / (yMax - yMin)) * ch; }
 
-    // ── Catmull-Rom smooth path (tension 0.4) ─────────────────
-    // Much silkier than midpoint bezier — matches reference image curve
+    // Catmull-Rom spline — silky smooth, matches reference image
     function buildPath(points) {
       if (points.length < 2) return;
       ctx.beginPath();
@@ -19836,110 +19859,90 @@ function switchTab(tab) {
         var p1 = points[i];
         var p2 = points[i + 1];
         var p3 = points[Math.min(points.length - 1, i + 2)];
-        var tension = 0.4;
-        var cp1x = p1[0] + (p2[0] - p0[0]) * tension / 2;
-        var cp1y = p1[1] + (p2[1] - p0[1]) * tension / 2;
-        var cp2x = p2[0] - (p3[0] - p1[0]) * tension / 2;
-        var cp2y = p2[1] - (p3[1] - p1[1]) * tension / 2;
+        var t = 0.4;
+        var cp1x = p1[0] + (p2[0] - p0[0]) * t / 2;
+        var cp1y = p1[1] + (p2[1] - p0[1]) * t / 2;
+        var cp2x = p2[0] - (p3[0] - p1[0]) * t / 2;
+        var cp2y = p2[1] - (p3[1] - p1[1]) * t / 2;
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2[0], p2[1]);
       }
     }
-    var pts = arr.map(function(v,h){ return [xAt(h + 0.5), yAt(v)]; });
 
-    // ── BARS mode ─────────────────────────────────────────────
-    if (mode === 'base') {
-      var slotW = cw / 24;
-      var barW  = Math.max(3, slotW - 3);
-      for (var h = 0; h < 24; h++) {
-        var v   = arr[h];
-        var bx  = xAt(h) + (slotW - barW) / 2;
-        var bh  = Math.max(2, ((v - yMin) / (yMax - yMin)) * ch);
-        var by  = padT + ch - bh;
-        var col = v >= 80 ? '#F5C842' : v >= 60 ? '#6EE7B7' : v >= 40 ? '#F2C063' : '#475569';
-        var bg  = ctx.createLinearGradient(0, by, 0, by + bh);
-        bg.addColorStop(0, col);
-        bg.addColorStop(1, col + '33');
-        ctx.fillStyle = bg;
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3,3,0,0]);
-        else ctx.rect(bx, by, barW, bh);
-        ctx.fill();
-        if (h === Math.floor(now)) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [3,3,0,0]);
-          else ctx.rect(bx, by, barW, bh);
-          ctx.stroke();
-        }
-      }
-    } else {
-      // ── STACK: caffeine lift overlay ──────────────────────────
-      if (mode === 'stack' && caffLogs && caffLogs.length) {
-        var baseArr = buildEnergyArray(wakeHour, el._peakReadiness || 75, [], 'core');
-        var basePts = baseArr.map(function(v,h){ return [xAt(h + 0.5), yAt(v)]; });
-        var caffFill = ctx.createLinearGradient(0, padT, 0, padT + ch);
-        caffFill.addColorStop(0, 'rgba(245,200,66,0.18)');
-        caffFill.addColorStop(1, 'rgba(245,200,66,0.0)');
-        buildPath(pts);
-        for (var bh2 = basePts.length - 1; bh2 >= 0; bh2--) ctx.lineTo(basePts[bh2][0], basePts[bh2][1]);
-        ctx.closePath();
-        ctx.fillStyle = caffFill;
-        ctx.fill();
-      }
+    // pts: one point per hour, x = centre of that hour band
+    var pts = arr.map(function(v, h) { return [xAt(h + 0.5), yAt(v)]; });
 
-      // ── Under-curve area fill ─────────────────────────────────
-      var areaGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
-      areaGrad.addColorStop(0,   'rgba(110,231,183,0.28)');
-      areaGrad.addColorStop(0.55,'rgba(110,231,183,0.08)');
-      areaGrad.addColorStop(1,   'rgba(110,231,183,0.00)');
+    // Interpolate arr value at any fractional hour (for hover dot + markers)
+    function arrAt(fh) {
+      var i = Math.min(23, Math.max(0, Math.floor(fh)));
+      var frac = fh - Math.floor(fh);
+      return frac > 0 && i < 23 ? arr[i] * (1 - frac) + arr[i + 1] * frac : arr[i];
+    }
+
+    // ── STACK mode: gold fill between base and full curve ─────
+    if (mode === 'stack' && caffLogs && caffLogs.length) {
+      var baseArr = buildEnergyArray(wakeHour, el._peakReadiness || 75, [], 'core');
+      var basePts = baseArr.map(function(v, h) { return [xAt(h + 0.5), yAt(v)]; });
+      var caffFill = ctx.createLinearGradient(0, padT, 0, padT + ch);
+      caffFill.addColorStop(0, 'rgba(245,200,66,0.18)');
+      caffFill.addColorStop(1, 'rgba(245,200,66,0.0)');
       buildPath(pts);
-      ctx.lineTo(pts[pts.length-1][0], padT + ch);
-      ctx.lineTo(pts[0][0], padT + ch);
+      for (var si = basePts.length - 1; si >= 0; si--) ctx.lineTo(basePts[si][0], basePts[si][1]);
       ctx.closePath();
-      ctx.fillStyle = areaGrad;
+      ctx.fillStyle = caffFill;
       ctx.fill();
+    }
 
-      // ── Outer glow pass (wide, soft) ─────────────────────────
-      ctx.save();
-      ctx.shadowColor  = 'rgba(110,231,183,0.5)';
-      ctx.shadowBlur   = 22;
+    // ── Under-curve area fill ─────────────────────────────────
+    var areaGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+    areaGrad.addColorStop(0,    'rgba(110,231,183,0.28)');
+    areaGrad.addColorStop(0.55, 'rgba(110,231,183,0.08)');
+    areaGrad.addColorStop(1,    'rgba(110,231,183,0.00)');
+    buildPath(pts);
+    ctx.lineTo(pts[pts.length - 1][0], padT + ch);
+    ctx.lineTo(pts[0][0], padT + ch);
+    ctx.closePath();
+    ctx.fillStyle = areaGrad;
+    ctx.fill();
+
+    // ── Outer glow pass ───────────────────────────────────────
+    ctx.save();
+    ctx.shadowColor = 'rgba(110,231,183,0.5)';
+    ctx.shadowBlur  = 22;
+    buildPath(pts);
+    ctx.strokeStyle = 'rgba(110,231,183,0.45)';
+    ctx.lineWidth   = 6;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Crisp inner line ──────────────────────────────────────
+    ctx.save();
+    ctx.shadowColor = 'rgba(110,231,183,0.8)';
+    ctx.shadowBlur  = 8;
+    buildPath(pts);
+    ctx.strokeStyle = '#6EE7B7';
+    ctx.lineWidth   = 2.5;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // STACK: dashed gold line on top
+    if (mode === 'stack' && caffLogs && caffLogs.length) {
       buildPath(pts);
-      ctx.strokeStyle = 'rgba(110,231,183,0.45)';
-      ctx.lineWidth   = 6;
-      ctx.lineJoin    = 'round';
-      ctx.lineCap     = 'round';
+      ctx.strokeStyle = 'rgba(245,200,66,0.55)';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([4, 4]);
       ctx.stroke();
-      ctx.restore();
-
-      // ── Inner crisp line ──────────────────────────────────────
-      ctx.save();
-      ctx.shadowColor  = 'rgba(110,231,183,0.8)';
-      ctx.shadowBlur   = 8;
-      buildPath(pts);
-      ctx.strokeStyle = '#6EE7B7';
-      ctx.lineWidth   = 2.5;
-      ctx.lineJoin    = 'round';
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-      ctx.restore();
-
-      // STACK: dashed gold overlay line
-      if (mode === 'stack' && caffLogs && caffLogs.length) {
-        buildPath(pts);
-        ctx.strokeStyle = 'rgba(245,200,66,0.55)';
-        ctx.lineWidth   = 1.5;
-        ctx.setLineDash([4,4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
+      ctx.setLineDash([]);
     }
 
     // ── Now marker ────────────────────────────────────────────
-    var nowIdx = Math.min(23, Math.round(now));
-    var nx = xAt(now), ny = yAt(arr[nowIdx] || 50);
+    var nx = xAt(now + 0.5); // +0.5 to align with pts which use h+0.5
+    var ny = yAt(arrAt(now));
     ctx.beginPath();
-    ctx.setLineDash([3,5]);
+    ctx.setLineDash([3, 5]);
     ctx.moveTo(nx, padT);
     ctx.lineTo(nx, padT + ch);
     ctx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -19950,28 +19953,27 @@ function switchTab(tab) {
     ctx.shadowColor = 'rgba(110,231,183,0.9)';
     ctx.shadowBlur  = 14;
     ctx.beginPath();
-    ctx.arc(nx, ny, 5.5, 0, Math.PI*2);
+    ctx.arc(nx, ny, 5.5, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
     ctx.restore();
     ctx.beginPath();
-    ctx.arc(nx, ny, 3.5, 0, Math.PI*2);
+    ctx.arc(nx, ny, 3.5, 0, Math.PI * 2);
     ctx.fillStyle = '#6EE7B7';
     ctx.fill();
 
     // ── Meal markers ──────────────────────────────────────────
     var vitItems = loadVit();
-    var mealColours = {breakfast:'#F5C842', lunch:'#6EE7B7', dinner:'#818cf8', snack:'#f87171'};
+    var mealColours = { breakfast: '#F5C842', lunch: '#6EE7B7', dinner: '#818cf8', snack: '#f87171' };
     vitItems.forEach(function(item) {
       var mt = item.timeHour;
       if (mt == null) mt = item.meal === 'breakfast' ? 8 : item.meal === 'lunch' ? 13 : item.meal === 'dinner' ? 19 : 15;
       if (mt < 0 || mt > 23) return;
-      var mx2 = xAt(mt);
-      var mIdx2 = Math.min(23, Math.floor(mt));
-      var my2 = yAt(arr[mIdx2]);
+      var mx2 = xAt(mt + 0.5); // +0.5 matches pts alignment
+      var my2 = yAt(arrAt(mt));
       var col = mealColours[item.meal] || '#aaa';
       ctx.beginPath();
-      ctx.setLineDash([2,4]);
+      ctx.setLineDash([2, 4]);
       ctx.moveTo(mx2, my2 + 6);
       ctx.lineTo(mx2, padT + ch);
       ctx.strokeStyle = col + '50';
@@ -19979,7 +19981,7 @@ function switchTab(tab) {
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.beginPath();
-      ctx.arc(mx2, my2, 4, 0, Math.PI*2);
+      ctx.arc(mx2, my2, 4, 0, Math.PI * 2);
       ctx.fillStyle = col;
       ctx.fill();
       ctx.font = 'bold 9px -apple-system,sans-serif';
@@ -19992,10 +19994,10 @@ function switchTab(tab) {
     if (caffLogs) caffLogs.forEach(function(log) {
       var ct = log.timeHour;
       if (ct == null || ct < 0 || ct > 23) return;
-      var cx2 = xAt(ct), cidx = Math.min(23, Math.floor(ct));
-      var cy2 = yAt(arr[cidx]);
+      var cx2 = xAt(ct + 0.5); // +0.5 matches pts alignment
+      var cy2 = yAt(arrAt(ct));
       ctx.beginPath();
-      ctx.arc(cx2, cy2, 3.5, 0, Math.PI*2);
+      ctx.arc(cx2, cy2, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = '#F5C842';
       ctx.fill();
       ctx.font = 'bold 8px -apple-system,sans-serif';
@@ -20004,73 +20006,118 @@ function switchTab(tab) {
       ctx.fillText('C', cx2, cy2 - 9);
     });
 
-    // ── Hour labels: midnight → midnight ─────────────────────
+    // ── Hour labels ───────────────────────────────────────────
     ctx.font = '10px -apple-system,sans-serif';
     ctx.textAlign = 'center';
     [0, 3, 6, 9, 12, 15, 18, 21].forEach(function(h) {
-      var lbl = h === 0 ? '12a' : h < 12 ? h+'a' : h === 12 ? '12p' : (h-12)+'p';
-      // highlight current hour label
+      var lbl = h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p';
       var isCurr = (h === Math.floor(now));
-      ctx.fillStyle = isCurr ? 'rgba(110,231,183,0.8)' : 'rgba(255,255,255,0.22)';
+      ctx.fillStyle = isCurr ? 'rgba(110,231,183,0.9)' : 'rgba(255,255,255,0.25)';
+      // labels align with hour boundaries (h/24), not hour centres
       ctx.fillText(lbl, xAt(h), H - 6);
     });
 
-    // ── Hover scrub tooltip ───────────────────────────────────
+    // ── Hover scrub ───────────────────────────────────────────
     if (_energyHoverH !== null) {
-      var hh  = _energyHoverH;
-      var hIdx = Math.min(23, Math.max(0, Math.round(hh)));
-      var hx  = xAt(hh);
-      var hy  = yAt(arr[hIdx]);
+      var hh = _energyHoverH;
+      // hx uses same h+0.5 offset so the dot lands exactly on the curve
+      var hx = xAt(hh + 0.5);
+      var hv = arrAt(hh);
+      var hy = yAt(hv);
+
+      // Shaded column under cursor (reference image style)
+      ctx.fillStyle = 'rgba(110,231,183,0.06)';
+      var colW = cw / 24;
+      ctx.fillRect(hx - colW / 2, padT, colW, ch);
+
+      // Vertical line
       ctx.beginPath();
+      ctx.setLineDash([3, 5]);
       ctx.moveTo(hx, padT);
       ctx.lineTo(hx, padT + ch);
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
       ctx.lineWidth = 1;
       ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Dot on curve
       ctx.save();
-      ctx.shadowColor = 'rgba(255,255,255,0.6)';
-      ctx.shadowBlur  = 8;
+      ctx.shadowColor = 'rgba(255,255,255,0.7)';
+      ctx.shadowBlur  = 10;
       ctx.beginPath();
-      ctx.arc(hx, hy, 5, 0, Math.PI*2);
+      ctx.arc(hx, hy, 5, 0, Math.PI * 2);
       ctx.fillStyle = '#fff';
       ctx.fill();
       ctx.restore();
-      var score  = Math.round(arr[hIdx]);
-      var zone   = score >= 80 ? 'Peak' : score >= 60 ? 'High' : score >= 40 ? 'Mid' : 'Low';
-      var zCol   = score >= 80 ? '#F5C842' : score >= 60 ? '#6EE7B7' : score >= 40 ? '#F2C063' : '#94a3b8';
-      var label  = fmtHour(hIdx) + '  ' + score + '  ' + zone;
-      ctx.font = 'bold 11px -apple-system,sans-serif';
-      var tw = ctx.measureText(label).width + 20;
-      var tx = clamp(hx - tw/2, 2, W - tw - 2);
-      var ty = Math.max(padT + 2, hy - 34);
-      ctx.fillStyle = 'rgba(12,12,18,0.92)';
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(tx, ty, tw, 22, 6); else ctx.rect(tx, ty, tw, 22);
+      ctx.arc(hx, hy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#6EE7B7';
       ctx.fill();
+
+      // Tooltip pill — reference image style: score large, zone label, time small below
+      var score = Math.round(hv);
+      var zone  = score >= 80 ? 'Peak' : score >= 60 ? 'High' : score >= 40 ? 'Mid' : 'Low';
+      var zCol  = score >= 80 ? '#F5C842' : score >= 60 ? '#6EE7B7' : score >= 40 ? '#F2C063' : '#94a3b8';
+      var timeStr = fmtHour(Math.round(hh));
+      var pillW = 72, pillH = 44;
+      var tx = clamp(hx - pillW / 2, 2, W - pillW - 2);
+      var ty = Math.max(padT + 4, hy - pillH - 10);
+      // pill background
+      ctx.fillStyle = 'rgba(8,12,20,0.92)';
+      ctx.strokeStyle = zCol + '55';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(tx, ty, pillW, pillH, 8); else ctx.rect(tx, ty, pillW, pillH);
+      ctx.fill();
+      ctx.stroke();
+      // score number
+      ctx.font = 'bold 20px -apple-system,sans-serif';
       ctx.fillStyle = zCol;
-      ctx.textAlign = 'left';
-      ctx.fillText(label, tx + 10, ty + 15);
+      ctx.textAlign = 'center';
+      ctx.fillText(score, tx + pillW / 2, ty + 22);
+      // zone label
+      ctx.font = 'bold 9px -apple-system,sans-serif';
+      ctx.fillStyle = zCol + 'cc';
+      ctx.fillText(zone, tx + pillW / 2, ty + 33);
+      // time
+      ctx.font = '9px -apple-system,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillText(timeStr, tx + pillW / 2, ty + 42);
+
+      // Update the hero label if scrubbing (reference image: "82 Peak • AT 11 AM • Scrubbing")
+      var heroVal = document.getElementById('peakHeroVal');
+      var heroLabel = document.getElementById('peakHeroLabel');
+      if (heroVal) heroVal.textContent = score;
+      if (heroLabel) heroLabel.textContent = zone + ' · ' + timeStr;
     }
 
-    // Wire hover events once
+    // Wire hover events once per canvas element
     if (!el._peakHoverWired) {
       el._peakHoverWired = true;
       function getHourFromEvent(e) {
         var rect = el.getBoundingClientRect();
-        var cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        return clamp((cx - padL) / cw * 24, 0, 23.99);
+        // subtract padL and map pixel → hour, then subtract 0.5 to undo the +0.5 offset
+        var px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        return clamp((px - padL) / cw * 24 - 0.5, 0, 23.99);
       }
       function onMove(e) {
         _energyHoverH = getHourFromEvent(e);
-        // redraw with current stored arr — read from closure
         drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode);
       }
       function onLeave() {
         _energyHoverH = null;
+        // restore hero to current moment values
+        var heroVal = document.getElementById('peakHeroVal');
+        var heroLabel = document.getElementById('peakHeroLabel');
+        if (heroVal && el._peakArr) {
+          var curScore = Math.round(el._peakArr[Math.min(23, Math.floor(nowHour()))]);
+          heroVal.textContent = curScore;
+          heroLabel.textContent = curScore >= 80 ? 'Peak' : curScore >= 60 ? 'Above the Curve' : curScore >= 40 ? 'Steady' : 'Low';
+        }
         drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode);
       }
       el.addEventListener('mousemove', onMove);
-      el.addEventListener('touchmove', function(e){ e.preventDefault(); onMove(e); }, {passive:false});
+      el.addEventListener('touchmove', function(e) { e.preventDefault(); onMove(e); }, { passive: false });
       el.addEventListener('mouseleave', onLeave);
       el.addEventListener('touchend', onLeave);
     }
