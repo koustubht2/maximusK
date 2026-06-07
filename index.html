@@ -8644,7 +8644,7 @@ window.canonicalJson = function(obj) {
     <div class="peak-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div class="peak-section-label" style="margin-bottom:0">Today</div>
-        <button id="peakInsightsRefreshBtn" onclick="peakRefreshInsights()" style="background:none;border:1px solid rgba(110,231,183,0.25);border-radius:20px;color:#6EE7B7;font-size:11px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;letter-spacing:0.03em;" title="Refresh insights">
+        <button id="peakInsightsRefreshBtn" style="background:none;border:1px solid rgba(110,231,183,0.25);border-radius:20px;color:#6EE7B7;font-size:11px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;letter-spacing:0.03em;" title="Refresh insights">
           <svg id="peakInsightsRefreshIcon" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2A5 5 0 1 0 11 6"/><polyline points="9 1 11 2 10 4"/></svg>
           Refresh
         </button>
@@ -21502,6 +21502,9 @@ function switchTab(tab) {
         _refreshEnergyChart(null); // mood shift updates the curve immediately
       });
     });
+
+    var refreshInsightsBtn = document.getElementById('peakInsightsRefreshBtn');
+    if (refreshInsightsBtn) refreshInsightsBtn.addEventListener('click', peakRefreshInsights);
 
     var wakeChip = document.getElementById('peakChipWakeWrap');
     if (wakeChip) {
