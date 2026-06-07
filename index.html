@@ -20807,12 +20807,27 @@ function switchTab(tab) {
     }
     setText('peakChipHrvNoise', hrvNoise != null ? '±' + hrvNoise : '—');
 
-    var score = readiness || 50;
+    var caffLogs = loadCaff();
+    // fix #18: pass hrv+avgHrv to energy model
+    var _r = readiness != null ? readiness : 75; // fallback so curve is always real
+    var arr = buildEnergyArray(wakeHour, _r, caffLogs, _activeEnergyMode, hrv, avgHrv);
+    // fix #12: pass caffLogs + mode so overlay renders
+    var _pec = document.getElementById('peakEnergyCanvas');
+    if (_pec) _pec._peakReadiness = _r;
+    drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode, loadVit());
+    var _nowH = nowHour();
+    var _nowScore = arr[Math.min(23, Math.floor(_nowH))] || 0;
+    _updateEnergyRing(_nowScore, fmtHour(Math.floor(_nowH)), false);
+
+    // Hero ring — current energy score
+    var _heroScore = Math.round(_nowScore);
+    var _heroZone = _heroScore >= 80 ? 'zone-gold' : _heroScore >= 60 ? 'zone-green' : _heroScore >= 40 ? 'zone-yellow' : 'zone-red';
+    var _heroLabel = _heroScore >= 80 ? 'Peak zone' : _heroScore >= 60 ? 'High energy' : _heroScore >= 40 ? 'Mid zone' : 'Low energy';
     var fill = document.getElementById('peakHeroFill');
     if (fill) {
-      fill.className = 'peak-hero-fill ' + scoreZoneClass(score);
+      fill.className = 'peak-hero-fill ' + _heroZone;
       var circumference = 502.65;
-      var dashTarget = circumference * (1 - score/100);
+      var dashTarget = circumference * (1 - _heroScore / 100);
       fill.style.strokeDashoffset = String(circumference);
       requestAnimationFrame(function(){
         requestAnimationFrame(function(){
@@ -20824,25 +20839,14 @@ function switchTab(tab) {
             (function tick(now) {
               var t = Math.min((now - startTs) / duration, 1);
               var ease = 1 - Math.pow(1 - t, 3);
-              numEl.textContent = Math.round(ease * score);
+              numEl.textContent = Math.round(ease * _heroScore);
               if (t < 1) requestAnimationFrame(tick);
             })(startTs);
           }
-          setText('peakHeroLabel', scoreLabel(score));
+          setText('peakHeroLabel', _heroLabel);
         });
       });
     }
-
-    var caffLogs = loadCaff();
-    // fix #18: pass hrv+avgHrv to energy model
-    var _r = readiness != null ? readiness : 75; // fallback so curve is always real
-    var arr = buildEnergyArray(wakeHour, _r, caffLogs, _activeEnergyMode, hrv, avgHrv);
-    // fix #12: pass caffLogs + mode so overlay renders
-    var _pec = document.getElementById('peakEnergyCanvas');
-    if (_pec) _pec._peakReadiness = _r;
-    drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode, loadVit());
-    var _nowH = nowHour();
-    _updateEnergyRing(arr[Math.min(23, Math.floor(_nowH))] || 0, fmtHour(Math.floor(_nowH)), false);
 
     _renderBestWindows(findBestWindows(arr, wakeHour));
 
@@ -21428,15 +21432,23 @@ function switchTab(tab) {
     var _nh2 = nowHour();
     _updateEnergyRing(arr2[Math.min(23, Math.floor(_nh2))] || 0, fmtHour(Math.floor(_nh2)), false);
     _renderBestWindows(findBestWindows(arr2, wh));
-    // Show score ring for the navigated day
-    var score2 = r || 50;
+    // Hero ring — for today use current-hour energy, for past days use that day's peak
+    var _heroScore2, _heroLabel2, _heroZone2;
+    if (offset === 0) {
+      _heroScore2 = Math.round(arr2[Math.min(23, Math.floor(nowHour()))] || 0);
+      _heroLabel2 = _heroScore2 >= 80 ? 'Peak zone' : _heroScore2 >= 60 ? 'High energy' : _heroScore2 >= 40 ? 'Mid zone' : 'Low energy';
+    } else {
+      _heroScore2 = Math.round(Math.max.apply(null, arr2));
+      _heroLabel2 = 'Day peak';
+    }
+    _heroZone2 = _heroScore2 >= 80 ? 'zone-gold' : _heroScore2 >= 60 ? 'zone-green' : _heroScore2 >= 40 ? 'zone-yellow' : 'zone-red';
     var fill2 = document.getElementById('peakHeroFill');
     if (fill2) {
-      fill2.className = 'peak-hero-fill ' + scoreZoneClass(score2);
+      fill2.className = 'peak-hero-fill ' + _heroZone2;
       var circ = 502.65;
-      fill2.style.strokeDashoffset = String(circ * (1 - score2/100));
-      setText('peakHeroScore', score2);
-      setText('peakHeroLabel', scoreLabel(score2));
+      fill2.style.strokeDashoffset = String(circ * (1 - _heroScore2 / 100));
+      setText('peakHeroScore', _heroScore2);
+      setText('peakHeroLabel', _heroLabel2);
     }
     // Mood buttons — show saved state for that day, disable interaction on past days
     var _savedMood2 = localStorage.getItem(MOOD_KEY + _offDate);
