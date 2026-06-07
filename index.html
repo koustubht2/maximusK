@@ -19639,7 +19639,7 @@ function switchTab(tab) {
     return String(hh).padStart(2,'0') + ':' + String(Math.round((h - Math.floor(h))*60)).padStart(2,'0');
   }
   function clamp(v,lo,hi) { return Math.max(lo, Math.min(hi, v)); }
-  function loadCaff() { return JSON.parse(localStorage.getItem(CAFF_KEY + today()) || '[]'); }
+  function loadCaff(dateStr) { return JSON.parse(localStorage.getItem(CAFF_KEY + (dateStr || today())) || '[]'); }
   function saveCaff(arr) { localStorage.setItem(CAFF_KEY + today(), JSON.stringify(arr)); }
   function loadVit(dateStr) { return JSON.parse(localStorage.getItem(VIT_KEY + (dateStr || today())) || '[]'); }
   function saveVit(arr) { localStorage.setItem(VIT_KEY + today(), JSON.stringify(arr)); }
@@ -19891,7 +19891,7 @@ function switchTab(tab) {
     }
     // Mood modifier: subjective feeling shifts curve up/down uniformly
     var moodShift = 0;
-    var _mood = localStorage.getItem(MOOD_KEY + today()) || '';
+    var _mood = localStorage.getItem(MOOD_KEY + (_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today())) || '';
     if      (_mood === 'peak')   moodShift =  15;
     else if (_mood === 'sharp')  moodShift =  8;
     else if (_mood === 'good')   moodShift =  4;
@@ -20631,6 +20631,7 @@ function switchTab(tab) {
       var items = text.split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 10; }).slice(0,3);
       if (items.length < 1) items = ['Your readiness score is available. Keep up the good habits.'];
       localStorage.setItem(INSIGHTS_KEY, JSON.stringify({date:tod, items:items, hadRealData:true}));
+      localStorage.setItem('goals_peak_insights_' + tod, JSON.stringify({items:items}));
       renderInsights(items);
     } catch(e) {
       renderInsights(['Could not load insights — check your connection.']);
@@ -20855,10 +20856,14 @@ function switchTab(tab) {
     var savedMood = localStorage.getItem(MOOD_KEY + tod);
     document.querySelectorAll('.peak-mood-btn').forEach(function(btn) {
       btn.classList.toggle('selected', btn.dataset.mood === savedMood);
+      btn.disabled = false;
+      btn.style.opacity = '';
     });
     var sched = localStorage.getItem(SCHED_KEY + tod) || '';
     var si = document.getElementById('peakScheduleInput');
-    if (si) si.value = sched;
+    if (si) { si.value = sched; si.readOnly = false; si.style.opacity = ''; }
+    var refreshBtn = document.getElementById('peakInsightsRefreshBtn');
+    if (refreshBtn) refreshBtn.style.display = '';
     renderScheduleItems(sched);
     // fix #6: pass caffLogs to insights for specific phrasing
     fetchInsights(oura, caffLogs, savedMood || 'unknown', avgBed);
@@ -20925,11 +20930,16 @@ function switchTab(tab) {
 
   // ── Caffeine rendering ─────────────────────────────────────
   function renderCaffLogs() {
-    var logs = loadCaff();
+    var isPast = _peakDayOffset !== 0;
+    var dateStr = isPast ? offsetDateStr(_peakDayOffset) : null;
+    var logs = loadCaff(dateStr);
     var list = document.getElementById('peakCaffLogs');
     if (!list) return;
+    // hide/show add-caffeine row based on whether we're on today
+    var addRow = document.getElementById('peakCaffAddRow');
+    if (addRow) addRow.style.display = isPast ? 'none' : '';
     if (!logs.length) {
-      list.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);padding:6px 0">No drinks logged today</div>';
+      list.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);padding:6px 0">' + (isPast ? 'No drinks logged that day' : 'No drinks logged today') + '</div>';
     } else {
       list.innerHTML = logs.map(function(log, i) {
         return '<div class="peak-caff-log-item">' +
@@ -20937,18 +20947,20 @@ function switchTab(tab) {
           '<div class="peak-caff-log-name">'+escHtml(log.name)+'</div>' +
           '<div class="peak-caff-log-meta">'+log.mg+' mg · '+log.timeStr+'</div>' +
           '</div>' +
-          '<button class="peak-caff-log-del" data-idx="'+i+'" type="button">×</button>' +
+          (isPast ? '' : '<button class="peak-caff-log-del" data-idx="'+i+'" type="button">×</button>') +
           '</div>';
       }).join('');
-      list.querySelectorAll('.peak-caff-log-del').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var arr = loadCaff();
-          arr.splice(parseInt(btn.dataset.idx), 1);
-          saveCaff(arr);
-          renderCaffLogs();
-          _refreshEnergyChart(arr);
+      if (!isPast) {
+        list.querySelectorAll('.peak-caff-log-del').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var arr = loadCaff();
+            arr.splice(parseInt(btn.dataset.idx), 1);
+            saveCaff(arr);
+            renderCaffLogs();
+            _refreshEnergyChart(arr);
+          });
         });
-      });
+      }
     }
     var oura = getOura();
     var readiness = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
@@ -21161,7 +21173,13 @@ function switchTab(tab) {
 
   // ── Vitality ───────────────────────────────────────────────
   function renderVitality() {
-    var items = loadVit(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
+    var isPastVit = _peakDayOffset !== 0;
+    var items = loadVit(isPastVit ? offsetDateStr(_peakDayOffset) : null);
+    // hide add-food UI on past days
+    var vitLogActions = document.querySelector('.vit-log-actions');
+    if (vitLogActions) vitLogActions.style.display = isPastVit ? 'none' : '';
+    var vitModal = document.getElementById('vitAddFoodBtn');
+    if (vitModal) vitModal.style.display = isPastVit ? 'none' : '';
     var targets = getTargets();
     var tot = {kcal:0,protein:0,carbs:0,fat:0};
     items.forEach(function(f){ tot.kcal+=f.kcal||0; tot.protein+=f.protein||0; tot.carbs+=f.carbs||0; tot.fat+=f.fat||0; });
@@ -21198,15 +21216,17 @@ function switchTab(tab) {
           '<div class="vit-food-meta">'+(f.timeStr ? f.timeStr+' · ' : '')+'P '+Math.round(f.protein||0)+'g · C '+Math.round(f.carbs||0)+'g · F '+Math.round(f.fat||0)+'g</div></div>' +
           '<div class="vit-food-right">' +
           '<div class="vit-food-kcal">'+Math.round(f.kcal||0)+'</div>' +
-          '<button class="vit-food-del" data-id="'+f.id+'" type="button">×</button>' +
+          (isPastVit ? '' : '<button class="vit-food-del" data-id="'+f.id+'" type="button">×</button>') +
           '</div></div>';
       }).join('');
-      foodList.querySelectorAll('.vit-food-del').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var arr = loadVit().filter(function(x){ return x.id !== btn.dataset.id; });
-          saveVit(arr); renderVitality(); _refreshEnergyChart(null);
+      if (!isPastVit) {
+        foodList.querySelectorAll('.vit-food-del').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var arr = loadVit().filter(function(x){ return x.id !== btn.dataset.id; });
+            saveVit(arr); renderVitality(); _refreshEnergyChart(null);
+          });
         });
-      });
+      }
     }
     setText('vitStatMeals',   items.length);
     setText('vitStatKcal',    items.length ? Math.round(tot.kcal/items.length) : 0);
@@ -21416,6 +21436,35 @@ function switchTab(tab) {
       setText('peakHeroScore', score2);
       setText('peakHeroLabel', scoreLabel(score2));
     }
+    // Mood buttons — show saved state for that day, disable interaction on past days
+    var _savedMood2 = localStorage.getItem(MOOD_KEY + _offDate);
+    document.querySelectorAll('.peak-mood-btn').forEach(function(btn) {
+      btn.classList.toggle('selected', btn.dataset.mood === _savedMood2);
+      btn.disabled = offset !== 0;
+      btn.style.opacity = offset !== 0 ? '0.5' : '';
+    });
+    // Schedule input — show that day's schedule, read-only on past days
+    var si2 = document.getElementById('peakScheduleInput');
+    if (si2) {
+      si2.value = localStorage.getItem(SCHED_KEY + _offDate) || '';
+      si2.readOnly = offset !== 0;
+      si2.style.opacity = offset !== 0 ? '0.6' : '';
+    }
+    // Insights — load that day's cached insights; hide refresh on past days
+    var refreshBtn2 = document.getElementById('peakInsightsRefreshBtn');
+    if (refreshBtn2) refreshBtn2.style.display = offset !== 0 ? 'none' : '';
+    if (offset !== 0) {
+      var pastCache = null;
+      try { pastCache = JSON.parse(localStorage.getItem('goals_peak_insights_' + _offDate)); } catch(e) {}
+      if (pastCache && pastCache.items) {
+        renderInsights(pastCache.items);
+      } else {
+        renderInsights(['No insights cached for this day.']);
+      }
+    }
+    // Caffeine and food logs for this day
+    renderCaffLogs();
+    renderVitality();
   }
 
   // ── Event wiring ───────────────────────────────────────────
