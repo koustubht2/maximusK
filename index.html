@@ -942,6 +942,7 @@ body::after {
 .peak-page-date { font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.1em; margin-top:2px; }
 .peak-metrics-strip { display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-bottom:20px; }
 .peak-metrics-strip::-webkit-scrollbar { display:none; }
+@keyframes peak-spin { to { transform: rotate(360deg); } }
 .peak-chip { flex-shrink:0; display:flex; align-items:center; gap:8px; padding:7px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:999px; }
 .peak-chip-label { font-size:9px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-tertiary); font-weight:600; }
 .peak-chip-val { font-size:13px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
@@ -8641,7 +8642,13 @@ window.canonicalJson = function(obj) {
     </div>
 
     <div class="peak-card">
-      <div class="peak-section-label">Today</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="peak-section-label" style="margin-bottom:0">Today</div>
+        <button id="peakInsightsRefreshBtn" onclick="peakRefreshInsights()" style="background:none;border:1px solid rgba(110,231,183,0.25);border-radius:20px;color:#6EE7B7;font-size:11px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;letter-spacing:0.03em;" title="Refresh insights">
+          <svg id="peakInsightsRefreshIcon" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2A5 5 0 1 0 11 6"/><polyline points="9 1 11 2 10 4"/></svg>
+          Refresh
+        </button>
+      </div>
       <div id="peakInsightsList">
         <div class="peak-insight-row"><div class="peak-insight-dot"></div><div class="peak-insight-text">Loading insights…</div></div>
       </div>
@@ -19634,7 +19641,7 @@ function switchTab(tab) {
   function clamp(v,lo,hi) { return Math.max(lo, Math.min(hi, v)); }
   function loadCaff() { return JSON.parse(localStorage.getItem(CAFF_KEY + today()) || '[]'); }
   function saveCaff(arr) { localStorage.setItem(CAFF_KEY + today(), JSON.stringify(arr)); }
-  function loadVit() { return JSON.parse(localStorage.getItem(VIT_KEY + today()) || '[]'); }
+  function loadVit(dateStr) { return JSON.parse(localStorage.getItem(VIT_KEY + (dateStr || today())) || '[]'); }
   function saveVit(arr) { localStorage.setItem(VIT_KEY + today(), JSON.stringify(arr)); }
   function getOura() {
     try {
@@ -20165,7 +20172,7 @@ function switchTab(tab) {
 
   // ── Canvas: energy chart ──────────────────────────────────
   var _energyHoverH = null;
-  function drawEnergyChart(canvasId, arr, wakeHour, caffLogs, mode) {
+  function drawEnergyChart(canvasId, arr, wakeHour, caffLogs, mode, vitLogs) {
     var el = document.getElementById(canvasId);
     if (!el) return;
     var dpr = window.devicePixelRatio || 1;
@@ -20335,7 +20342,7 @@ function switchTab(tab) {
     ctx.fill();
 
     // ── Meal markers ──────────────────────────────────────────
-    var vitItems = loadVit();
+    var vitItems = vitLogs || loadVit();
     var mealColours = { breakfast: '#F5C842', lunch: '#6EE7B7', dinner: '#818cf8', snack: '#f87171' };
     vitItems.forEach(function(item) {
       var mt = item.timeHour;
@@ -20471,7 +20478,7 @@ function switchTab(tab) {
       }
       function onMove(e) {
         _energyHoverH = getHourFromEvent(e);
-        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode);
+        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode, el._peakVitLogs);
       }
       function onLeave() {
         _energyHoverH = null;
@@ -20481,7 +20488,7 @@ function switchTab(tab) {
           var _ns = el._peakArr[Math.min(23, Math.floor(_nh))] || 0;
           _updateEnergyRing(_ns, fmtHour(Math.floor(_nh)), false);
         }
-        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode);
+        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode, el._peakVitLogs);
       }
       el.addEventListener('mousemove', onMove);
       el.addEventListener('touchmove', function(e) { e.preventDefault(); onMove(e); }, { passive: false });
@@ -20492,6 +20499,7 @@ function switchTab(tab) {
     el._peakArr = arr;
     el._peakCaffLogs = caffLogs;
     el._peakMode = mode;
+    el._peakVitLogs = vitLogs || [];
   }
 
   // ── Canvas: caffeine bar chart ─────────────────────────────
@@ -20572,12 +20580,12 @@ function switchTab(tab) {
   }
 
   // ── Insights ───────────────────────────────────────────────
-  async function fetchInsights(oura, caffLogs, mood, avgBed) {
+  async function fetchInsights(oura, caffLogs, mood, avgBed, forceRefresh) {
     var cacheRaw = localStorage.getItem(INSIGHTS_KEY);
     var cache = null;
     try { cache = JSON.parse(cacheRaw); } catch(e){}
     var tod = today();
-    if (cache && cache.date === tod && cache.hadRealData) { renderInsights(cache.items); return; }
+    if (!forceRefresh && cache && cache.date === tod && cache.hadRealData) { renderInsights(cache.items); return; }
     if (_insightsFlight) return;
     var _todR = oura && oura.readiness && oura.readiness.find(function(r){ return r.day === tod; });
     var _todS = oura && oura.sleep     && oura.sleep.find(function(s){ return s.day === tod; });
@@ -20635,6 +20643,22 @@ function switchTab(tab) {
     el.innerHTML = items.map(function(t){
       return '<div class="peak-insight-row"><div class="peak-insight-dot"></div><div class="peak-insight-text">'+escHtml(t)+'</div></div>';
     }).join('');
+  }
+
+  function peakRefreshInsights() {
+    var btn = document.getElementById('peakInsightsRefreshBtn');
+    var icon = document.getElementById('peakInsightsRefreshIcon');
+    if (_insightsFlight) return;
+    if (icon) icon.style.animation = 'peak-spin 0.8s linear infinite';
+    if (btn) btn.disabled = true;
+    var oura = getOura();
+    var caffLogs = loadCaff();
+    var mood = localStorage.getItem(MOOD_KEY + today()) || 'unknown';
+    var avgBed = avgBedtimeFromOura(oura);
+    fetchInsights(oura, caffLogs, mood, avgBed, true).finally(function() {
+      if (icon) icon.style.animation = '';
+      if (btn) btn.disabled = false;
+    });
   }
 
   // ── Render peak ────────────────────────────────────────────
@@ -20815,7 +20839,7 @@ function switchTab(tab) {
     // fix #12: pass caffLogs + mode so overlay renders
     var _pec = document.getElementById('peakEnergyCanvas');
     if (_pec) _pec._peakReadiness = _r;
-    drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode);
+    drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode, loadVit());
     var _nowH = nowHour();
     _updateEnergyRing(arr[Math.min(23, Math.floor(_nowH))] || 0, fmtHour(Math.floor(_nowH)), false);
 
@@ -21025,11 +21049,12 @@ function switchTab(tab) {
     var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){ return x.contributors && x.contributors.hrv_balance; }).filter(Boolean);
     var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){ return a+b; }, 0) / _hrvV.length : null;
     if (!logs) logs = loadCaff();
+    var _vitLogs = loadVit(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
     var _r2 = r != null ? r : 75;
-    var arr = buildEnergyArray(wh, _r2, logs, _activeEnergyMode, _hrv, _aHrv);
+    var arr = buildEnergyArray(wh, _r2, logs, _activeEnergyMode, _hrv, _aHrv, _vitLogs);
     var _canvas = document.getElementById('peakEnergyCanvas');
     if (_canvas) _canvas._peakReadiness = _r2;
-    drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode);
+    drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode, _vitLogs);
     drawCaffChart('peakCaffCanvas', logs);
     renderCoffeeScore(logs, r);
     // Update inline ring with current-hour energy score
@@ -21136,7 +21161,7 @@ function switchTab(tab) {
 
   // ── Vitality ───────────────────────────────────────────────
   function renderVitality() {
-    var items = loadVit();
+    var items = loadVit(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
     var targets = getTargets();
     var tot = {kcal:0,protein:0,carbs:0,fat:0};
     items.forEach(function(f){ tot.kcal+=f.kcal||0; tot.protein+=f.protein||0; tot.carbs+=f.carbs||0; tot.fat+=f.fat||0; });
@@ -21329,6 +21354,11 @@ function switchTab(tab) {
     reader.readAsDataURL(file);
   }
 
+  function offsetDateStr(offset) {
+    var d = new Date(); d.setDate(d.getDate() + offset);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
   // ── Day navigation state ───────────────────────────────────
   var _peakDayOffset = 0; // 0 = today, -1 = yesterday, etc.
 
@@ -21365,12 +21395,14 @@ function switchTab(tab) {
       var vals = ds.slice(0,7).map(function(s){ return s.average_hrv; }).filter(function(v){ return v != null; });
       return vals.length ? vals.reduce(function(a,b){return a+b;},0)/vals.length : null;
     })();
-    var cl2 = offset === 0 ? loadCaff() : [];
+    var _offDate = offsetDateStr(offset);
+    var cl2 = offset === 0 ? loadCaff() : (function(){ try { return JSON.parse(localStorage.getItem('goals_caffeine_' + _offDate) || '[]'); } catch(e){ return []; } })();
+    var vl2 = loadVit(_offDate);
     var _r3 = r != null ? r : 75;
-    var arr2 = buildEnergyArray(wh, _r3, cl2, _activeEnergyMode, hrv2, aHrv2);
+    var arr2 = buildEnergyArray(wh, _r3, cl2, _activeEnergyMode, hrv2, aHrv2, vl2);
     var _pec2 = document.getElementById('peakEnergyCanvas');
     if (_pec2) _pec2._peakReadiness = _r3;
-    drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode);
+    drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode, vl2);
     var _nh2 = nowHour();
     _updateEnergyRing(arr2[Math.min(23, Math.floor(_nh2))] || 0, fmtHour(Math.floor(_nh2)), false);
     _renderBestWindows(findBestWindows(arr2, wh));
