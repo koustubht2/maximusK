@@ -20881,15 +20881,17 @@ function switchTab(tab) {
     var limit = caff_limitMg(readiness);
     var curve = caffCurve(logs);
     var activeMg = curve[Math.min(23, Math.floor(nowHour()))] || 0;
-    var cs = coffeeScore(activeMg, limit);
+    var cutoff = bedtimeCutoff(_avgBedtime || 23);
+    var pastCutoff = nowHour() >= cutoff;
+    var cs = pastCutoff ? 0 : coffeeScore(activeMg, limit);
     var scoreEl = document.getElementById('peakCoffeeScoreNum');
-    if (scoreEl) scoreEl.textContent = cs;
+    if (scoreEl) scoreEl.textContent = pastCutoff ? '—' : cs;
     var barEl = document.getElementById('peakCoffeeScoreBar');
     if (barEl) {
-      barEl.style.width = cs + '%';
-      barEl.className = 'peak-mg-bar-fill ' + (cs >= 70 ? 'green' : cs >= 40 ? 'yellow' : 'red');
+      barEl.style.width = (pastCutoff ? 0 : cs) + '%';
+      barEl.className = 'peak-mg-bar-fill ' + (pastCutoff ? 'red' : cs >= 70 ? 'green' : cs >= 40 ? 'yellow' : 'red');
     }
-    var lbl = cs >= 70 ? 'Optimal zone' : cs >= 40 ? 'Sub-optimal' : logs.length ? 'Over limit' : 'None logged';
+    var lbl = pastCutoff ? 'Past cutoff — no more coffee' : cs >= 70 ? 'Optimal zone' : cs >= 40 ? 'Sub-optimal' : logs.length ? 'Over limit' : 'None logged';
     setText('peakCoffeeScoreLbl', lbl);
   }
 
@@ -21060,7 +21062,7 @@ function switchTab(tab) {
     var _hrv = _todR && _todR.contributors && _todR.contributors.hrv_balance;
     var _hrvV = oura.readiness && oura.readiness.slice(0,7).map(function(x){ return x.contributors && x.contributors.hrv_balance; }).filter(Boolean);
     var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){ return a+b; }, 0) / _hrvV.length : null;
-    if (!logs) logs = loadCaff();
+    if (!logs) logs = loadCaff(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
     var _vitLogs = loadVit(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
     var _r2 = r != null ? r : 75;
     var arr = buildEnergyArray(wh, _r2, logs, _activeEnergyMode, _hrv, _aHrv, _vitLogs);
@@ -21464,6 +21466,7 @@ function switchTab(tab) {
     }
     // Caffeine and food logs for this day
     renderCaffLogs();
+    renderCoffeeScore(cl2, r);
     renderVitality();
   }
 
