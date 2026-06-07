@@ -11733,6 +11733,14 @@ setInterval(updateDayBar, 60 * 1000);
 
   function doRender() {
     try { if (typeof loadGoalsToday === 'function') loadGoalsToday(); } catch(e) {}
+    // Re-render Peak insights if Peak tab is active
+    try {
+      var peakView = document.getElementById('peakView');
+      if (peakView && peakView.classList.contains('active')) {
+        var cache = JSON.parse(localStorage.getItem('goals_peak_insights_v1'));
+        if (cache && cache.items && typeof window._peakRenderInsights === 'function') window._peakRenderInsights(cache.items);
+      }
+    } catch(e) {}
   }
 
   function applyRemote(remote) {
@@ -20645,6 +20653,7 @@ function switchTab(tab) {
       return '<div class="peak-insight-row"><div class="peak-insight-dot"></div><div class="peak-insight-text">'+escHtml(t)+'</div></div>';
     }).join('');
   }
+  window._peakRenderInsights = renderInsights;
 
   function peakRefreshInsights() {
     var btn = document.getElementById('peakInsightsRefreshBtn');
