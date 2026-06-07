@@ -19967,15 +19967,19 @@ function switchTab(tab) {
   }
 
   function calcSleepDebt(oura) {
-    if (!oura || !oura.sleep || !oura.sleep.length) return null;
-    var recent = oura.sleep.slice(0, 7);
+    // detailedSleep has total_sleep_duration in seconds; daily_sleep only has a score
+    var src = (oura && oura.detailedSleep && oura.detailedSleep.length) ? oura.detailedSleep : null;
+    if (!src) return null;
+    // dedupe by day — keep longest session per day (ignore naps)
+    var byDay = {};
+    src.forEach(function(s) {
+      if (!s.day || !s.total_sleep_duration) return;
+      if (!byDay[s.day] || s.total_sleep_duration > byDay[s.day]) byDay[s.day] = s.total_sleep_duration;
+    });
+    var days = Object.keys(byDay).sort().slice(-7);
     var totalSecs = 0, count = 0;
-    recent.forEach(function(s) {
-      // total_sleep_duration is actual seconds slept (e.g. 27000 = 7.5h)
-      if (s.total_sleep_duration && s.total_sleep_duration > 0) {
-        totalSecs += s.total_sleep_duration;
-        count++;
-      }
+    days.forEach(function(d) {
+      if (byDay[d] > 0) { totalSecs += byDay[d]; count++; }
     });
     if (!count) return null;
     var avgMins = (totalSecs / count) / 60;
@@ -20578,7 +20582,16 @@ function switchTab(tab) {
     var _todR = oura && oura.readiness && oura.readiness.find(function(r){ return r.day === tod; });
     var _todS = oura && oura.sleep     && oura.sleep.find(function(s){ return s.day === tod; });
     var readiness = _todR && _todR.score;
-    var hrv = _todR && _todR.contributors && _todR.contributors.hrv_balance;
+    var hrv = (function() {
+      var ds = oura.detailedSleep || [];
+      var todStr = tod;
+      var _di = new Date(todStr + 'T12:00:00'); _di.setDate(_di.getDate() - 1);
+      var yStri = _di.getFullYear() + '-' + String(_di.getMonth()+1).padStart(2,'0') + '-' + String(_di.getDate()).padStart(2,'0');
+      var m = ds.filter(function(s){ return s.day === todStr || s.day === yStri; });
+      if (!m.length) return null;
+      var b = m.reduce(function(a,b){ return (b.total_sleep_duration||0)>(a.total_sleep_duration||0)?b:a; });
+      return b && b.average_hrv != null ? Math.round(b.average_hrv) : null;
+    })();
     var sleep = _todS && _todS.score;
     var hadReal = !!(readiness || hrv || sleep);
     if (!hadReal) {
@@ -20637,16 +20650,29 @@ function switchTab(tab) {
     if (oura.readiness) todayR = oura.readiness.find(function(r){ return r.day === tod; }) || null;
     if (oura.sleep)     todayS = oura.sleep.find(function(s){ return s.day === tod; }) || null;
     var readiness  = todayR && todayR.score;
-    var hrv        = todayR && todayR.contributors && todayR.contributors.hrv_balance;
+    var recovery   = todayR && todayR.contributors && todayR.contributors.recovery_index != null ? todayR.contributors.recovery_index : null;
+    // HRV in ms from detailedSleep.average_hrv (same source as Health tab)
+    var _dsToday = (function() {
+      var src = oura.detailedSleep || [];
+      var todStr = tod;
+      var _d2 = new Date(todStr + 'T12:00:00'); _d2.setDate(_d2.getDate() - 1);
+      var yStr2 = _d2.getFullYear() + '-' + String(_d2.getMonth()+1).padStart(2,'0') + '-' + String(_d2.getDate()).padStart(2,'0');
+      var matches = src.filter(function(s){ return s.day === todStr || s.day === yStr2; });
+      if (!matches.length) return null;
+      return matches.reduce(function(a,b){ return (b.total_sleep_duration||0)>(a.total_sleep_duration||0)?b:a; });
+    })();
+    var hrv        = _dsToday && _dsToday.average_hrv != null ? Math.round(_dsToday.average_hrv) : null;
     var sleepScore = todayS && todayS.score;
     // Derive wake time — mirror Health tab logic exactly:
     // filter detailedSleep by day field, pick highest total_sleep_duration
     var wakeHour = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
+    var _wakeTimeStr = null; // exact HH:MM from bedtime_end, set below
     // check for manual override first
     var _manualWake = localStorage.getItem('goals_peak_wake_override');
     if (_manualWake && /^\d{2}:\d{2}$/.test(_manualWake)) {
       var _wp = _manualWake.split(':');
       wakeHour = parseInt(_wp[0], 10) + parseInt(_wp[1], 10) / 60;
+      _wakeTimeStr = _manualWake;
     } else {
       (function() {
         var src = (oura.detailedSleep && oura.detailedSleep.length) ? oura.detailedSleep : null;
@@ -20686,14 +20712,15 @@ function switchTab(tab) {
         if (best.bedtime_end) {
           var wk = new Date(best.bedtime_end);
           wakeHour = wk.getHours() + wk.getMinutes() / 60;
+          _wakeTimeStr = String(wk.getHours()).padStart(2,'0') + ':' + String(wk.getMinutes()).padStart(2,'0');
         }
       })();
     }
 
-    // fix #18: compute avg HRV for modifier
+    // avg HRV in ms from detailedSleep (last 7 nights), same source as Health tab
     var avgHrv = null;
-    if (oura.readiness && oura.readiness.length > 1) {
-      var hrvVals = oura.readiness.slice(0,7).map(function(r){ return r.contributors && r.contributors.hrv_balance; }).filter(Boolean);
+    if (oura.detailedSleep && oura.detailedSleep.length) {
+      var hrvVals = oura.detailedSleep.slice(0, 7).map(function(s){ return s.average_hrv; }).filter(function(v){ return v != null; });
       if (hrvVals.length) avgHrv = hrvVals.reduce(function(a,b){ return a+b; },0) / hrvVals.length;
     }
 
@@ -20704,28 +20731,49 @@ function switchTab(tab) {
 
     _wakeHour = wakeHour; // persist for _refreshEnergyChart, insights, day-nav
     setText('peakChipHrv',      hrv       ? Math.round(hrv)  : '—');
-    setText('peakChipRecovery', readiness ? readiness + '%'  : '—');
-    setText('peakChipReadiness',readiness ? readiness        : '—');
+    setText('peakChipRecovery',  recovery  != null ? recovery        : '—');
+    setText('peakChipReadiness', readiness != null ? readiness       : '—');
     setText('peakChipSleepDebt', debtStr || '—');
-    setText('peakChipWake', fmtHour24(wakeHour));
+    setText('peakChipWake', _wakeTimeStr || fmtHour24(wakeHour));
 
-    // Hydration: derive from water logs if present, else compute from activity
+    // Hydration: read from po_water_v1 (same store as Health tab water tracker)
     var hydPct = null;
-    var actScore = oura && oura.activity && oura.activity[0] && oura.activity[0].score;
-    var steps = oura && oura.activity && oura.activity[0] && oura.activity[0].steps;
-    var waterLogs = (function(){ try { return JSON.parse(localStorage.getItem('goals_water_' + tod)) || []; } catch(e){ return []; } })();
-    if (waterLogs.length) {
-      var totalMl = waterLogs.reduce(function(a,b){ return a + (b.ml||0); }, 0);
-      hydPct = Math.min(Math.round(totalMl / 2500 * 100), 100);
-    } else if (steps) {
-      hydPct = Math.min(Math.round(steps / 10000 * 80 + 10), 95);
-    }
+    (function() {
+      var wst = null;
+      try { wst = JSON.parse(localStorage.getItem('po_water_v1')); } catch(e) {}
+      if (!wst) return;
+      // today's log count — water tracker uses real calendar date (no midnight shift)
+      var _now = new Date();
+      var todKey = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0') + '-' + String(_now.getDate()).padStart(2,'0');
+      var done = (wst.logs || {})[todKey] || 0;
+      if (!done) return;
+      // compute target in ml — mirror computeTargetMl() from water tracker
+      var p = wst.profile || { weightKg: 75 };
+      var wKg = wst.weightUnit === 'lb' ? (p.weightKg || 75) / 2.20462 : (p.weightKg || 75);
+      var base = wKg * 35;
+      var exercise = (p.activityHrsPerWeek || 0) / 7 * 500;
+      var caffeine = Math.max(0, (wst.caffeineMgPerDay || 0) - 200) * 1.5;
+      var subs = (wst.substances || []).reduce(function(s, x) {
+        return s + Math.max(0, ((x && x.dose != null ? x.dose : (x && x.defaultDose)) || 0) * ((x && x.mlPerUnit) || 0));
+      }, 0);
+      var adjust = 0;
+      if (p.sex === 'm') adjust += 200;
+      if ((p.age || 0) >= 50) adjust += 100;
+      var targetMl = base + exercise + caffeine + subs + adjust;
+      // convert done (units) → ml
+      var unitVol = wst.bottleMl || 500;
+      if (wst.unit === 'glass') unitVol = wst.glassMl || 250;
+      else if (wst.unit === 'oz') unitVol = 30;
+      else if (wst.unit === 'ml') unitVol = 1;
+      var doneMl = done * unitVol;
+      hydPct = Math.min(Math.round(doneMl / targetMl * 100), 100);
+    })();
     setText('peakChipHydration', hydPct != null ? hydPct + '%' : '—');
 
-    // HRV Noise: coefficient of variation from last 7 nights
+    // HRV Noise: std-dev of average_hrv (ms) over last 7 nights
     var hrvNoise = null;
-    if (oura.readiness && oura.readiness.length >= 3) {
-      var hvArr = oura.readiness.slice(0,7).map(function(r){ return r.contributors && r.contributors.hrv_balance; }).filter(Boolean);
+    if (oura.detailedSleep && oura.detailedSleep.length >= 3) {
+      var hvArr = oura.detailedSleep.slice(0,7).map(function(s){ return s.average_hrv; }).filter(function(v){ return v != null; });
       if (hvArr.length >= 2) {
         var mean = hvArr.reduce(function(a,b){return a+b;},0)/hvArr.length;
         var variance = hvArr.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/(hvArr.length-1);
@@ -21056,7 +21104,16 @@ function switchTab(tab) {
     appendCoachMsg(msg, 'user');
     var oura = getOura();
     var readiness = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
-    var hrv = oura.readiness && oura.readiness[0] && oura.readiness[0].contributors && oura.readiness[0].contributors.hrv_balance;
+    var hrv = (function() {
+      var ds = oura.detailedSleep || []; if (!ds.length) return null;
+      var tod2 = today();
+      var _dc = new Date(tod2 + 'T12:00:00'); _dc.setDate(_dc.getDate() - 1);
+      var yc = _dc.getFullYear() + '-' + String(_dc.getMonth()+1).padStart(2,'0') + '-' + String(_dc.getDate()).padStart(2,'0');
+      var mc = ds.filter(function(s){ return s.day === tod2 || s.day === yc; });
+      if (!mc.length) return null;
+      var bc = mc.reduce(function(a,b){ return (b.total_sleep_duration||0)>(a.total_sleep_duration||0)?b:a; });
+      return bc && bc.average_hrv != null ? Math.round(bc.average_hrv) : null;
+    })();
     var logs = loadCaff();
     var caffSummary = logs.length ? logs.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
     var mood = localStorage.getItem(MOOD_KEY + today()) || 'unknown';
@@ -21290,9 +21347,24 @@ function switchTab(tab) {
         dayLbl.textContent = d2.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
       }
     }
-    var hrv2 = oura.readiness && oura.readiness[Math.abs(offset)] && oura.readiness[Math.abs(offset)].contributors && oura.readiness[Math.abs(offset)].contributors.hrv_balance;
-    var hrvV2 = oura.readiness && oura.readiness.slice(0,7).map(function(x){return x.contributors&&x.contributors.hrv_balance;}).filter(Boolean);
-    var aHrv2 = hrvV2 && hrvV2.length ? hrvV2.reduce(function(a,b){return a+b;},0)/hrvV2.length : null;
+    // HRV in ms from detailedSleep, indexed by day offset
+    var hrv2 = (function() {
+      var ds = oura.detailedSleep || [];
+      if (!ds.length) return null;
+      var d3 = new Date(); d3.setDate(d3.getDate() + offset);
+      var dayStr = d3.getFullYear() + '-' + String(d3.getMonth()+1).padStart(2,'0') + '-' + String(d3.getDate()).padStart(2,'0');
+      var d3y = new Date(d3); d3y.setDate(d3y.getDate() - 1);
+      var yStr3 = d3y.getFullYear() + '-' + String(d3y.getMonth()+1).padStart(2,'0') + '-' + String(d3y.getDate()).padStart(2,'0');
+      var matches = ds.filter(function(s){ return s.day === dayStr || s.day === yStr3; });
+      if (!matches.length) return null;
+      var best = matches.reduce(function(a,b){ return (b.total_sleep_duration||0)>(a.total_sleep_duration||0)?b:a; });
+      return best && best.average_hrv != null ? Math.round(best.average_hrv) : null;
+    })();
+    var aHrv2 = (function() {
+      var ds = oura.detailedSleep || [];
+      var vals = ds.slice(0,7).map(function(s){ return s.average_hrv; }).filter(function(v){ return v != null; });
+      return vals.length ? vals.reduce(function(a,b){return a+b;},0)/vals.length : null;
+    })();
     var cl2 = offset === 0 ? loadCaff() : [];
     var _r3 = r != null ? r : 75;
     var arr2 = buildEnergyArray(wh, _r3, cl2, _activeEnergyMode, hrv2, aHrv2);
