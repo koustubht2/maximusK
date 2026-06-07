@@ -21157,7 +21157,7 @@ function switchTab(tab) {
     var caffSummary = logs.length ? logs.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
     var mood = localStorage.getItem(MOOD_KEY + today()) || 'unknown';
     var context = 'Oura readiness='+readiness+', HRV='+hrv+', caffeine='+caffSummary+', mood='+mood+', time='+Math.floor(nowHour())+':00';
-    var prompt = 'You are a personal performance coach. Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific and actionable.';
+    var prompt = 'You are JARVIS, a sophisticated AI performance coach. Always address the user as "sir". Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific, data-driven, and actionable. Start your response by addressing sir directly.';
     var loading = document.createElement('div');
     loading.className = 'peak-coach-msg coach-msg';
     loading.innerHTML = '<span class="peak-coach-tag">TEAM</span><span style="color:var(--text-tertiary);font-style:italic">Thinking…</span>';
@@ -21168,7 +21168,33 @@ function switchTab(tab) {
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
       if (window._arcSetMood) window._arcSetMood('responding');
       appendCoachMsg(reply.trim(), 'coach');
-      setTimeout(function(){ if (window._arcSetMood) window._arcSetMood('idle'); }, 3000);
+      // JARVIS voice
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        var utt = new SpeechSynthesisUtterance(reply.trim());
+        utt.rate = 0.92;
+        utt.pitch = 0.85;
+        utt.volume = 1;
+        // prefer a deep British male voice (JARVIS-like)
+        utt.onend = function(){ if (window._arcSetMood) window._arcSetMood('idle'); };
+        utt.onerror = function(){ if (window._arcSetMood) window._arcSetMood('idle'); };
+        var _setVoiceAndSpeak = function() {
+          var voices = window.speechSynthesis.getVoices();
+          var preferred = voices.find(function(v){ return /daniel|george|oliver|uk.*male|en.*gb/i.test(v.name + v.lang); })
+            || voices.find(function(v){ return /en/i.test(v.lang) && v.name.toLowerCase().indexOf('male') >= 0; })
+            || voices.find(function(v){ return /en/i.test(v.lang); });
+          if (preferred) utt.voice = preferred;
+          window.speechSynthesis.speak(utt);
+        };
+        var _voices = window.speechSynthesis.getVoices();
+        if (_voices && _voices.length) {
+          _setVoiceAndSpeak();
+        } else {
+          window.speechSynthesis.onvoiceschanged = function() { _setVoiceAndSpeak(); window.speechSynthesis.onvoiceschanged = null; };
+        }
+      } else {
+        setTimeout(function(){ if (window._arcSetMood) window._arcSetMood('idle'); }, 3000);
+      }
     } catch(e) {
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
       appendCoachMsg('Could not reach coach. Check your connection.', 'coach');
