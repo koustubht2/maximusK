@@ -21103,23 +21103,27 @@ function switchTab(tab) {
     if (window._jarvisSpeaking) { try { window._jarvisCurrentSrc && window._jarvisCurrentSrc.stop(); } catch(e){} }
     window._jarvisSpeaking = true;
     if (window._arcSetMood) window._arcSetMood('responding');
-    fetch('https://api.openai.com/v1/audio/speech', {
+    fetch('/api/tts', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer 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',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ model: 'tts-1', voice: 'onyx', input: text, speed: 0.95 })
-    }).then(function(r){ return r.arrayBuffer(); }).then(function(buf) {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text, voice: 'Charon' })
+    }).then(function(r){ return r.json(); }).then(function(data) {
+      var b64 = data.candidates && data.candidates[0] &&
+                data.candidates[0].content.parts[0].inlineData &&
+                data.candidates[0].content.parts[0].inlineData.data;
+      if (!b64) throw new Error('no audio');
+      var binary = atob(b64);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       var ctx = new (window.AudioContext || window.webkitAudioContext)();
-      ctx.decodeAudioData(buf, function(decoded) {
+      ctx.decodeAudioData(bytes.buffer, function(decoded) {
         var src = ctx.createBufferSource();
         src.buffer = decoded;
         src.connect(ctx.destination);
         window._jarvisCurrentSrc = src;
         src.onended = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); ctx.close(); };
         src.start(0);
-      });
+      }, function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
     }).catch(function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
   }
 
