@@ -1075,6 +1075,8 @@ body::after {
 .peak-coach-msg.user-msg { align-self:flex-end; background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.2); color:var(--text-primary); border-bottom-right-radius:4px; }
 .peak-coach-msg.coach-msg { align-self:flex-start; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); color:var(--text-secondary); border-bottom-left-radius:4px; }
 .peak-coach-tag { display:block; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; color:#6EE7B7; margin-bottom:5px; }
+.peak-coach-speak-btn { float:right; margin-left:8px; margin-top:2px; background:transparent; border:none; cursor:pointer; color:rgba(255,255,255,0.25); padding:2px; line-height:1; border-radius:4px; transition:color 0.15s; }
+.peak-coach-speak-btn:hover { color:#6EE7B7; }
 .peak-coach-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
 .peak-coach-chip { border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; padding:5px 12px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
 .peak-coach-chip:hover { border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
@@ -21097,16 +21099,49 @@ function switchTab(tab) {
     localStorage.setItem(COACH_KEY + today(), JSON.stringify(arr));
   }
 
-  function appendCoachMsg(text, role) {
-    var msgs = document.getElementById('peakCoachMessages');
-    if (!msgs) return;
+  function _jarvisSpeak(text) {
+    if (window._jarvisSpeaking) { try { window._jarvisCurrentSrc && window._jarvisCurrentSrc.stop(); } catch(e){} }
+    window._jarvisSpeaking = true;
+    if (window._arcSetMood) window._arcSetMood('responding');
+    fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer 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',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ model: 'tts-1', voice: 'onyx', input: text, speed: 0.95 })
+    }).then(function(r){ return r.arrayBuffer(); }).then(function(buf) {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.decodeAudioData(buf, function(decoded) {
+        var src = ctx.createBufferSource();
+        src.buffer = decoded;
+        src.connect(ctx.destination);
+        window._jarvisCurrentSrc = src;
+        src.onended = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); ctx.close(); };
+        src.start(0);
+      });
+    }).catch(function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
+  }
+
+  function _coachMsgDiv(text, role) {
     var div = document.createElement('div');
     div.className = 'peak-coach-msg ' + (role === 'user' ? 'user-msg' : 'coach-msg');
     if (role !== 'user') {
-      div.innerHTML = '<span class="peak-coach-tag">TEAM</span>' + escHtml(text);
+      div.innerHTML = '<span class="peak-coach-tag">JARVIS</span>' + escHtml(text) +
+        '<button class="peak-coach-speak-btn" title="Repeat" onclick="(function(el){var t=el.closest(\'.peak-coach-msg\');var txt=t?t.dataset.text:\'\';if(txt)window._jarvisSpeak(txt);})(this)" type="button">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>' +
+        '</button>';
+      div.dataset.text = text;
     } else {
       div.textContent = text;
     }
+    return div;
+  }
+
+  function appendCoachMsg(text, role) {
+    var msgs = document.getElementById('peakCoachMessages');
+    if (!msgs) return;
+    var div = _coachMsgDiv(text, role);
     msgs.appendChild(div);
     msgs.scrollTop = msgs.scrollHeight;
     // persist to goals_ key → auto-syncs to Supabase
@@ -21124,14 +21159,7 @@ function switchTab(tab) {
     if (!history.length) return;
     msgs.innerHTML = '';
     history.forEach(function(entry) {
-      var div = document.createElement('div');
-      div.className = 'peak-coach-msg ' + (entry.role === 'user' ? 'user-msg' : 'coach-msg');
-      if (entry.role !== 'user') {
-        div.innerHTML = '<span class="peak-coach-tag">TEAM</span>' + escHtml(entry.text);
-      } else {
-        div.textContent = entry.text;
-      }
-      msgs.appendChild(div);
+      msgs.appendChild(_coachMsgDiv(entry.text, entry.role));
     });
     msgs.scrollTop = msgs.scrollHeight;
   }
@@ -21168,33 +21196,7 @@ function switchTab(tab) {
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
       if (window._arcSetMood) window._arcSetMood('responding');
       appendCoachMsg(reply.trim(), 'coach');
-      // JARVIS voice
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        var utt = new SpeechSynthesisUtterance(reply.trim());
-        utt.rate = 0.92;
-        utt.pitch = 0.85;
-        utt.volume = 1;
-        // prefer a deep British male voice (JARVIS-like)
-        utt.onend = function(){ if (window._arcSetMood) window._arcSetMood('idle'); };
-        utt.onerror = function(){ if (window._arcSetMood) window._arcSetMood('idle'); };
-        var _setVoiceAndSpeak = function() {
-          var voices = window.speechSynthesis.getVoices();
-          var preferred = voices.find(function(v){ return /daniel|george|oliver|uk.*male|en.*gb/i.test(v.name + v.lang); })
-            || voices.find(function(v){ return /en/i.test(v.lang) && v.name.toLowerCase().indexOf('male') >= 0; })
-            || voices.find(function(v){ return /en/i.test(v.lang); });
-          if (preferred) utt.voice = preferred;
-          window.speechSynthesis.speak(utt);
-        };
-        var _voices = window.speechSynthesis.getVoices();
-        if (_voices && _voices.length) {
-          _setVoiceAndSpeak();
-        } else {
-          window.speechSynthesis.onvoiceschanged = function() { _setVoiceAndSpeak(); window.speechSynthesis.onvoiceschanged = null; };
-        }
-      } else {
-        setTimeout(function(){ if (window._arcSetMood) window._arcSetMood('idle'); }, 3000);
-      }
+      _jarvisSpeak(reply.trim());
     } catch(e) {
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
       appendCoachMsg('Could not reach coach. Check your connection.', 'coach');
@@ -21745,6 +21747,7 @@ function switchTab(tab) {
 
       function setMood(m) { _mood = m; }
       window._arcSetMood = setMood;
+      window._jarvisSpeak = function(text) { _jarvisSpeak(text); };
 
       function hexToRgb(hex) {
         var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
