@@ -21099,6 +21099,21 @@ function switchTab(tab) {
     localStorage.setItem(COACH_KEY + today(), JSON.stringify(arr));
   }
 
+  function _pcmToWav(pcmBytes, sampleRate) {
+    var numCh = 1, bps = 16, blockAlign = numCh * bps / 8;
+    var byteRate = sampleRate * blockAlign, dataSize = pcmBytes.length;
+    var buf = new ArrayBuffer(44 + dataSize);
+    var v = new DataView(buf);
+    var ws = function(off, s){ for (var i=0;i<s.length;i++) v.setUint8(off+i, s.charCodeAt(i)); };
+    ws(0,'RIFF'); v.setUint32(4, 36+dataSize, true); ws(8,'WAVE');
+    ws(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,numCh,true);
+    v.setUint32(24,sampleRate,true); v.setUint32(28,byteRate,true);
+    v.setUint16(32,blockAlign,true); v.setUint16(34,bps,true);
+    ws(36,'data'); v.setUint32(40,dataSize,true);
+    new Uint8Array(buf,44).set(pcmBytes);
+    return buf;
+  }
+
   function _jarvisSpeak(text) {
     if (window._jarvisSpeaking) { try { window._jarvisCurrentSrc && window._jarvisCurrentSrc.stop(); } catch(e){} }
     window._jarvisSpeaking = true;
@@ -21108,23 +21123,29 @@ function switchTab(tab) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text, voice: 'Charon' })
     }).then(function(r){ return r.json(); }).then(function(data) {
-      var b64 = data.candidates && data.candidates[0] &&
-                data.candidates[0].content.parts[0].inlineData &&
-                data.candidates[0].content.parts[0].inlineData.data;
-      if (!b64) throw new Error('no audio');
+      console.log('[JARVIS TTS] response:', JSON.stringify(data).slice(0, 500));
+      var part = data.candidates && data.candidates[0] &&
+                 data.candidates[0].content && data.candidates[0].content.parts &&
+                 data.candidates[0].content.parts[0];
+      if (!part || !part.inlineData) { console.error('[JARVIS TTS] no inlineData, full response:', data); throw new Error('no audio data'); }
+      var b64 = part.inlineData.data;
+      var mime = part.inlineData.mimeType || '';
+      console.log('[JARVIS TTS] mime:', mime, 'b64 length:', b64.length);
       var binary = atob(b64);
       var bytes = new Uint8Array(binary.length);
       for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      var audioBuf = mime.indexOf('pcm') >= 0 ? _pcmToWav(bytes, 24000) : bytes.buffer;
       var ctx = new (window.AudioContext || window.webkitAudioContext)();
-      ctx.decodeAudioData(bytes.buffer, function(decoded) {
+      ctx.decodeAudioData(audioBuf, function(decoded) {
+        console.log('[JARVIS TTS] decoded OK, duration:', decoded.duration);
         var src = ctx.createBufferSource();
         src.buffer = decoded;
         src.connect(ctx.destination);
         window._jarvisCurrentSrc = src;
         src.onended = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); ctx.close(); };
         src.start(0);
-      }, function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
-    }).catch(function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
+      }, function(e){ console.error('[JARVIS TTS] decodeAudioData failed:', e); window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
+    }).catch(function(e){ console.error('[JARVIS TTS] fetch/parse error:', e); window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
   }
 
   function _coachMsgDiv(text, role) {
