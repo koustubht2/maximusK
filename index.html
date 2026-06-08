@@ -20490,6 +20490,9 @@ function switchTab(tab) {
     var ctx = el.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.clearRect(0,0,W,H);
+    // Subtle dark chart area background
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(0, 0, W, H);
 
     var padL = 4, padR = 4, padT = 20, padB = 28;
     var cw = W - padL - padR;
@@ -20558,19 +20561,19 @@ function switchTab(tab) {
       ctx.fillStyle = bGrad;
       ctx.fillRect(x1, padT, x2 - x1, ch);
       // Zone label at top of band
-      ctx.font = '9px var(--font-mono, monospace)';
+      ctx.font = '9px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
       ctx.fillStyle = hexAlpha(win.color, 0.7);
       ctx.fillText(win.label.toUpperCase(), (x1 + x2) / 2, padT + 11);
     });
 
-    // ── Grid lines (exact creator: 3 horizontal at 25/50/75%) ─
+    // ── Grid lines ─────────────────────────────────────────────
     ctx.save();
     ctx.setLineDash([2, 5]);
-    ctx.strokeStyle = 'rgba(255,255,255,.05)';
     ctx.lineWidth = 1;
     for (var gi = 1; gi <= 3; gi++) {
       var gy = padT + (gi / 4) * ch;
+      ctx.strokeStyle = gi === 2 ? 'rgba(255,255,255,.13)' : 'rgba(255,255,255,.07)';
       ctx.beginPath();
       ctx.moveTo(padL, gy);
       ctx.lineTo(padL + cw, gy);
@@ -20588,10 +20591,12 @@ function switchTab(tab) {
     var drawSleepLine = function(h, col) {
       var sx = xAt(h);
       ctx.save();
-      ctx.setLineDash([1, 5]);
+      ctx.setLineDash([3, 5]);
       ctx.strokeStyle = col;
-      ctx.lineWidth = 1.2;
-      ctx.globalAlpha = 0.6;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.75;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 4;
       ctx.beginPath();
       ctx.moveTo(sx, padT);
       ctx.lineTo(sx, padT + ch);
@@ -20641,9 +20646,10 @@ function switchTab(tab) {
       ctx.stroke();
       ctx.restore();
     } else {
-      // ── Under-curve area fill (exact creator: 2-stop #34D399) ──
+      // ── Under-curve area fill ─────────────────────────────────
       var areaGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
-      areaGrad.addColorStop(0, 'rgba(52,211,153,0.34)');
+      areaGrad.addColorStop(0, 'rgba(52,211,153,0.45)');
+      areaGrad.addColorStop(0.6, 'rgba(52,211,153,0.12)');
       areaGrad.addColorStop(1, 'rgba(52,211,153,0)');
       buildPath(pts);
       ctx.lineTo(pts[pts.length - 1][0], padT + ch);
@@ -20651,10 +20657,10 @@ function switchTab(tab) {
       ctx.closePath();
       ctx.fillStyle = areaGrad;
       ctx.fill();
-      // ── Curve line (exact creator: 2.4px + drop-shadow glow) ─
+      // ── Curve line ────────────────────────────────────────────
       ctx.save();
-      ctx.shadowColor = 'rgba(52,211,153,0.75)';
-      ctx.shadowBlur = 5;
+      ctx.shadowColor = 'rgba(52,211,153,0.9)';
+      ctx.shadowBlur = 10;
       buildPath(pts);
       ctx.strokeStyle = '#34D399';
       ctx.lineWidth = 2.4;
@@ -20676,18 +20682,22 @@ function switchTab(tab) {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // ── Now marker (exact creator: white line + creator dot style) ─
+    // ── Now marker ────────────────────────────────────────────
     var nx = xAt(now + 0.5);
     var ny = yAt(arrAt(now));
     ctx.save();
     ctx.setLineDash([3, 4]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(nx, padT);
     ctx.lineTo(nx, padT + ch);
     ctx.stroke();
     ctx.restore();
+    // Outer glow ring
+    ctx.save();
+    ctx.shadowColor = 'rgba(52,211,153,0.8)';
+    ctx.shadowBlur = 8;
     ctx.beginPath();
     ctx.arc(nx, ny, 4.5, 0, Math.PI * 2);
     ctx.fillStyle = '#0b110e';
@@ -20695,6 +20705,7 @@ function switchTab(tab) {
     ctx.strokeStyle = '#34D399';
     ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.restore();
 
     // ── Meal markers ──────────────────────────────────────────
     var vitItems = vitLogs || loadVit();
@@ -20784,13 +20795,13 @@ function switchTab(tab) {
       }
     }
 
-    // ── Hour labels (exact creator format: 12A 3A 6A 9A 12P…) ─
-    ctx.font = '10px var(--font-mono, monospace)';
+    // ── Hour labels ───────────────────────────────────────────
+    ctx.font = '10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     var _xLabels = ['12A','3A','6A','9A','12P','3P','6P','9P'];
     [0, 3, 6, 9, 12, 15, 18, 21].forEach(function(h, i) {
       var isCurr = (h === Math.floor(now));
-      ctx.fillStyle = isCurr ? '#34D399' : 'rgba(255,255,255,0.22)';
+      ctx.fillStyle = isCurr ? '#34D399' : 'rgba(255,255,255,0.30)';
       ctx.fillText(_xLabels[i], xAt(h), H - 5);
     });
 
@@ -20844,16 +20855,16 @@ function switchTab(tab) {
       ctx.fill();
       ctx.stroke();
       // score — serif italic style via large bold
-      ctx.font = 'bold 22px var(--font-serif, Georgia, serif)';
+      ctx.font = 'bold 22px "Instrument Serif", Georgia, serif';
       ctx.fillStyle = zCol;
       ctx.textAlign = 'center';
       ctx.fillText(score, tx + pillW / 2, ty + 26);
       // zone label mono
-      ctx.font = '9px var(--font-mono, monospace)';
+      ctx.font = '9px "JetBrains Mono", monospace';
       ctx.fillStyle = zCol;
       ctx.fillText(zone.toUpperCase(), tx + pillW / 2, ty + 38);
       // time
-      ctx.font = '9px var(--font-mono, monospace)';
+      ctx.font = '9px "JetBrains Mono", monospace';
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       ctx.fillText(timeStr, tx + pillW / 2, ty + 49);
 
