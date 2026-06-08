@@ -1013,6 +1013,28 @@ body::after {
 .peak-insight-row:last-child { border-bottom:none; }
 .peak-insight-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px; background:#6EE7B7; box-shadow:0 0 6px rgba(110,231,183,0.5); }
 .peak-insight-text { font-size:13px; color:var(--text-secondary); line-height:1.55; }
+/* ── Feel slider (replaces mood buttons) ── */
+.peak-feel-wrap { display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap; }
+.peak-feel-slider-wrap { flex:1; min-width:160px; display:flex; align-items:center; gap:12px; }
+.peak-feel-slider { -webkit-appearance:none; appearance:none; flex:1; height:8px; border-radius:99px; background:linear-gradient(90deg,#EF4444,#F59E0B,#6EE7B7); cursor:pointer; outline:none; }
+.peak-feel-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#eafff4; border:3px solid #6EE7B7; box-shadow:0 0 12px rgba(110,231,183,0.5); cursor:pointer; }
+.peak-feel-slider::-moz-range-thumb { width:22px; height:22px; border-radius:50%; background:#eafff4; border:3px solid #6EE7B7; box-shadow:0 0 12px rgba(110,231,183,0.5); cursor:pointer; }
+.peak-feel-pct { font-size:28px; font-weight:600; min-width:52px; text-align:right; color:var(--text-primary); }
+.peak-feel-note { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-tertiary); font-family:var(--font-mono); }
+/* ── Meds card ── */
+.peak-meds-log-row { margin-bottom:10px; }
+.peak-meds-logs { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.peak-meds-log-item { display:flex; justify-content:space-between; align-items:center; padding:9px 12px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.04); }
+.peak-meds-log-left { flex:1; }
+.peak-meds-log-name { font-size:13px; color:var(--text-primary); font-weight:500; }
+.peak-meds-log-meta { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); margin-top:2px; }
+.peak-meds-log-del { background:transparent; border:none; color:rgba(255,138,138,0.4); cursor:pointer; font-size:18px; padding:2px 6px; line-height:1; transition:color 0.15s; }
+.peak-meds-log-del:hover { color:#FF8A8A; }
+.peak-meds-boost-bar-wrap { margin:4px 0 10px; }
+.peak-meds-tip { display:flex; gap:10px; align-items:flex-start; margin-top:10px; padding:11px 13px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); font-size:13px; color:var(--text-secondary); line-height:1.5; }
+.peak-meds-tip.warn { border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.05); }
+.peak-meds-tip-icon { font-size:16px; flex-shrink:0; }
+/* keep mood grid styles for legacy refs if any */
 .peak-mood-grid { display:flex; gap:6px; margin-top:8px; }
 .peak-mood-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; padding:10px 4px; border-radius:12px; background:transparent; border:1px solid rgba(255,255,255,0.07); cursor:pointer; font-family:inherit; transition:all 0.15s; }
 .peak-mood-btn.selected { background:rgba(110,231,183,0.08); border-color:rgba(110,231,183,0.3); }
@@ -8650,14 +8672,13 @@ window.canonicalJson = function(obj) {
 
     <div class="peak-card">
       <div class="peak-section-label">How are you feeling?</div>
-      <div class="peak-mood-grid">
-        <button class="peak-mood-btn" data-mood="foggy" type="button"><div class="peak-mood-dot foggy"></div><div class="peak-mood-label">Foggy</div></button>
-        <button class="peak-mood-btn" data-mood="tired" type="button"><div class="peak-mood-dot tired"></div><div class="peak-mood-label">Tired</div></button>
-        <button class="peak-mood-btn" data-mood="steady" type="button"><div class="peak-mood-dot steady"></div><div class="peak-mood-label">Steady</div></button>
-        <button class="peak-mood-btn" data-mood="good" type="button"><div class="peak-mood-dot good"></div><div class="peak-mood-label">Good</div></button>
-        <button class="peak-mood-btn" data-mood="sharp" type="button"><div class="peak-mood-dot sharp"></div><div class="peak-mood-label">Sharp</div></button>
-        <button class="peak-mood-btn" data-mood="peak" type="button"><div class="peak-mood-dot peak"></div><div class="peak-mood-label">Peak</div></button>
+      <div class="peak-feel-wrap">
+        <div class="peak-feel-slider-wrap">
+          <input id="peakFeelSlider" class="peak-feel-slider" type="range" min="0" max="100" value="50">
+          <div class="peak-feel-pct" id="peakFeelPct">50%</div>
+        </div>
       </div>
+      <div class="peak-feel-note" id="peakFeelNote" style="margin-top:8px">Drag to set how you feel right now</div>
     </div>
 
     <div class="peak-card">
@@ -8699,6 +8720,30 @@ window.canonicalJson = function(obj) {
         <input id="peakCustomName" class="peak-caff-custom-input" type="text" placeholder="Name">
         <input id="peakCustomMg" class="peak-caff-custom-input peak-caff-custom-mg" type="number" placeholder="mg" min="1" max="999">
         <button id="peakCustomAddBtn" class="peak-caff-add-btn" type="button">Add</button>
+      </div>
+    </div>
+
+    <div class="peak-card" id="peakMedsCard">
+      <div class="peak-section-label">Meds &amp; Substances</div>
+      <div class="peak-meds-log-row">
+        <div class="peak-caff-search-wrap">
+          <input id="peakMedsSearch" class="peak-caff-search" type="text" placeholder="Search meds, nootropics, nicotine…" autocomplete="off">
+          <div id="peakMedsDropdown" class="peak-caff-dropdown"></div>
+        </div>
+        <input id="peakMedsTime" class="peak-caff-time-input" type="time">
+        <button class="peak-caff-time-now" id="peakMedsTimeNowBtn" type="button">Now</button>
+      </div>
+      <div id="peakMedsLogs" class="peak-meds-logs"></div>
+      <div class="peak-meds-boost-bar-wrap">
+        <div class="peak-mg-bar-labels"><span id="peakMedsBoostLabel">0 pts on board</span><span id="peakMedsCategories" style="color:var(--text-tertiary);font-size:10px"></span></div>
+        <div class="peak-mg-bar-track"><div id="peakMedsBoostBar" class="peak-mg-bar-fill" style="width:0%;background:linear-gradient(90deg,#818cf8,#a78bfa)"></div></div>
+      </div>
+      <div id="peakMedsTip" class="peak-meds-tip" style="display:none"></div>
+      <div class="peak-section-label" style="margin-top:14px">Custom substance</div>
+      <div class="peak-caff-custom">
+        <input id="peakMedsCustomName" class="peak-caff-custom-input" type="text" placeholder="Name">
+        <input id="peakMedsCustomMg" class="peak-caff-custom-input peak-caff-custom-mg" type="number" placeholder="mg" min="1" max="999">
+        <button id="peakMedsCustomAddBtn" class="peak-caff-add-btn" type="button">Add</button>
       </div>
     </div>
 
@@ -19333,6 +19378,8 @@ function switchTab(tab) {
   // ── Constants ──────────────────────────────────────────────
   var CAFF_KEY        = 'goals_caffeine_';
   var MOOD_KEY        = 'goals_mood_';
+  var FEEL_KEY        = 'goals_feel_';
+  var MEDS_KEY        = 'goals_meds_';
   var SCHED_KEY       = 'goals_schedule_';
   var INSIGHTS_KEY    = 'goals_peak_insights_v1';
   var VIT_KEY         = 'goals_vitality_';
@@ -19370,6 +19417,101 @@ function switchTab(tab) {
     {name:'Vivarin',mg:200},{name:'Dark Chocolate 40g',mg:24},{name:'Milk Chocolate 40g',mg:9},
     {name:'Kombucha 350ml',mg:14},{name:'Sparkling Water',mg:0},{name:'Ginger Beer',mg:0}
   ];
+
+  // ── Meds & substances database ────────────────────────────
+  // tPeak: hours to peak effect, dur: total duration hours, lift: peak score boost pts
+  // cat: 'rx' | 'nic' | 'noot'
+  var MEDS_DB = [
+    // ── ADHD / Prescription ──
+    {name:'Concerta 18mg',   mg:18,  ref:18,  tPeak:3.0, dur:10, lift:14, cat:'rx'},
+    {name:'Concerta 27mg',   mg:27,  ref:18,  tPeak:3.0, dur:10, lift:18, cat:'rx'},
+    {name:'Concerta 36mg',   mg:36,  ref:18,  tPeak:3.0, dur:10, lift:22, cat:'rx'},
+    {name:'Ritalin 10mg',    mg:10,  ref:10,  tPeak:1.5, dur:4,  lift:16, cat:'rx'},
+    {name:'Ritalin 20mg',    mg:20,  ref:10,  tPeak:1.5, dur:4,  lift:22, cat:'rx'},
+    {name:'Adderall 10mg',   mg:10,  ref:10,  tPeak:2.0, dur:6,  lift:18, cat:'rx'},
+    {name:'Adderall 20mg',   mg:20,  ref:10,  tPeak:2.0, dur:6,  lift:24, cat:'rx'},
+    {name:'Adderall XR 20mg',mg:20,  ref:10,  tPeak:3.5, dur:9,  lift:22, cat:'rx'},
+    {name:'Vyvanse 30mg',    mg:30,  ref:30,  tPeak:3.5, dur:10, lift:20, cat:'rx'},
+    {name:'Vyvanse 50mg',    mg:50,  ref:30,  tPeak:3.5, dur:10, lift:26, cat:'rx'},
+    {name:'Modafinil 100mg', mg:100, ref:100, tPeak:2.5, dur:12, lift:18, cat:'rx'},
+    {name:'Modafinil 200mg', mg:200, ref:100, tPeak:2.5, dur:12, lift:24, cat:'rx'},
+    {name:'Armodafinil 75mg',mg:75,  ref:75,  tPeak:2.0, dur:13, lift:20, cat:'rx'},
+    // ── Nicotine ──
+    {name:'Zyn 3mg',         mg:3,   ref:4,   tPeak:0.3, dur:1.5,lift:8,  cat:'nic'},
+    {name:'Zyn 6mg',         mg:6,   ref:4,   tPeak:0.3, dur:1.5,lift:12, cat:'nic'},
+    {name:'Velo 4mg',        mg:4,   ref:4,   tPeak:0.3, dur:1.5,lift:10, cat:'nic'},
+    {name:'On! 2mg',         mg:2,   ref:4,   tPeak:0.3, dur:1.5,lift:6,  cat:'nic'},
+    {name:'Nicotine Patch 14mg',mg:14,ref:14, tPeak:4.0, dur:16, lift:8,  cat:'nic'},
+    {name:'Nicotine Patch 21mg',mg:21,ref:14, tPeak:4.0, dur:16, lift:10, cat:'nic'},
+    {name:'Vape (avg)',      mg:2,   ref:4,   tPeak:0.1, dur:0.5,lift:6,  cat:'nic'},
+    {name:'Cigarette',       mg:1.5, ref:4,   tPeak:0.1, dur:0.4,lift:5,  cat:'nic'},
+    // ── Nootropics ──
+    {name:'L-Tyrosine 500mg',mg:500, ref:500, tPeak:1.5, dur:4,  lift:7,  cat:'noot'},
+    {name:'L-Tyrosine 1g',   mg:1000,ref:500, tPeak:1.5, dur:4,  lift:10, cat:'noot'},
+    {name:'L-Theanine 100mg',mg:100, ref:200, tPeak:1.0, dur:4,  lift:5,  cat:'noot'},
+    {name:'L-Theanine 200mg',mg:200, ref:200, tPeak:1.0, dur:4,  lift:8,  cat:'noot'},
+    {name:'Rhodiola 200mg',  mg:200, ref:200, tPeak:1.5, dur:5,  lift:6,  cat:'noot'},
+    {name:'Ashwagandha 300mg',mg:300,ref:300, tPeak:2.0, dur:6,  lift:4,  cat:'noot'},
+    {name:'Alpha-GPC 300mg', mg:300, ref:300, tPeak:1.5, dur:5,  lift:7,  cat:'noot'},
+    {name:'CDP-Choline 250mg',mg:250,ref:250, tPeak:2.0, dur:6,  lift:6,  cat:'noot'},
+    {name:'Lion\'s Mane 500mg',mg:500,ref:500,tPeak:2.0, dur:5,  lift:4,  cat:'noot'},
+    {name:'Bacopa 300mg',    mg:300, ref:300, tPeak:2.5, dur:6,  lift:3,  cat:'noot'},
+    {name:'Panax Ginseng 200mg',mg:200,ref:200,tPeak:2.0,dur:6,  lift:5,  cat:'noot'},
+    {name:'Creatine 5g',     mg:5000,ref:5000,tPeak:1.5, dur:4,  lift:3,  cat:'noot'},
+    {name:'Magnesium Glycinate 400mg',mg:400,ref:400,tPeak:1.5,dur:5,lift:2,cat:'noot'}
+  ];
+
+  function loadMeds(dateStr) { return JSON.parse(localStorage.getItem(MEDS_KEY + (dateStr || today())) || '[]'); }
+  function saveMeds(arr) { localStorage.setItem(MEDS_KEY + today(), JSON.stringify(arr)); }
+
+  // Smooth onset→peak→exponential decay PK model
+  // At t=tPeak: normalized value = 1.0 (full lift). By t=dur: ~11% remains (natural fadeout)
+  function subNorm(t, tPeak, dur) {
+    if (t <= 0) return 0;
+    var k = Math.log(9) / dur; // decay constant so ~11% left at dur
+    if (t <= tPeak) {
+      // smooth onset: cubic ramp 0→1 over [0, tPeak]
+      var frac = t / tPeak;
+      return frac * frac * (3 - 2 * frac);
+    }
+    return Math.exp(-k * (t - tPeak));
+  }
+
+  // Returns 24-element array of med boost pts at each hour
+  function medCurve(logs) {
+    var arr = new Array(24).fill(0);
+    logs.forEach(function(log) {
+      var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) ||
+                  {tPeak: log.tPeak || 2, dur: log.dur || 5, lift: log.lift || 10, ref: log.mg || 10};
+      var scaledLift = entry.lift * Math.min(log.mg / entry.ref, 2.0); // dose scaling, cap at 2×
+      for (var h = 0; h < 24; h++) {
+        var dh = h + 0.5 - log.timeHour;
+        if (dh <= 0) continue;
+        arr[h] += scaledLift * subNorm(dh, entry.tPeak, entry.dur);
+      }
+    });
+    return arr;
+  }
+
+  // Detect crash points (local minima after peaks) in a combined curve array
+  // Returns array of {hour, depth} for hours where rebound dip > threshold
+  function detectCrashes(arr, wakeHour) {
+    var crashes = [];
+    var wh = Math.floor(wakeHour);
+    for (var i = 2; i < 17; i++) {
+      var h = (wh + i) % 24;
+      var prev = arr[(wh + i - 1) % 24] || 0;
+      var curr = arr[h] || 0;
+      var next = arr[(wh + i + 1) % 24] || 0;
+      // local minimum: curr < both neighbors, and at least 8pts below peak of last 4h
+      if (curr < prev && curr < next) {
+        var recentPeak = 0;
+        for (var j = Math.max(0, i - 4); j < i; j++) recentPeak = Math.max(recentPeak, arr[(wh + j) % 24] || 0);
+        if (recentPeak - curr >= 8 && curr < 55) crashes.push({ hour: h, depth: Math.round(recentPeak - curr) });
+      }
+    }
+    return crashes;
+  }
 
   // ── Food database ──────────────────────────────────────────
   var FOOD_DB = [
@@ -19863,7 +20005,7 @@ function switchTab(tab) {
 
   // ── Energy curve model ─────────────────────────────────────
   // fix #18: HRV as separate quality modifier on peak height
-  function buildEnergyArray(wakeHour, readiness, caffLogs, mode, hrv, avgHrv, vitLogs) {
+  function buildEnergyArray(wakeHour, readiness, caffLogs, mode, hrv, avgHrv, vitLogs, medLogs) {
     var arr = [];
     var PI = Math.PI;
     var hasOura = readiness != null;
@@ -19885,15 +20027,25 @@ function switchTab(tab) {
     if (hrv && avgHrv && avgHrv > 0) {
       hrvMod = clamp((hrv - avgHrv) / avgHrv * 12, -8, 8);
     }
-    // Mood modifier: subjective feeling shifts curve up/down uniformly
+    // Feel slider: 0–100% maps to -20…+20 shift (50% = 0 shift)
     var moodShift = 0;
-    var _mood = localStorage.getItem(MOOD_KEY + (_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today())) || '';
-    if      (_mood === 'peak')   moodShift =  15;
-    else if (_mood === 'sharp')  moodShift =  8;
-    else if (_mood === 'good')   moodShift =  4;
-    else if (_mood === 'steady') moodShift =  0;
-    else if (_mood === 'tired')  moodShift = -6;
-    else if (_mood === 'foggy')  moodShift = -12;
+    var _dateKey = _peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today();
+    var _feelVal = parseInt(localStorage.getItem(FEEL_KEY + _dateKey), 10);
+    if (!isNaN(_feelVal)) {
+      moodShift = (_feelVal - 50) * 0.4; // 0%→-20, 50%→0, 100%→+20
+    } else {
+      // legacy emoji mood fallback
+      var _mood = localStorage.getItem(MOOD_KEY + _dateKey) || '';
+      if      (_mood === 'peak')   moodShift =  15;
+      else if (_mood === 'sharp')  moodShift =  8;
+      else if (_mood === 'good')   moodShift =  4;
+      else if (_mood === 'steady') moodShift =  0;
+      else if (_mood === 'tired')  moodShift = -6;
+      else if (_mood === 'foggy')  moodShift = -12;
+    }
+    // Med boost curve
+    var _medLogs = medLogs || loadMeds(_dateKey);
+    var _medArr = _medLogs.length ? medCurve(_medLogs) : null;
     for (var h = 0; h < 24; h++) {
       var hw = h - wakeHour;
       if (hw < 0) hw += 24;
@@ -19936,8 +20088,10 @@ function switchTab(tab) {
       }
       // Food modifier: doubled so meals are clearly visible
       score += foodMod[h] * 2;
-      // Mood modifier
+      // Feel / mood modifier
       score += moodShift;
+      // Med/substance boost
+      if (_medArr) score += _medArr[h];
       arr.push(clamp(score, 0, 100));
     }
     return arr;
@@ -20168,7 +20322,7 @@ function switchTab(tab) {
 
   // ── Canvas: energy chart ──────────────────────────────────
   var _energyHoverH = null;
-  function drawEnergyChart(canvasId, arr, wakeHour, caffLogs, mode, vitLogs) {
+  function drawEnergyChart(canvasId, arr, wakeHour, caffLogs, mode, vitLogs, medLogs) {
     var el = document.getElementById(canvasId);
     if (!el) return;
     var dpr = window.devicePixelRatio || 1;
@@ -20381,6 +20535,34 @@ function switchTab(tab) {
       ctx.fillText('C', cx2, cy2 - 9);
     });
 
+    // ── Crash markers ─────────────────────────────────────────
+    var _crashes = detectCrashes(arr, wakeHour);
+    _crashes.forEach(function(crash) {
+      var cx3 = xAt(crash.hour + 0.5);
+      var cy3 = yAt(arr[crash.hour] || 0);
+      // dashed red vertical line
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([3, 4]);
+      ctx.moveTo(cx3, padT);
+      ctx.lineTo(cx3, padT + ch);
+      ctx.strokeStyle = 'rgba(239,68,68,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // red dot on curve
+      ctx.beginPath();
+      ctx.arc(cx3, cy3, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+      // label
+      ctx.font = 'bold 8px -apple-system,sans-serif';
+      ctx.fillStyle = 'rgba(252,165,165,0.9)';
+      ctx.textAlign = 'center';
+      ctx.fillText('↓' + crash.depth, cx3, cy3 - 8);
+      ctx.restore();
+    });
+
     // ── Hour labels ───────────────────────────────────────────
     ctx.font = '10px -apple-system,sans-serif';
     ctx.textAlign = 'center';
@@ -20474,17 +20656,16 @@ function switchTab(tab) {
       }
       function onMove(e) {
         _energyHoverH = getHourFromEvent(e);
-        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode, el._peakVitLogs);
+        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode, el._peakVitLogs, el._peakMedLogs);
       }
       function onLeave() {
         _energyHoverH = null;
-        // Restore ring to live current-hour value
         if (typeof _updateEnergyRing === 'function' && el._peakArr) {
           var _nh = nowHour();
           var _ns = el._peakArr[Math.min(23, Math.floor(_nh))] || 0;
           _updateEnergyRing(_ns, fmtHour(Math.floor(_nh)), false);
         }
-        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode, el._peakVitLogs);
+        drawEnergyChart(canvasId, el._peakArr || arr, wakeHour, el._peakCaffLogs, el._peakMode, el._peakVitLogs, el._peakMedLogs);
       }
       el.addEventListener('mousemove', onMove);
       el.addEventListener('touchmove', function(e) { e.preventDefault(); onMove(e); }, { passive: false });
@@ -20496,6 +20677,7 @@ function switchTab(tab) {
     el._peakCaffLogs = caffLogs;
     el._peakMode = mode;
     el._peakVitLogs = vitLogs || [];
+    el._peakMedLogs = medLogs || [];
   }
 
   // ── Canvas: caffeine bar chart ─────────────────────────────
@@ -20807,11 +20989,11 @@ function switchTab(tab) {
     var caffLogs = loadCaff();
     // fix #18: pass hrv+avgHrv to energy model
     var _r = readiness != null ? readiness : 75; // fallback so curve is always real
-    var arr = buildEnergyArray(wakeHour, _r, caffLogs, _activeEnergyMode, hrv, avgHrv);
-    // fix #12: pass caffLogs + mode so overlay renders
+    var _todMeds = loadMeds();
+    var arr = buildEnergyArray(wakeHour, _r, caffLogs, _activeEnergyMode, hrv, avgHrv, null, _todMeds);
     var _pec = document.getElementById('peakEnergyCanvas');
     if (_pec) _pec._peakReadiness = _r;
-    drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode, loadVit());
+    drawEnergyChart('peakEnergyCanvas', arr, wakeHour, caffLogs, _activeEnergyMode, loadVit(), _todMeds);
     var _nowH = nowHour();
     var _nowScore = arr[Math.min(23, Math.floor(_nowH))] || 0;
     _updateEnergyRing(_nowScore, fmtHour(Math.floor(_nowH)), false);
@@ -21065,11 +21247,12 @@ function switchTab(tab) {
     var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){ return a+b; }, 0) / _hrvV.length : null;
     if (!logs) logs = loadCaff(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
     var _vitLogs = loadVit(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
+    var _medLogs2 = loadMeds(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
     var _r2 = r != null ? r : 75;
-    var arr = buildEnergyArray(wh, _r2, logs, _activeEnergyMode, _hrv, _aHrv, _vitLogs);
+    var arr = buildEnergyArray(wh, _r2, logs, _activeEnergyMode, _hrv, _aHrv, _vitLogs, _medLogs2);
     var _canvas = document.getElementById('peakEnergyCanvas');
     if (_canvas) _canvas._peakReadiness = _r2;
-    drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode, _vitLogs);
+    drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode, _vitLogs, _medLogs2);
     drawCaffChart('peakCaffCanvas', logs);
     renderCoffeeScore(logs, r);
     // Update inline ring with current-hour energy score
@@ -21123,29 +21306,26 @@ function switchTab(tab) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text, voice: 'Charon' })
     }).then(function(r){ return r.json(); }).then(function(data) {
-      console.log('[JARVIS TTS] response:', JSON.stringify(data).slice(0, 500));
       var part = data.candidates && data.candidates[0] &&
                  data.candidates[0].content && data.candidates[0].content.parts &&
                  data.candidates[0].content.parts[0];
-      if (!part || !part.inlineData) { console.error('[JARVIS TTS] no inlineData, full response:', data); throw new Error('no audio data'); }
+      if (!part || !part.inlineData) throw new Error('no audio data');
       var b64 = part.inlineData.data;
       var mime = part.inlineData.mimeType || '';
-      console.log('[JARVIS TTS] mime:', mime, 'b64 length:', b64.length);
       var binary = atob(b64);
       var bytes = new Uint8Array(binary.length);
       for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       var audioBuf = mime.indexOf('pcm') >= 0 ? _pcmToWav(bytes, 24000) : bytes.buffer;
       var ctx = new (window.AudioContext || window.webkitAudioContext)();
       ctx.decodeAudioData(audioBuf, function(decoded) {
-        console.log('[JARVIS TTS] decoded OK, duration:', decoded.duration);
         var src = ctx.createBufferSource();
         src.buffer = decoded;
         src.connect(ctx.destination);
         window._jarvisCurrentSrc = src;
         src.onended = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); ctx.close(); };
         src.start(0);
-      }, function(e){ console.error('[JARVIS TTS] decodeAudioData failed:', e); window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
-    }).catch(function(e){ console.error('[JARVIS TTS] fetch/parse error:', e); window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
+      }, function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
+    }).catch(function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
   }
 
   function _coachMsgDiv(text, role) {
@@ -21208,8 +21388,11 @@ function switchTab(tab) {
     })();
     var logs = loadCaff();
     var caffSummary = logs.length ? logs.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
-    var mood = localStorage.getItem(MOOD_KEY + today()) || 'unknown';
-    var context = 'Oura readiness='+readiness+', HRV='+hrv+', caffeine='+caffSummary+', mood='+mood+', time='+Math.floor(nowHour())+':00';
+    var medLogs3 = loadMeds();
+    var medSummary = medLogs3.length ? medLogs3.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
+    var feelVal3 = parseInt(localStorage.getItem(FEEL_KEY + today()), 10);
+    var feelSummary = isNaN(feelVal3) ? 'unknown' : feelVal3 + '%';
+    var context = 'Oura readiness='+readiness+', HRV='+hrv+', caffeine='+caffSummary+', meds='+medSummary+', feel='+feelSummary+', time='+Math.floor(nowHour())+':00';
     var prompt = 'You are JARVIS, a sophisticated AI performance coach. Always address the user as "sir". Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific, data-driven, and actionable. Start your response by addressing sir directly.';
     var loading = document.createElement('div');
     loading.className = 'peak-coach-msg coach-msg';
@@ -21476,11 +21659,12 @@ function switchTab(tab) {
     var _offDate = offsetDateStr(offset);
     var cl2 = offset === 0 ? loadCaff() : (function(){ try { return JSON.parse(localStorage.getItem('goals_caffeine_' + _offDate) || '[]'); } catch(e){ return []; } })();
     var vl2 = loadVit(_offDate);
+    var ml2 = loadMeds(_offDate);
     var _r3 = r != null ? r : 75;
-    var arr2 = buildEnergyArray(wh, _r3, cl2, _activeEnergyMode, hrv2, aHrv2, vl2);
+    var arr2 = buildEnergyArray(wh, _r3, cl2, _activeEnergyMode, hrv2, aHrv2, vl2, ml2);
     var _pec2 = document.getElementById('peakEnergyCanvas');
     if (_pec2) _pec2._peakReadiness = _r3;
-    drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode, vl2);
+    drawEnergyChart('peakEnergyCanvas', arr2, wh, cl2, _activeEnergyMode, vl2, ml2);
     var _nh2 = nowHour();
     _updateEnergyRing(arr2[Math.min(23, Math.floor(_nh2))] || 0, fmtHour(Math.floor(_nh2)), false);
     _renderBestWindows(findBestWindows(arr2, wh));
@@ -21502,13 +21686,22 @@ function switchTab(tab) {
       setText('peakHeroScore', _heroScore2);
       setText('peakHeroLabel', _heroLabel2);
     }
-    // Mood buttons — show saved state for that day, disable interaction on past days
-    var _savedMood2 = localStorage.getItem(MOOD_KEY + _offDate);
-    document.querySelectorAll('.peak-mood-btn').forEach(function(btn) {
-      btn.classList.toggle('selected', btn.dataset.mood === _savedMood2);
-      btn.disabled = offset !== 0;
-      btn.style.opacity = offset !== 0 ? '0.5' : '';
-    });
+    // Feel slider — restore saved value for this day, disable on past days
+    (function() {
+      var sl = document.getElementById('peakFeelSlider');
+      var pctEl2 = document.getElementById('peakFeelPct');
+      var noteEl2 = document.getElementById('peakFeelNote');
+      if (!sl) return;
+      var savedFeel = parseInt(localStorage.getItem(FEEL_KEY + _offDate), 10);
+      var feelV = isNaN(savedFeel) ? 50 : savedFeel;
+      sl.value = feelV;
+      if (pctEl2) pctEl2.textContent = feelV + '%';
+      sl.disabled = offset !== 0;
+      sl.style.opacity = offset !== 0 ? '0.5' : '';
+      if (noteEl2) noteEl2.textContent = offset !== 0 ? 'Past day — read only' : '';
+    })();
+    // Meds logs — reload for this day
+    if (typeof window._renderMedsLogs === 'function') window._renderMedsLogs();
     // Schedule input — show that day's schedule, read-only on past days
     var si2 = document.getElementById('peakScheduleInput');
     if (si2) {
@@ -21610,14 +21803,211 @@ function switchTab(tab) {
       });
     }
 
-    document.querySelectorAll('.peak-mood-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.peak-mood-btn').forEach(function(b){ b.classList.remove('selected'); });
-        btn.classList.add('selected');
-        localStorage.setItem(MOOD_KEY + today(), btn.dataset.mood);
-        _refreshEnergyChart(null); // mood shift updates the curve immediately
+    // ── Feel slider ────────────────────────────────────────────
+    (function() {
+      var slider = document.getElementById('peakFeelSlider');
+      var pctEl  = document.getElementById('peakFeelPct');
+      var noteEl = document.getElementById('peakFeelNote');
+      if (!slider) return;
+      function feelLabel(v) {
+        if (v >= 85) return 'Feeling prime';
+        if (v >= 70) return 'Feeling sharp';
+        if (v >= 55) return 'Feeling good';
+        if (v >= 40) return 'Feeling steady';
+        if (v >= 25) return 'Feeling tired';
+        return 'Feeling foggy';
+      }
+      function initFeel() {
+        var saved = parseInt(localStorage.getItem(FEEL_KEY + today()), 10);
+        var val = isNaN(saved) ? 50 : saved;
+        slider.value = val;
+        if (pctEl) pctEl.textContent = val + '%';
+        if (noteEl) noteEl.textContent = feelLabel(val);
+      }
+      initFeel();
+      slider.addEventListener('input', function() {
+        var v = parseInt(slider.value, 10);
+        if (pctEl) pctEl.textContent = v + '%';
+        if (noteEl) noteEl.textContent = feelLabel(v);
+        localStorage.setItem(FEEL_KEY + today(), v);
+        _refreshEnergyChart(null);
       });
-    });
+    })();
+
+    // ── Meds UI ────────────────────────────────────────────────
+    (function() {
+      var MEDS_TIME_KEY = 'peak_meds_time';
+      function getMedsTime() {
+        var el = document.getElementById('peakMedsTime');
+        return el && el.value ? el.value : null;
+      }
+      function medsTimeToHour(t) {
+        if (!t) { var n = new Date(); return n.getHours() + n.getMinutes()/60; }
+        var p = t.split(':'); return parseInt(p[0],10) + parseInt(p[1],10)/60;
+      }
+      function setMedsTimeToNow() {
+        var el = document.getElementById('peakMedsTime');
+        if (!el) return;
+        var n = new Date();
+        el.value = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+      }
+      setMedsTimeToNow();
+      var medsNowBtn = document.getElementById('peakMedsTimeNowBtn');
+      if (medsNowBtn) medsNowBtn.addEventListener('click', setMedsTimeToNow);
+
+      function renderMedsTip(logs) {
+        var tipEl = document.getElementById('peakMedsTip');
+        if (!tipEl) return;
+        if (!logs.length) { tipEl.style.display = 'none'; return; }
+        // Find the most recently logged med still active
+        var nowH = nowHour();
+        var active = logs.map(function(log) {
+          var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) || {tPeak:2,dur:5};
+          var dh = nowH - log.timeHour;
+          var boost = entry.lift ? entry.lift * subNorm(dh, entry.tPeak, entry.dur) : 0;
+          var peakAt = log.timeHour + entry.tPeak;
+          var fadeAt = log.timeHour + entry.dur;
+          return { name: log.name, boost: boost, peakAt: peakAt, fadeAt: fadeAt, dh: dh, entry: entry };
+        }).filter(function(x){ return x.dh > 0 && x.dh < x.entry.dur; });
+
+        if (!active.length) { tipEl.style.display = 'none'; return; }
+        var top = active.sort(function(a,b){ return b.boost - a.boost; })[0];
+        var isWarn = top.boost > top.entry.lift * 0.8;
+        tipEl.className = 'peak-meds-tip' + (isWarn ? ' warn' : '');
+        tipEl.style.display = 'flex';
+        var icon = top.entry ? (top.entry.cat === 'rx' ? '💊' : top.entry.cat === 'nic' ? '🔵' : '🌿') : '💊';
+        var peakStr = top.peakAt > nowH ? 'peaks ' + fmtHour(Math.round(top.peakAt)) : 'past peak';
+        var fadeStr = fmtHour(Math.round(top.fadeAt));
+        tipEl.innerHTML = '<span class="peak-meds-tip-icon">' + icon + '</span>' +
+          '<span><b>' + escHtml(top.name) + '</b> — ' + Math.round(top.boost) + ' pts active, ' + peakStr + ', fades ~' + fadeStr + '</span>';
+      }
+
+      function renderMedsBoost(logs) {
+        var nowH = nowHour();
+        var totalBoost = 0;
+        var cats = new Set();
+        logs.forEach(function(log) {
+          var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) || {tPeak:2,dur:5,lift:10,ref:log.mg||10};
+          var dh = nowH - log.timeHour;
+          if (dh > 0 && dh < entry.dur) {
+            totalBoost += entry.lift * subNorm(dh, entry.tPeak, entry.dur) * Math.min(log.mg/entry.ref, 2);
+            cats.add(entry.cat || 'noot');
+          }
+        });
+        var boostEl = document.getElementById('peakMedsBoostLabel');
+        var barEl   = document.getElementById('peakMedsBoostBar');
+        var catEl   = document.getElementById('peakMedsCategories');
+        var round   = Math.round(totalBoost);
+        if (boostEl) boostEl.textContent = round + ' pts on board';
+        if (barEl)   barEl.style.width   = Math.min(round / 30 * 100, 100) + '%';
+        if (catEl) {
+          var catLabels = Array.from(cats).map(function(c){ return c==='rx'?'prescription':c==='nic'?'nicotine':'nootropic'; });
+          catEl.textContent = catLabels.join(' · ');
+        }
+        renderMedsTip(logs);
+      }
+
+      function renderMedsLogs() {
+        var isPast = _peakDayOffset !== 0;
+        var dateStr = isPast ? offsetDateStr(_peakDayOffset) : null;
+        var logs = loadMeds(dateStr);
+        var container = document.getElementById('peakMedsLogs');
+        if (!container) return;
+        var addRow = document.getElementById('peakMedsCard');
+        // hide add UI on past days
+        ['peakMedsSearch','peakMedsTime','peakMedsTimeNowBtn','peakMedsCustomName','peakMedsCustomMg','peakMedsCustomAddBtn'].forEach(function(id){
+          var el = document.getElementById(id);
+          if (el) el.style.display = isPast ? 'none' : '';
+        });
+        if (!logs.length) { container.innerHTML = ''; renderMedsBoost(logs); return; }
+        container.innerHTML = logs.map(function(log, i) {
+          var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) || {};
+          var catIcon = entry.cat === 'rx' ? '💊' : entry.cat === 'nic' ? '🔵' : '🌿';
+          var dh = nowHour() - log.timeHour;
+          var status = dh < 0 ? 'not yet' : dh > (entry.dur||5) ? 'faded' : 'active';
+          return '<div class="peak-meds-log-item">' +
+            '<div class="peak-meds-log-left">' +
+              '<div class="peak-meds-log-name">' + catIcon + ' ' + escHtml(log.name) + ' ' + log.mg + 'mg</div>' +
+              '<div class="peak-meds-log-meta">' + fmtHour24(log.timeHour) + ' · ' + status + '</div>' +
+            '</div>' +
+            (!isPast ? '<button class="peak-meds-log-del" data-idx="' + i + '" type="button">×</button>' : '') +
+          '</div>';
+        }).join('');
+        container.querySelectorAll('.peak-meds-log-del').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var idx = parseInt(btn.dataset.idx, 10);
+            var logs2 = loadMeds();
+            logs2.splice(idx, 1);
+            saveMeds(logs2);
+            renderMedsLogs();
+            _refreshEnergyChart(null);
+          });
+        });
+        renderMedsBoost(logs);
+      }
+      window._renderMedsLogs = renderMedsLogs;
+
+      function addMedLog(name, mg, timeVal) {
+        var timeH = medsTimeToHour(timeVal);
+        var logs = loadMeds();
+        logs.push({ name: name, mg: mg, timeHour: timeH });
+        saveMeds(logs);
+        renderMedsLogs();
+        _refreshEnergyChart(null);
+      }
+
+      // Search dropdown
+      var searchEl = document.getElementById('peakMedsSearch');
+      var dropEl   = document.getElementById('peakMedsDropdown');
+      if (searchEl && dropEl) {
+        searchEl.addEventListener('input', function() {
+          var q = searchEl.value.trim().toLowerCase();
+          if (!q) { dropEl.innerHTML = ''; dropEl.classList.remove('open'); return; }
+          var matches = MEDS_DB.filter(function(m){ return m.name.toLowerCase().indexOf(q) >= 0; }).slice(0, 10);
+          if (!matches.length) { dropEl.innerHTML = ''; dropEl.classList.remove('open'); return; }
+          dropEl.innerHTML = matches.map(function(m) {
+            var icon = m.cat==='rx'?'💊':m.cat==='nic'?'🔵':'🌿';
+            return '<div class="peak-caff-item" data-name="' + escHtml(m.name) + '" data-mg="' + m.mg + '">' +
+              '<span>' + icon + ' ' + escHtml(m.name) + '</span>' +
+              '<span class="peak-caff-item-mg">' + m.mg + 'mg · ' + m.cat + '</span>' +
+            '</div>';
+          }).join('');
+          dropEl.classList.add('open');
+          dropEl.querySelectorAll('.peak-caff-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+              addMedLog(item.dataset.name, parseInt(item.dataset.mg,10), getMedsTime());
+              searchEl.value = '';
+              dropEl.innerHTML = '';
+              dropEl.classList.remove('open');
+              setMedsTimeToNow();
+            });
+          });
+        });
+        document.addEventListener('click', function(e) {
+          if (!searchEl.contains(e.target) && !dropEl.contains(e.target)) {
+            dropEl.classList.remove('open');
+          }
+        });
+      }
+
+      // Custom add
+      var customAddBtn = document.getElementById('peakMedsCustomAddBtn');
+      if (customAddBtn) {
+        customAddBtn.addEventListener('click', function() {
+          var nameEl = document.getElementById('peakMedsCustomName');
+          var mgEl   = document.getElementById('peakMedsCustomMg');
+          var name   = nameEl && nameEl.value.trim();
+          var mg     = mgEl && parseInt(mgEl.value,10);
+          if (!name || !mg || mg < 1) return;
+          addMedLog(name, mg, getMedsTime());
+          if (nameEl) nameEl.value = '';
+          if (mgEl)   mgEl.value   = '';
+          setMedsTimeToNow();
+        });
+      }
+
+      renderMedsLogs();
+    })();
 
     var refreshInsightsBtn = document.getElementById('peakInsightsRefreshBtn');
     if (refreshInsightsBtn) refreshInsightsBtn.addEventListener('click', peakRefreshInsights);
