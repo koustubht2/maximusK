@@ -1239,12 +1239,20 @@ body::after {
 .vit-log-btn:hover { background:rgba(110,231,183,0.06); border-color:rgba(110,231,183,0.2); color:#6EE7B7; }
 .vit-log-btn:hover svg { stroke:#6EE7B7 !important; }
 .vit-food-empty { text-align:center; color:var(--text-tertiary); font-size:13px; padding:24px 0; }
-.vit-food-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.vit-food-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); gap:10px; }
 .vit-food-item:last-child { border-bottom:none; }
+.vit-food-thumb { width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; border:1px solid rgba(255,255,255,0.08); }
+.vit-food-info { flex:1; min-width:0; }
 .vit-food-name { font-size:13px; color:var(--text-primary); font-weight:500; }
 .vit-food-meta { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); margin-top:2px; }
-.vit-food-right { display:flex; align-items:center; gap:8px; }
+.vit-food-breakdown { font-size:10px; color:rgba(110,231,183,0.6); font-family:var(--font-mono); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+.vit-food-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .vit-food-kcal { font-size:14px; font-weight:700; color:var(--text-primary); font-family:var(--font-mono); }
+/* Modal breakdown text */
+.vit-breakdown-box { background:rgba(110,231,183,0.05); border:1px solid rgba(110,231,183,0.15); border-radius:8px; padding:8px 10px; font-size:11px; font-family:var(--font-mono); color:rgba(110,231,183,0.8); margin-bottom:10px; line-height:1.5; display:none; }
+.vit-breakdown-box.visible { display:block; }
+/* Modal photo preview */
+.vit-snap-preview { width:100%; max-height:160px; object-fit:cover; border-radius:10px; margin-bottom:10px; display:none; border:1px solid rgba(255,255,255,0.08); }
 .vit-food-del { background:transparent; border:none; color:rgba(255,138,138,0.4); cursor:pointer; font-size:18px; padding:2px 6px; line-height:1; transition:color 0.15s; }
 .vit-food-del:hover { color:#FF8A8A; }
 .vit-stats-bar { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(255,255,255,0.05); margin-top:14px; padding-top:14px; gap:4px; }
@@ -8797,7 +8805,6 @@ window.canonicalJson = function(obj) {
       <div class="peak-caff-timing">
         <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffPeakTime">—</div><div class="peak-caff-timing-lbl">Peak at</div></div>
         <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffClearTime">—</div><div class="peak-caff-timing-lbl">Cleared</div></div>
-        <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffCutoff">—</div><div class="peak-caff-timing-lbl">Last coffee</div></div>
       </div>
       <div class="peak-caff-timeline-wrap">
         <canvas id="peakCaffCanvas" class="peak-caff-canvas"></canvas>
@@ -8970,6 +8977,8 @@ window.canonicalJson = function(obj) {
 <div id="vitModalBg" class="vit-modal-bg" style="display:none">
   <div class="vit-modal">
     <div class="vit-modal-title">Add Food</div>
+    <img id="vitSnapPreview" class="vit-snap-preview" alt="meal photo">
+    <div id="vitBreakdownBox" class="vit-breakdown-box"></div>
     <input id="vitFoodSearch" class="vit-modal-search" type="text" placeholder="Search 200+ foods…" autocomplete="off">
     <div id="vitSearchResults" class="vit-search-results"></div>
     <div style="margin-top:18px">
@@ -20834,7 +20843,8 @@ function switchTab(tab) {
           return frac > 0 && i < _arr.length - 1 ? _arr[i] * (1 - frac) + _arr[i + 1] * frac : (_arr[i] || 0);
         };
         var t = clamp((clientX - rect.left) / curW * 24, 0, 24);
-        var v = _arrAt(t);
+        // curve points are plotted at h+0.5 — subtract 0.5 so the dot sits on the curve
+        var v = _arrAt(clamp(t - 0.5, 0, 23));
         var xPct = (t / 24) * 100;
         var yPct = (_yAt(v) / curH) * 100;
         if (_scrubLine) { _scrubLine.style.display = 'block'; _scrubLine.style.left = xPct + '%'; }
@@ -21335,17 +21345,15 @@ function switchTab(tab) {
     var limit = caff_limitMg(readiness);
     var curve = caffCurve(logs);
     var activeMg = curve[Math.min(23, Math.floor(nowHour()))] || 0;
-    var cutoff = bedtimeCutoff(_avgBedtime || 23);
-    var pastCutoff = nowHour() >= cutoff;
-    var cs = pastCutoff ? 0 : coffeeScore(activeMg, limit);
+    var cs = coffeeScore(activeMg, limit);
     var scoreEl = document.getElementById('peakCoffeeScoreNum');
-    if (scoreEl) scoreEl.textContent = pastCutoff ? '—' : cs;
+    if (scoreEl) scoreEl.textContent = cs;
     var barEl = document.getElementById('peakCoffeeScoreBar');
     if (barEl) {
-      barEl.style.width = (pastCutoff ? 0 : cs) + '%';
-      barEl.className = 'peak-mg-bar-fill ' + (pastCutoff ? 'red' : cs >= 70 ? 'green' : cs >= 40 ? 'yellow' : 'red');
+      barEl.style.width = cs + '%';
+      barEl.className = 'peak-mg-bar-fill ' + (cs >= 70 ? 'green' : cs >= 40 ? 'yellow' : 'red');
     }
-    var lbl = pastCutoff ? 'Past cutoff — no more coffee' : cs >= 70 ? 'Optimal zone' : cs >= 40 ? 'Sub-optimal' : logs.length ? 'Over limit' : 'None logged';
+    var lbl = cs >= 70 ? 'Optimal zone' : cs >= 40 ? 'Sub-optimal' : logs.length ? 'Over limit' : 'None logged';
     setText('peakCoffeeScoreLbl', lbl);
   }
 
@@ -21435,7 +21443,6 @@ function switchTab(tab) {
     var clearT = clearanceTime(logs);
     setText('peakCaffPeakTime',  peakT  ? fmtHour24(peakT)  : '—');
     setText('peakCaffClearTime', clearT ? fmtHour24(clearT) : '—');
-    setText('peakCaffCutoff', fmtHour24(bedtimeCutoff(_avgBedtime || 23)));
     var warn = document.getElementById('peakCaffWarning');
     if (warn) {
       if (activeMg >= limit) {
@@ -21723,9 +21730,17 @@ function switchTab(tab) {
     if (foodList) {
       foodList.style.display = filtered.length ? '' : 'none';
       foodList.innerHTML = filtered.map(function(f) {
+        var thumbHtml = f.thumb
+          ? '<img class="vit-food-thumb" src="'+f.thumb+'" alt="meal">'
+          : '';
+        var bdHtml = f.breakdown
+          ? '<div class="vit-food-breakdown">'+escHtml(f.breakdown)+'</div>'
+          : '';
         return '<div class="vit-food-item">' +
-          '<div><div class="vit-food-name">'+escHtml(f.name)+'</div>' +
-          '<div class="vit-food-meta">'+(f.timeStr ? f.timeStr+' · ' : '')+'P '+Math.round(f.protein||0)+'g · C '+Math.round(f.carbs||0)+'g · F '+Math.round(f.fat||0)+'g</div></div>' +
+          thumbHtml +
+          '<div class="vit-food-info"><div class="vit-food-name">'+escHtml(f.name)+'</div>' +
+          '<div class="vit-food-meta">'+(f.timeStr ? f.timeStr+' · ' : '')+'P '+Math.round(f.protein||0)+'g · C '+Math.round(f.carbs||0)+'g · F '+Math.round(f.fat||0)+'g</div>' +
+          bdHtml + '</div>' +
           '<div class="vit-food-right">' +
           '<div class="vit-food-kcal">'+Math.round(f.kcal||0)+'</div>' +
           (isPastVit ? '' : '<button class="vit-food-del" data-id="'+f.id+'" type="button">×</button>') +
@@ -21788,6 +21803,11 @@ function switchTab(tab) {
   function closeVitModal() {
     var bg = document.getElementById('vitModalBg');
     if (bg) bg.style.display = 'none';
+    _pendingSnapThumb = null;
+    var preview = document.getElementById('vitSnapPreview');
+    if (preview) { preview.src = ''; preview.style.display = 'none'; }
+    var bdBox = document.getElementById('vitBreakdownBox');
+    if (bdBox) { bdBox.textContent = ''; bdBox.classList.remove('visible'); }
     ['vitFoodName','vitFoodKcal','vitFoodProtein','vitFoodCarbs','vitFoodFat','vitFoodSearch','vitFoodTime'].forEach(function(id){
       var el = document.getElementById(id); if (el) el.value = '';
     });
@@ -21840,15 +21860,29 @@ function switchTab(tab) {
     if (inp) inp.click();
   }
 
+  // Resize image to a small thumbnail and return base64 JPEG (~100px wide, ~4KB)
+  function _resizeToThumb(dataUrl, callback) {
+    var img = new Image();
+    img.onload = function() {
+      var maxW = 120, maxH = 120;
+      var scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      var w = Math.round(img.width * scale);
+      var h = Math.round(img.height * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.72));
+    };
+    img.src = dataUrl;
+  }
+
+  // Stores the pending thumbnail for the next meal save
+  var _pendingSnapThumb = null;
+
   async function _handleSnapFile(file) {
     if (!file) return;
     var resp = document.getElementById('vitCoachResponse');
     if (resp) { resp.textContent = 'Analysing your meal…'; resp.className = 'vit-ai-response loading'; }
-
-    // Show preview thumbnail
-    var thumb = document.getElementById('vitSnapThumb');
-    var prevUrl = URL.createObjectURL(file);
-    if (thumb) { thumb.src = prevUrl; thumb.style.display = 'block'; }
 
     var reader = new FileReader();
     reader.onload = async function(e) {
@@ -21856,26 +21890,38 @@ function switchTab(tab) {
         var dataUrl = e.target.result;
         var base64 = dataUrl.split(',')[1];
         var mime = file.type || 'image/jpeg';
+
         var reply = await geminiVision(base64, mime,
           'Look at this meal photo. Identify every food item and estimate the total serving sizes based on visual portion cues (plate size, utensil scale, etc). ' +
           'Return ONLY a JSON object in this exact format, no other text: ' +
           '{"name":"short meal name","kcal":400,"protein":28,"carbs":45,"fat":12,"breakdown":"brief breakdown e.g. rice 200g, dal 150ml, sabji 100g"}');
+
         var match = reply.match(/\{[\s\S]*\}/);
         if (match) {
           var data = JSON.parse(match[0]);
-          openVitModal();
-          setTimeout(function() {
-            var n = document.getElementById('vitFoodName'); if (n) n.value = data.name || file.name;
-            var k = document.getElementById('vitFoodKcal'); if (k) k.value = data.kcal || '';
-            var p = document.getElementById('vitFoodProtein'); if (p) p.value = data.protein || '';
-            var c = document.getElementById('vitFoodCarbs'); if (c) c.value = data.carbs || '';
-            var f = document.getElementById('vitFoodFat'); if (f) f.value = data.fat || '';
-            if (data.breakdown) {
-              var nameEl = document.getElementById('vitFoodName');
-              if (nameEl) nameEl.title = data.breakdown;
-            }
-          }, 50);
-          if (resp) { resp.textContent = 'Photo analysed — review the estimated macros in the form.'; resp.className = 'vit-ai-response'; }
+          // Resize full image → small thumbnail, then open modal
+          _resizeToThumb(dataUrl, function(thumbDataUrl) {
+            _pendingSnapThumb = thumbDataUrl;
+            openVitModal();
+            setTimeout(function() {
+              // Show photo preview in modal
+              var preview = document.getElementById('vitSnapPreview');
+              if (preview) { preview.src = thumbDataUrl; preview.style.display = 'block'; }
+              // Show breakdown text visibly
+              var bdBox = document.getElementById('vitBreakdownBox');
+              if (bdBox && data.breakdown) {
+                bdBox.textContent = '📸 ' + data.breakdown;
+                bdBox.classList.add('visible');
+              }
+              // Fill form
+              var n = document.getElementById('vitFoodName'); if (n) n.value = data.name || '';
+              var k = document.getElementById('vitFoodKcal'); if (k) k.value = data.kcal || '';
+              var p = document.getElementById('vitFoodProtein'); if (p) p.value = data.protein || '';
+              var c = document.getElementById('vitFoodCarbs'); if (c) c.value = data.carbs || '';
+              var f = document.getElementById('vitFoodFat'); if (f) f.value = data.fat || '';
+            }, 50);
+          });
+          if (resp) { resp.textContent = 'Photo analysed — review the estimated macros below.'; resp.className = 'vit-ai-response'; }
         } else {
           if (resp) { resp.textContent = 'Could not read the photo — try better lighting or add manually.'; resp.className = 'vit-ai-response'; }
         }
@@ -22597,8 +22643,13 @@ function switchTab(tab) {
         }
         if (!name) return;
         var displayName = qty !== 1 ? name + ' ×' + qty : name;
+        var bdBox = document.getElementById('vitBreakdownBox');
+        var breakdown = (bdBox && bdBox.textContent) ? bdBox.textContent.replace(/^📸\s*/, '') : '';
+        var entry = {id:uid(), name:displayName, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT, qty:qty};
+        if (_pendingSnapThumb) { entry.thumb = _pendingSnapThumb; _pendingSnapThumb = null; }
+        if (breakdown) entry.breakdown = breakdown;
         var items = loadVit();
-        items.push({id:uid(), name:displayName, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT, qty:qty});
+        items.push(entry);
         saveVit(items);
         closeVitModal();
         renderVitality();
