@@ -118,6 +118,10 @@ const CONFIG = {
 </script>
 
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
 
 :root {
@@ -128,7 +132,8 @@ const CONFIG = {
   --warning: #F2C063;
   --danger: #FF6B6B;
   --font-body: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif: 'Instrument Serif', Georgia, serif;
 }
 
 body {
@@ -940,23 +945,44 @@ body::after {
 @keyframes peakDiamondSpin { to { transform: rotate(360deg); } }
 .peak-page-title { font-size:22px; font-weight:800; letter-spacing:-0.03em; color:var(--text-primary); }
 .peak-page-date { font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.1em; margin-top:2px; }
+/* ── Peak marquee ticker (exact creator) ── */
+.peak-ticker { display:flex; align-items:stretch; gap:0; border:1px solid rgba(255,255,255,0.08); border-radius:999px; background:rgba(255,255,255,0.025); overflow:hidden; margin-bottom:20px; }
+.peak-tkLive { display:flex; align-items:center; gap:8px; padding:13px 18px; font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#6EE7B7; border-right:1px solid rgba(255,255,255,0.06); flex-shrink:0; }
+.peak-tkLive .d { width:7px; height:7px; border-radius:50%; background:#6EE7B7; box-shadow:0 0 10px #6EE7B7; animation:peakTkBlink 2s ease-in-out infinite; }
+@keyframes peakTkBlink { 0%,100%{opacity:1} 50%{opacity:.35} }
+.peak-tkScroll { display:flex; align-items:center; overflow:hidden; flex:1; }
+.peak-tkTrack { display:flex; align-items:center; animation:peakMarquee 36s linear infinite; will-change:transform; }
+.peak-ticker:hover .peak-tkTrack { animation-play-state:paused; }
+@keyframes peakMarquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.peak-tkItem { display:flex; align-items:center; gap:9px; padding:13px 22px; font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-tertiary); white-space:nowrap; border-right:1px solid rgba(255,255,255,0.06); }
+.peak-tkItem b { color:var(--text-primary); font-weight:600; }
+.peak-tkItem .dot { width:5px; height:5px; border-radius:50%; background:#6EE7B7; opacity:.7; }
+/* ── Sleep plan card (exact creator) ── */
+.peak-sleep-plan { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:11px 15px; margin-bottom:16px; border:1px solid rgba(255,255,255,0.07); border-radius:12px; background:rgba(255,255,255,.02); }
+.peak-sp-item { font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-tertiary); }
+.peak-sp-item b { color:var(--text-primary); font-family:var(--font-serif); font-style:italic; font-size:16px; text-transform:none; letter-spacing:0; margin-left:3px; }
+.peak-sp-dot { color:var(--text-tertiary); }
+.peak-sp-note { font-family:var(--font-mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); margin-left:auto; }
 .peak-metrics-strip { display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-bottom:20px; }
 .peak-metrics-strip::-webkit-scrollbar { display:none; }
 @keyframes peak-spin { to { transform: rotate(360deg); } }
 .peak-chip { flex-shrink:0; display:flex; align-items:center; gap:8px; padding:7px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:999px; }
 .peak-chip-label { font-size:9px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-tertiary); font-weight:600; }
 .peak-chip-val { font-size:13px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
-.peak-hero-wrap { position:relative; width:200px; max-width:70%; margin:0 auto 24px; aspect-ratio:1; }
-.peak-hero-svg { width:100%; height:100%; display:block; overflow:visible; }
-.peak-hero-track { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:10; }
-.peak-hero-fill { fill:none; stroke:#6EE7B7; stroke-width:10; stroke-linecap:round; stroke-dasharray:502.65; stroke-dashoffset:502.65; transition:stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1); transform:rotate(-90deg); transform-origin:center; }
-.peak-hero-fill.zone-gold { stroke:#F5C842; }
-.peak-hero-fill.zone-green { stroke:#6EE7B7; }
-.peak-hero-fill.zone-yellow { stroke:#F2C063; }
-.peak-hero-fill.zone-red { stroke:#FF8A8A; }
-.peak-hero-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.peak-hero-score { font-size:52px; font-weight:800; letter-spacing:-0.04em; color:var(--text-primary); line-height:1; }
-.peak-hero-label { font-size:10px; text-transform:uppercase; letter-spacing:0.14em; color:var(--text-tertiary); margin-top:4px; }
+.peak-hero-wrap { position:relative; width:200px; height:200px; max-width:80%; margin:0 auto 24px; display:grid; place-items:center; }
+.peak-hero-svg { position:absolute; inset:0; width:100%; height:100%; display:block; overflow:visible; transform:rotate(-90deg); }
+.peak-hero-track { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:6; }
+.peak-hero-fill { fill:none; stroke:var(--peak-ringc,#6EE7B7); stroke-width:6; stroke-linecap:round; stroke-dasharray:565.49; stroke-dashoffset:565.49; transition:stroke-dashoffset 1s cubic-bezier(0.16,1,0.3,1); filter:drop-shadow(0 0 6px var(--peak-ringc,#6EE7B7)) drop-shadow(0 0 16px var(--peak-ringc,#6EE7B7)); }
+.peak-hero-fill.zone-gold { --peak-ringc:#F5C842; }
+.peak-hero-fill.zone-green { --peak-ringc:#6EE7B7; }
+.peak-hero-fill.zone-yellow { --peak-ringc:#F2C063; }
+.peak-hero-fill.zone-red { --peak-ringc:#FF8A8A; }
+.peak-hero-glow { position:absolute; inset:18px; border-radius:50%; background:radial-gradient(closest-side, var(--peak-ringc,#6EE7B7), transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; }
+@keyframes peakGlowPulse { 0%,100%{opacity:.12} 50%{opacity:.26} }
+.peak-hero-center { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.peak-hero-score { font-family:var(--font-serif); font-style:italic; font-size:64px; line-height:1; color:var(--text-primary); }
+.peak-hero-tone { font-family:var(--font-serif); font-style:italic; font-size:18px; color:#6EE7B7; margin-top:2px; }
+.peak-hero-label { font-family:var(--font-mono); font-size:9px; text-transform:uppercase; letter-spacing:0.18em; color:var(--text-tertiary); margin-top:8px; }
 /* ── Inline energy ring (inside chart card header) ── */
 .peak-energy-ring-wrap { position:relative; width:72px; height:72px; flex-shrink:0; }
 .peak-energy-ring-svg { width:100%; height:100%; display:block; overflow:visible; }
@@ -973,7 +999,8 @@ body::after {
 .peak-energy-ring-time { font-size:11px; font-weight:600; color:var(--text-tertiary); letter-spacing:0.04em; }
 .peak-energy-ring-status { font-size:10px; color:var(--text-tertiary); letter-spacing:0.02em; display:flex; align-items:center; gap:4px; }
 .peak-energy-ring-dot { width:6px; height:6px; border-radius:50%; background:#6EE7B7; display:inline-block; flex-shrink:0; }
-.peak-card { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,0.45); backdrop-filter:blur(24px) saturate(1.2); padding:18px; margin-bottom:16px; }
+.peak-card { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); border-radius:18px; box-shadow:0 1px 0 rgba(110,231,183,0.04) inset, 0 18px 40px -28px rgba(0,0,0,0.9); backdrop-filter:blur(24px) saturate(1.2); padding:18px; margin-bottom:16px; transition:border-color .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.16,1,.3,1); }
+.peak-card:hover { border-color:rgba(110,231,183,0.30); box-shadow:0 1px 0 rgba(110,231,183,0.08) inset, 0 22px 50px -26px rgba(0,0,0,0.95), 0 0 40px -22px rgba(110,231,183,0.4); }
 .peak-section-label { font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px; }
 .peak-energy-tabs { display:flex; gap:6px; margin-bottom:10px; }
 .peak-etab { padding:5px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; font-weight:600; letter-spacing:0.08em; cursor:pointer; font-family:inherit; transition:all 0.15s; }
@@ -983,6 +1010,7 @@ body::after {
 .peak-chart-subtitle { font-size:11px; color:var(--text-tertiary); letter-spacing:0.01em; }
 .peak-energy-canvas-wrap { position:relative; width:100%; height:300px; }
 .peak-energy-canvas { width:100%; height:100%; display:block; }
+.crashMark { position:absolute; transform:translateX(-50%); border:1px solid rgba(239,68,68,.45); color:#fca5a5; background:var(--panel2,#1a1a2e); border-radius:7px; padding:3px 8px; font:9px/1.4 monospace; white-space:nowrap; pointer-events:none; }
 .peak-plan-tap { text-align:center; font-size:11px; color:var(--text-tertiary); letter-spacing:0.1em; text-transform:uppercase; margin-top:10px; cursor:pointer; padding:8px; border-radius:10px; border:1px dashed rgba(255,255,255,0.08); }
 .peak-plan-tap:hover { border-color:rgba(110,231,183,0.2); color:#6EE7B7; }
 .peak-window-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
@@ -1013,14 +1041,33 @@ body::after {
 .peak-insight-row:last-child { border-bottom:none; }
 .peak-insight-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px; background:#6EE7B7; box-shadow:0 0 6px rgba(110,231,183,0.5); }
 .peak-insight-text { font-size:13px; color:var(--text-secondary); line-height:1.55; }
-/* ── Feel slider (replaces mood buttons) ── */
-.peak-feel-wrap { display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap; }
-.peak-feel-slider-wrap { flex:1; min-width:160px; display:flex; align-items:center; gap:12px; }
+/* ── Feel slider (exact creator) ── */
+.peak-feel-head { flex-shrink:0; }
+.peak-feel-title { font-family:var(--font-serif); font-style:italic; font-size:18px; color:var(--text-primary); }
+.peak-feel-wrap { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.peak-feel-slider-wrap { flex:1; min-width:180px; display:flex; align-items:center; gap:16px; }
 .peak-feel-slider { -webkit-appearance:none; appearance:none; flex:1; height:8px; border-radius:99px; background:linear-gradient(90deg,#EF4444,#F59E0B,#6EE7B7); cursor:pointer; outline:none; }
 .peak-feel-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#eafff4; border:3px solid #6EE7B7; box-shadow:0 0 12px rgba(110,231,183,0.5); cursor:pointer; }
-.peak-feel-slider::-moz-range-thumb { width:22px; height:22px; border-radius:50%; background:#eafff4; border:3px solid #6EE7B7; box-shadow:0 0 12px rgba(110,231,183,0.5); cursor:pointer; }
-.peak-feel-pct { font-size:28px; font-weight:600; min-width:52px; text-align:right; color:var(--text-primary); }
-.peak-feel-note { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-tertiary); font-family:var(--font-mono); }
+.peak-feel-slider::-moz-range-thumb { width:22px; height:22px; border-radius:50%; background:#eafff4; border:3px solid #6EE7B7; cursor:pointer; }
+.peak-feel-pct { font-family:var(--font-serif); font-style:italic; font-weight:600; font-size:32px; min-width:64px; text-align:right; color:var(--text-primary); }
+.peak-feel-note { font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-tertiary); font-family:var(--font-mono); margin-top:3px; }
+.peak-feel-note.ready { color:#6EE7B7; }
+/* ── Score breakdown whyBox (exact creator) ── */
+.peak-why-link { background:none; border:none; cursor:pointer; font-family:var(--font-mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-tertiary); text-decoration:underline; text-underline-offset:3px; margin-top:10px; display:block; padding:0; }
+.peak-why-link:hover { color:#6EE7B7; }
+.peak-whyBox { display:none; margin-top:6px; width:100%; }
+.peak-whyBox.on { display:block; }
+.peak-whyRow { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-tertiary); padding:7px 0; border-top:1px solid rgba(255,255,255,0.06); }
+.peak-whyRow b { color:var(--text-primary); }
+/* ── Workout card (Peak page) ── */
+.peak-workout-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.peak-workout-row:last-child { border-bottom:none; }
+.peak-workout-split { font-family:var(--font-serif); font-style:italic; font-size:22px; color:var(--text-primary); }
+.peak-workout-meta { font-family:var(--font-mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); margin-top:2px; }
+.peak-workout-badge { font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; padding:5px 12px; border-radius:999px; border:1px solid; }
+.peak-workout-badge.done { color:#6EE7B7; border-color:rgba(110,231,183,0.3); background:rgba(110,231,183,0.06); }
+.peak-workout-badge.rest { color:var(--text-tertiary); border-color:rgba(255,255,255,0.08); }
+.peak-workout-badge.pending { color:#F59E0B; border-color:rgba(245,158,11,0.3); background:rgba(245,158,11,0.06); }
 /* ── Meds card ── */
 .peak-meds-log-row { margin-bottom:10px; }
 .peak-meds-logs { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
@@ -8593,6 +8640,13 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
+    <div class="peak-ticker" id="peakTicker">
+      <div class="peak-tkLive"><span class="d"></span>Live</div>
+      <div class="peak-tkScroll"><div class="peak-tkTrack" id="peakTkTrack"></div></div>
+    </div>
+
+    <div class="peak-sleep-plan" id="peakSleepPlan" style="display:none"></div>
+
     <div class="peak-metrics-strip">
       <div class="peak-chip"><span class="peak-chip-label">HRV</span><span class="peak-chip-val" id="peakChipHrv">—</span></div>
       <div class="peak-chip"><span class="peak-chip-label">Hydration</span><span class="peak-chip-val" id="peakChipHydration">—</span></div>
@@ -8604,15 +8658,19 @@ window.canonicalJson = function(obj) {
     </div>
 
     <div class="peak-hero-wrap">
+      <div class="peak-hero-glow" id="peakHeroGlow"></div>
       <svg class="peak-hero-svg" viewBox="0 0 200 200">
-        <circle class="peak-hero-track" cx="100" cy="100" r="80"/>
-        <circle id="peakHeroFill" class="peak-hero-fill" cx="100" cy="100" r="80"/>
+        <circle class="peak-hero-track" cx="100" cy="100" r="90"/>
+        <circle id="peakHeroFill" class="peak-hero-fill" cx="100" cy="100" r="90"/>
       </svg>
       <div class="peak-hero-center">
         <div class="peak-hero-score" id="peakHeroScore">—</div>
-        <div class="peak-hero-label" id="peakHeroLabel">Loading</div>
+        <div class="peak-hero-tone" id="peakHeroTone">—</div>
+        <div class="peak-hero-label" id="peakHeroLabel">Today overall</div>
       </div>
     </div>
+    <button class="peak-why-link" id="peakWhyLink" type="button">Why this score?</button>
+    <div class="peak-whyBox" id="peakWhyBox"></div>
 
     <div class="peak-card">
       <div class="peak-chart-header">
@@ -8671,14 +8729,21 @@ window.canonicalJson = function(obj) {
     </div>
 
     <div class="peak-card">
-      <div class="peak-section-label">How are you feeling?</div>
       <div class="peak-feel-wrap">
+        <div class="peak-feel-head">
+          <div class="peak-feel-title">How do you feel right now?</div>
+          <div class="peak-feel-note" id="peakFeelNote">Set this daily and I'll tailor your model over 30 days</div>
+        </div>
         <div class="peak-feel-slider-wrap">
           <input id="peakFeelSlider" class="peak-feel-slider" type="range" min="0" max="100" value="50">
           <div class="peak-feel-pct" id="peakFeelPct">50%</div>
         </div>
       </div>
-      <div class="peak-feel-note" id="peakFeelNote" style="margin-top:8px">Drag to set how you feel right now</div>
+    </div>
+
+    <div class="peak-card" id="peakWorkoutCard">
+      <div class="peak-section-label">Training</div>
+      <div id="peakWorkoutBody"></div>
     </div>
 
     <div class="peak-card">
@@ -19378,8 +19443,8 @@ function switchTab(tab) {
   // ── Constants ──────────────────────────────────────────────
   var CAFF_KEY        = 'goals_caffeine_';
   var MOOD_KEY        = 'goals_mood_';
-  var FEEL_KEY        = 'goals_feel_';
-  var MEDS_KEY        = 'goals_meds_';
+  var FEEL_KEY        = 'peak_feel_v1';
+  var MEDS_KEY        = 'peak_meds_v1';
   var SCHED_KEY       = 'goals_schedule_';
   var INSIGHTS_KEY    = 'goals_peak_insights_v1';
   var VIT_KEY         = 'goals_vitality_';
@@ -19418,99 +19483,186 @@ function switchTab(tab) {
     {name:'Kombucha 350ml',mg:14},{name:'Sparkling Water',mg:0},{name:'Ginger Beer',mg:0}
   ];
 
-  // ── Meds & substances database ────────────────────────────
-  // tPeak: hours to peak effect, dur: total duration hours, lift: peak score boost pts
-  // cat: 'rx' | 'nic' | 'noot'
-  var MEDS_DB = [
-    // ── ADHD / Prescription ──
-    {name:'Concerta 18mg',   mg:18,  ref:18,  tPeak:3.0, dur:10, lift:14, cat:'rx'},
-    {name:'Concerta 27mg',   mg:27,  ref:18,  tPeak:3.0, dur:10, lift:18, cat:'rx'},
-    {name:'Concerta 36mg',   mg:36,  ref:18,  tPeak:3.0, dur:10, lift:22, cat:'rx'},
-    {name:'Ritalin 10mg',    mg:10,  ref:10,  tPeak:1.5, dur:4,  lift:16, cat:'rx'},
-    {name:'Ritalin 20mg',    mg:20,  ref:10,  tPeak:1.5, dur:4,  lift:22, cat:'rx'},
-    {name:'Adderall 10mg',   mg:10,  ref:10,  tPeak:2.0, dur:6,  lift:18, cat:'rx'},
-    {name:'Adderall 20mg',   mg:20,  ref:10,  tPeak:2.0, dur:6,  lift:24, cat:'rx'},
-    {name:'Adderall XR 20mg',mg:20,  ref:10,  tPeak:3.5, dur:9,  lift:22, cat:'rx'},
-    {name:'Vyvanse 30mg',    mg:30,  ref:30,  tPeak:3.5, dur:10, lift:20, cat:'rx'},
-    {name:'Vyvanse 50mg',    mg:50,  ref:30,  tPeak:3.5, dur:10, lift:26, cat:'rx'},
-    {name:'Modafinil 100mg', mg:100, ref:100, tPeak:2.5, dur:12, lift:18, cat:'rx'},
-    {name:'Modafinil 200mg', mg:200, ref:100, tPeak:2.5, dur:12, lift:24, cat:'rx'},
-    {name:'Armodafinil 75mg',mg:75,  ref:75,  tPeak:2.0, dur:13, lift:20, cat:'rx'},
-    // ── Nicotine ──
-    {name:'Zyn 3mg',         mg:3,   ref:4,   tPeak:0.3, dur:1.5,lift:8,  cat:'nic'},
-    {name:'Zyn 6mg',         mg:6,   ref:4,   tPeak:0.3, dur:1.5,lift:12, cat:'nic'},
-    {name:'Velo 4mg',        mg:4,   ref:4,   tPeak:0.3, dur:1.5,lift:10, cat:'nic'},
-    {name:'On! 2mg',         mg:2,   ref:4,   tPeak:0.3, dur:1.5,lift:6,  cat:'nic'},
-    {name:'Nicotine Patch 14mg',mg:14,ref:14, tPeak:4.0, dur:16, lift:8,  cat:'nic'},
-    {name:'Nicotine Patch 21mg',mg:21,ref:14, tPeak:4.0, dur:16, lift:10, cat:'nic'},
-    {name:'Vape (avg)',      mg:2,   ref:4,   tPeak:0.1, dur:0.5,lift:6,  cat:'nic'},
-    {name:'Cigarette',       mg:1.5, ref:4,   tPeak:0.1, dur:0.4,lift:5,  cat:'nic'},
-    // ── Nootropics ──
-    {name:'L-Tyrosine 500mg',mg:500, ref:500, tPeak:1.5, dur:4,  lift:7,  cat:'noot'},
-    {name:'L-Tyrosine 1g',   mg:1000,ref:500, tPeak:1.5, dur:4,  lift:10, cat:'noot'},
-    {name:'L-Theanine 100mg',mg:100, ref:200, tPeak:1.0, dur:4,  lift:5,  cat:'noot'},
-    {name:'L-Theanine 200mg',mg:200, ref:200, tPeak:1.0, dur:4,  lift:8,  cat:'noot'},
-    {name:'Rhodiola 200mg',  mg:200, ref:200, tPeak:1.5, dur:5,  lift:6,  cat:'noot'},
-    {name:'Ashwagandha 300mg',mg:300,ref:300, tPeak:2.0, dur:6,  lift:4,  cat:'noot'},
-    {name:'Alpha-GPC 300mg', mg:300, ref:300, tPeak:1.5, dur:5,  lift:7,  cat:'noot'},
-    {name:'CDP-Choline 250mg',mg:250,ref:250, tPeak:2.0, dur:6,  lift:6,  cat:'noot'},
-    {name:'Lion\'s Mane 500mg',mg:500,ref:500,tPeak:2.0, dur:5,  lift:4,  cat:'noot'},
-    {name:'Bacopa 300mg',    mg:300, ref:300, tPeak:2.5, dur:6,  lift:3,  cat:'noot'},
-    {name:'Panax Ginseng 200mg',mg:200,ref:200,tPeak:2.0,dur:6,  lift:5,  cat:'noot'},
-    {name:'Creatine 5g',     mg:5000,ref:5000,tPeak:1.5, dur:4,  lift:3,  cat:'noot'},
-    {name:'Magnesium Glycinate 400mg',mg:400,ref:400,tPeak:1.5,dur:5,lift:2,cat:'noot'}
+  // ── Meds & substances database (exact creator SUB_DB) ─────
+  var SUB_DB = [
+    {name:'Concerta',       mg:36,  ref:36,  tPeak:7,   dur:12, lift:30, cat:'rx'},
+    {name:'Ritalin IR',     mg:10,  ref:10,  tPeak:1.5, dur:4,  lift:24, cat:'rx'},
+    {name:'Ritalin LA',     mg:20,  ref:20,  tPeak:5,   dur:8,  lift:28, cat:'rx'},
+    {name:'Focalin',        mg:10,  ref:10,  tPeak:1.5, dur:5,  lift:25, cat:'rx'},
+    {name:'Focalin XR',     mg:20,  ref:20,  tPeak:5,   dur:10, lift:28, cat:'rx'},
+    {name:'Adderall IR',    mg:10,  ref:10,  tPeak:2,   dur:5,  lift:26, cat:'rx'},
+    {name:'Adderall XR',    mg:20,  ref:20,  tPeak:5,   dur:10, lift:30, cat:'rx'},
+    {name:'Vyvanse',        mg:40,  ref:40,  tPeak:5,   dur:12, lift:30, cat:'rx'},
+    {name:'Modafinil',      mg:200, ref:200, tPeak:3,   dur:12, lift:24, cat:'rx'},
+    {name:'Armodafinil',    mg:150, ref:150, tPeak:4,   dur:14, lift:24, cat:'rx'},
+    {name:'Strattera',      mg:40,  ref:40,  tPeak:3,   dur:10, lift:9,  cat:'rx'},
+    {name:'Zyn (3mg)',      mg:3,   ref:3,   tPeak:0.4, dur:1.2,lift:9,  cat:'nic'},
+    {name:'Zyn (6mg)',      mg:6,   ref:6,   tPeak:0.4, dur:1.4,lift:13, cat:'nic'},
+    {name:'Velo (4mg)',     mg:4,   ref:4,   tPeak:0.4, dur:1.3,lift:11, cat:'nic'},
+    {name:'Nicotine pouch', mg:4,   ref:4,   tPeak:0.45,dur:1.3,lift:11, cat:'nic'},
+    {name:'Vape',           mg:1,   ref:1,   tPeak:0.15,dur:0.8,lift:8,  cat:'nic'},
+    {name:'Cigarette',      mg:1,   ref:1,   tPeak:0.15,dur:0.9,lift:8,  cat:'nic'},
+    {name:'L-Tyrosine',     mg:500, ref:500, tPeak:1.5, dur:4,  lift:8,  cat:'noot'},
+    {name:'L-Theanine',     mg:200, ref:200, tPeak:1,   dur:4,  lift:5,  cat:'noot'},
+    {name:'Rhodiola',       mg:200, ref:200, tPeak:1.5, dur:5,  lift:7,  cat:'noot'}
   ];
+  var MEDS_DB = SUB_DB; // alias for any legacy references
 
-  function loadMeds(dateStr) { return JSON.parse(localStorage.getItem(MEDS_KEY + (dateStr || today())) || '[]'); }
-  function saveMeds(arr) { localStorage.setItem(MEDS_KEY + today(), JSON.stringify(arr)); }
-
-  // Smooth onset→peak→exponential decay PK model
-  // At t=tPeak: normalized value = 1.0 (full lift). By t=dur: ~11% remains (natural fadeout)
-  function subNorm(t, tPeak, dur) {
-    if (t <= 0) return 0;
-    var k = Math.log(9) / dur; // decay constant so ~11% left at dur
-    if (t <= tPeak) {
-      // smooth onset: cubic ramp 0→1 over [0, tPeak]
-      var frac = t / tPeak;
-      return frac * frac * (3 - 2 * frac);
-    }
-    return Math.exp(-k * (t - tPeak));
+  function loadMeds(dateStr) {
+    try { var s = JSON.parse(localStorage.getItem(MEDS_KEY)); return (s && Array.isArray(s.logs)) ? s : {logs:[], custom:[]}; } catch(e) { return {logs:[], custom:[]}; }
+  }
+  function saveMeds(s) { localStorage.setItem(MEDS_KEY, JSON.stringify(s)); }
+  function loadMedLogs(dateStr) {
+    var s = loadMeds(); var d = dateStr || today();
+    return s.logs.filter(function(l){ return feelDayKey(new Date(l.t)) === d; });
   }
 
-  // Returns 24-element array of med boost pts at each hour
+  // ── Feel slider helpers (exact creator implementation) ─────
+  function loadFeel() {
+    try { var f = JSON.parse(localStorage.getItem(FEEL_KEY)); return (f && Array.isArray(f.checks)) ? f : {checks:[]}; } catch(e) { return {checks:[]}; }
+  }
+  function saveFeel(f) { localStorage.setItem(FEEL_KEY, JSON.stringify(f)); }
+
+  function feelDayKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function feelDays() {
+    var f = loadFeel(), set = {};
+    f.checks.forEach(function(c){ set[feelDayKey(new Date(c.t))] = 1; });
+    return Object.keys(set).length;
+  }
+  function calibStrength() { return Math.min(1, feelDays() / 30); }
+
+  // time-of-day bucket: m=morning(0-11), a=afternoon(12-16), e=evening(17-23)
+  function feelBucket(hr) {
+    hr = ((hr % 24) + 24) % 24;
+    return hr < 12 ? 'm' : hr < 17 ? 'a' : 'e';
+  }
+
+  // personal bias for a given hour based on historical feel vs predicted gaps
+  function personalBiasAt(hr) {
+    var f = loadFeel();
+    if (f.checks.length < 3) return 0;
+    var b = feelBucket(hr), s = 0, n = 0;
+    f.checks.forEach(function(c) {
+      if (typeof c.pred === 'number' && typeof c.pct === 'number' && feelBucket(new Date(c.t).getHours()) === b) {
+        s += (c.pct - c.pred); n++;
+      }
+    });
+    return n >= 2 ? clamp(s / n, -25, 25) : 0;
+  }
+
+  // personal adjustment at hour h: bias × calibration strength
+  function personalAdjAt(hr) { return personalBiasAt(hr) * calibStrength(); }
+
+  // latest feel % logged today (or null)
+  function latestFeelToday() {
+    var f = loadFeel(), todStr = today(), best = null;
+    for (var i = 0; i < f.checks.length; i++) {
+      if (feelDayKey(new Date(f.checks[i].t)) === todStr) best = f.checks[i];
+    }
+    return best ? best.pct : null;
+  }
+
+  // add a feel check — dedups within 20 min on same day
+  function addFeel(pct, predictedScore) {
+    var f = loadFeel();
+    var now = Date.now();
+    var last = f.checks[f.checks.length - 1];
+    if (last && (now - last.t) < 20 * 60000 && feelDayKey(new Date(last.t)) === feelDayKey(new Date(now))) {
+      last.pct = pct; last.t = now; last.pred = Math.round(predictedScore || 50);
+    } else {
+      f.checks.push({t: now, pct: pct, pred: Math.round(predictedScore || 50)});
+    }
+    if (f.checks.length > 2000) f.checks.shift();
+    saveFeel(f);
+  }
+
+  // Convert fractional hour to HH:MM string (e.g. 14.5 → "14:30")
+  function clockOf(t) {
+    var totalMin = Math.round(((t % 24) + 24) % 24 * 60);
+    var h = Math.floor(totalMin / 60) % 24;
+    var m = totalMin % 60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  }
+
+  // Exact creator subNorm: cosine rise then exponential decay
+  function subNorm(tau, tPeak, dur) {
+    if (tau < 0) return 0;
+    tPeak = tPeak || 1; dur = dur || 4;
+    if (tau <= tPeak) return 0.5 - 0.5 * Math.cos(Math.PI * tau / tPeak);
+    var decay = Math.max(0.3, (dur - tPeak) / 2.2);
+    return Math.exp(-(tau - tPeak) / decay);
+  }
+
+  // medBoost(t): raw boost at fractional hour t, summing all today's med logs
+  function medBoost(t) {
+    var logs = loadMedLogs();
+    var total = 0;
+    logs.forEach(function(log) {
+      var entry = SUB_DB.find(function(m){ return m.name === log.name; }) ||
+                  {tPeak: log.tPeak || 2, dur: log.dur || 5, lift: log.lift || 10, ref: log.ref || log.mg || 1, cat: log.cat || 'custom'};
+      var logH = new Date(log.t).getHours() + new Date(log.t).getMinutes() / 60;
+      var tau = t - logH;
+      if (tau <= 0) return;
+      var scaledLift = entry.lift * Math.min(2.2, log.mg / entry.ref);
+      total += scaledLift * subNorm(tau, entry.tPeak, entry.dur);
+    });
+    return total;
+  }
+
+  // medNet(t): boost minus rebound (exact creator formula)
+  function medNet(t) {
+    var cur = medBoost(t);
+    var mx = cur;
+    for (var dt = 0.5; dt <= 6; dt += 0.5) { var b = medBoost(t - dt); if (b > mx) mx = b; }
+    var rebound = Math.min(16, Math.max(0, mx - cur) * 0.16);
+    return cur - rebound;
+  }
+
+  // Returns 24-element array of med boost pts at each integer hour (for chart overlay)
   function medCurve(logs) {
     var arr = new Array(24).fill(0);
     logs.forEach(function(log) {
-      var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) ||
-                  {tPeak: log.tPeak || 2, dur: log.dur || 5, lift: log.lift || 10, ref: log.mg || 10};
-      var scaledLift = entry.lift * Math.min(log.mg / entry.ref, 2.0); // dose scaling, cap at 2×
+      var entry = SUB_DB.find(function(m){ return m.name === log.name; }) ||
+                  {tPeak: log.tPeak || 2, dur: log.dur || 5, lift: log.lift || 10, ref: log.ref || log.mg || 1};
+      var logH = new Date(log.t).getHours() + new Date(log.t).getMinutes() / 60;
+      var scaledLift = entry.lift * Math.min(2.2, log.mg / entry.ref);
       for (var h = 0; h < 24; h++) {
-        var dh = h + 0.5 - log.timeHour;
-        if (dh <= 0) continue;
-        arr[h] += scaledLift * subNorm(dh, entry.tPeak, entry.dur);
+        var tau = (h + 0.5) - logH;
+        if (tau <= 0) continue;
+        arr[h] += scaledLift * subNorm(tau, entry.tPeak, entry.dur);
       }
     });
     return arr;
   }
 
-  // Detect crash points (local minima after peaks) in a combined curve array
-  // Returns array of {hour, depth} for hours where rebound dip > threshold
-  function detectCrashes(arr, wakeHour) {
-    var crashes = [];
-    var wh = Math.floor(wakeHour);
-    for (var i = 2; i < 17; i++) {
-      var h = (wh + i) % 24;
-      var prev = arr[(wh + i - 1) % 24] || 0;
-      var curr = arr[h] || 0;
-      var next = arr[(wh + i + 1) % 24] || 0;
-      // local minimum: curr < both neighbors, and at least 8pts below peak of last 4h
-      if (curr < prev && curr < next) {
-        var recentPeak = 0;
-        for (var j = Math.max(0, i - 4); j < i; j++) recentPeak = Math.max(recentPeak, arr[(wh + j) % 24] || 0);
-        if (recentPeak - curr >= 8 && curr < 55) crashes.push({ hour: h, depth: Math.round(recentPeak - curr) });
-      }
-    }
-    return crashes;
+  // caffNet(t): caffeine boost at fractional hour t
+  function caffNet(t) {
+    var logs = loadCaff();
+    var total = 0;
+    logs.forEach(function(log) {
+      var logH = typeof log.timeHour === 'number' ? log.timeHour : 8;
+      var tau = t - logH;
+      if (tau <= 0) return;
+      var mg = log.mg || 80;
+      // caffeine: tPeak ~0.75h, half-life ~5h → duration ~10h
+      var lift = mg * 0.15; // ~12pts per 80mg
+      total += lift * subNorm(tau, 0.75, 10);
+    });
+    return total;
+  }
+
+  // Exact creator crash detection — separate caffeine and med scans at 0.25h steps
+  function caffeineCrash() {
+    var mt = null, mv = 0;
+    for (var t = 0; t <= 24; t += 0.25) { var v = caffNet(t); if (v < mv) { mv = v; mt = t; } }
+    return (mt !== null && mv < -3) ? {t: mt, v: mv} : null;
+  }
+  function medCrash() {
+    var mt = null, mv = 0;
+    for (var t = 0; t <= 24; t += 0.25) { var v = medNet(t); if (v < mv) { mv = v; mt = t; } }
+    return (mt !== null && mv < -3) ? {t: mt, v: mv} : null;
   }
 
   // ── Food database ──────────────────────────────────────────
@@ -20027,24 +20179,25 @@ function switchTab(tab) {
     if (hrv && avgHrv && avgHrv > 0) {
       hrvMod = clamp((hrv - avgHrv) / avgHrv * 12, -8, 8);
     }
-    // Feel slider: 0–100% maps to -20…+20 shift (50% = 0 shift)
-    var moodShift = 0;
-    var _dateKey = _peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today();
-    var _feelVal = parseInt(localStorage.getItem(FEEL_KEY + _dateKey), 10);
-    if (!isNaN(_feelVal)) {
-      moodShift = (_feelVal - 50) * 0.4; // 0%→-20, 50%→0, 100%→+20
-    } else {
-      // legacy emoji mood fallback
+    // Feel system: today's latest feel % blends toward objective score
+    // feel adjustment is per-hour (personalAdjAt) grown over 30 days calibration
+    var _feelToday = latestFeelToday(); // null if not set today
+    var _feelW = 0.30 + 0.20 * calibStrength(); // 30%→50% over 30 days
+    // Legacy emoji mood fallback (if no feel slider used yet today)
+    var _legacyMoodShift = 0;
+    if (_feelToday === null) {
+      var _dateKey = _peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today();
       var _mood = localStorage.getItem(MOOD_KEY + _dateKey) || '';
-      if      (_mood === 'peak')   moodShift =  15;
-      else if (_mood === 'sharp')  moodShift =  8;
-      else if (_mood === 'good')   moodShift =  4;
-      else if (_mood === 'steady') moodShift =  0;
-      else if (_mood === 'tired')  moodShift = -6;
-      else if (_mood === 'foggy')  moodShift = -12;
+      if      (_mood === 'peak')   _legacyMoodShift =  15;
+      else if (_mood === 'sharp')  _legacyMoodShift =  8;
+      else if (_mood === 'good')   _legacyMoodShift =  4;
+      else if (_mood === 'steady') _legacyMoodShift =  0;
+      else if (_mood === 'tired')  _legacyMoodShift = -6;
+      else if (_mood === 'foggy')  _legacyMoodShift = -12;
     }
     // Med boost curve
-    var _medLogs = medLogs || loadMeds(_dateKey);
+    var _medDateKey = _peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today();
+    var _medLogs = medLogs || loadMedLogs(_medDateKey);
     var _medArr = _medLogs.length ? medCurve(_medLogs) : null;
     for (var h = 0; h < 24; h++) {
       var hw = h - wakeHour;
@@ -20088,10 +20241,14 @@ function switchTab(tab) {
       }
       // Food modifier: doubled so meals are clearly visible
       score += foodMod[h] * 2;
-      // Feel / mood modifier
-      score += moodShift;
       // Med/substance boost
       if (_medArr) score += _medArr[h];
+      // Feel system: blend objective score toward felt state + per-hour calibration bias
+      if (_feelToday !== null) {
+        score = score + (_feelToday - score) * _feelW + personalAdjAt(h);
+      } else {
+        score += _legacyMoodShift;
+      }
       arr.push(clamp(score, 0, 100));
     }
     return arr;
@@ -20535,33 +20692,41 @@ function switchTab(tab) {
       ctx.fillText('C', cx2, cy2 - 9);
     });
 
-    // ── Crash markers ─────────────────────────────────────────
-    var _crashes = detectCrashes(arr, wakeHour);
-    _crashes.forEach(function(crash) {
-      var cx3 = xAt(crash.hour + 0.5);
-      var cy3 = yAt(arr[crash.hour] || 0);
-      // dashed red vertical line
+    // ── Crash markers (exact creator: separate caff/med scans, HTML badges) ──
+    var _cc = caffeineCrash();
+    var _mc = medCrash();
+    var _crashLines = [];
+    if (_cc) _crashLines.push({t: _cc.t, label: '☕ crash ' + clockOf(_cc.t)});
+    if (_mc && (!_cc || Math.abs(_mc.t - _cc.t) > 0.3)) _crashLines.push({t: _mc.t, label: '💊 comedown ' + clockOf(_mc.t)});
+    _crashLines.forEach(function(cr) {
+      var cx3 = xAt(cr.t);
       ctx.save();
       ctx.beginPath();
-      ctx.setLineDash([3, 4]);
+      ctx.setLineDash([4, 4]);
       ctx.moveTo(cx3, padT);
       ctx.lineTo(cx3, padT + ch);
-      ctx.strokeStyle = 'rgba(239,68,68,0.35)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#EF4444';
+      ctx.lineWidth = 1.4;
+      ctx.globalAlpha = 0.7;
       ctx.stroke();
-      ctx.setLineDash([]);
-      // red dot on curve
-      ctx.beginPath();
-      ctx.arc(cx3, cy3, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#ef4444';
-      ctx.fill();
-      // label
-      ctx.font = 'bold 8px -apple-system,sans-serif';
-      ctx.fillStyle = 'rgba(252,165,165,0.9)';
-      ctx.textAlign = 'center';
-      ctx.fillText('↓' + crash.depth, cx3, cy3 - 8);
       ctx.restore();
     });
+    // HTML badge labels below canvas
+    var _wrapEl = canvas.parentElement;
+    if (_wrapEl) {
+      var _oldBadges = _wrapEl.querySelectorAll('.crashMark');
+      _oldBadges.forEach(function(b){ b.remove(); });
+      var _crashLabels = '';
+      _crashLines.forEach(function(cr) {
+        _crashLabels += '<div class="crashMark" style="left:' + clamp(cr.t / 24 * 100, 6, 94) + '%">' + cr.label + '</div>';
+      });
+      if (_crashLabels) {
+        var _badgeWrap = document.createElement('div');
+        _badgeWrap.style.cssText = 'position:relative;height:22px;';
+        _badgeWrap.innerHTML = _crashLabels;
+        _wrapEl.appendChild(_badgeWrap);
+      }
+    }
 
     // ── Hour labels ───────────────────────────────────────────
     ctx.font = '10px -apple-system,sans-serif';
@@ -20841,6 +21006,81 @@ function switchTab(tab) {
     });
   }
 
+  // ── Marquee ticker (exact creator tickerItems logic) ───────
+  function _renderPeakTicker(opts) {
+    var el = document.getElementById('peakTkTrack');
+    if (!el) return;
+    var items = [];
+    var hrv = opts.hrv, recovery = opts.recovery, sleepScore = opts.sleepScore;
+    var wakeHour = opts.wakeHour, avgBed = opts.avgBed, oura = opts.oura;
+    // vitals
+    if (hrv != null) items.push(['HRV', Math.round(hrv) + 'ms']);
+    if (recovery != null) items.push(['Recovery', Math.round(recovery) + '%']);
+    if (sleepScore != null) items.push(['Sleep score', sleepScore + '%']);
+    // sleep debt
+    var _sd = calcSleepDebt(oura);
+    if (_sd) items.push(['Sleep debt', _sd]);
+    // wake time
+    if (wakeHour) {
+      var _wh = Math.floor(wakeHour), _wm = Math.round((wakeHour % 1) * 60);
+      items.push(['Wake', String(_wh).padStart(2,'0') + ':' + String(_wm).padStart(2,'0')]);
+    }
+    // bedtime estimate
+    if (avgBed != null) {
+      var _bh = Math.floor(((avgBed % 24) + 24) % 24), _bm = Math.round((avgBed % 1) * 60);
+      items.push(['Avg bed', String(_bh).padStart(2,'0') + ':' + String(_bm).padStart(2,'0')]);
+    }
+    // caffeine & meds on board
+    var _caffLogs = loadCaff();
+    var _caffMg = 0;
+    _caffLogs.forEach(function(l) {
+      var dh = nowHour() - l.timeHour;
+      if (dh > 0 && dh < 10) _caffMg += (l.mg || 80) * Math.pow(0.5, dh / 5.5);
+    });
+    if (_caffMg > 5) items.push(['Caffeine', Math.round(_caffMg) + 'mg']);
+    var _medLs = loadMedLogs(today());
+    var _medPts = 0;
+    _medLs.forEach(function(l) {
+      var logH = new Date(l.t).getHours() + new Date(l.t).getMinutes()/60;
+      var dh = nowHour() - logH;
+      if (dh > 0 && dh < (l.dur||5)) _medPts += (l.lift||10) * subNorm(dh, l.tPeak||2, l.dur||5);
+    });
+    if (_medPts > 2) items.push(['Meds', '+' + Math.round(_medPts)]);
+    // hydration
+    var _hydPct = parseInt((document.getElementById('peakChipHydration')||{}).textContent) || 0;
+    if (_hydPct > 0) items.push(['Hydration', _hydPct + '%']);
+
+    if (!items.length) items.push(['Status', 'Loading…']);
+    var mkItem = function(it) {
+      return '<div class="peak-tkItem">' + it[0] + ' <b>' + it[1] + '</b><span class="dot"></span></div>';
+    };
+    var html = items.map(mkItem).join('');
+    el.innerHTML = html + html; // doubled for seamless marquee loop
+  }
+
+  // ── Sleep plan card (exact creator optimalSleep logic) ─────
+  function _renderSleepPlan(wakeHour, oura) {
+    var el = document.getElementById('peakSleepPlan');
+    if (!el) return;
+    // target sleep hours: from oura sleepTargetHours or default 8
+    var need = 8;
+    if (oura && oura.sleep && oura.sleep[0] && typeof oura.sleep[0].contributors === 'object') {
+      // use readiness target if available
+    }
+    // derive optimal bedtime from wake - need, rounded to 15min
+    var bed = ((wakeHour - need) % 24 + 24) % 24;
+    bed = Math.round(bed * 4) / 4;
+    var wake = Math.round(wakeHour * 4) / 4;
+    var bedStr = clockOf(bed);
+    var wakeStr = clockOf(wake);
+    el.style.display = 'flex';
+    el.innerHTML =
+      '<span class="peak-sp-item">🌙 Bed <b>' + bedStr + '</b></span>' +
+      '<span class="peak-sp-dot">·</span>' +
+      '<span class="peak-sp-item">☀️ Wake <b>' + wakeStr + '</b></span>' +
+      '<span class="peak-sp-note">your optimal ' + need + 'h sleep window</span>';
+  }
+
   // ── Render peak ────────────────────────────────────────────
   function renderPeak() {
     var oura = getOura();
@@ -20989,7 +21229,7 @@ function switchTab(tab) {
     var caffLogs = loadCaff();
     // fix #18: pass hrv+avgHrv to energy model
     var _r = readiness != null ? readiness : 75; // fallback so curve is always real
-    var _todMeds = loadMeds();
+    var _todMeds = loadMedLogs(today());
     var arr = buildEnergyArray(wakeHour, _r, caffLogs, _activeEnergyMode, hrv, avgHrv, null, _todMeds);
     var _pec = document.getElementById('peakEnergyCanvas');
     if (_pec) _pec._peakReadiness = _r;
@@ -20998,16 +21238,19 @@ function switchTab(tab) {
     var _nowScore = arr[Math.min(23, Math.floor(_nowH))] || 0;
     _updateEnergyRing(_nowScore, fmtHour(Math.floor(_nowH)), false);
 
-    // Hero ring — current energy score
+    // Hero ring — current energy score (exact creator dimensions: r=90, circumference=565.49)
     var _heroScore = Math.round(_nowScore);
     var _heroZone = _heroScore >= 80 ? 'zone-gold' : _heroScore >= 60 ? 'zone-green' : _heroScore >= 40 ? 'zone-yellow' : 'zone-red';
-    var _heroLabel = _heroScore >= 80 ? 'Peak zone' : _heroScore >= 60 ? 'High energy' : _heroScore >= 40 ? 'Mid zone' : 'Low energy';
+    var _heroTone = _heroScore >= 80 ? 'Prime' : _heroScore >= 67 ? 'Solid' : _heroScore >= 45 ? 'Moderate' : _heroScore >= 30 ? 'Low' : 'Depleted';
+    var _heroToneColor = _heroScore >= 45 ? '#6EE7B7' : _heroScore >= 30 ? '#F59E0B' : '#EF4444';
     var fill = document.getElementById('peakHeroFill');
     if (fill) {
       fill.className = 'peak-hero-fill ' + _heroZone;
-      var circumference = 502.65;
+      var circumference = 565.49;
       var dashTarget = circumference * (1 - _heroScore / 100);
       fill.style.strokeDashoffset = String(circumference);
+      var glowEl = document.getElementById('peakHeroGlow');
+      if (glowEl) glowEl.style.background = 'radial-gradient(closest-side,' + _heroToneColor + ',transparent 72%)';
       requestAnimationFrame(function(){
         requestAnimationFrame(function(){
           if (fill) fill.style.strokeDashoffset = dashTarget.toFixed(2);
@@ -21022,10 +21265,16 @@ function switchTab(tab) {
               if (t < 1) requestAnimationFrame(tick);
             })(startTs);
           }
-          setText('peakHeroLabel', _heroLabel);
+          var toneEl = document.getElementById('peakHeroTone');
+          if (toneEl) { toneEl.textContent = _heroTone; toneEl.style.color = _heroToneColor; }
         });
       });
     }
+
+    // ── Marquee ticker + Sleep plan (exact creator) ───────────
+    _renderPeakTicker({hrv: hrv, recovery: recovery, sleepScore: sleepScore, wakeHour: wakeHour, avgBed: avgBed, oura: oura});
+    _renderSleepPlan(wakeHour, oura);
+    if (window._renderPeakWhyBox) _renderPeakWhyBox(oura, recovery, sleepScore, hrv);
 
     _renderBestWindows(findBestWindows(arr, wakeHour));
 
@@ -21247,7 +21496,7 @@ function switchTab(tab) {
     var _aHrv = _hrvV && _hrvV.length ? _hrvV.reduce(function(a,b){ return a+b; }, 0) / _hrvV.length : null;
     if (!logs) logs = loadCaff(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
     var _vitLogs = loadVit(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
-    var _medLogs2 = loadMeds(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : null);
+    var _medLogs2 = loadMedLogs(_peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today());
     var _r2 = r != null ? r : 75;
     var arr = buildEnergyArray(wh, _r2, logs, _activeEnergyMode, _hrv, _aHrv, _vitLogs, _medLogs2);
     var _canvas = document.getElementById('peakEnergyCanvas');
@@ -21388,10 +21637,10 @@ function switchTab(tab) {
     })();
     var logs = loadCaff();
     var caffSummary = logs.length ? logs.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
-    var medLogs3 = loadMeds();
+    var medLogs3 = loadMedLogs(today());
     var medSummary = medLogs3.length ? medLogs3.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
-    var feelVal3 = parseInt(localStorage.getItem(FEEL_KEY + today()), 10);
-    var feelSummary = isNaN(feelVal3) ? 'unknown' : feelVal3 + '%';
+    var feelVal3 = latestFeelToday();
+    var feelSummary = feelVal3 !== null ? feelVal3 + '%' : 'not set';
     var context = 'Oura readiness='+readiness+', HRV='+hrv+', caffeine='+caffSummary+', meds='+medSummary+', feel='+feelSummary+', time='+Math.floor(nowHour())+':00';
     var prompt = 'You are JARVIS, a sophisticated AI performance coach. Always address the user as "sir". Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific, data-driven, and actionable. Start your response by addressing sir directly.';
     var loading = document.createElement('div');
@@ -21659,7 +21908,7 @@ function switchTab(tab) {
     var _offDate = offsetDateStr(offset);
     var cl2 = offset === 0 ? loadCaff() : (function(){ try { return JSON.parse(localStorage.getItem('goals_caffeine_' + _offDate) || '[]'); } catch(e){ return []; } })();
     var vl2 = loadVit(_offDate);
-    var ml2 = loadMeds(_offDate);
+    var ml2 = loadMedLogs(_offDate);
     var _r3 = r != null ? r : 75;
     var arr2 = buildEnergyArray(wh, _r3, cl2, _activeEnergyMode, hrv2, aHrv2, vl2, ml2);
     var _pec2 = document.getElementById('peakEnergyCanvas');
@@ -21678,27 +21927,49 @@ function switchTab(tab) {
       _heroLabel2 = 'Day peak';
     }
     _heroZone2 = _heroScore2 >= 80 ? 'zone-gold' : _heroScore2 >= 60 ? 'zone-green' : _heroScore2 >= 40 ? 'zone-yellow' : 'zone-red';
+    var _heroTone2 = _heroScore2 >= 80 ? 'Prime' : _heroScore2 >= 67 ? 'Solid' : _heroScore2 >= 45 ? 'Moderate' : _heroScore2 >= 30 ? 'Low' : 'Depleted';
+    var _heroToneColor2 = _heroScore2 >= 45 ? '#6EE7B7' : _heroScore2 >= 30 ? '#F59E0B' : '#EF4444';
     var fill2 = document.getElementById('peakHeroFill');
     if (fill2) {
       fill2.className = 'peak-hero-fill ' + _heroZone2;
-      var circ = 502.65;
+      var circ = 565.49;
       fill2.style.strokeDashoffset = String(circ * (1 - _heroScore2 / 100));
       setText('peakHeroScore', _heroScore2);
-      setText('peakHeroLabel', _heroLabel2);
+      var toneEl2 = document.getElementById('peakHeroTone');
+      if (toneEl2) { toneEl2.textContent = _heroTone2; toneEl2.style.color = _heroToneColor2; }
+      var glowEl2 = document.getElementById('peakHeroGlow');
+      if (glowEl2) glowEl2.style.background = 'radial-gradient(closest-side,' + _heroToneColor2 + ',transparent 72%)';
     }
-    // Feel slider — restore saved value for this day, disable on past days
+    // Feel slider — show historical feel for this day (read from checks by date)
     (function() {
       var sl = document.getElementById('peakFeelSlider');
       var pctEl2 = document.getElementById('peakFeelPct');
       var noteEl2 = document.getElementById('peakFeelNote');
       if (!sl) return;
-      var savedFeel = parseInt(localStorage.getItem(FEEL_KEY + _offDate), 10);
-      var feelV = isNaN(savedFeel) ? 50 : savedFeel;
-      sl.value = feelV;
-      if (pctEl2) pctEl2.textContent = feelV + '%';
-      sl.disabled = offset !== 0;
-      sl.style.opacity = offset !== 0 ? '0.5' : '';
-      if (noteEl2) noteEl2.textContent = offset !== 0 ? 'Past day — read only' : '';
+      if (offset !== 0) {
+        // find last feel check on _offDate
+        var f2 = loadFeel(), bestC = null;
+        for (var ci = 0; ci < f2.checks.length; ci++) {
+          if (feelDayKey(new Date(f2.checks[ci].t)) === _offDate) bestC = f2.checks[ci];
+        }
+        var pastV = bestC ? bestC.pct : 50;
+        sl.value = pastV;
+        if (pctEl2) pctEl2.textContent = pastV + '%';
+        sl.disabled = true;
+        sl.style.opacity = '0.5';
+        if (noteEl2) { noteEl2.textContent = 'Past day — read only'; noteEl2.style.color = ''; }
+      } else {
+        sl.disabled = false;
+        sl.style.opacity = '';
+        var savedV = latestFeelToday();
+        sl.value = savedV !== null ? savedV : 50;
+        if (pctEl2) pctEl2.textContent = (savedV !== null ? savedV : 50) + '%';
+        if (noteEl2) {
+          var days2 = feelDays();
+          noteEl2.textContent = days2 >= 30 ? 'Tailored to your last 30 days ✓' : days2 > 0 ? 'Building your model · ' + days2 + '/30 days' : 'Set this daily and I\'ll tailor your model over 30 days';
+          noteEl2.style.color = days2 >= 30 ? 'var(--color-accent)' : '';
+        }
+      }
     })();
     // Meds logs — reload for this day
     if (typeof window._renderMedsLogs === 'function') window._renderMedsLogs();
@@ -21803,35 +22074,151 @@ function switchTab(tab) {
       });
     }
 
-    // ── Feel slider ────────────────────────────────────────────
+    // ── Feel slider (exact creator implementation) ─────────────
     (function() {
       var slider = document.getElementById('peakFeelSlider');
       var pctEl  = document.getElementById('peakFeelPct');
       var noteEl = document.getElementById('peakFeelNote');
       if (!slider) return;
-      function feelLabel(v) {
-        if (v >= 85) return 'Feeling prime';
-        if (v >= 70) return 'Feeling sharp';
-        if (v >= 55) return 'Feeling good';
-        if (v >= 40) return 'Feeling steady';
-        if (v >= 25) return 'Feeling tired';
-        return 'Feeling foggy';
+
+      function feelNoteText() {
+        var days = feelDays();
+        if (days >= 30) return 'Tailored to your last 30 days ✓';
+        if (days > 0)   return 'Currently building a more detailed analysis · ' + days + '/30 days';
+        return "Set this daily and I'll tailor your model over 30 days";
       }
+
+      function updateFeelNote() {
+        if (!noteEl) return;
+        var days = feelDays();
+        noteEl.textContent = feelNoteText();
+        noteEl.classList.toggle('ready', days >= 30);
+      }
+
       function initFeel() {
-        var saved = parseInt(localStorage.getItem(FEEL_KEY + today()), 10);
-        var val = isNaN(saved) ? 50 : saved;
+        var saved = latestFeelToday();
+        var val = saved !== null ? saved : 50;
         slider.value = val;
         if (pctEl) pctEl.textContent = val + '%';
-        if (noteEl) noteEl.textContent = feelLabel(val);
+        updateFeelNote();
       }
       initFeel();
+
       slider.addEventListener('input', function() {
-        var v = parseInt(slider.value, 10);
-        if (pctEl) pctEl.textContent = v + '%';
-        if (noteEl) noteEl.textContent = feelLabel(v);
-        localStorage.setItem(FEEL_KEY + today(), v);
+        if (pctEl) pctEl.textContent = slider.value + '%';
+      });
+
+      slider.addEventListener('change', function() {
+        var pct = parseInt(slider.value, 10);
+        var canvas = document.getElementById('peakEnergyCanvas');
+        var pred = 50;
+        if (canvas && canvas._peakArr) {
+          var nh = nowHour();
+          pred = Math.round(canvas._peakArr[Math.min(23, Math.floor(nh))] || 50);
+        }
+        addFeel(pct, pred);
+        updateFeelNote();
         _refreshEnergyChart(null);
       });
+    })();
+
+    // ── Score breakdown whyBox ─────────────────────────────────
+    (function() {
+      var whyOpen = false;
+      var whyBtn = document.getElementById('peakWhyLink');
+      if (whyBtn) {
+        whyBtn.addEventListener('click', function() {
+          whyOpen = !whyOpen;
+          var box = document.getElementById('peakWhyBox');
+          if (box) box.classList.toggle('on', whyOpen);
+        });
+      }
+      // Expose so renderPeak can populate it
+      window._renderPeakWhyBox = function(oura, recovery, sleepScore, hrv) {
+        var box = document.getElementById('peakWhyBox');
+        if (!box) return;
+        // Gather available score components
+        var rows = [], totalW = 0, totalS = 0;
+        function addRow(label, score, w) {
+          rows.push([label, Math.round(score)]);
+          totalS += score * w; totalW += w;
+        }
+        if (recovery != null) addRow('Recovery', recovery, 0.45);
+        if (sleepScore != null) addRow('Sleep', sleepScore, 0.30);
+        // hydration from chip
+        var hydText = (document.getElementById('peakChipHydration')||{}).textContent || '';
+        var hydPct = parseInt(hydText);
+        if (hydPct > 0) addRow('Hydration', hydPct, 0.10);
+        // workout done today?
+        var doneDays = (function(){ try { return JSON.parse(localStorage.getItem('po_coach_workout_done') || '{}'); } catch(e){ return {}; } })();
+        if (doneDays[today()]) addRow('Trained', 100, 0.05);
+
+        var objective = totalW > 0 ? Math.round(totalS / totalW) : null;
+        var feelVal = latestFeelToday();
+        var feelW = 0.30 + 0.20 * calibStrength();
+        var finalScore = objective != null ? (feelVal != null ? Math.round(objective + (feelVal - objective) * feelW) : objective) : null;
+        var adj = (finalScore != null && objective != null) ? finalScore - objective : 0;
+
+        var html = rows.map(function(r) {
+          return '<div class="peak-whyRow"><span>' + r[0] + '</span><b>' + r[1] + '%</b></div>';
+        }).join('');
+        if (objective != null && feelVal != null) {
+          html += '<div class="peak-whyRow"><span>Objective blend</span><b>' + objective + '%</b></div>'
+            + '<div class="peak-whyRow"><span>You feel ' + feelVal + '% (' + Math.round(feelW * 100) + '% pull)</span><b>' + (adj >= 0 ? '+' : '') + adj + '</b></div>'
+            + '<div class="peak-whyRow" style="border-top-color:rgba(110,231,183,0.3)"><span style="color:#6EE7B7">Today overall</span><b style="color:#6EE7B7">' + (finalScore || '—') + '%</b></div>';
+        }
+        box.innerHTML = html;
+      };
+    })();
+
+    // ── Workout integration ────────────────────────────────────
+    (function() {
+      function renderWorkout() {
+        var body = document.getElementById('peakWorkoutBody');
+        if (!body) return;
+        // Read gym tracker state
+        var state = (function(){ try { return JSON.parse(localStorage.getItem('po_coach_v1') || 'null'); } catch(e){ return null; } })();
+        var doneDays = (function(){ try { return JSON.parse(localStorage.getItem('po_coach_workout_done') || '{}'); } catch(e){ return {}; } })();
+        var todStr = today();
+        var isDone = !!doneDays[todStr];
+
+        // Compute today's split from splitRotation + splitAnchor
+        var splitName = '—', isRest = false;
+        if (state && Array.isArray(state.splitRotation) && state.splitRotation.length && state.splitAnchor && state.splitAnchor.date) {
+          var rot = state.splitRotation;
+          var anchor = new Date(state.splitAnchor.date);
+          var t2 = new Date(); anchor.setHours(0,0,0,0); t2.setHours(0,0,0,0);
+          var diffDays = Math.round((t2 - anchor) / 86400000);
+          var idx = ((state.splitAnchor.index + diffDays) % rot.length + rot.length) % rot.length;
+          splitName = rot[idx] || '—';
+          isRest = splitName.toLowerCase() === 'rest';
+          // Next training day
+          var nextIdx = (idx + 1) % rot.length, nextSteps = 1;
+          while (nextSteps < rot.length && rot[nextIdx].toLowerCase() === 'rest') { nextIdx = (nextIdx + 1) % rot.length; nextSteps++; }
+        }
+
+        var badgeClass = isDone ? 'done' : isRest ? 'rest' : 'pending';
+        var badgeText = isDone ? '✓ Done' : isRest ? 'Rest day' : 'Not logged';
+
+        var html = '<div class="peak-workout-row">'
+          + '<div><div class="peak-workout-split">' + escHtml(splitName) + '</div>'
+          + '<div class="peak-workout-meta">' + (isRest ? 'Recovery day' : isDone ? 'Session complete' : 'Log in Gym tracker') + '</div></div>'
+          + '<span class="peak-workout-badge ' + badgeClass + '">' + badgeText + '</span>'
+          + '</div>';
+
+        // Show last logged session summary if available
+        if (state && state.logs && !isRest) {
+          var todayLogs = state.logs[todStr] || [];
+          if (todayLogs.length) {
+            html += '<div class="peak-workout-row"><div style="font-size:12px;color:var(--text-secondary)">'
+              + todayLogs.length + ' exercise' + (todayLogs.length > 1 ? 's' : '') + ' logged today'
+              + '</div></div>';
+          }
+        }
+        body.innerHTML = html;
+      }
+      renderWorkout();
+      window._peakRenderWorkout = renderWorkout;
     })();
 
     // ── Meds UI ────────────────────────────────────────────────
@@ -21859,23 +22246,23 @@ function switchTab(tab) {
         var tipEl = document.getElementById('peakMedsTip');
         if (!tipEl) return;
         if (!logs.length) { tipEl.style.display = 'none'; return; }
-        // Find the most recently logged med still active
         var nowH = nowHour();
         var active = logs.map(function(log) {
-          var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) || {tPeak:2,dur:5};
-          var dh = nowH - log.timeHour;
-          var boost = entry.lift ? entry.lift * subNorm(dh, entry.tPeak, entry.dur) : 0;
-          var peakAt = log.timeHour + entry.tPeak;
-          var fadeAt = log.timeHour + entry.dur;
-          return { name: log.name, boost: boost, peakAt: peakAt, fadeAt: fadeAt, dh: dh, entry: entry };
-        }).filter(function(x){ return x.dh > 0 && x.dh < x.entry.dur; });
+          var logH = new Date(log.t).getHours() + new Date(log.t).getMinutes() / 60;
+          var tPeak = log.tPeak || 2, dur = log.dur || 5, lift = log.lift || 10;
+          var dh = nowH - logH;
+          var boost = lift * subNorm(dh, tPeak, dur);
+          var peakAt = logH + tPeak;
+          var fadeAt = logH + dur;
+          return { name: log.name, boost: boost, peakAt: peakAt, fadeAt: fadeAt, dh: dh, cat: log.cat||'noot', dur: dur, lift: lift };
+        }).filter(function(x){ return x.dh > 0 && x.dh < x.dur; });
 
         if (!active.length) { tipEl.style.display = 'none'; return; }
         var top = active.sort(function(a,b){ return b.boost - a.boost; })[0];
-        var isWarn = top.boost > top.entry.lift * 0.8;
+        var isWarn = top.boost > top.lift * 0.8;
         tipEl.className = 'peak-meds-tip' + (isWarn ? ' warn' : '');
         tipEl.style.display = 'flex';
-        var icon = top.entry ? (top.entry.cat === 'rx' ? '💊' : top.entry.cat === 'nic' ? '🔵' : '🌿') : '💊';
+        var icon = top.cat === 'rx' ? '💊' : top.cat === 'nic' ? '🔵' : '🌿';
         var peakStr = top.peakAt > nowH ? 'peaks ' + fmtHour(Math.round(top.peakAt)) : 'past peak';
         var fadeStr = fmtHour(Math.round(top.fadeAt));
         tipEl.innerHTML = '<span class="peak-meds-tip-icon">' + icon + '</span>' +
@@ -21887,11 +22274,12 @@ function switchTab(tab) {
         var totalBoost = 0;
         var cats = new Set();
         logs.forEach(function(log) {
-          var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) || {tPeak:2,dur:5,lift:10,ref:log.mg||10};
-          var dh = nowH - log.timeHour;
-          if (dh > 0 && dh < entry.dur) {
-            totalBoost += entry.lift * subNorm(dh, entry.tPeak, entry.dur) * Math.min(log.mg/entry.ref, 2);
-            cats.add(entry.cat || 'noot');
+          var logH = new Date(log.t).getHours() + new Date(log.t).getMinutes() / 60;
+          var tPeak = log.tPeak||2, dur = log.dur||5, lift = log.lift||10, ref = log.ref||log.mg||1;
+          var dh = nowH - logH;
+          if (dh > 0 && dh < dur) {
+            totalBoost += lift * subNorm(dh, tPeak, dur) * Math.min(log.mg / ref, 2.2);
+            cats.add(log.cat || 'noot');
           }
         });
         var boostEl = document.getElementById('peakMedsBoostLabel');
@@ -21909,8 +22297,8 @@ function switchTab(tab) {
 
       function renderMedsLogs() {
         var isPast = _peakDayOffset !== 0;
-        var dateStr = isPast ? offsetDateStr(_peakDayOffset) : null;
-        var logs = loadMeds(dateStr);
+        var dateStr = isPast ? offsetDateStr(_peakDayOffset) : today();
+        var logs = loadMedLogs(dateStr);
         var container = document.getElementById('peakMedsLogs');
         if (!container) return;
         var addRow = document.getElementById('peakMedsCard');
@@ -21920,25 +22308,26 @@ function switchTab(tab) {
           if (el) el.style.display = isPast ? 'none' : '';
         });
         if (!logs.length) { container.innerHTML = ''; renderMedsBoost(logs); return; }
-        container.innerHTML = logs.map(function(log, i) {
-          var entry = MEDS_DB.find(function(m){ return m.name === log.name; }) || {};
-          var catIcon = entry.cat === 'rx' ? '💊' : entry.cat === 'nic' ? '🔵' : '🌿';
-          var dh = nowHour() - log.timeHour;
-          var status = dh < 0 ? 'not yet' : dh > (entry.dur||5) ? 'faded' : 'active';
+        container.innerHTML = logs.map(function(log) {
+          var cat = log.cat || 'noot';
+          var catIcon = cat === 'rx' ? '💊' : cat === 'nic' ? '🔵' : '🌿';
+          var logH = new Date(log.t).getHours() + new Date(log.t).getMinutes() / 60;
+          var dh = nowHour() - logH;
+          var status = dh < 0 ? 'not yet' : dh > (log.dur||5) ? 'faded' : 'active';
           return '<div class="peak-meds-log-item">' +
             '<div class="peak-meds-log-left">' +
               '<div class="peak-meds-log-name">' + catIcon + ' ' + escHtml(log.name) + ' ' + log.mg + 'mg</div>' +
-              '<div class="peak-meds-log-meta">' + fmtHour24(log.timeHour) + ' · ' + status + '</div>' +
+              '<div class="peak-meds-log-meta">' + fmtHour24(logH) + ' · ' + status + '</div>' +
             '</div>' +
-            (!isPast ? '<button class="peak-meds-log-del" data-idx="' + i + '" type="button">×</button>' : '') +
+            (!isPast ? '<button class="peak-meds-log-del" data-id="' + escHtml(log.id) + '" type="button">×</button>' : '') +
           '</div>';
         }).join('');
         container.querySelectorAll('.peak-meds-log-del').forEach(function(btn) {
           btn.addEventListener('click', function() {
-            var idx = parseInt(btn.dataset.idx, 10);
-            var logs2 = loadMeds();
-            logs2.splice(idx, 1);
-            saveMeds(logs2);
+            var lid = btn.dataset.id;
+            var store = loadMeds();
+            store.logs = store.logs.filter(function(l){ return l.id !== lid; });
+            saveMeds(store);
             renderMedsLogs();
             _refreshEnergyChart(null);
           });
@@ -21949,9 +22338,23 @@ function switchTab(tab) {
 
       function addMedLog(name, mg, timeVal) {
         var timeH = medsTimeToHour(timeVal);
-        var logs = loadMeds();
-        logs.push({ name: name, mg: mg, timeHour: timeH });
-        saveMeds(logs);
+        var entry = SUB_DB.find(function(m){ return m.name === name; });
+        var tPeak = entry ? entry.tPeak : 2;
+        var dur   = entry ? entry.dur   : 5;
+        var ref   = entry ? entry.ref   : (mg || 1);
+        var lift  = entry ? entry.lift  : Math.min(30, 12 + (mg || 0) * 0.05);
+        var cat   = entry ? entry.cat   : 'custom';
+        // Construct timestamp from today + timeH (hours + minutes)
+        var now = new Date();
+        var logDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                               Math.floor(timeH), Math.round((timeH % 1) * 60), 0, 0);
+        var store = loadMeds();
+        store.logs.push({
+          id: 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+          name: name, mg: mg, t: logDate.getTime(),
+          tPeak: tPeak, dur: dur, lift: lift, ref: ref, cat: cat
+        });
+        saveMeds(store);
         renderMedsLogs();
         _refreshEnergyChart(null);
       }
