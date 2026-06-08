@@ -1251,6 +1251,10 @@ body::after {
 /* Modal breakdown text */
 .vit-breakdown-box { background:rgba(110,231,183,0.05); border:1px solid rgba(110,231,183,0.15); border-radius:8px; padding:8px 10px; font-size:11px; font-family:var(--font-mono); color:rgba(110,231,183,0.8); margin-bottom:10px; line-height:1.5; display:none; }
 .vit-breakdown-box.visible { display:block; }
+.vit-quality-warn { display:none; border-radius:8px; padding:8px 10px; font-size:11px; font-family:var(--font-mono); line-height:1.5; margin-bottom:10px; }
+.vit-quality-warn.visible { display:block; }
+.vit-quality-warn.junk { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); color:rgba(252,165,165,0.9); }
+.vit-quality-warn.street { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.3); color:rgba(251,191,36,0.9); }
 /* Modal photo preview */
 .vit-snap-preview { width:100%; max-height:160px; object-fit:cover; border-radius:10px; margin-bottom:10px; display:none; border:1px solid rgba(255,255,255,0.08); }
 .vit-food-del { background:transparent; border:none; color:rgba(255,138,138,0.4); cursor:pointer; font-size:18px; padding:2px 6px; line-height:1; transition:color 0.15s; }
@@ -8980,6 +8984,7 @@ window.canonicalJson = function(obj) {
     <div class="vit-modal-title">Add Food</div>
     <img id="vitSnapPreview" class="vit-snap-preview" alt="meal photo">
     <div id="vitBreakdownBox" class="vit-breakdown-box"></div>
+    <div id="vitQualityWarn" class="vit-quality-warn"></div>
     <input id="vitFoodSearch" class="vit-modal-search" type="text" placeholder="Search 200+ foods…" autocomplete="off">
     <div id="vitSearchResults" class="vit-search-results"></div>
     <div style="margin-top:18px">
@@ -19475,8 +19480,8 @@ function switchTab(tab) {
   // ── Constants ──────────────────────────────────────────────
   var CAFF_KEY        = 'goals_caffeine_';
   var MOOD_KEY        = 'goals_mood_';
-  var FEEL_KEY        = 'peak_feel_v1';
-  var MEDS_KEY        = 'peak_meds_v1';
+  var FEEL_KEY        = 'goals_feel_v1';
+  var MEDS_KEY        = 'goals_meds_v1';
   var SCHED_KEY       = 'goals_schedule_';
   var INSIGHTS_KEY    = 'goals_peak_insights_v1';
   var VIT_KEY         = 'goals_vitality_';
@@ -20164,45 +20169,55 @@ function switchTab(tab) {
         kcal = 500; carbs = 55; protein = 25; fat = 18;
       }
 
+      var quality = item.quality || 'balanced'; // 'clean'|'balanced'|'street_food'|'junk'
+
       // PM trough amplifier: centre at hw=5.5h after wake (≈2:30pm for 9am waker)
       var hw_meal = t - wh;
       if (hw_meal < 0) hw_meal += 24;
       var inTrough = Math.exp(-0.5 * Math.pow((hw_meal - 5.5) / 2.2, 2));
 
-      // ── Postprandial dip (universal — every meal causes this) ──
-      // Depth scales with meal size. PM trough doubles it.
-      // Minimum -4 (snack), maximum -14 (large PM meal).
-      var mealSize   = Math.min(kcal / 600, 1.0);              // 0→1 as kcal 0→600
-      var dipBase    = -4 - mealSize * 6;                      // -4 (snack) to -10 (large)
-      var dipDepth   = dipBase * (1 + inTrough * 0.8);         // up to 1.8× in PM trough
-      var dipWidth   = 0.3 + inTrough * 1.0;                   // 18min morning, 78min trough
-      // Dip peaks at +45min (0.75h) after eating
-      var dipWave = dipDepth * Math.exp(-Math.pow(0, 2));      // will be evaluated per-h below
+      // ── Quality multipliers ──
+      // junk: deeper dip (×1.8), delayed recovery (+1h), residual drain -4 for 4h
+      // street_food: moderate dip (×1.35), slightly delayed recovery (+0.5h), residual -2 for 3h
+      // clean: shallower dip (×0.7), faster recovery, no residual
+      var qualDipMult   = quality === 'junk' ? 1.8  : quality === 'street_food' ? 1.35 : quality === 'clean' ? 0.7  : 1.0;
+      var qualRecovDel  = quality === 'junk' ? 1.0  : quality === 'street_food' ? 0.5  : 0;
+      var qualResidual  = quality === 'junk' ? -4   : quality === 'street_food' ? -2   : 0;
+      var qualResidDur  = quality === 'junk' ? 4    : quality === 'street_food' ? 3    : 0;
 
-      // ── Recovery lift (nutrients absorbed: tyrosine → NE/dopamine) ──
-      // Starts after dip clears (~1.5h), peaks at ~2.5h
-      // Protein-rich meals recover stronger. Reduced in PM trough.
-      var recovPeak  = (2 + Math.min(protein / 35, 1.0) * 6) * (1 - inTrough * 0.5);
+      // ── Postprandial dip ──
+      var mealSize   = Math.min(kcal / 600, 1.0);
+      var dipBase    = -4 - mealSize * 6;
+      var dipDepth   = dipBase * (1 + inTrough * 0.8) * qualDipMult;
+      var dipWidth   = 0.3 + inTrough * 1.0;
 
-      // ── Carb crash (2nd dip at +2.8h if high GI without protein/fat buffer) ──
+      // ── Recovery lift ──
+      var recovCentre = 2.5 + qualRecovDel;
+      var recovPeak   = (2 + Math.min(protein / 35, 1.0) * 6) * (1 - inTrough * 0.5) * (quality === 'junk' ? 0.6 : quality === 'clean' ? 1.2 : 1.0);
+
+      // ── Carb crash ──
       var carbCrash = (carbs > 40 && protein < 15 && fat < 10)
         ? -Math.min(carbs / 70, 1.0) * 6
         : (carbs > 50 && protein < 20)
           ? -Math.min(carbs / 90, 1.0) * 3
           : 0;
+      if (quality === 'junk' || quality === 'street_food') carbCrash *= 1.4;
 
       for (var h = 0; h < 24; h++) {
         var dh = h + 0.5 - t;
         if (dh < -0.25) continue;
 
-        // Dip: gaussian centred at dh=0.75 (45 min)
-        var dip      = dipDepth  * Math.exp(-Math.pow(dh - 0.75, 2) / dipWidth);
-        // Recovery: gaussian centred at dh=2.5h, only kicks in after dip
-        var recovery = (dh > 1.0) ? recovPeak * Math.exp(-Math.pow(dh - 2.5, 2) / 2.0) : 0;
-        // Carb crash: gaussian at dh=2.8h
+        // Dip: gaussian centred at dh=0.75 (45 min) — junk dip starts at +30min
+        var dipCentre = quality === 'junk' ? 0.5 : 0.75;
+        var dip      = dipDepth  * Math.exp(-Math.pow(dh - dipCentre, 2) / dipWidth);
+        // Recovery
+        var recovery = (dh > 1.0) ? recovPeak * Math.exp(-Math.pow(dh - recovCentre, 2) / 2.0) : 0;
+        // Carb crash
         var crash    = carbCrash * Math.exp(-Math.pow(dh - 2.8, 2) / 0.6);
+        // Residual inflammatory drain: flat across qualResidDur hours starting at +2h
+        var residual = (qualResidual !== 0 && dh >= 2 && dh < 2 + qualResidDur) ? qualResidual : 0;
 
-        arr[h] += dip + recovery + crash;
+        arr[h] += dip + recovery + crash + residual;
       }
     });
     return arr.map(function(v) { return Math.max(-15, Math.min(12, v)); });
@@ -21818,10 +21833,13 @@ function switchTab(tab) {
     var bg = document.getElementById('vitModalBg');
     if (bg) bg.style.display = 'none';
     _pendingSnapThumb = null;
+    _pendingSnapQuality = 'balanced';
     var preview = document.getElementById('vitSnapPreview');
     if (preview) { preview.src = ''; preview.style.display = 'none'; }
     var bdBox = document.getElementById('vitBreakdownBox');
     if (bdBox) { bdBox.textContent = ''; bdBox.classList.remove('visible'); }
+    var warnBox = document.getElementById('vitQualityWarn');
+    if (warnBox) { warnBox.innerHTML = ''; warnBox.className = 'vit-quality-warn'; }
     ['vitFoodName','vitFoodKcal','vitFoodProtein','vitFoodCarbs','vitFoodFat','vitFoodSearch','vitFoodTime'].forEach(function(id){
       var el = document.getElementById(id); if (el) el.value = '';
     });
@@ -21890,8 +21908,9 @@ function switchTab(tab) {
     img.src = dataUrl;
   }
 
-  // Stores the pending thumbnail for the next meal save
-  var _pendingSnapThumb = null;
+  // Stores the pending thumbnail and quality for the next meal save
+  var _pendingSnapThumb    = null;
+  var _pendingSnapQuality  = 'balanced';
 
   async function _handleSnapFile(file) {
     if (!file) return;
@@ -21906,26 +21925,49 @@ function switchTab(tab) {
         var mime = file.type || 'image/jpeg';
 
         var reply = await geminiVision(base64, mime,
-          'Look at this meal photo. Identify every food item and estimate the total serving sizes based on visual portion cues (plate size, utensil scale, etc). ' +
-          'Return ONLY a JSON object in this exact format, no other text: ' +
-          '{"name":"short meal name","kcal":400,"protein":28,"carbs":45,"fat":12,"breakdown":"brief breakdown e.g. rice 200g, dal 150ml, sabji 100g"}');
+          'Look at this meal photo. Identify every food item and estimate serving sizes from visual cues (plate size, utensil scale). ' +
+          'Classify meal quality as one of: "clean" (whole foods, balanced macros — dal, sabzi, salad, eggs, grilled chicken/paneer, fruit), ' +
+          '"balanced" (decent nutrition but some processed elements — roti with sabzi, idli-sambar, poha, upma, thali), ' +
+          '"street_food" (high GI street items — vada pav, pav bhaji, bhel puri, sev puri, misal pav, dabeli, kachori, samosa, chai with biscuits, fried snacks), ' +
+          '"junk" (ultra-processed, deep-fried or high saturated fat — burgers, pizza, instant noodles, chips, fried chicken, heavy biryani with fried items). ' +
+          'If quality is street_food or junk, suggest a local Pune alternative (no beef — suggest paneer, dal, legumes, millet, eggs, grilled chicken). ' +
+          'Return ONLY a JSON object, no other text: ' +
+          '{"name":"short meal name","kcal":400,"protein":28,"carbs":45,"fat":12,"breakdown":"brief breakdown e.g. rice 200g, dal 150ml, sabji 100g","quality":"clean|balanced|street_food|junk","alternative":"null or short Pune-friendly swap suggestion"}');
 
         var match = reply.match(/\{[\s\S]*\}/);
         if (match) {
           var data = JSON.parse(match[0]);
+          var quality = data.quality || 'balanced';
           // Resize full image → small thumbnail, then open modal
           _resizeToThumb(dataUrl, function(thumbDataUrl) {
             _pendingSnapThumb = thumbDataUrl;
+            _pendingSnapQuality = quality;
             openVitModal();
             setTimeout(function() {
               // Show photo preview in modal
               var preview = document.getElementById('vitSnapPreview');
               if (preview) { preview.src = thumbDataUrl; preview.style.display = 'block'; }
-              // Show breakdown text visibly
+              // Show breakdown text
               var bdBox = document.getElementById('vitBreakdownBox');
               if (bdBox && data.breakdown) {
                 bdBox.textContent = '📸 ' + data.breakdown;
                 bdBox.classList.add('visible');
+              }
+              // Show quality warning for street_food / junk
+              var warnBox = document.getElementById('vitQualityWarn');
+              if (warnBox) {
+                if (quality === 'junk') {
+                  var alt = (data.alternative && data.alternative !== 'null') ? ' Try: ' + data.alternative + '.' : '';
+                  warnBox.innerHTML = '⚠ High inflammatory load — expect a deeper energy dip for 4–6h. Your peak will be affected.' + alt;
+                  warnBox.className = 'vit-quality-warn junk visible';
+                } else if (quality === 'street_food') {
+                  var alt2 = (data.alternative && data.alternative !== 'null') ? ' Better option: ' + data.alternative + '.' : '';
+                  warnBox.innerHTML = '⚡ High GI street food — faster dip, slower recovery.' + alt2;
+                  warnBox.className = 'vit-quality-warn street visible';
+                } else {
+                  warnBox.className = 'vit-quality-warn';
+                  warnBox.innerHTML = '';
+                }
               }
               // Fill form
               var n = document.getElementById('vitFoodName'); if (n) n.value = data.name || '';
@@ -22685,6 +22727,7 @@ function switchTab(tab) {
         var breakdown = (bdBox && bdBox.textContent) ? bdBox.textContent.replace(/^📸\s*/, '') : '';
         var entry = {id:uid(), name:displayName, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT, qty:qty};
         if (_pendingSnapThumb) { entry.thumb = _pendingSnapThumb; _pendingSnapThumb = null; }
+        if (_pendingSnapQuality && _pendingSnapQuality !== 'balanced') { entry.quality = _pendingSnapQuality; _pendingSnapQuality = 'balanced'; }
         if (breakdown) entry.breakdown = breakdown;
         var items = loadVit();
         items.push(entry);
