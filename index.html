@@ -20558,141 +20558,199 @@ function switchTab(tab) {
       ctx.fillStyle = bGrad;
       ctx.fillRect(x1, padT, x2 - x1, ch);
       // Zone label at top of band
-      ctx.font = 'bold 9px -apple-system,sans-serif';
+      ctx.font = '9px var(--font-mono, monospace)';
       ctx.textAlign = 'center';
-      ctx.fillStyle = hexAlpha(win.color, 0.8);
-      ctx.fillText(win.label, (x1 + x2) / 2, padT + 11);
+      ctx.fillStyle = hexAlpha(win.color, 0.7);
+      ctx.fillText(win.label.toUpperCase(), (x1 + x2) / 2, padT + 11);
     });
 
-    // ── STACK mode: gold fill between base and full curve ─────
+    // ── Grid lines (exact creator: 3 horizontal at 25/50/75%) ─
+    ctx.save();
+    ctx.setLineDash([2, 5]);
+    ctx.strokeStyle = 'rgba(255,255,255,.05)';
+    ctx.lineWidth = 1;
+    for (var gi = 1; gi <= 3; gi++) {
+      var gy = padT + (gi / 4) * ch;
+      ctx.beginPath();
+      ctx.moveTo(padL, gy);
+      ctx.lineTo(padL + cw, gy);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // ── Sleep markers: bed (green) + wake (amber) ─────────────
+    var _avgBed = typeof _avgBedtime !== 'undefined' ? _avgBedtime : null;
+    var _bedH = _avgBed != null ? (((_avgBed % 24) + 24) % 24) : null;
+    var _wakeH = _wakeHour;
+    var _sleepOptNeed = 8;
+    var _optBedH = _bedH != null ? _bedH : (((_wakeH - _sleepOptNeed) % 24 + 24) % 24);
+    var drawSleepLine = function(h, col) {
+      var sx = xAt(h);
+      ctx.save();
+      ctx.setLineDash([1, 5]);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(sx, padT);
+      ctx.lineTo(sx, padT + ch);
+      ctx.stroke();
+      ctx.restore();
+    };
+    drawSleepLine(_optBedH, '#6EE7B7');
+    drawSleepLine(_wakeH, '#FBBF24');
+
+    // ── STACK mode: dashed green base + solid amber total ─────
     if (mode === 'stack' && caffLogs && caffLogs.length) {
       var baseArr = buildEnergyArray(wakeHour, el._peakReadiness || 75, [], 'core');
       var basePts = baseArr.map(function(v, h) { return [xAt(h + 0.5), yAt(v)]; });
-      var caffFill = ctx.createLinearGradient(0, padT, 0, padT + ch);
-      caffFill.addColorStop(0, 'rgba(245,200,66,0.18)');
-      caffFill.addColorStop(1, 'rgba(245,200,66,0.0)');
-      buildPath(pts);
-      for (var si = basePts.length - 1; si >= 0; si--) ctx.lineTo(basePts[si][0], basePts[si][1]);
+      // Area fill under base curve
+      var areaGradStack = ctx.createLinearGradient(0, padT, 0, padT + ch);
+      areaGradStack.addColorStop(0, 'rgba(52,211,153,0.34)');
+      areaGradStack.addColorStop(1, 'rgba(52,211,153,0)');
+      buildPath(basePts);
+      ctx.lineTo(basePts[basePts.length - 1][0], padT + ch);
+      ctx.lineTo(basePts[0][0], padT + ch);
       ctx.closePath();
-      ctx.fillStyle = caffFill;
+      ctx.fillStyle = areaGradStack;
       ctx.fill();
-    }
-
-    // ── Under-curve area fill ─────────────────────────────────
-    var areaGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
-    areaGrad.addColorStop(0,    'rgba(110,231,183,0.28)');
-    areaGrad.addColorStop(0.55, 'rgba(110,231,183,0.08)');
-    areaGrad.addColorStop(1,    'rgba(110,231,183,0.00)');
-    buildPath(pts);
-    ctx.lineTo(pts[pts.length - 1][0], padT + ch);
-    ctx.lineTo(pts[0][0], padT + ch);
-    ctx.closePath();
-    ctx.fillStyle = areaGrad;
-    ctx.fill();
-
-    // ── Outer glow pass ───────────────────────────────────────
-    ctx.save();
-    ctx.shadowColor = 'rgba(110,231,183,0.35)';
-    ctx.shadowBlur  = 12;
-    buildPath(pts);
-    ctx.strokeStyle = 'rgba(110,231,183,0.25)';
-    ctx.lineWidth   = 3;
-    ctx.lineJoin    = 'round';
-    ctx.lineCap     = 'round';
-    ctx.stroke();
-    ctx.restore();
-
-    // ── Crisp inner line ──────────────────────────────────────
-    ctx.save();
-    ctx.shadowColor = 'rgba(110,231,183,0.6)';
-    ctx.shadowBlur  = 4;
-    buildPath(pts);
-    ctx.strokeStyle = '#6EE7B7';
-    ctx.lineWidth   = 1.5;
-    ctx.lineJoin    = 'round';
-    ctx.lineCap     = 'round';
-    ctx.stroke();
-    ctx.restore();
-
-    // STACK: dashed gold line on top
-    if (mode === 'stack' && caffLogs && caffLogs.length) {
-      buildPath(pts);
-      ctx.strokeStyle = 'rgba(245,200,66,0.55)';
-      ctx.lineWidth   = 1.5;
+      // Dashed green base line
+      ctx.save();
+      ctx.shadowColor = 'rgba(52,211,153,0.5)';
+      ctx.shadowBlur = 3;
+      buildPath(basePts);
+      ctx.strokeStyle = '#34D399';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
       ctx.setLineDash([4, 4]);
+      ctx.globalAlpha = 0.8;
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.restore();
+      // Solid amber total line
+      ctx.save();
+      ctx.shadowColor = 'rgba(251,191,36,0.6)';
+      ctx.shadowBlur = 5;
+      buildPath(pts);
+      ctx.strokeStyle = '#FBBF24';
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      // ── Under-curve area fill (exact creator: 2-stop #34D399) ──
+      var areaGrad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+      areaGrad.addColorStop(0, 'rgba(52,211,153,0.34)');
+      areaGrad.addColorStop(1, 'rgba(52,211,153,0)');
+      buildPath(pts);
+      ctx.lineTo(pts[pts.length - 1][0], padT + ch);
+      ctx.lineTo(pts[0][0], padT + ch);
+      ctx.closePath();
+      ctx.fillStyle = areaGrad;
+      ctx.fill();
+      // ── Curve line (exact creator: 2.4px + drop-shadow glow) ─
+      ctx.save();
+      ctx.shadowColor = 'rgba(52,211,153,0.75)';
+      ctx.shadowBlur = 5;
+      buildPath(pts);
+      ctx.strokeStyle = '#34D399';
+      ctx.lineWidth = 2.4;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
     }
 
-    // ── Now marker ────────────────────────────────────────────
-    var nx = xAt(now + 0.5); // +0.5 to align with pts which use h+0.5
-    var ny = yAt(arrAt(now));
+    // ── Peak marker dot (exact creator: dark fill, green stroke) ─
+    var _pkMax = -Infinity, _pkH = 0;
+    arr.forEach(function(v, h) { if (v > _pkMax) { _pkMax = v; _pkH = h; } });
+    var _pkX = xAt(_pkH + 0.5), _pkY = yAt(_pkMax);
     ctx.beginPath();
-    ctx.setLineDash([3, 5]);
+    ctx.arc(_pkX, _pkY, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#0b110e';
+    ctx.fill();
+    ctx.strokeStyle = '#34D399';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // ── Now marker (exact creator: white line + creator dot style) ─
+    var nx = xAt(now + 0.5);
+    var ny = yAt(arrAt(now));
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
     ctx.moveTo(nx, padT);
     ctx.lineTo(nx, padT + ch);
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.save();
-    ctx.shadowColor = 'rgba(110,231,183,0.9)';
-    ctx.shadowBlur  = 14;
-    ctx.beginPath();
-    ctx.arc(nx, ny, 5.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
     ctx.restore();
     ctx.beginPath();
-    ctx.arc(nx, ny, 3.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#6EE7B7';
+    ctx.arc(nx, ny, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#0b110e';
     ctx.fill();
+    ctx.strokeStyle = '#34D399';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // ── Meal markers ──────────────────────────────────────────
     var vitItems = vitLogs || loadVit();
-    var mealColours = { breakfast: '#F5C842', lunch: '#6EE7B7', dinner: '#818cf8', snack: '#f87171' };
+    var mealColours = { breakfast: '#FBBF24', lunch: '#34D399', dinner: '#818cf8', snack: '#f87171' };
     vitItems.forEach(function(item) {
       var mt = item.timeHour;
       if (mt == null) mt = item.meal === 'breakfast' ? 8 : item.meal === 'lunch' ? 13 : item.meal === 'dinner' ? 19 : 15;
       if (mt < 0 || mt > 23) return;
-      var mx2 = xAt(mt + 0.5); // +0.5 matches pts alignment
+      var mx2 = xAt(mt + 0.5);
       var my2 = yAt(arrAt(mt));
       var col = mealColours[item.meal] || '#aaa';
+      ctx.save();
+      ctx.setLineDash([1, 4]);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.5;
       ctx.beginPath();
-      ctx.setLineDash([2, 4]);
-      ctx.moveTo(mx2, my2 + 6);
+      ctx.moveTo(mx2, padT);
       ctx.lineTo(mx2, padT + ch);
-      ctx.strokeStyle = col + '50';
-      ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.restore();
       ctx.beginPath();
       ctx.arc(mx2, my2, 4, 0, Math.PI * 2);
-      ctx.fillStyle = col;
+      ctx.fillStyle = '#0b110e';
       ctx.fill();
-      ctx.font = 'bold 9px -apple-system,sans-serif';
-      ctx.fillStyle = col;
-      ctx.textAlign = 'center';
-      ctx.fillText(item.meal.charAt(0).toUpperCase(), mx2, my2 - 9);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
     });
 
     // ── Caffeine markers ──────────────────────────────────────
     if (caffLogs) caffLogs.forEach(function(log) {
       var ct = log.timeHour;
       if (ct == null || ct < 0 || ct > 23) return;
-      var cx2 = xAt(ct + 0.5); // +0.5 matches pts alignment
-      var cy2 = yAt(arrAt(ct));
+      var cx2 = xAt(ct + 0.5);
+      var cy2 = padT + ch; // drop from bottom of chart
+      ctx.save();
+      ctx.setLineDash([1, 4]);
+      ctx.strokeStyle = '#FBBF24';
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.5;
       ctx.beginPath();
-      ctx.arc(cx2, cy2, 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#F5C842';
+      ctx.moveTo(cx2, padT);
+      ctx.lineTo(cx2, padT + ch);
+      ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(cx2, yAt(arrAt(ct)), 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#0b110e';
       ctx.fill();
-      ctx.font = 'bold 8px -apple-system,sans-serif';
-      ctx.fillStyle = 'rgba(245,200,66,0.9)';
-      ctx.textAlign = 'center';
-      ctx.fillText('C', cx2, cy2 - 9);
+      ctx.strokeStyle = '#FBBF24';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
     });
 
-    // ── Crash markers (exact creator: separate caff/med scans, HTML badges) ──
+    // ── Crash markers (separate caff/med, HTML badges) ────────
     var _cc = caffeineCrash();
     var _mc = medCrash();
     var _crashLines = [];
@@ -20701,21 +20759,19 @@ function switchTab(tab) {
     _crashLines.forEach(function(cr) {
       var cx3 = xAt(cr.t);
       ctx.save();
-      ctx.beginPath();
       ctx.setLineDash([4, 4]);
-      ctx.moveTo(cx3, padT);
-      ctx.lineTo(cx3, padT + ch);
       ctx.strokeStyle = '#EF4444';
       ctx.lineWidth = 1.4;
       ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(cx3, padT);
+      ctx.lineTo(cx3, padT + ch);
       ctx.stroke();
       ctx.restore();
     });
-    // HTML badge labels below canvas
-    var _wrapEl = canvas.parentElement;
+    var _wrapEl = el.parentElement;
     if (_wrapEl) {
-      var _oldBadges = _wrapEl.querySelectorAll('.crashMark');
-      _oldBadges.forEach(function(b){ b.remove(); });
+      _wrapEl.querySelectorAll('.crashMark').forEach(function(b){ b.remove(); });
       var _crashLabels = '';
       _crashLines.forEach(function(cr) {
         _crashLabels += '<div class="crashMark" style="left:' + clamp(cr.t / 24 * 100, 6, 94) + '%">' + cr.label + '</div>';
@@ -20728,15 +20784,14 @@ function switchTab(tab) {
       }
     }
 
-    // ── Hour labels ───────────────────────────────────────────
-    ctx.font = '10px -apple-system,sans-serif';
+    // ── Hour labels (exact creator format: 12A 3A 6A 9A 12P…) ─
+    ctx.font = '10px var(--font-mono, monospace)';
     ctx.textAlign = 'center';
-    [0, 3, 6, 9, 12, 15, 18, 21].forEach(function(h) {
-      var lbl = h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p';
+    var _xLabels = ['12A','3A','6A','9A','12P','3P','6P','9P'];
+    [0, 3, 6, 9, 12, 15, 18, 21].forEach(function(h, i) {
       var isCurr = (h === Math.floor(now));
-      ctx.fillStyle = isCurr ? 'rgba(110,231,183,0.9)' : 'rgba(255,255,255,0.25)';
-      // labels align with hour boundaries (h/24), not hour centres
-      ctx.fillText(lbl, xAt(h), H - 6);
+      ctx.fillStyle = isCurr ? '#34D399' : 'rgba(255,255,255,0.22)';
+      ctx.fillText(_xLabels[i], xAt(h), H - 5);
     });
 
     // ── Hover scrub ───────────────────────────────────────────
@@ -20747,64 +20802,60 @@ function switchTab(tab) {
       var hv = arrAt(hh);
       var hy = yAt(hv);
 
-      // Shaded column under cursor (reference image style)
-      ctx.fillStyle = 'rgba(110,231,183,0.06)';
-      var colW = cw / 24;
-      ctx.fillRect(hx - colW / 2, padT, colW, ch);
-
-      // Vertical line
+      // Vertical scrub line
+      ctx.save();
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.setLineDash([3, 5]);
       ctx.moveTo(hx, padT);
       ctx.lineTo(hx, padT + ch);
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-      ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.restore();
 
-      // Dot on curve
+      // Scrub dot (creator: warn color, box-shadow glow)
+      var score = Math.round(hv);
+      var zCol = score >= 80 ? '#F5C842' : score >= 60 ? '#34D399' : score >= 40 ? '#FBBF24' : '#94a3b8';
       ctx.save();
-      ctx.shadowColor = 'rgba(255,255,255,0.7)';
-      ctx.shadowBlur  = 10;
+      ctx.shadowColor = zCol;
+      ctx.shadowBlur = 14;
       ctx.beginPath();
-      ctx.arc(hx, hy, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
+      ctx.arc(hx, hy, 7, 0, Math.PI * 2);
+      ctx.fillStyle = zCol;
       ctx.fill();
       ctx.restore();
       ctx.beginPath();
-      ctx.arc(hx, hy, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#6EE7B7';
-      ctx.fill();
+      ctx.arc(hx, hy, 7, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
 
-      // Tooltip pill — reference image style: score large, zone label, time small below
-      var score = Math.round(hv);
-      var zone  = score >= 80 ? 'Peak' : score >= 60 ? 'High' : score >= 40 ? 'Mid' : 'Low';
-      var zCol  = score >= 80 ? '#F5C842' : score >= 60 ? '#6EE7B7' : score >= 40 ? '#F2C063' : '#94a3b8';
+      // Tooltip pill (creator: dark panel2 bg, accent2 border, mono font)
+      var zone  = score >= 80 ? 'Prime' : score >= 67 ? 'Solid' : score >= 45 ? 'Moderate' : score >= 30 ? 'Low' : 'Depleted';
       var timeStr = fmtHour(Math.round(hh));
-      var pillW = 72, pillH = 44;
+      var pillW = 80, pillH = 52;
       var tx = clamp(hx - pillW / 2, 2, W - pillW - 2);
-      var ty = Math.max(padT + 4, hy - pillH - 10);
-      // pill background
-      ctx.fillStyle = 'rgba(8,12,20,0.92)';
-      ctx.strokeStyle = zCol + '55';
+      var ty = Math.max(padT + 4, hy - pillH - 14);
+      ctx.fillStyle = 'rgba(8,8,8,0.92)';
+      ctx.strokeStyle = 'rgba(110,231,183,0.30)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(tx, ty, pillW, pillH, 8); else ctx.rect(tx, ty, pillW, pillH);
+      if (ctx.roundRect) ctx.roundRect(tx, ty, pillW, pillH, 10); else ctx.rect(tx, ty, pillW, pillH);
       ctx.fill();
       ctx.stroke();
-      // score number
-      ctx.font = 'bold 20px -apple-system,sans-serif';
+      // score — serif italic style via large bold
+      ctx.font = 'bold 22px var(--font-serif, Georgia, serif)';
       ctx.fillStyle = zCol;
       ctx.textAlign = 'center';
-      ctx.fillText(score, tx + pillW / 2, ty + 22);
-      // zone label
-      ctx.font = 'bold 9px -apple-system,sans-serif';
-      ctx.fillStyle = zCol + 'cc';
-      ctx.fillText(zone, tx + pillW / 2, ty + 33);
+      ctx.fillText(score, tx + pillW / 2, ty + 26);
+      // zone label mono
+      ctx.font = '9px var(--font-mono, monospace)';
+      ctx.fillStyle = zCol;
+      ctx.fillText(zone.toUpperCase(), tx + pillW / 2, ty + 38);
       // time
-      ctx.font = '9px -apple-system,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.fillText(timeStr, tx + pillW / 2, ty + 42);
+      ctx.font = '9px var(--font-mono, monospace)';
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillText(timeStr, tx + pillW / 2, ty + 49);
 
       // Update inline energy ring while scrubbing
       if (typeof _updateEnergyRing === 'function') _updateEnergyRing(score, timeStr, true);
