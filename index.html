@@ -8766,6 +8766,7 @@ window.canonicalJson = function(obj) {
         <div class="peak-feel-slider-wrap">
           <input id="peakFeelSlider" class="peak-feel-slider" type="range" min="0" max="100" value="50">
           <div class="peak-feel-pct" id="peakFeelPct">50%</div>
+          <button id="peakFeelLogBtn" type="button" style="flex-shrink:0;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);border-radius:20px;color:#6EE7B7;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;padding:5px 12px;cursor:pointer;white-space:nowrap;">Log</button>
         </div>
       </div>
       <div class="peak-feel-logs" id="peakFeelLogs"></div>
@@ -20938,7 +20939,8 @@ function switchTab(tab) {
       body: JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}]})
     });
     var j = await r.json();
-    return (j.candidates && j.candidates[0] && j.candidates[0].content.parts[0].text) || '';
+    if (!r.ok) throw new Error((j && j.error && (j.error.message || JSON.stringify(j.error))) || ('HTTP ' + r.status));
+    return (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text) || '';
   }
 
   async function geminiVision(base64, mimeType, textPrompt) {
@@ -21680,12 +21682,14 @@ function switchTab(tab) {
     try {
       var reply = await gemini(prompt);
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
+      var replyText = reply && reply.trim();
+      if (!replyText) replyText = 'My apologies, sir. I was unable to generate a response. Please try again.';
       if (window._arcSetMood) window._arcSetMood('responding');
-      appendCoachMsg(reply.trim(), 'coach');
-      _jarvisSpeak(reply.trim());
+      appendCoachMsg(replyText, 'coach');
+      _jarvisSpeak(replyText);
     } catch(e) {
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
-      appendCoachMsg('Could not reach coach. Check your connection.', 'coach');
+      appendCoachMsg('Could not reach coach, sir. Check your connection. (' + (e && e.message || 'unknown error') + ')', 'coach');
       if (window._arcSetMood) window._arcSetMood('idle');
     } finally { _coachFlight = false; }
   }
@@ -22229,6 +22233,30 @@ function switchTab(tab) {
         renderFeelLogs();
         _refreshEnergyChart(null);
       });
+
+      var logBtn = document.getElementById('peakFeelLogBtn');
+      if (logBtn) {
+        logBtn.addEventListener('click', function() {
+          var pct = parseInt(slider.value, 10);
+          var canvas = document.getElementById('peakEnergyCanvas');
+          var pred = 50;
+          if (canvas && canvas._peakArr) {
+            var nh = nowHour();
+            pred = Math.round(canvas._peakArr[Math.min(23, Math.floor(nh))] || 50);
+          }
+          // force-push new entry regardless of dedup window
+          var f = loadFeel();
+          f.checks.push({t: Date.now(), pct: pct, pred: Math.round(pred)});
+          if (f.checks.length > 2000) f.checks.shift();
+          saveFeel(f);
+          updateFeelNote();
+          renderFeelLogs();
+          _refreshEnergyChart(null);
+          // brief flash to confirm
+          logBtn.style.background = 'rgba(110,231,183,0.25)';
+          setTimeout(function() { logBtn.style.background = 'rgba(110,231,183,0.1)'; }, 400);
+        });
+      }
     })();
 
     // ── Score breakdown whyBox ─────────────────────────────────
