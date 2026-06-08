@@ -1062,6 +1062,11 @@ body::after {
 .peak-feel-pct { font-family:var(--font-serif); font-style:italic; font-weight:600; font-size:32px; min-width:64px; text-align:right; color:var(--text-primary); }
 .peak-feel-note { font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-tertiary); font-family:var(--font-mono); margin-top:3px; }
 .peak-feel-note.ready { color:#6EE7B7; }
+.peak-feel-logs { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; min-height:0; }
+.peak-feel-chip { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:3px 9px 3px 7px; font-family:var(--font-mono); font-size:10px; color:var(--text-secondary); cursor:pointer; transition:border-color .15s; }
+.peak-feel-chip:hover { border-color:rgba(239,68,68,0.4); color:#fca5a5; }
+.peak-feel-chip .fc-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.peak-feel-chip .fc-time { opacity:0.5; }
 /* ── Score breakdown whyBox (exact creator) ── */
 .peak-why-link { background:none; border:none; cursor:pointer; font-family:var(--font-mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-tertiary); text-decoration:underline; text-underline-offset:3px; margin-top:10px; display:block; padding:0; }
 .peak-why-link:hover { color:#6EE7B7; }
@@ -8755,6 +8760,7 @@ window.canonicalJson = function(obj) {
           <div class="peak-feel-pct" id="peakFeelPct">50%</div>
         </div>
       </div>
+      <div class="peak-feel-logs" id="peakFeelLogs"></div>
     </div>
 
     <div class="peak-card" id="peakWorkoutCard">
@@ -19571,21 +19577,44 @@ function switchTab(tab) {
   // personal adjustment at hour h: bias × calibration strength
   function personalAdjAt(hr) { return personalBiasAt(hr) * calibStrength(); }
 
-  // latest feel % logged today (or null)
-  function latestFeelToday() {
-    var f = loadFeel(), todStr = today(), best = null;
-    for (var i = 0; i < f.checks.length; i++) {
-      if (feelDayKey(new Date(f.checks[i].t)) === todStr) best = f.checks[i];
-    }
-    return best ? best.pct : null;
+  // all feel checks for a given date string (YYYY-MM-DD), sorted ascending
+  function feelChecksForDay(dateStr) {
+    var f = loadFeel();
+    return f.checks.filter(function(c) { return feelDayKey(new Date(c.t)) === dateStr; })
+                   .sort(function(a, b) { return a.t - b.t; });
   }
 
-  // add a feel check — dedups within 20 min on same day
+  // feel % at a specific hour on a specific day — uses nearest logged check
+  // if multiple checks exist, applies the one whose logged hour is closest to h
+  function feelAtHour(h, dateStr) {
+    var checks = feelChecksForDay(dateStr || today());
+    if (!checks.length) return null;
+    // find the check whose time is closest to hour h
+    var best = checks[0], bestDist = Infinity;
+    checks.forEach(function(c) {
+      var ch = new Date(c.t).getHours() + new Date(c.t).getMinutes() / 60;
+      var dist = Math.abs(ch - h);
+      // wrap: e.g. 23h vs 1h = 2h apart not 22h
+      dist = Math.min(dist, 24 - dist);
+      if (dist < bestDist) { bestDist = dist; best = c; }
+    });
+    // only apply this check's feel if it was logged within 4h of hour h
+    return bestDist <= 4 ? best.pct : null;
+  }
+
+  // latest feel % logged today (or null) — kept for UI display
+  function latestFeelToday() {
+    var checks = feelChecksForDay(today());
+    return checks.length ? checks[checks.length - 1].pct : null;
+  }
+
+  // add a feel check — allows multiple per day, deduplicates only within 5 min
   function addFeel(pct, predictedScore) {
     var f = loadFeel();
     var now = Date.now();
     var last = f.checks[f.checks.length - 1];
-    if (last && (now - last.t) < 20 * 60000 && feelDayKey(new Date(last.t)) === feelDayKey(new Date(now))) {
+    // only overwrite if within 5 min (prevents accidental double-log on same slider drag)
+    if (last && (now - last.t) < 5 * 60000 && feelDayKey(new Date(last.t)) === feelDayKey(new Date(now))) {
       last.pct = pct; last.t = now; last.pred = Math.round(predictedScore || 50);
     } else {
       f.checks.push({t: now, pct: pct, pred: Math.round(predictedScore || 50)});
@@ -20099,11 +20128,12 @@ function switchTab(tab) {
   }
 
   // ── Food energy model ──────────────────────────────────────
-  // Context-aware: food effect depends on WHERE in the circadian cycle you eat.
-  //   Morning peak (hw 1–5):  carbs/protein add a small visible lift
-  //   PM trough   (hw 5–9):   heavy meal DEEPENS the dip — orexin suppression,
-  //                           blood diverted to gut, tryptophan→melatonin pathway
-  //   Evening     (hw 9–13):  moderate positive effect
+  // Postprandial dip → recovery shape for every meal:
+  //   0–45 min:   dip (parasympathetic activation, insulin spike, blood to gut)
+  //   45–90 min:  trough bottom
+  //   1.5–3h:     recovery as nutrients absorb (tyrosine → dopamine/NE)
+  //   3h+:        fades back to baseline
+  // Trough timing amplifies PM meals. Carb-heavy meals add a 2nd crash at ~2.8h.
   function foodEnergyMod(vitLogs, wakeHour) {
     var arr = new Array(24).fill(0);
     if (!vitLogs || !vitLogs.length) return arr;
@@ -20118,57 +20148,54 @@ function switchTab(tab) {
       var protein = item.protein || 0;
       var fat     = item.fat     || 0;
 
-      // How deep into the PM circadian trough is this meal?
-      // Trough centre = hw 5.5 (2:30pm for 9am waker). inTrough: 0=morning, 1=dead centre
+      // No macro data → assume a typical mixed meal (500 kcal, 55g carbs, 25g protein, 18g fat)
+      var hasMacros = (kcal + carbs + protein + fat) > 0;
+      if (!hasMacros) {
+        kcal = 500; carbs = 55; protein = 25; fat = 18;
+      }
+
+      // PM trough amplifier: centre at hw=5.5h after wake (≈2:30pm for 9am waker)
       var hw_meal = t - wh;
       if (hw_meal < 0) hw_meal += 24;
-      var inTrough = Math.max(0, Math.exp(-0.5 * Math.pow((hw_meal - 5.5) / 2.2, 2)));
+      var inTrough = Math.exp(-0.5 * Math.pow((hw_meal - 5.5) / 2.2, 2));
 
-      // Positive food effect is suppressed during trough — orexin suppression
-      // overwhelms the glucose lift. Morning: full. PM trough: 25% of normal.
-      var contextFactor = 1 - inTrough * 0.75;
+      // ── Postprandial dip (universal — every meal causes this) ──
+      // Depth scales with meal size. PM trough doubles it.
+      // Minimum -4 (snack), maximum -14 (large PM meal).
+      var mealSize   = Math.min(kcal / 600, 1.0);              // 0→1 as kcal 0→600
+      var dipBase    = -4 - mealSize * 6;                      // -4 (snack) to -10 (large)
+      var dipDepth   = dipBase * (1 + inTrough * 0.8);         // up to 1.8× in PM trough
+      var dipWidth   = 0.3 + inTrough * 1.0;                   // 18min morning, 78min trough
+      // Dip peaks at +45min (0.75h) after eating
+      var dipWave = dipDepth * Math.exp(-Math.pow(0, 2));      // will be evaluated per-h below
 
-      // Carb spike: smaller during trough (insulin/orexin interaction)
-      var carbPeak = Math.min(carbs / 60, 1.0) * 12 * contextFactor;
+      // ── Recovery lift (nutrients absorbed: tyrosine → NE/dopamine) ──
+      // Starts after dip clears (~1.5h), peaks at ~2.5h
+      // Protein-rich meals recover stronger. Reduced in PM trough.
+      var recovPeak  = (2 + Math.min(protein / 35, 1.0) * 6) * (1 - inTrough * 0.5);
 
-      // Protein lift: slower, also reduced in trough
-      var protPeak = Math.min(protein / 40, 1.0) * 8 * contextFactor;
-
-      // Fat: slight early dip regardless of timing (gastric emptying delay)
-      var fatDip = Math.min(fat / 30, 1.0) * -3;
-
-      // Heavy meal dip: parasympathetic blood diversion at dh≈0.5
-      // In PM trough: massively amplified by orexin suppression + tryptophan pathway
-      // In morning: small dip only (circadian alerting overrides)
-      var baseDip    = kcal > 400 ? -Math.min((kcal - 400) / 350, 1.0) * 5 : 0;
-      var troughAmp  = kcal > 300 ? inTrough * Math.min((kcal - 300) / 300, 1.0) * -16 : 0;
-      var bigMealDip = baseDip + troughAmp;
-
-      // Dip duration: narrow in morning (30min), wide food-coma in trough (90–120min)
-      var dipWidth = 0.25 + inTrough * 1.4;
-
-      // Carb crash: rebound dip at +2.8h when high carb + low protein + low fat (no buffer)
+      // ── Carb crash (2nd dip at +2.8h if high GI without protein/fat buffer) ──
       var carbCrash = (carbs > 40 && protein < 15 && fat < 10)
-        ? -Math.min(carbs / 70, 1.0) * 7
+        ? -Math.min(carbs / 70, 1.0) * 6
         : (carbs > 50 && protein < 20)
-          ? -Math.min(carbs / 90, 1.0) * 4
+          ? -Math.min(carbs / 90, 1.0) * 3
           : 0;
 
       for (var h = 0; h < 24; h++) {
         var dh = h + 0.5 - t;
         if (dh < -0.25) continue;
 
-        var carbWave   = carbPeak  * Math.exp(-Math.pow(dh - 0.75, 2) / 1.8);
-        var protWave   = protPeak  * Math.exp(-Math.pow(dh - 1.5,  2) / 5.0);
-        var fatWave    = (dh >= 0 && dh < 0.75) ? fatDip * (1 - dh / 0.75) : 0;
-        var bigDipWave = bigMealDip * Math.exp(-Math.pow(dh - 0.5, 2) / dipWidth);
-        var crashWave  = carbCrash  * Math.exp(-Math.pow(dh - 2.8, 2) / 0.8);
+        // Dip: gaussian centred at dh=0.75 (45 min)
+        var dip      = dipDepth  * Math.exp(-Math.pow(dh - 0.75, 2) / dipWidth);
+        // Recovery: gaussian centred at dh=2.5h, only kicks in after dip
+        var recovery = (dh > 1.0) ? recovPeak * Math.exp(-Math.pow(dh - 2.5, 2) / 2.0) : 0;
+        // Carb crash: gaussian at dh=2.8h
+        var crash    = carbCrash * Math.exp(-Math.pow(dh - 2.8, 2) / 0.6);
 
-        arr[h] += carbWave + protWave + fatWave + bigDipWave + crashWave;
+        arr[h] += dip + recovery + crash;
       }
     });
-    // ±15 before *2 multiplier in buildEnergyArray = ±30 real effect. Prevents floor-zero crashes.
-    return arr.map(function(v) { return Math.max(-15, Math.min(15, v)); });
+    return arr.map(function(v) { return Math.max(-15, Math.min(12, v)); });
   }
 
   // ── Energy curve model ─────────────────────────────────────
@@ -20195,15 +20222,14 @@ function switchTab(tab) {
     if (hrv && avgHrv && avgHrv > 0) {
       hrvMod = clamp((hrv - avgHrv) / avgHrv * 12, -8, 8);
     }
-    // Feel system: today's latest feel % blends toward objective score
-    // feel adjustment is per-hour (personalAdjAt) grown over 30 days calibration
-    var _feelToday = latestFeelToday(); // null if not set today
+    // Feel system: per-hour feel blends toward the nearest logged check for that hour
     var _feelW = 0.30 + 0.20 * calibStrength(); // 30%→50% over 30 days
-    // Legacy emoji mood fallback (if no feel slider used yet today)
+    var _feelDateKey = _peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today();
+    // Legacy emoji mood fallback (used only if zero feel checks logged today)
+    var _feelChecksToday = feelChecksForDay(_feelDateKey);
     var _legacyMoodShift = 0;
-    if (_feelToday === null) {
-      var _dateKey = _peakDayOffset !== 0 ? offsetDateStr(_peakDayOffset) : today();
-      var _mood = localStorage.getItem(MOOD_KEY + _dateKey) || '';
+    if (_feelChecksToday.length === 0) {
+      var _mood = localStorage.getItem(MOOD_KEY + _feelDateKey) || '';
       if      (_mood === 'peak')   _legacyMoodShift =  15;
       else if (_mood === 'sharp')  _legacyMoodShift =  8;
       else if (_mood === 'good')   _legacyMoodShift =  4;
@@ -20255,14 +20281,14 @@ function switchTab(tab) {
           score += boost;
         });
       }
-      // Food modifier: doubled so meals are clearly visible
-      score += foodMod[h] * 2;
+      score += foodMod[h];
       // Med/substance boost
       if (_medArr) score += _medArr[h];
-      // Feel system: blend objective score toward felt state + per-hour calibration bias
-      if (_feelToday !== null) {
-        score = score + (_feelToday - score) * _feelW + personalAdjAt(h);
-      } else {
+      // Feel system: blend toward nearest logged check for this hour
+      var _feelH = feelAtHour(h, _feelDateKey);
+      if (_feelH !== null) {
+        score = score + (_feelH - score) * _feelW + personalAdjAt(h);
+      } else if (_feelChecksToday.length === 0) {
         score += _legacyMoodShift;
       }
       arr.push(clamp(score, 0, 100));
@@ -20793,13 +20819,27 @@ function switchTab(tab) {
 
       function _doScrub(clientX) {
         var rect = el.getBoundingClientRect();
-        var t = clamp((clientX - rect.left) / rect.width * 24, 0, 24);
-        var v = arrAt(t);
+        var curH = rect.height || 300;
+        var curW = rect.width  || 340;
+        // Reconstruct yAt with current live dimensions
+        var _padT = 20, _padB = 10;
+        var _ch = curH - _padT - _padB;
+        var _readiness = el._peakReadiness || 75;
+        var _arr = el._peakArr || [];
+        var _yMax = Math.min(100, Math.max(clamp(_readiness * 1.1 + 10, 55, 100), _arr.length ? Math.max.apply(null, _arr) + 5 : 70));
+        var _yAt = function(v) { return _padT + _ch - ((v - 0) / (_yMax - 0)) * _ch; };
+        var _arrAt = function(fh) {
+          var i = Math.min(_arr.length - 1, Math.max(0, Math.floor(fh)));
+          var frac = fh - Math.floor(fh);
+          return frac > 0 && i < _arr.length - 1 ? _arr[i] * (1 - frac) + _arr[i + 1] * frac : (_arr[i] || 0);
+        };
+        var t = clamp((clientX - rect.left) / curW * 24, 0, 24);
+        var v = _arrAt(t);
         var xPct = (t / 24) * 100;
-        var yPct = ((yAt(v) - padT) / ch) * 100;
+        var yPct = (_yAt(v) / curH) * 100;
         if (_scrubLine) { _scrubLine.style.display = 'block'; _scrubLine.style.left = xPct + '%'; }
         if (_scrubDot)  { _scrubDot.style.display  = 'block'; _scrubDot.style.left  = xPct + '%'; _scrubDot.style.top = yPct + '%'; }
-        if (_scrubTip)  { _scrubTip.style.display  = 'block'; _scrubTip.style.left  = clamp(xPct, 8, 80) + '%'; _scrubTip.style.top = clamp(yPct, 15, 60) + '%'; }
+        if (_scrubTip)  { _scrubTip.style.display  = 'block'; _scrubTip.style.left  = clamp(xPct, 8, 80) + '%'; _scrubTip.style.top = clamp(yPct - 14, 2, 55) + '%'; }
         if (_scrubVal)  _scrubVal.textContent = Math.round(v);
         if (_scrubTime) _scrubTime.textContent = clockOf(t);
         if (typeof _updateEnergyRing === 'function') _updateEnergyRing(Math.round(v), clockOf(t), true);
@@ -21929,17 +21969,18 @@ function switchTab(tab) {
       var noteEl2 = document.getElementById('peakFeelNote');
       if (!sl) return;
       if (offset !== 0) {
-        // find last feel check on _offDate
-        var f2 = loadFeel(), bestC = null;
-        for (var ci = 0; ci < f2.checks.length; ci++) {
-          if (feelDayKey(new Date(f2.checks[ci].t)) === _offDate) bestC = f2.checks[ci];
-        }
-        var pastV = bestC ? bestC.pct : 50;
+        var pastChecks = feelChecksForDay(_offDate);
+        var pastV = pastChecks.length ? pastChecks[pastChecks.length - 1].pct : 50;
         sl.value = pastV;
         if (pctEl2) pctEl2.textContent = pastV + '%';
         sl.disabled = true;
         sl.style.opacity = '0.5';
-        if (noteEl2) { noteEl2.textContent = 'Past day — read only'; noteEl2.style.color = ''; }
+        if (noteEl2) {
+          noteEl2.textContent = pastChecks.length > 1
+            ? 'Past day — ' + pastChecks.length + ' checks logged'
+            : 'Past day — read only';
+          noteEl2.style.color = '';
+        }
       } else {
         sl.disabled = false;
         sl.style.opacity = '';
@@ -22056,25 +22097,63 @@ function switchTab(tab) {
       });
     }
 
-    // ── Feel slider (exact creator implementation) ─────────────
+    // ── Feel slider ─────────────────────────────────────────────
     (function() {
-      var slider = document.getElementById('peakFeelSlider');
-      var pctEl  = document.getElementById('peakFeelPct');
-      var noteEl = document.getElementById('peakFeelNote');
+      var slider  = document.getElementById('peakFeelSlider');
+      var pctEl   = document.getElementById('peakFeelPct');
+      var noteEl  = document.getElementById('peakFeelNote');
+      var logsEl  = document.getElementById('peakFeelLogs');
       if (!slider) return;
 
-      function feelNoteText() {
-        var days = feelDays();
-        if (days >= 30) return 'Tailored to your last 30 days ✓';
-        if (days > 0)   return 'Currently building a more detailed analysis · ' + days + '/30 days';
-        return "Set this daily and I'll tailor your model over 30 days";
+      function feelColor(pct) {
+        if (pct >= 75) return '#6EE7B7';
+        if (pct >= 50) return '#FBBF24';
+        return '#f87171';
+      }
+
+      function renderFeelLogs() {
+        if (!logsEl) return;
+        var checks = feelChecksForDay(today());
+        if (!checks.length) { logsEl.innerHTML = ''; return; }
+        logsEl.innerHTML = checks.map(function(c, i) {
+          var d = new Date(c.t);
+          var h = d.getHours(), m = d.getMinutes();
+          var ap = h < 12 ? 'am' : 'pm';
+          var hh = h % 12 || 12;
+          var timeStr = hh + ':' + String(m).padStart(2, '0') + ap;
+          var col = feelColor(c.pct);
+          return '<div class="peak-feel-chip" data-feel-idx="' + i + '" title="Tap to delete">'
+            + '<span class="fc-dot" style="background:' + col + '"></span>'
+            + '<span>' + c.pct + '%</span>'
+            + '<span class="fc-time">' + timeStr + '</span>'
+            + '</div>';
+        }).join('');
+        // delete on click
+        logsEl.querySelectorAll('.peak-feel-chip').forEach(function(chip) {
+          chip.addEventListener('click', function() {
+            var checks2 = feelChecksForDay(today());
+            var idx = parseInt(chip.dataset.feelIdx, 10);
+            var target = checks2[idx];
+            if (!target) return;
+            var f = loadFeel();
+            f.checks = f.checks.filter(function(c) { return c.t !== target.t; });
+            saveFeel(f);
+            renderFeelLogs();
+            _refreshEnergyChart(null);
+          });
+        });
       }
 
       function updateFeelNote() {
         if (!noteEl) return;
         var days = feelDays();
-        noteEl.textContent = feelNoteText();
+        var checks = feelChecksForDay(today());
+        if (days >= 30) noteEl.textContent = 'Tailored to your last 30 days ✓';
+        else if (days > 0) noteEl.textContent = 'Building your model · ' + days + '/30 days';
+        else noteEl.textContent = "Set this daily and I'll tailor your model over 30 days";
         noteEl.classList.toggle('ready', days >= 30);
+        // show count if multiple logged today
+        if (checks.length > 1) noteEl.textContent += ' · ' + checks.length + ' checks today';
       }
 
       function initFeel() {
@@ -22083,6 +22162,7 @@ function switchTab(tab) {
         slider.value = val;
         if (pctEl) pctEl.textContent = val + '%';
         updateFeelNote();
+        renderFeelLogs();
       }
       initFeel();
 
@@ -22100,26 +22180,17 @@ function switchTab(tab) {
         }
         addFeel(pct, pred);
         updateFeelNote();
+        renderFeelLogs();
         _refreshEnergyChart(null);
       });
     })();
 
     // ── Score breakdown whyBox ─────────────────────────────────
     (function() {
-      var whyOpen = false;
-      var whyBtn = document.getElementById('peakWhyLink');
-      if (whyBtn) {
-        whyBtn.addEventListener('click', function() {
-          whyOpen = !whyOpen;
-          var box = document.getElementById('peakWhyBox');
-          if (box) box.classList.toggle('on', whyOpen);
-        });
-      }
-      // Expose so renderPeak can populate it
-      window._renderPeakWhyBox = function(oura, recovery, sleepScore, hrv) {
+      // Build and inject HTML into whyBox, called on click and after renderPeak
+      function buildWhyBox(oura, recovery, sleepScore, hrv) {
         var box = document.getElementById('peakWhyBox');
         if (!box) return;
-        // Gather available score components
         var rows = [], totalW = 0, totalS = 0;
         function addRow(label, score, w) {
           rows.push([label, Math.round(score)]);
@@ -22127,11 +22198,9 @@ function switchTab(tab) {
         }
         if (recovery != null) addRow('Recovery', recovery, 0.45);
         if (sleepScore != null) addRow('Sleep', sleepScore, 0.30);
-        // hydration from chip
         var hydText = (document.getElementById('peakChipHydration')||{}).textContent || '';
         var hydPct = parseInt(hydText);
         if (hydPct > 0) addRow('Hydration', hydPct, 0.10);
-        // workout done today?
         var doneDays = (function(){ try { return JSON.parse(localStorage.getItem('po_coach_workout_done') || '{}'); } catch(e){ return {}; } })();
         if (doneDays[today()]) addRow('Trained', 100, 0.05);
 
@@ -22144,12 +22213,44 @@ function switchTab(tab) {
         var html = rows.map(function(r) {
           return '<div class="peak-whyRow"><span>' + r[0] + '</span><b>' + r[1] + '%</b></div>';
         }).join('');
-        if (objective != null && feelVal != null) {
+
+        if (rows.length === 0 && feelVal == null) {
+          html = '<div class="peak-whyRow" style="opacity:0.5"><span>No Oura data yet</span><b>—</b></div>'
+            + '<div class="peak-whyRow" style="opacity:0.5"><span>Score uses energy model</span><b>—</b></div>';
+        } else if (objective != null && feelVal != null) {
           html += '<div class="peak-whyRow"><span>Objective blend</span><b>' + objective + '%</b></div>'
             + '<div class="peak-whyRow"><span>You feel ' + feelVal + '% (' + Math.round(feelW * 100) + '% pull)</span><b>' + (adj >= 0 ? '+' : '') + adj + '</b></div>'
             + '<div class="peak-whyRow" style="border-top-color:rgba(110,231,183,0.3)"><span style="color:#6EE7B7">Today overall</span><b style="color:#6EE7B7">' + (finalScore || '—') + '%</b></div>';
+        } else if (feelVal != null) {
+          html += '<div class="peak-whyRow"><span>How you feel</span><b>' + feelVal + '%</b></div>'
+            + '<div class="peak-whyRow" style="border-top-color:rgba(110,231,183,0.3)"><span style="color:#6EE7B7">Today overall</span><b style="color:#6EE7B7">' + (finalScore || feelVal || '—') + '%</b></div>';
+        } else if (objective != null) {
+          html += '<div class="peak-whyRow" style="border-top-color:rgba(110,231,183,0.3)"><span style="color:#6EE7B7">Today overall</span><b style="color:#6EE7B7">' + objective + '%</b></div>';
         }
         box.innerHTML = html;
+      }
+
+      // Cache last args so click can re-render with fresh feel data
+      var _lastArgs = [null, null, null, null];
+
+      var whyOpen = false;
+      var whyBtn = document.getElementById('peakWhyLink');
+      if (whyBtn) {
+        whyBtn.addEventListener('click', function() {
+          whyOpen = !whyOpen;
+          var box = document.getElementById('peakWhyBox');
+          if (box) {
+            if (whyOpen) buildWhyBox.apply(null, _lastArgs); // refresh on open
+            box.classList.toggle('on', whyOpen);
+          }
+        });
+      }
+
+      window._renderPeakWhyBox = function(oura, recovery, sleepScore, hrv) {
+        _lastArgs = [oura, recovery, sleepScore, hrv];
+        if (whyOpen) buildWhyBox(oura, recovery, sleepScore, hrv);
+        // Always pre-populate so it's ready when opened
+        buildWhyBox(oura, recovery, sleepScore, hrv);
       };
     })();
 
