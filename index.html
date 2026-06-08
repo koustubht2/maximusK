@@ -21680,8 +21680,18 @@ function switchTab(tab) {
     var msgs = document.getElementById('peakCoachMessages');
     if (msgs) { msgs.appendChild(loading); msgs.scrollTop = msgs.scrollHeight; }
     try {
-      var reply = await gemini(prompt);
+      var reply = '';
+      var lastErr = null;
+      for (var _attempt = 0; _attempt < 3; _attempt++) {
+        if (_attempt > 0) {
+          loading.innerHTML = '<span class="peak-coach-tag">JARVIS</span><span style="color:var(--text-tertiary);font-style:italic">Retrying… (' + _attempt + '/2)</span>';
+          await new Promise(function(res){ setTimeout(res, 2500 * _attempt); });
+        }
+        try { reply = await gemini(prompt); lastErr = null; break; }
+        catch(err) { lastErr = err; }
+      }
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
+      if (lastErr) throw lastErr;
       var replyText = reply && reply.trim();
       if (!replyText) replyText = 'My apologies, sir. I was unable to generate a response. Please try again.';
       if (window._arcSetMood) window._arcSetMood('responding');
@@ -21689,7 +21699,7 @@ function switchTab(tab) {
       _jarvisSpeak(replyText);
     } catch(e) {
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
-      appendCoachMsg('Could not reach coach, sir. Check your connection. (' + (e && e.message || 'unknown error') + ')', 'coach');
+      appendCoachMsg('Could not reach coach, sir. (' + (e && e.message || 'unknown error') + ')', 'coach');
       if (window._arcSetMood) window._arcSetMood('idle');
     } finally { _coachFlight = false; }
   }
