@@ -21143,7 +21143,7 @@ function switchTab(tab) {
     if (oura.readiness) todayR = oura.readiness.find(function(r){ return r.day === tod; }) || null;
     if (oura.sleep)     todayS = oura.sleep.find(function(s){ return s.day === tod; }) || null;
     var readiness  = todayR && todayR.score;
-    var recovery   = todayR && todayR.contributors && todayR.contributors.recovery_index != null ? todayR.contributors.recovery_index : null;
+    var recovery   = todayR && todayR.contributors && todayR.contributors.hrv_balance != null ? todayR.contributors.hrv_balance : null;
     // HRV in ms from detailedSleep.average_hrv (same source as Health tab)
     var _dsToday = (function() {
       var src = oura.detailedSleep || [];
@@ -21229,36 +21229,36 @@ function switchTab(tab) {
     setText('peakChipSleepDebt', debtStr || '—');
     setText('peakChipWake', _wakeTimeStr || fmtHour24(wakeHour));
 
-    // Hydration: read from po_water_v1 (same store as Health tab water tracker)
+    // Hydration: delegate to Health tab's getWaterProgress() which owns this logic
     var hydPct = null;
     (function() {
       var wst = null;
       try { wst = JSON.parse(localStorage.getItem('po_water_v1')); } catch(e) {}
       if (!wst) return;
-      // today's log count — water tracker uses real calendar date (no midnight shift)
       var _now = new Date();
       var todKey = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0') + '-' + String(_now.getDate()).padStart(2,'0');
       var done = (wst.logs || {})[todKey] || 0;
       if (!done) return;
-      // compute target in ml — mirror computeTargetMl() from water tracker
-      var p = wst.profile || { weightKg: 75 };
-      var wKg = wst.weightUnit === 'lb' ? (p.weightKg || 75) / 2.20462 : (p.weightKg || 75);
-      var base = wKg * 35;
-      var exercise = (p.activityHrsPerWeek || 0) / 7 * 500;
-      var caffeine = Math.max(0, (wst.caffeineMgPerDay || 0) - 200) * 1.5;
-      var subs = (wst.substances || []).reduce(function(s, x) {
-        return s + Math.max(0, ((x && x.dose != null ? x.dose : (x && x.defaultDose)) || 0) * ((x && x.mlPerUnit) || 0));
-      }, 0);
-      var adjust = 0;
-      if (p.sex === 'm') adjust += 200;
-      if ((p.age || 0) >= 50) adjust += 100;
-      var targetMl = base + exercise + caffeine + subs + adjust;
-      // convert done (units) → ml
+      // unit volume
       var unitVol = wst.bottleMl || 500;
       if (wst.unit === 'glass') unitVol = wst.glassMl || 250;
       else if (wst.unit === 'oz') unitVol = 30;
       else if (wst.unit === 'ml') unitVol = 1;
       var doneMl = done * unitVol;
+      // target: guard against zero/unset weight
+      var p = wst.profile || {};
+      var wKg = wst.weightUnit === 'lb' ? (p.weightKg || 0) / 2.20462 : (p.weightKg || 0);
+      if (wKg < 30) wKg = 70; // fallback for missing profile
+      var base     = wKg * 35;
+      var exercise = (p.activityHrsPerWeek || 0) / 7 * 500;
+      var caffeine = Math.max(0, (wst.caffeineMgPerDay || 0) - 200) * 1.5;
+      var subs     = (wst.substances || []).reduce(function(s, x) {
+        return s + Math.max(0, ((x && x.dose != null ? x.dose : (x && x.defaultDose)) || 0) * ((x && x.mlPerUnit) || 0));
+      }, 0);
+      var adjust = 0;
+      if (p.sex === 'm') adjust += 200;
+      if ((p.age || 0) >= 50) adjust += 100;
+      var targetMl = Math.max(1500, base + exercise + caffeine + subs + adjust); // floor 1500ml
       hydPct = Math.min(Math.round(doneMl / targetMl * 100), 100);
     })();
     setText('peakChipHydration', hydPct != null ? hydPct + '%' : '—');
@@ -21550,10 +21550,26 @@ function switchTab(tab) {
     drawEnergyChart('peakEnergyCanvas', arr, wh, logs, _activeEnergyMode, _vitLogs, _medLogs2);
     drawCaffChart('peakCaffCanvas', logs);
     renderCoffeeScore(logs, r);
-    // Update inline ring with current-hour energy score
+    // Update both rings with current-hour energy score
     var nowH = nowHour();
     var nowScore = arr[Math.min(23, Math.floor(nowH))] || 0;
     _updateEnergyRing(nowScore, fmtHour(Math.floor(nowH)), false);
+    // Keep hero ring in sync
+    var _heroScore2 = Math.round(nowScore);
+    var fill2 = document.getElementById('peakHeroFill');
+    if (fill2) {
+      var _hz = _heroScore2 >= 80 ? 'zone-gold' : _heroScore2 >= 60 ? 'zone-green' : _heroScore2 >= 40 ? 'zone-yellow' : 'zone-red';
+      fill2.className = 'peak-hero-fill ' + _hz;
+      var _hcirc = 565.49;
+      fill2.style.strokeDashoffset = (_hcirc * (1 - _heroScore2 / 100)).toFixed(2);
+    }
+    setText('peakHeroScore', _heroScore2);
+    var toneEl2 = document.getElementById('peakHeroTone');
+    var _hTone2 = _heroScore2 >= 80 ? 'Prime' : _heroScore2 >= 67 ? 'Solid' : _heroScore2 >= 45 ? 'Moderate' : _heroScore2 >= 30 ? 'Low' : 'Depleted';
+    var _hCol2  = _heroScore2 >= 45 ? '#6EE7B7' : _heroScore2 >= 30 ? '#F59E0B' : '#EF4444';
+    if (toneEl2) { toneEl2.textContent = _hTone2; toneEl2.style.color = _hCol2; }
+    var glowEl2 = document.getElementById('peakHeroGlow');
+    if (glowEl2) glowEl2.style.background = 'radial-gradient(closest-side,' + _hCol2 + ',transparent 72%)';
     _renderBestWindows(findBestWindows(arr, wh));
   }
 
@@ -21670,13 +21686,17 @@ function switchTab(tab) {
     if (window._arcSetMood) window._arcSetMood('thinking');
     appendCoachMsg(msg, 'user');
     var oura = getOura();
-    var readiness = oura.readiness && oura.readiness[0] && oura.readiness[0].score;
+    var tod3 = today();
+    var todayR3 = oura.readiness && oura.readiness.find(function(r){ return r.day === tod3; });
+    var todayS3 = oura.sleep     && oura.sleep.find(function(s){ return s.day === tod3; });
+    var readiness  = todayR3 && todayR3.score;
+    var sleepScore = todayS3 && todayS3.score;
+    var hrvBalance = todayR3 && todayR3.contributors && todayR3.contributors.hrv_balance;
     var hrv = (function() {
       var ds = oura.detailedSleep || []; if (!ds.length) return null;
-      var tod2 = today();
-      var _dc = new Date(tod2 + 'T12:00:00'); _dc.setDate(_dc.getDate() - 1);
+      var _dc = new Date(tod3 + 'T12:00:00'); _dc.setDate(_dc.getDate() - 1);
       var yc = _dc.getFullYear() + '-' + String(_dc.getMonth()+1).padStart(2,'0') + '-' + String(_dc.getDate()).padStart(2,'0');
-      var mc = ds.filter(function(s){ return s.day === tod2 || s.day === yc; });
+      var mc = ds.filter(function(s){ return s.day === tod3 || s.day === yc; });
       if (!mc.length) return null;
       var bc = mc.reduce(function(a,b){ return (b.total_sleep_duration||0)>(a.total_sleep_duration||0)?b:a; });
       return bc && bc.average_hrv != null ? Math.round(bc.average_hrv) : null;
@@ -21687,8 +21707,8 @@ function switchTab(tab) {
     var medSummary = medLogs3.length ? medLogs3.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
     var feelVal3 = latestFeelToday();
     var feelSummary = feelVal3 !== null ? feelVal3 + '%' : 'not set';
-    var context = 'Oura readiness='+readiness+', HRV='+hrv+', caffeine='+caffSummary+', meds='+medSummary+', feel='+feelSummary+', time='+Math.floor(nowHour())+':00';
-    var prompt = 'You are JARVIS, a sophisticated AI performance coach. Always address the user as "sir". Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific, data-driven, and actionable. Start your response by addressing sir directly.';
+    var context = 'Oura readiness='+readiness+', sleep_score='+sleepScore+', HRV_ms='+hrv+', HRV_balance='+hrvBalance+', caffeine='+caffSummary+', meds='+medSummary+', feel='+feelSummary+', time='+Math.floor(nowHour())+':00';
+    var prompt = 'You are JARVIS, a sophisticated AI performance coach. Always address the user as "sir". Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific, data-driven, and actionable. Reference the actual numbers from context. Start your response by addressing sir directly.';
     var loading = document.createElement('div');
     loading.className = 'peak-coach-msg coach-msg';
     loading.innerHTML = '<span class="peak-coach-tag">TEAM</span><span style="color:var(--text-tertiary);font-style:italic">Thinking…</span>';
