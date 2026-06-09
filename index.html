@@ -8663,10 +8663,17 @@ window.canonicalJson = function(obj) {
       <div class="peak-diamond-wrap">
         <svg viewBox="0 0 40 40" width="34" height="34" fill="none"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" stroke="#6EE7B7" stroke-width="1.5" fill="rgba(110,231,183,0.06)"/><polygon points="20,8 30,15 30,25 20,32 10,25 10,15" stroke="#6EE7B7" stroke-width="0.8" fill="rgba(110,231,183,0.03)"/></svg>
       </div>
-      <div>
+      <div style="flex:1">
         <div class="peak-page-title">Your peak today</div>
         <div class="peak-page-date" id="peakPageDate">—</div>
       </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="peakSunBtn" type="button" title="Log morning sunlight" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:20px;color:#FBBF24;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;padding:5px 11px;cursor:pointer;white-space:nowrap">☀ Sunlight</button>
+        <button id="peakSickBtn" type="button" title="Toggle sick day" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:20px;color:#f87171;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;padding:5px 11px;cursor:pointer;white-space:nowrap">🤒 Sick</button>
+      </div>
+    </div>
+    <div id="peakSickBanner" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:10px 14px;font-size:12px;color:#f87171;font-family:var(--font-mono);letter-spacing:0.04em;margin-bottom:8px">
+      🤒 Sick day — energy curve suppressed. Rest and recover, sir.
     </div>
 
     <div class="peak-ticker" id="peakTicker">
@@ -8674,6 +8681,10 @@ window.canonicalJson = function(obj) {
       <div class="peak-tkScroll"><div class="peak-tkTrack" id="peakTkTrack"></div></div>
     </div>
 
+    <div id="peakNudgeBar" style="display:none;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:9px 14px;font-size:12px;color:#FBBF24;font-family:var(--font-mono);letter-spacing:0.04em;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span id="peakNudgeText">—</span>
+    </div>
     <div class="peak-sleep-plan" id="peakSleepPlan" style="display:none"></div>
 
     <div class="peak-metrics-strip">
@@ -8719,8 +8730,14 @@ window.canonicalJson = function(obj) {
 
     <!-- Morning Brief -->
     <div class="peak-card" id="peakMorningBriefCard" style="display:none">
-      <div class="peak-section-label">JARVIS Morning Brief</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="peak-section-label">JARVIS Morning Brief</div>
+        <button id="peakBriefSpeakBtn" type="button" title="Read brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5);display:none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+      </div>
       <div id="peakMorningBriefText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your brief…</div>
+      <div id="peakTomorrowPredict" style="display:none;margin-top:10px;padding:8px 10px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(196,181,253,0.85);line-height:1.5"></div>
     </div>
 
     <!-- Training Load -->
@@ -8855,6 +8872,34 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
+    <div class="peak-card" id="peakAlcCard">
+      <div class="peak-section-label">Alcohol</div>
+      <div id="peakAlcLogs" class="peak-caff-logs"></div>
+      <div class="peak-caff-log-row" id="peakAlcAddRow">
+        <div class="peak-caff-search-wrap" style="flex:1">
+          <select id="peakAlcType" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 14px;color:var(--text-primary);font-family:inherit;font-size:14px;outline:none;appearance:none">
+            <option value="">Select drink…</option>
+            <option value="Beer (330ml)" data-units="1">Beer (330ml pint) — 1 unit</option>
+            <option value="Beer (650ml)" data-units="2">Beer (650ml large) — 2 units</option>
+            <option value="Whiskey (30ml)" data-units="1">Whiskey (30ml peg) — 1 unit</option>
+            <option value="Whiskey (60ml)" data-units="2">Whiskey (60ml double) — 2 units</option>
+            <option value="Vodka (30ml)" data-units="1">Vodka (30ml shot) — 1 unit</option>
+            <option value="Vodka (60ml)" data-units="2">Vodka (60ml double) — 2 units</option>
+            <option value="Rum (30ml)" data-units="1">Rum (30ml peg) — 1 unit</option>
+            <option value="Rum (60ml)" data-units="2">Rum (60ml double) — 2 units</option>
+            <option value="Wine (150ml)" data-units="1.5">Wine (150ml glass) — 1.5 units</option>
+            <option value="Wine (250ml)" data-units="2.5">Wine (250ml large) — 2.5 units</option>
+            <option value="Old Monk (30ml)" data-units="1">Old Monk (30ml peg) — 1 unit</option>
+            <option value="Old Monk (60ml)" data-units="2">Old Monk (60ml double) — 2 units</option>
+            <option value="Kingfisher (330ml)" data-units="1">Kingfisher (330ml) — 1 unit</option>
+            <option value="Kingfisher (650ml)" data-units="2">Kingfisher (650ml) — 2 units</option>
+          </select>
+        </div>
+        <button id="peakAlcAddBtn" class="peak-caff-add-btn" type="button">Add</button>
+      </div>
+      <div id="peakAlcWarn" style="display:none;margin-top:8px;padding:7px 10px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(252,165,165,0.85);line-height:1.4"></div>
+    </div>
+
     <div class="peak-card" id="peakMedsCard">
       <div class="peak-section-label">Meds &amp; Substances</div>
       <div class="peak-meds-log-row">
@@ -8907,6 +8952,24 @@ window.canonicalJson = function(obj) {
         <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwBestDay">—</div><div class="peak-lw-lbl">Best Day</div></div>
       </div>
       <div class="peak-lw-bars" id="peakLwBars"></div>
+    </div>
+
+    <!-- Peak score history (7-day energy at current hour) -->
+    <div class="peak-card" id="peakHistoryCard" style="display:none">
+      <div class="peak-section-label">Energy Score · 7 Days</div>
+      <canvas id="peakHistoryCanvas" height="60" style="width:100%;display:block;margin-top:8px"></canvas>
+      <div id="peakHistoryLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.06em"></div>
+    </div>
+
+    <!-- Weekly Peak Report (Sunday) -->
+    <div class="peak-card" id="peakWeeklyCard" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="peak-section-label">Weekly Report</div>
+        <button id="peakWeeklySpeakBtn" type="button" title="Read report" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5);display:none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+      </div>
+      <div id="peakWeeklyText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your weekly debrief…</div>
     </div>
 
     <div class="peak-card" id="peakScheduleCard">
@@ -19512,6 +19575,7 @@ function switchTab(tab) {
 
   // ── Constants ──────────────────────────────────────────────
   var CAFF_KEY        = 'goals_caffeine_';
+  var ALC_KEY         = 'goals_alcohol_';
   var MOOD_KEY        = 'goals_mood_';
   var FEEL_KEY        = 'goals_feel_v1';
   var MEDS_KEY        = 'goals_meds_v1';
@@ -19519,6 +19583,11 @@ function switchTab(tab) {
   var INSIGHTS_KEY    = 'goals_peak_insights_v1';
   var VIT_KEY         = 'goals_vitality_';
   var VIT_TARGETS_KEY = 'goals_vit_targets_';
+  var SICK_KEY        = 'goals_peak_sick_';
+  var SUNLIGHT_KEY    = 'goals_peak_sun_';
+  var HISTORY_KEY     = 'goals_peak_score_history';
+  var WEEKLY_KEY      = 'goals_peak_weekly_';
+  var PREDICT_KEY     = 'goals_peak_predict_';
 
   var _insightsFlight = false;
   var _coachFlight    = false;
@@ -20024,6 +20093,8 @@ function switchTab(tab) {
   function clamp(v,lo,hi) { return Math.max(lo, Math.min(hi, v)); }
   function loadCaff(dateStr) { return JSON.parse(localStorage.getItem(CAFF_KEY + (dateStr || today())) || '[]'); }
   function saveCaff(arr) { localStorage.setItem(CAFF_KEY + today(), JSON.stringify(arr)); }
+  function loadAlc(dateStr) { return JSON.parse(localStorage.getItem(ALC_KEY + (dateStr || today())) || '[]'); }
+  function saveAlc(arr) { localStorage.setItem(ALC_KEY + today(), JSON.stringify(arr)); }
   function loadVit(dateStr) { return JSON.parse(localStorage.getItem(VIT_KEY + (dateStr || today())) || '[]'); }
   function saveVit(arr) { localStorage.setItem(VIT_KEY + today(), JSON.stringify(arr)); }
   function getOura() {
@@ -21390,8 +21461,19 @@ function switchTab(tab) {
     renderLastWeek(oura);
     _renderMetaStrip(oura, arr, wakeHour);
     _renderTrainCard(readiness, recovery, debtStr);
-    if (_peakDayOffset === 0) _renderMorningBrief(readiness, sleepScore, recovery, debtStr, wakeHour, arr);
-    else { var _bc = document.getElementById('peakMorningBriefCard'); if (_bc) _bc.style.display = 'none'; }
+    _renderSickState();
+    _renderSunState();
+    renderAlcLogs();
+    _renderNudge(caffLogs, avgBed, wakeHour);
+    _renderHistoryChart(_nowScore);
+    _renderWeeklyReport(oura);
+    if (_peakDayOffset === 0) {
+      _renderMorningBrief(readiness, sleepScore, recovery, debtStr, wakeHour, arr);
+      _renderTomorrowPredict(readiness, debtStr, wakeHour, caffLogs, loadAlc());
+    } else {
+      var _bc = document.getElementById('peakMorningBriefCard'); if (_bc) _bc.style.display = 'none';
+      var _tp = document.getElementById('peakTomorrowPredict'); if (_tp) _tp.style.display = 'none';
+    }
     restoreCoachHistory();
     renderVitality();
   }
@@ -21530,6 +21612,7 @@ function switchTab(tab) {
     if (cached && cached.text) {
       card.style.display = '';
       textEl.textContent = cached.text;
+      var _sb = document.getElementById('peakBriefSpeakBtn'); if (_sb) _sb.style.display = '';
       return;
     }
     if (_briefFlight) return;
@@ -21541,16 +21624,243 @@ function switchTab(tab) {
       var windows = findBestWindows(arr, wakeHour);
       var bestWin = windows && windows[0] ? windows[0].label : 'mid-morning';
       var debtText = debtStr ? 'sleep debt ' + debtStr : 'no sleep debt';
+      var _gymB = 'none'; try { var _dd = JSON.parse(localStorage.getItem('po_coach_workout_done')||'{}'); var _dk = Object.keys(_dd).sort().reverse(); if (_dd[tod]) _gymB='trained today'; else if (_dk.length) _gymB='last trained '+_dk[0]; } catch(e){}
+      var _wtB = ''; try { var _wt2 = JSON.parse(localStorage.getItem('po_coach_weights')||'[]'); if (_wt2.length) { var _lw2=_wt2[_wt2.length-1]; _wtB=', body_weight='+_lw2.weight+'kg'; } } catch(e){}
+      var alcB = 0; try { alcB = loadAlc().reduce(function(s,l){return s+(l.units||0);},0); } catch(e){}
       var prompt = 'You are JARVIS, personal AI performance coach. Generate a 3-line morning brief for sir. ' +
-        'Data: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + ', peak_window=' + bestWin + ', wake=' + Math.floor(wakeHour) + ':00. ' +
-        'Format: exactly 3 short lines (no bullets, no numbering). Line 1: one-sentence readiness assessment. Line 2: one training/energy recommendation. Line 3: one caffeine or sleep action. Address as sir. Be specific and concise.';
+        'Data: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + ', peak_window=' + bestWin + ', wake=' + Math.floor(wakeHour) + ':00, gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
+        'Format: exactly 3 short lines (no bullets, no numbering). Line 1: one-sentence readiness assessment. Line 2: one training/energy recommendation referencing gym history. Line 3: one caffeine or sleep action. Address as sir. Be specific and concise.';
       var reply = await gemini(prompt);
       var text = (reply && reply.trim()) || 'Unable to generate brief — check Gemini connection.';
       localStorage.setItem(BRIEF_KEY + tod, JSON.stringify({text: text}));
       textEl.textContent = text;
+      var _sb2 = document.getElementById('peakBriefSpeakBtn'); if (_sb2) _sb2.style.display = '';
     } catch(e) {
       textEl.textContent = 'Brief unavailable — ' + (e && e.message || 'connection error');
     } finally { _briefFlight = false; }
+  }
+
+  // ── Sick flag ─────────────────────────────────────────────
+  function isSickToday() {
+    return localStorage.getItem(SICK_KEY + today()) === '1';
+  }
+  function _renderSickState() {
+    var banner = document.getElementById('peakSickBanner');
+    var btn    = document.getElementById('peakSickBtn');
+    var sick   = isSickToday();
+    if (banner) banner.style.display = sick ? '' : 'none';
+    if (btn) {
+      btn.style.background = sick ? 'rgba(239,68,68,0.20)' : 'rgba(239,68,68,0.07)';
+      btn.style.borderColor = sick ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.2)';
+    }
+  }
+
+  // ── Sunlight log ──────────────────────────────────────────
+  function hasSunlightToday() {
+    return localStorage.getItem(SUNLIGHT_KEY + today()) === '1';
+  }
+  function _renderSunState() {
+    var btn = document.getElementById('peakSunBtn');
+    if (!btn) return;
+    var done = hasSunlightToday();
+    btn.style.background    = done ? 'rgba(251,191,36,0.22)' : 'rgba(251,191,36,0.08)';
+    btn.style.borderColor   = done ? 'rgba(251,191,36,0.6)'  : 'rgba(251,191,36,0.25)';
+    btn.textContent         = done ? '☀ Sunlight ✓' : '☀ Sunlight';
+  }
+
+  // ── Proactive nudges ──────────────────────────────────────
+  function _renderNudge(caffLogs, avgBed, wakeHour) {
+    var bar  = document.getElementById('peakNudgeBar');
+    var text = document.getElementById('peakNudgeText');
+    if (!bar || !text) return;
+    var h = nowHour();
+    var nudge = null;
+
+    // Lights out nudge: 90min before sleep target
+    var lightsOut = ((wakeHour - 8) + 24) % 24;
+    var minsToLightsOut = ((lightsOut - h) * 60 + 1440) % 1440;
+    if (minsToLightsOut <= 90 && minsToLightsOut > 0) {
+      var minStr = Math.round(minsToLightsOut);
+      nudge = 'Lights out in ' + minStr + ' min, sir — wind down now to hit your sleep target.';
+    }
+
+    // Caffeine window nudge: clearance time approaching (clearance = last caff + 10h)
+    if (!nudge && caffLogs && caffLogs.length) {
+      var lastCaff = caffLogs[caffLogs.length - 1];
+      var cutoff = lastCaff.timeHour + 10;
+      var minsToClose = ((cutoff - h) * 60 + 1440) % 1440;
+      if (minsToClose <= 180 && minsToClose > 0 && h < lightsOut) {
+        nudge = 'Caffeine window closes in ~' + Math.round(minsToClose) + ' min, sir. Last call.';
+      }
+    }
+
+    // Hydration nudge: behind by more than 40% past midday
+    if (!nudge && h >= 14) {
+      var wst2 = null; try { wst2 = JSON.parse(localStorage.getItem('po_water_v1')); } catch(e){}
+      if (wst2) {
+        var todKey2 = today();
+        var doneUnits = (wst2.logs || {})[todKey2] || 0;
+        var uv2 = wst2.bottleMl || 500;
+        if (wst2.unit === 'glass') uv2 = wst2.glassMl || 250;
+        var p2 = wst2.profile || {}; var wKg2 = (p2.weightKg || 70); var tgt2 = Math.max(1500, wKg2 * 35);
+        if (doneUnits * uv2 < tgt2 * 0.5) nudge = 'You\'re behind on hydration, sir. Drink up before evening.';
+      }
+    }
+
+    // Sunlight nudge: no sunlight logged and it's before 10am
+    if (!nudge && h < 10 && !hasSunlightToday()) {
+      nudge = 'No morning sunlight logged yet, sir. Step outside to anchor your circadian rhythm.';
+    }
+
+    if (nudge) {
+      text.textContent = nudge;
+      bar.style.display = 'flex';
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  // ── Peak score history chart ──────────────────────────────
+  function _saveScoreHistory(score) {
+    var hist = []; try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e){}
+    var tod = today();
+    // one entry per day — update if same day
+    if (hist.length && hist[hist.length-1].d === tod) hist[hist.length-1].s = score;
+    else hist.push({d: tod, s: score});
+    if (hist.length > 30) hist = hist.slice(-30);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  }
+  function _renderHistoryChart(currentScore) {
+    var hist = []; try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e){}
+    _saveScoreHistory(currentScore);
+    hist = []; try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e){} // reload after save
+    var card = document.getElementById('peakHistoryCard');
+    if (!card) return;
+    var last7 = hist.slice(-7);
+    if (last7.length < 2) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    var canvas = document.getElementById('peakHistoryCanvas');
+    if (!canvas) return;
+    var W = canvas.offsetWidth || 300, H = 60;
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    var scores = last7.map(function(e){ return e.s; });
+    var minS = Math.max(0, Math.min.apply(null, scores) - 5);
+    var maxS = Math.min(100, Math.max.apply(null, scores) + 5);
+    var range = maxS - minS || 1;
+    var pad = 8;
+    var xAt = function(i){ return pad + (i / (last7.length-1)) * (W - pad*2); };
+    var yAt = function(s){ return H - pad - ((s - minS) / range) * (H - pad*2); };
+    // gradient fill
+    var grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, 'rgba(110,231,183,0.25)');
+    grad.addColorStop(1, 'rgba(110,231,183,0)');
+    ctx.beginPath();
+    scores.forEach(function(s, i){ i===0 ? ctx.moveTo(xAt(i), yAt(s)) : ctx.lineTo(xAt(i), yAt(s)); });
+    ctx.lineTo(xAt(scores.length-1), H);
+    ctx.lineTo(xAt(0), H);
+    ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+    // line
+    ctx.beginPath();
+    scores.forEach(function(s, i){ i===0 ? ctx.moveTo(xAt(i), yAt(s)) : ctx.lineTo(xAt(i), yAt(s)); });
+    ctx.strokeStyle = '#34D399'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+    // dots + score labels
+    scores.forEach(function(s, i) {
+      var x = xAt(i), y = yAt(s);
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2);
+      ctx.fillStyle = '#0b110e'; ctx.fill();
+      ctx.strokeStyle = '#34D399'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '9px JetBrains Mono,monospace';
+      ctx.textAlign = 'center'; ctx.fillText(Math.round(s), x, y - 6);
+    });
+    // day labels
+    var labelsEl = document.getElementById('peakHistoryLabels');
+    if (labelsEl) {
+      var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      labelsEl.innerHTML = last7.map(function(e){
+        var dt = new Date(e.d + 'T12:00:00');
+        return '<span>' + dayNames[dt.getDay()] + '</span>';
+      }).join('');
+    }
+  }
+
+  // ── Tomorrow's readiness prediction ──────────────────────
+  var _predictFlight = false;
+  async function _renderTomorrowPredict(readiness, debtStr, wakeHour, caffLogs, alcLogs) {
+    var el = document.getElementById('peakTomorrowPredict');
+    if (!el) return;
+    var tod = today();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(PREDICT_KEY + tod)); } catch(e){}
+    if (cached && cached.text) { el.textContent = cached.text; el.style.display = ''; return; }
+    if (_predictFlight) return;
+    _predictFlight = true;
+    try {
+      var alcUnits = alcLogs.reduce(function(s,l){return s+(l.units||0);},0);
+      var caffMg = caffLogs.reduce(function(s,l){return s+(l.mg||0);},0);
+      var _gymLast = 'none'; try { var _dd2=JSON.parse(localStorage.getItem('po_coach_workout_done')||'{}'); var _dk2=Object.keys(_dd2).sort().reverse(); if(_dd2[tod]) _gymLast='today'; else if(_dk2.length) _gymLast=_dk2[0]; } catch(e){}
+      var prompt = 'You are JARVIS. Predict tomorrow\'s Oura readiness score for sir in ONE sentence only. ' +
+        'Data: today_readiness='+readiness+', sleep_debt='+debtStr+', wake='+Math.floor(wakeHour)+':00, ' +
+        'caffeine_today='+caffMg+'mg, alcohol_units='+alcUnits+', last_workout='+_gymLast+'. ' +
+        'Format: "Based on today, sir, expect readiness around XX tomorrow." Replace XX with a number 40–95. Be specific.';
+      var reply = await gemini(prompt);
+      var text = reply && reply.trim() ? reply.trim() : null;
+      if (text) {
+        localStorage.setItem(PREDICT_KEY + tod, JSON.stringify({text: text}));
+        el.textContent = text; el.style.display = '';
+      }
+    } catch(e) {} finally { _predictFlight = false; }
+  }
+
+  // ── Weekly Peak Report ────────────────────────────────────
+  var _weeklyFlight = false;
+  async function _renderWeeklyReport(oura) {
+    var card = document.getElementById('peakWeeklyCard');
+    if (!card) return;
+    // Only show on Sunday (day 0) or if cached
+    var isSunday = new Date().getDay() === 0;
+    var tod = today();
+    // Use Mon of this week as cache key
+    var d = new Date(); d.setDate(d.getDate() - d.getDay());
+    var weekKey = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(WEEKLY_KEY + weekKey)); } catch(e){}
+    if (cached && cached.text) {
+      card.style.display = '';
+      document.getElementById('peakWeeklyText').textContent = cached.text;
+      var wsb = document.getElementById('peakWeeklySpeakBtn'); if (wsb) wsb.style.display = '';
+      return;
+    }
+    if (!isSunday) { card.style.display = 'none'; return; }
+    if (_weeklyFlight) return;
+    _weeklyFlight = true;
+    card.style.display = '';
+    var textEl = document.getElementById('peakWeeklyText');
+    textEl.textContent = 'Generating your weekly debrief…';
+    try {
+      var readArr = oura && oura.readiness ? oura.readiness.slice(0,7) : [];
+      var scores = readArr.map(function(r){ return r.score||0; });
+      var avgR = scores.length ? Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length) : null;
+      var maxR = scores.length ? Math.max.apply(null, scores) : null;
+      var minR = scores.length ? Math.min.apply(null, scores) : null;
+      var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      var bestDay = readArr[scores.indexOf(maxR)];
+      var bestDayName = bestDay && bestDay.day ? dayNames[new Date(bestDay.day+'T12:00:00').getDay()] : '—';
+      var hist = []; try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); } catch(e){}
+      var avgEnergy = hist.slice(-7).length ? Math.round(hist.slice(-7).reduce(function(s,e){return s+e.s;},0)/hist.slice(-7).length) : null;
+      var prompt = 'You are JARVIS. Generate a 5-line weekly performance debrief for sir. ' +
+        'Data: avg_readiness='+avgR+', best_readiness='+maxR+'('+bestDayName+'), worst_readiness='+minR+', avg_energy_score='+avgEnergy+'. ' +
+        'Format: 5 lines, no bullets or numbering. Line 1: week summary. Line 2: what drove best day. Line 3: what dragged worst day. Line 4: trend observation. Line 5: one specific recommendation for next week. Address as sir. Plain text only.';
+      var reply = await gemini(prompt);
+      var text = reply && reply.trim() ? reply.trim() : 'Unable to generate weekly report, sir.';
+      localStorage.setItem(WEEKLY_KEY + weekKey, JSON.stringify({text: text}));
+      textEl.textContent = text;
+      var wsb2 = document.getElementById('peakWeeklySpeakBtn'); if (wsb2) wsb2.style.display = '';
+    } catch(e) {
+      document.getElementById('peakWeeklyText').textContent = 'Weekly report unavailable — ' + (e && e.message || 'error');
+    } finally { _weeklyFlight = false; }
   }
 
   function renderLastWeek(oura) {
@@ -21651,6 +21961,52 @@ function switchTab(tab) {
       }
     }
     drawCaffChart('peakCaffCanvas', logs);
+  }
+
+  function renderAlcLogs() {
+    var isPast = _peakDayOffset !== 0;
+    var logs = loadAlc(isPast ? offsetDateStr(_peakDayOffset) : null);
+    var list = document.getElementById('peakAlcLogs');
+    var addRow = document.getElementById('peakAlcAddRow');
+    var warn = document.getElementById('peakAlcWarn');
+    if (addRow) addRow.style.display = isPast ? 'none' : '';
+    if (!list) return;
+    var totalUnits = logs.reduce(function(s, l) { return s + (l.units || 0); }, 0);
+    if (!logs.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary);padding:6px 0">' + (isPast ? 'No alcohol logged that day' : 'None logged today') + '</div>';
+    } else {
+      list.innerHTML = logs.map(function(log, i) {
+        return '<div class="peak-caff-log-item">' +
+          '<div class="peak-caff-log-left">' +
+          '<div class="peak-caff-log-name">'+escHtml(log.name)+'</div>' +
+          '<div class="peak-caff-log-meta">'+log.units+' unit'+(log.units!==1?'s':'')+' · '+log.timeStr+'</div>' +
+          '</div>' +
+          (isPast ? '' : '<button class="peak-caff-log-del" data-idx="'+i+'" type="button">×</button>') +
+          '</div>';
+      }).join('');
+      if (!isPast) {
+        list.querySelectorAll('.peak-caff-log-del').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var arr = loadAlc();
+            arr.splice(parseInt(btn.dataset.idx), 1);
+            saveAlc(arr);
+            renderAlcLogs();
+            _refreshEnergyChart(null);
+          });
+        });
+      }
+    }
+    if (warn) {
+      if (totalUnits >= 4) {
+        warn.textContent = totalUnits + ' units logged — significant HRV suppression likely tonight. Expect 15–25% lower readiness tomorrow, sir.';
+        warn.style.display = 'block';
+      } else if (totalUnits >= 2) {
+        warn.textContent = totalUnits + ' units logged — expect mild HRV suppression. Tonight\'s sleep quality may drop 10–15%.';
+        warn.style.display = 'block';
+      } else {
+        warn.style.display = 'none';
+      }
+    }
   }
 
   function addCaffLog(name, mg, timeOverride) {
@@ -21885,7 +22241,25 @@ function switchTab(tab) {
     var medSummary = medLogs3.length ? medLogs3.map(function(l){ return l.name+' '+l.mg+'mg'; }).join(', ') : 'none';
     var feelVal3 = latestFeelToday();
     var feelSummary = feelVal3 !== null ? feelVal3 + '%' : 'not set';
-    var context = 'Oura readiness='+readiness+', sleep_score='+sleepScore+', HRV_ms='+hrv+', HRV_balance='+hrvBalance+', caffeine='+caffSummary+', meds='+medSummary+', feel='+feelSummary+', time='+Math.floor(nowHour())+':00';
+    // Alcohol today
+    var alcLogs3 = loadAlc();
+    var alcUnits = alcLogs3.reduce(function(s, l) { return s + (l.units || 0); }, 0);
+    var alcSummary = alcUnits > 0 ? alcUnits + ' units (' + alcLogs3.map(function(l){ return l.name; }).join(', ') + ')' : 'none';
+    // Gym — last workout date + type
+    var gymSummary = 'none';
+    try {
+      var _ddays = JSON.parse(localStorage.getItem('po_coach_workout_done') || '{}');
+      var _ddKeys = Object.keys(_ddays).sort().reverse();
+      if (_ddays[tod3]) gymSummary = 'trained today';
+      else if (_ddKeys.length) gymSummary = 'last trained ' + _ddKeys[0];
+    } catch(e) {}
+    // Body weight — latest entry
+    var wtSummary = 'unknown';
+    try {
+      var _wts = JSON.parse(localStorage.getItem('po_coach_weights') || '[]');
+      if (_wts.length) { var _lw = _wts[_wts.length - 1]; wtSummary = _lw.weight + 'kg (' + _lw.dateKey + ')'; }
+    } catch(e) {}
+    var context = 'Oura readiness='+readiness+', sleep_score='+sleepScore+', HRV_ms='+hrv+', HRV_balance='+hrvBalance+', caffeine='+caffSummary+', alcohol_today='+alcSummary+', meds='+medSummary+', feel='+feelSummary+', gym='+gymSummary+', body_weight='+wtSummary+', time='+Math.floor(nowHour())+':00';
     var prompt = 'You are JARVIS, a sophisticated AI performance coach. Always address the user as "sir". Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific, data-driven, and actionable. Reference the actual numbers from context. Start your response by addressing sir directly.';
     var loading = document.createElement('div');
     loading.className = 'peak-coach-msg coach-msg';
@@ -22398,6 +22772,72 @@ function switchTab(tab) {
         if (nameEl) nameEl.value = '';
         if (mgEl)   mgEl.value   = '';
         setTimeToNow(); // reset to current time for next drink
+      });
+    }
+
+    // ── Alcohol log ──────────────────────────────────────────────
+    var alcAddBtn = document.getElementById('peakAlcAddBtn');
+    if (alcAddBtn) {
+      alcAddBtn.addEventListener('click', function() {
+        var sel = document.getElementById('peakAlcType');
+        if (!sel || !sel.value) return;
+        var opt = sel.options[sel.selectedIndex];
+        var units = parseFloat(opt.dataset.units) || 1;
+        var h = nowHour(), hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+        var timeStr = String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+        var arr = loadAlc();
+        arr.push({ name: sel.value, units: units, timeHour: h, timeStr: timeStr });
+        saveAlc(arr);
+        sel.value = '';
+        renderAlcLogs();
+        _refreshEnergyChart(null);
+      });
+    }
+
+    // ── Sick flag ─────────────────────────────────────────────────
+    var sickBtn = document.getElementById('peakSickBtn');
+    if (sickBtn) {
+      sickBtn.addEventListener('click', function() {
+        var tod = today();
+        var sick = localStorage.getItem(SICK_KEY + tod) === '1';
+        if (sick) localStorage.removeItem(SICK_KEY + tod);
+        else localStorage.setItem(SICK_KEY + tod, '1');
+        _renderSickState();
+        _refreshEnergyChart(null);
+      });
+    }
+
+    // ── Sunlight log ──────────────────────────────────────────────
+    var sunBtn = document.getElementById('peakSunBtn');
+    if (sunBtn) {
+      sunBtn.addEventListener('click', function() {
+        var tod = today();
+        if (hasSunlightToday()) { localStorage.removeItem(SUNLIGHT_KEY + tod); }
+        else { localStorage.setItem(SUNLIGHT_KEY + tod, '1'); }
+        _renderSunState();
+        _refreshEnergyChart(null);
+      });
+    }
+
+    // ── Weekly report speaker ─────────────────────────────────────
+    var weeklySpeakBtn = document.getElementById('peakWeeklySpeakBtn');
+    if (weeklySpeakBtn) {
+      weeklySpeakBtn.addEventListener('click', function() {
+        var textEl = document.getElementById('peakWeeklyText');
+        var text = textEl && textEl.textContent;
+        if (text && typeof _jarvisSpeak === 'function') _jarvisSpeak(text);
+      });
+    }
+
+    // ── Morning Brief speaker ────────────────────────────────────
+    var briefSpeakBtn = document.getElementById('peakBriefSpeakBtn');
+    if (briefSpeakBtn) {
+      briefSpeakBtn.addEventListener('click', function() {
+        var textEl = document.getElementById('peakMorningBriefText');
+        var text = textEl && textEl.textContent;
+        if (text && text !== 'Generating your brief…' && typeof _jarvisSpeak === 'function') {
+          _jarvisSpeak(text);
+        }
       });
     }
 
