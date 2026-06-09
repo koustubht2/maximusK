@@ -1070,6 +1070,8 @@ body::after {
 /* ── Score breakdown whyBox (exact creator) ── */
 .peak-why-link { background:none; border:none; cursor:pointer; font-family:var(--font-mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-tertiary); text-decoration:underline; text-underline-offset:3px; margin-top:10px; display:block; padding:0; }
 .peak-why-link:hover { color:#6EE7B7; }
+.peak-meta-strip { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.peak-meta-pill { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:5px 11px; font-family:var(--font-mono); font-size:10px; letter-spacing:0.06em; color:var(--text-secondary); }
 .peak-whyBox { display:none; margin-top:6px; width:100%; }
 .peak-whyBox.on { display:block; }
 .peak-whyRow { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-tertiary); padding:7px 0; border-top:1px solid rgba(255,255,255,0.06); }
@@ -8698,6 +8700,37 @@ window.canonicalJson = function(obj) {
     </div>
     <button class="peak-why-link" id="peakWhyLink" type="button">Why this score?</button>
     <div class="peak-whyBox" id="peakWhyBox"></div>
+
+    <!-- Streak + Sleep Target strip -->
+    <div class="peak-meta-strip" id="peakMetaStrip" style="display:none">
+      <div class="peak-meta-pill" id="peakStreakPill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F5C842" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span id="peakStreakText">—</span>
+      </div>
+      <div class="peak-meta-pill" id="peakSleepTargetPill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span id="peakSleepTargetText">—</span>
+      </div>
+      <div class="peak-meta-pill" id="peakMealTimingPill" style="display:none">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="peakMealTimingText">—</span>
+      </div>
+    </div>
+
+    <!-- Morning Brief -->
+    <div class="peak-card" id="peakMorningBriefCard" style="display:none">
+      <div class="peak-section-label">JARVIS Morning Brief</div>
+      <div id="peakMorningBriefText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your brief…</div>
+    </div>
+
+    <!-- Training Load -->
+    <div class="peak-card" id="peakTrainCard">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="peak-section-label">Train Today?</div>
+        <div id="peakTrainBadge" style="font-size:11px;font-family:var(--font-mono);letter-spacing:0.08em;padding:4px 10px;border-radius:20px;font-weight:700">—</div>
+      </div>
+      <div id="peakTrainDetail" style="font-size:12px;color:var(--text-tertiary);margin-top:6px;line-height:1.5">—</div>
+    </div>
 
     <div class="peak-card">
       <div class="peak-chart-header">
@@ -20876,6 +20909,12 @@ function switchTab(tab) {
           var _nh = nowHour();
           var _ns = el._peakArr[Math.min(23, Math.floor(_nh))] || 0;
           _updateEnergyRing(_ns, fmtHour(Math.floor(_nh)), false);
+          // sync hero ring back to live score
+          var _hs = Math.round(_ns);
+          var _hf = document.getElementById('peakHeroFill');
+          if (_hf) { var _hc2 = 565.49; _hf.style.strokeDashoffset = (_hc2*(1-_hs/100)).toFixed(2); _hf.className='peak-hero-fill '+(_hs>=80?'zone-gold':_hs>=60?'zone-green':_hs>=40?'zone-yellow':'zone-red'); }
+          var _hn = document.getElementById('peakHeroScore'); if (_hn) _hn.textContent = _hs;
+          var _ht = document.getElementById('peakHeroTone'); if (_ht) { var _htx=_hs>=80?'Prime':_hs>=67?'Solid':_hs>=45?'Moderate':_hs>=30?'Low':'Depleted'; _ht.textContent=_htx; _ht.style.color=_hs>=45?'#6EE7B7':_hs>=30?'#F59E0B':'#EF4444'; }
         }
       }
       el.addEventListener('pointermove', function(e) { _doScrub(e.clientX); });
@@ -21349,6 +21388,10 @@ function switchTab(tab) {
     // fix #6: pass caffLogs to insights for specific phrasing
     fetchInsights(oura, caffLogs, savedMood || 'unknown', avgBed);
     renderLastWeek(oura);
+    _renderMetaStrip(oura, arr, wakeHour);
+    _renderTrainCard(readiness, recovery, debtStr);
+    if (_peakDayOffset === 0) _renderMorningBrief(readiness, sleepScore, recovery, debtStr, wakeHour, arr);
+    else { var _bc = document.getElementById('peakMorningBriefCard'); if (_bc) _bc.style.display = 'none'; }
     restoreCoachHistory();
     renderVitality();
   }
@@ -21375,6 +21418,141 @@ function switchTab(tab) {
   }
 
   // ── Last Week summary ──────────────────────────────────────
+  // ── Streak + Sleep Target + Meal Timing strip ─────────────
+  function _renderMetaStrip(oura, arr, wakeHour) {
+    var strip = document.getElementById('peakMetaStrip');
+    if (!strip) return;
+
+    // — Streak: consecutive days readiness >= 60 —
+    var readArr = oura && oura.readiness ? oura.readiness.slice(0, 14) : [];
+    var streak = 0;
+    for (var i = 0; i < readArr.length; i++) {
+      if ((readArr[i].score || 0) >= 60) streak++;
+      else break;
+    }
+    var streakEl = document.getElementById('peakStreakText');
+    if (streakEl) {
+      if (streak >= 2) {
+        streakEl.textContent = streak + '-day streak';
+        streakEl.style.color = streak >= 5 ? '#F5C842' : '#6EE7B7';
+        document.getElementById('peakStreakPill').style.display = '';
+      } else {
+        document.getElementById('peakStreakPill').style.display = 'none';
+      }
+    }
+
+    // — Sleep target: lights out time to get 8h before avg wake —
+    var sleepEl = document.getElementById('peakSleepTargetText');
+    if (sleepEl) {
+      var targetWakeH = wakeHour; // tomorrow's wake ≈ same as today's
+      var lightsOut = ((targetWakeH - 8) + 24) % 24;
+      var lh = Math.floor(lightsOut), lm = Math.round((lightsOut - lh) * 60);
+      var suffix = lh < 12 ? 'AM' : 'PM';
+      var lhD = lh % 12 || 12;
+      sleepEl.textContent = 'Lights out ' + lhD + ':' + String(lm).padStart(2,'0') + suffix;
+      document.getElementById('peakSleepTargetPill').style.display = '';
+    }
+
+    // — Meal timing: next good eating window (avoid dip in peak zone) —
+    var mealPill = document.getElementById('peakMealTimingPill');
+    var mealEl   = document.getElementById('peakMealTimingText');
+    if (mealPill && mealEl && arr) {
+      var nowH = nowHour();
+      // Find next 2h window starting from now+0.5 where score stays above 55
+      var bestStart = null;
+      for (var h = Math.ceil(nowH) + 1; h < Math.ceil(nowH) + 8; h++) {
+        var hIdx = h % 24;
+        var score0 = arr[hIdx] || 0;
+        var score1 = arr[(hIdx + 1) % 24] || 0;
+        // good to eat: score will drop anyway (meal dip) — pick when score is above 65 so dip lands on a shoulder not a peak
+        if (score0 >= 65 && score1 >= 50) { bestStart = h; break; }
+      }
+      if (bestStart !== null) {
+        var bh = bestStart % 24;
+        var bhD = bh % 12 || 12, bsuf = bh < 12 ? 'AM' : 'PM';
+        mealEl.textContent = 'Eat before ' + bhD + ':00' + bsuf;
+        mealPill.style.display = '';
+      } else {
+        mealPill.style.display = 'none';
+      }
+    }
+
+    strip.style.display = '';
+  }
+
+  // ── Training Load recommendation ──────────────────────────
+  function _renderTrainCard(readiness, hrv, debtStr) {
+    var badge = document.getElementById('peakTrainBadge');
+    var detail = document.getElementById('peakTrainDetail');
+    if (!badge || !detail) return;
+
+    var debt = 0;
+    if (debtStr) {
+      var dm = debtStr.match(/(\d+)h\s*(\d+)m/);
+      if (dm) debt = parseInt(dm[1]) * 60 + parseInt(dm[2]);
+    }
+
+    var r = readiness || 0;
+    var h = hrv || 0;
+
+    var label, color, bg, text;
+    if (r >= 80 && h >= 70 && debt < 45) {
+      label = 'Heavy'; color = '#F5C842'; bg = 'rgba(245,200,66,0.12)';
+      text = 'Readiness ' + r + ' + HRV balance strong — ideal day for a PR attempt or high-volume session.';
+    } else if (r >= 65 && debt < 90) {
+      label = 'Moderate'; color = '#6EE7B7'; bg = 'rgba(110,231,183,0.10)';
+      text = 'Readiness ' + r + ' — solid day for a structured session. Avoid going to failure.';
+    } else if (r >= 50) {
+      label = 'Active Recovery'; color = '#FBBF24'; bg = 'rgba(251,191,36,0.10)';
+      text = 'Readiness ' + r + (debt > 60 ? ', sleep debt ' + debtStr : '') + ' — keep it light: walk, yoga, mobility.';
+    } else {
+      label = 'Rest'; color = '#FF8A8A'; bg = 'rgba(255,138,138,0.10)';
+      text = 'Readiness ' + r + (debt > 60 ? ', sleep debt ' + debtStr : '') + ' — skip training today. Recovery is the priority.';
+    }
+
+    badge.textContent = label;
+    badge.style.background = bg;
+    badge.style.color = color;
+    badge.style.border = '1px solid ' + color + '40';
+    detail.textContent = text;
+  }
+
+  // ── Morning Brief (auto-generate once per day) ─────────────
+  var _briefFlight = false;
+  var BRIEF_KEY = 'goals_peak_brief_';
+  async function _renderMorningBrief(readiness, sleepScore, hrv, debtStr, wakeHour, arr) {
+    var card = document.getElementById('peakMorningBriefCard');
+    var textEl = document.getElementById('peakMorningBriefText');
+    if (!card || !textEl) return;
+    var tod = today();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(BRIEF_KEY + tod)); } catch(e) {}
+    if (cached && cached.text) {
+      card.style.display = '';
+      textEl.textContent = cached.text;
+      return;
+    }
+    if (_briefFlight) return;
+    _briefFlight = true;
+    card.style.display = '';
+    textEl.textContent = 'Generating your brief…';
+    try {
+      // Find best window label for the prompt
+      var windows = findBestWindows(arr, wakeHour);
+      var bestWin = windows && windows[0] ? windows[0].label : 'mid-morning';
+      var debtText = debtStr ? 'sleep debt ' + debtStr : 'no sleep debt';
+      var prompt = 'You are JARVIS, personal AI performance coach. Generate a 3-line morning brief for sir. ' +
+        'Data: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + ', peak_window=' + bestWin + ', wake=' + Math.floor(wakeHour) + ':00. ' +
+        'Format: exactly 3 short lines (no bullets, no numbering). Line 1: one-sentence readiness assessment. Line 2: one training/energy recommendation. Line 3: one caffeine or sleep action. Address as sir. Be specific and concise.';
+      var reply = await gemini(prompt);
+      var text = (reply && reply.trim()) || 'Unable to generate brief — check Gemini connection.';
+      localStorage.setItem(BRIEF_KEY + tod, JSON.stringify({text: text}));
+      textEl.textContent = text;
+    } catch(e) {
+      textEl.textContent = 'Brief unavailable — ' + (e && e.message || 'connection error');
+    } finally { _briefFlight = false; }
+  }
+
   function renderLastWeek(oura) {
     var days = ['M','T','W','T','F','S','S'];
     var readArr = oura && oura.readiness ? oura.readiness.slice(0,7).reverse() : [];
@@ -21785,9 +21963,13 @@ function switchTab(tab) {
         var bdHtml = f.breakdown
           ? '<div class="vit-food-breakdown">'+escHtml(f.breakdown)+'</div>'
           : '';
+        var qBadge = '';
+        if (f.quality === 'junk')        qBadge = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#EF4444;margin-left:5px;vertical-align:middle;flex-shrink:0" title="Junk food"></span>';
+        else if (f.quality === 'street_food') qBadge = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#FBBF24;margin-left:5px;vertical-align:middle;flex-shrink:0" title="Street food"></span>';
+        else if (f.quality === 'clean')  qBadge = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#6EE7B7;margin-left:5px;vertical-align:middle;flex-shrink:0" title="Clean"></span>';
         return '<div class="vit-food-item">' +
           thumbHtml +
-          '<div class="vit-food-info"><div class="vit-food-name">'+escHtml(f.name)+'</div>' +
+          '<div class="vit-food-info"><div class="vit-food-name" style="display:flex;align-items:center">'+escHtml(f.name)+qBadge+'</div>' +
           '<div class="vit-food-meta">'+(f.timeStr ? f.timeStr+' · ' : '')+'P '+Math.round(f.protein||0)+'g · C '+Math.round(f.carbs||0)+'g · F '+Math.round(f.fat||0)+'g</div>' +
           bdHtml + '</div>' +
           '<div class="vit-food-right">' +
