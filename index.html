@@ -21344,36 +21344,21 @@ function switchTab(tab) {
         var src = (oura.detailedSleep && oura.detailedSleep.length) ? oura.detailedSleep : null;
         if (!src) return;
         var todStr = today();
-        // yesterday string
+        // yesterday string (fallback only)
         var _d = new Date(todStr + 'T12:00:00'); _d.setDate(_d.getDate() - 1);
         var yStr = _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
-        // Oura tags day = the date you went to sleep (not wake date).
-        // So for 1:34am→9:03am sleep on Jun 6, day = "2026-06-05" (yesterday).
-        // Also try matching bedtime_end date in case day = today.
-        var candidates = src.filter(function(s){
-          if (s.day === todStr || s.day === yStr) return true;
-          // also accept if bedtime_end falls today
-          if (s.bedtime_end) {
-            var wkD = new Date(s.bedtime_end);
-            var wkStr = wkD.getFullYear()+'-'+String(wkD.getMonth()+1).padStart(2,'0')+'-'+String(wkD.getDate()).padStart(2,'0');
-            if (wkStr === todStr) return true;
-          }
-          return false;
-        });
-        if (!candidates.length) candidates = src.slice(0,1);
-        if (!candidates.length) return;
-        // Among candidates, prefer the one with the EARLIEST bedtime_end on today's date
-        // (true wake-up from overnight sleep, not a later nap or restless period).
-        // Fall back to longest duration if no bedtime_end fields present.
-        var withEnd = candidates.filter(function(s){ return !!s.bedtime_end; });
-        var best;
-        if (withEnd.length) {
-          best = withEnd.reduce(function(a,b){
-            return new Date(b.bedtime_end) < new Date(a.bedtime_end) ? b : a;
+        // Oura tags a sleep period's `day` as the WAKE-UP date — so last night's
+        // overnight sleep is tagged with today's date. Match the Health tab logic:
+        // take today's record with the longest total_sleep_duration (= main sleep,
+        // not a nap). Only fall back to yesterday if today hasn't synced yet.
+        function bestForDay(dayStr) {
+          var matches = src.filter(function(s){ return s.day === dayStr; });
+          if (!matches.length) return null;
+          return matches.reduce(function(a,b){
+            return (b.total_sleep_duration||0) > (a.total_sleep_duration||0) ? b : a;
           });
-        } else {
-          best = candidates.reduce(function(a,b){ return (b.total_sleep_duration||0) > (a.total_sleep_duration||0) ? b : a; });
         }
+        var best = bestForDay(todStr) || bestForDay(yStr);
         if (!best) return;
         if (best.bedtime_end) {
           var wk = new Date(best.bedtime_end);
@@ -22723,35 +22708,49 @@ function switchTab(tab) {
     return buf;
   }
 
+  // Pick the best available "Siri-style" voice — prefer a British/US English
+  // male system voice, falling back to any English voice the device exposes.
+  var _jarvisVoice = null;
+  function _pickJarvisVoice() {
+    if (!('speechSynthesis' in window)) return null;
+    var voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+    // Preference order — iOS/macOS Siri voices first, then GB, then any English
+    var prefs = [
+      function(v){ return /siri/i.test(v.name) && /en/i.test(v.lang); },
+      function(v){ return v.lang === 'en-GB' && /(daniel|arthur|male)/i.test(v.name); },
+      function(v){ return v.lang === 'en-GB'; },
+      function(v){ return v.lang === 'en-US' && /(aaron|male|fred)/i.test(v.name); },
+      function(v){ return v.lang === 'en-US'; },
+      function(v){ return /^en/i.test(v.lang); }
+    ];
+    for (var p = 0; p < prefs.length; p++) {
+      var match = voices.find(prefs[p]);
+      if (match) return match;
+    }
+    return voices[0];
+  }
+  // Voices load asynchronously in some browsers
+  if ('speechSynthesis' in window) {
+    _jarvisVoice = _pickJarvisVoice();
+    window.speechSynthesis.onvoiceschanged = function(){ _jarvisVoice = _pickJarvisVoice(); };
+  }
+
   function _jarvisSpeak(text) {
-    if (window._jarvisSpeaking) { try { window._jarvisCurrentSrc && window._jarvisCurrentSrc.stop(); } catch(e){} }
+    if (!('speechSynthesis' in window)) return;
+    // Cancel anything currently speaking
+    try { window.speechSynthesis.cancel(); } catch(e){}
     window._jarvisSpeaking = true;
     if (window._arcSetMood) window._arcSetMood('responding');
-    fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text, voice: 'Charon' })
-    }).then(function(r){ return r.json(); }).then(function(data) {
-      var part = data.candidates && data.candidates[0] &&
-                 data.candidates[0].content && data.candidates[0].content.parts &&
-                 data.candidates[0].content.parts[0];
-      if (!part || !part.inlineData) throw new Error('no audio data');
-      var b64 = part.inlineData.data;
-      var mime = part.inlineData.mimeType || '';
-      var binary = atob(b64);
-      var bytes = new Uint8Array(binary.length);
-      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      var audioBuf = mime.indexOf('pcm') >= 0 ? _pcmToWav(bytes, 24000) : bytes.buffer;
-      var ctx = new (window.AudioContext || window.webkitAudioContext)();
-      ctx.decodeAudioData(audioBuf, function(decoded) {
-        var src = ctx.createBufferSource();
-        src.buffer = decoded;
-        src.connect(ctx.destination);
-        window._jarvisCurrentSrc = src;
-        src.onended = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); ctx.close(); };
-        src.start(0);
-      }, function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
-    }).catch(function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); });
+    var utter = new SpeechSynthesisUtterance(text);
+    if (!_jarvisVoice) _jarvisVoice = _pickJarvisVoice();
+    if (_jarvisVoice) utter.voice = _jarvisVoice;
+    utter.lang  = (_jarvisVoice && _jarvisVoice.lang) || 'en-GB';
+    utter.rate  = 1.0;   // natural pace
+    utter.pitch = 0.95;  // a touch lower — calm, JARVIS-like
+    utter.onend = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); };
+    utter.onerror = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); };
+    window.speechSynthesis.speak(utter);
   }
 
   function _coachMsgDiv(text, role) {
