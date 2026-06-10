@@ -9004,6 +9004,15 @@ window.canonicalJson = function(obj) {
         <span id="peakConvStatus" style="font-family:var(--font-mono);font-size:11px;color:rgba(110,231,183,0.75);flex:1;letter-spacing:0.04em">Listening…</span>
         <button id="peakConvStop" type="button" style="background:none;border:none;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.06em;padding:0">END</button>
       </div>
+      <!-- Voice picker -->
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(110,231,183,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        <select id="peakVoiceSelect" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 10px;color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;outline:none;-webkit-appearance:none;appearance:none;cursor:pointer">
+          <option value="">JARVIS voice — auto (best available)</option>
+        </select>
+        <button id="peakVoiceTest" type="button" title="Test voice" style="background:rgba(110,231,183,0.08);border:1px solid rgba(110,231,183,0.25);border-radius:10px;color:rgba(110,231,183,0.8);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;padding:8px 11px;cursor:pointer;white-space:nowrap;flex-shrink:0">TEST</button>
+      </div>
+      <div id="peakVoiceHint" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,0.3);line-height:1.45;font-family:var(--font-mono)"></div>
     </div>
 
     <div class="peak-card" id="peakLastWeekCard">
@@ -22708,28 +22717,62 @@ function switchTab(tab) {
     return buf;
   }
 
-  // Pick the best available "Siri-style" voice — prefer a British/US English
-  // male system voice, falling back to any English voice the device exposes.
+  // Pick the best available English voice the device exposes.
+  // Some iOS versions expose the Siri voice to web apps — when present, prefer it.
+  // Otherwise avoid the flat "compact" voice and select the highest quality
+  // voice available — enhanced/premium named voices sound far better.
   var _jarvisVoice = null;
+  function _scoreVoice(v) {
+    // Higher = better. Penalise compact, reward Siri/enhanced/premium.
+    var s = 0;
+    var uri = (v.voiceURI || '') + ' ' + (v.name || '');
+    if (/siri/i.test(uri))     s += 200;  // real Siri voice — best, take it
+    if (/premium/i.test(uri))  s += 100;
+    if (/enhanced/i.test(uri)) s += 80;
+    if (/compact/i.test(uri))  s -= 100;  // the robotic one — avoid
+    // Known good, natural-sounding named voices on iOS/macOS
+    if (/\b(daniel|arthur|oliver|serena|stephanie)\b/i.test(v.name)) s += 40; // en-GB
+    if (/\b(aaron|nicky|samantha|evan|tom|alex)\b/i.test(v.name))    s += 30; // en-US
+    // Language preference: en-GB (JARVIS is British) > en-US > other en
+    if (v.lang === 'en-GB') s += 20;
+    else if (v.lang === 'en-US') s += 10;
+    else if (/^en/i.test(v.lang)) s += 3;
+    else s -= 50; // non-English
+    // Prefer non-local (cloud/network) voices on some platforms — usually richer
+    if (v.localService === false) s += 5;
+    return s;
+  }
   function _pickJarvisVoice() {
     if (!('speechSynthesis' in window)) return null;
     var voices = window.speechSynthesis.getVoices() || [];
     if (!voices.length) return null;
-    // Preference order — iOS/macOS Siri voices first, then GB, then any English
-    var prefs = [
-      function(v){ return /siri/i.test(v.name) && /en/i.test(v.lang); },
-      function(v){ return v.lang === 'en-GB' && /(daniel|arthur|male)/i.test(v.name); },
-      function(v){ return v.lang === 'en-GB'; },
-      function(v){ return v.lang === 'en-US' && /(aaron|male|fred)/i.test(v.name); },
-      function(v){ return v.lang === 'en-US'; },
-      function(v){ return /^en/i.test(v.lang); }
-    ];
-    for (var p = 0; p < prefs.length; p++) {
-      var match = voices.find(prefs[p]);
-      if (match) return match;
+    // Honour a saved manual choice if it still exists
+    var saved = null;
+    try { saved = localStorage.getItem('goals_peak_voice_uri'); } catch(e){}
+    if (saved) {
+      var hit = voices.find(function(v){ return v.voiceURI === saved; });
+      if (hit) return hit;
     }
-    return voices[0];
+    // Otherwise rank every voice and take the best
+    var best = null, bestScore = -1e9;
+    voices.forEach(function(v){
+      var sc = _scoreVoice(v);
+      if (sc > bestScore) { bestScore = sc; best = v; }
+    });
+    return best || voices[0];
   }
+  // Expose the voice list + setter so a picker UI can use them
+  window._peakListVoices = function() {
+    if (!('speechSynthesis' in window)) return [];
+    return (window.speechSynthesis.getVoices() || []).map(function(v){
+      return { name: v.name, lang: v.lang, uri: v.voiceURI, score: _scoreVoice(v) };
+    }).sort(function(a,b){ return b.score - a.score; });
+  };
+  window._peakSetVoice = function(uri) {
+    try { localStorage.setItem('goals_peak_voice_uri', uri); } catch(e){}
+    _jarvisVoice = _pickJarvisVoice();
+    _jarvisSpeak('Voice updated, sir. How does this sound?');
+  };
   // Voices load asynchronously in some browsers
   if ('speechSynthesis' in window) {
     _jarvisVoice = _pickJarvisVoice();
@@ -22746,8 +22789,8 @@ function switchTab(tab) {
     if (!_jarvisVoice) _jarvisVoice = _pickJarvisVoice();
     if (_jarvisVoice) utter.voice = _jarvisVoice;
     utter.lang  = (_jarvisVoice && _jarvisVoice.lang) || 'en-GB';
-    utter.rate  = 1.0;   // natural pace
-    utter.pitch = 0.95;  // a touch lower — calm, JARVIS-like
+    utter.rate  = 0.98;  // natural pace
+    utter.pitch = 1.0;   // neutral — pitch-shifting compact voices sounds worse
     utter.onend = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); };
     utter.onerror = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); };
     window.speechSynthesis.speak(utter);
@@ -23936,6 +23979,67 @@ function switchTab(tab) {
     // ── Conv END button ───────────────────────────────────────
     var convStop = document.getElementById('peakConvStop');
     if (convStop) convStop.addEventListener('click', function() { _endConversation(true); });
+
+    // ── Voice picker ──────────────────────────────────────────
+    (function() {
+      var sel  = document.getElementById('peakVoiceSelect');
+      var test = document.getElementById('peakVoiceTest');
+      var hint = document.getElementById('peakVoiceHint');
+      if (!sel) return;
+      if (!('speechSynthesis' in window)) {
+        sel.disabled = true;
+        if (hint) hint.textContent = 'Speech not supported in this browser.';
+        return;
+      }
+      var saved = null;
+      try { saved = localStorage.getItem('goals_peak_voice_uri'); } catch(e){}
+
+      function populate() {
+        var list = (typeof window._peakListVoices === 'function') ? window._peakListVoices() : [];
+        if (!list.length) return;
+        // Keep the auto option, rebuild the rest
+        sel.innerHTML = '<option value="">JARVIS voice — auto (best available)</option>';
+        var hasEnhanced = false;
+        list.forEach(function(v) {
+          var opt = document.createElement('option');
+          opt.value = v.uri;
+          var quality = /siri/i.test(v.uri+v.name) ? ' ★ Siri' :
+                        /premium/i.test(v.uri+v.name) ? ' ★ Premium' :
+                        /enhanced/i.test(v.uri+v.name) ? ' ★ Enhanced' :
+                        /compact/i.test(v.uri+v.name) ? ' (compact)' : '';
+          if (quality.indexOf('★') >= 0) hasEnhanced = true;
+          opt.textContent = v.name + ' · ' + v.lang + quality;
+          if (v.uri === saved) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        if (hint) {
+          if (!hasEnhanced) {
+            hint.innerHTML = 'Only compact (robotic) voices found. On iPhone: <b>Settings → Accessibility → Spoken Content → Voices → English</b> → download <b>Daniel</b> or <b>Arthur</b> (Enhanced), then reopen the app.';
+          } else {
+            hint.textContent = 'Tip: ★ Enhanced/Premium voices sound the most natural. Pick one and tap TEST.';
+          }
+        }
+      }
+      populate();
+      // iOS often loads voices async
+      window.speechSynthesis.onvoiceschanged = function() {
+        if (typeof _pickJarvisVoice === 'function') _jarvisVoice = _pickJarvisVoice();
+        populate();
+      };
+
+      sel.addEventListener('change', function() {
+        if (sel.value) {
+          if (typeof window._peakSetVoice === 'function') window._peakSetVoice(sel.value);
+        } else {
+          try { localStorage.removeItem('goals_peak_voice_uri'); } catch(e){}
+          if (typeof _pickJarvisVoice === 'function') _jarvisVoice = _pickJarvisVoice();
+          if (typeof _jarvisSpeak === 'function') _jarvisSpeak('Reverting to automatic voice selection, sir.');
+        }
+      });
+      if (test) test.addEventListener('click', function() {
+        if (typeof _jarvisSpeak === 'function') _jarvisSpeak('Good evening, sir. All systems are operational and standing by.');
+      });
+    })();
 
     document.querySelectorAll('.vit-meal-tab').forEach(function(btn) {
       btn.addEventListener('click', function() {
