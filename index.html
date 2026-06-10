@@ -8741,9 +8741,14 @@ window.canonicalJson = function(obj) {
     <div class="peak-card" id="peakMorningBriefCard" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="peak-section-label">JARVIS Morning Brief</div>
-        <button id="peakBriefSpeakBtn" type="button" title="Read brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5);display:none">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button id="peakBriefRefreshBtn" type="button" title="Generate a new brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+          <button id="peakBriefSpeakBtn" type="button" title="Read brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5);display:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+        </div>
       </div>
       <div id="peakMorningBriefText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your brief…</div>
       <div id="peakTomorrowPredict" style="display:none;margin-top:10px;padding:8px 10px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(196,181,253,0.85);line-height:1.5"></div>
@@ -21529,6 +21534,7 @@ function switchTab(tab) {
     _initFocusTimer(arr, wakeHour);
     _renderMarkets();
     if (_peakDayOffset === 0) {
+      _briefArgs = [readiness, sleepScore, recovery, debtStr, wakeHour, arr];
       _renderMorningBrief(readiness, sleepScore, recovery, debtStr, wakeHour, arr);
       _renderTomorrowPredict(readiness, debtStr, wakeHour, caffLogs, loadAlc());
       _renderSmartAlarm(readiness, debtStr, oura);
@@ -22099,20 +22105,31 @@ function switchTab(tab) {
 
   // ── Morning Brief (auto-generate once per day) ─────────────
   var _briefFlight = false;
+  var _briefSpokenThisSession = false;
+  var _briefArgs = null;
   var BRIEF_KEY = 'goals_peak_brief_';
-  async function _renderMorningBrief(readiness, sleepScore, hrv, debtStr, wakeHour, arr) {
+  async function _renderMorningBrief(readiness, sleepScore, hrv, debtStr, wakeHour, arr, force) {
     var card = document.getElementById('peakMorningBriefCard');
     var textEl = document.getElementById('peakMorningBriefText');
     if (!card || !textEl) return;
     var tod = today();
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem(BRIEF_KEY + tod)); } catch(e) {}
-    if (cached && cached.text) {
+    if (cached && cached.text && !force) {
       card.style.display = '';
       textEl.innerHTML = cached.text;
       var _sb = document.getElementById('peakBriefSpeakBtn'); if (_sb) _sb.style.display = '';
-      if (typeof _jarvisSpeak === 'function') _jarvisSpeak(_briefPlainText(cached.text));
+      // Only auto-speak on the first open of the day, not every revisit
+      if (typeof _jarvisSpeak === 'function' && !_briefSpokenThisSession) {
+        _briefSpokenThisSession = true;
+        _jarvisSpeak(_briefPlainText(cached.text));
+      }
       return;
+    }
+    if (force) {
+      // wipe cache so a fresh brief is generated
+      try { localStorage.removeItem(BRIEF_KEY + tod); } catch(e){}
+      _briefSpokenThisSession = false;
     }
     if (_briefFlight) return;
     _briefFlight = true;
@@ -22190,6 +22207,7 @@ function switchTab(tab) {
       localStorage.setItem(BRIEF_KEY + tod, JSON.stringify({text: html, plain: text}));
       textEl.innerHTML = html;
       var _sb2 = document.getElementById('peakBriefSpeakBtn'); if (_sb2) _sb2.style.display = '';
+      _briefSpokenThisSession = true;
       if (typeof _jarvisSpeak === 'function') _jarvisSpeak(text);
     } catch(e) {
       textEl.textContent = 'Brief unavailable — ' + (e && e.message || 'connection error');
@@ -23421,6 +23439,24 @@ function switchTab(tab) {
         var text = textEl && textEl.textContent;
         if (text && text !== 'Generating your brief…' && typeof _jarvisSpeak === 'function') {
           _jarvisSpeak(text);
+        }
+      });
+    }
+
+    // ── Morning Brief refresh (generate a new brief) ─────────────
+    var briefRefreshBtn = document.getElementById('peakBriefRefreshBtn');
+    if (briefRefreshBtn) {
+      briefRefreshBtn.addEventListener('click', function() {
+        if (_briefFlight) return;
+        // Also clear today's weather/news caches so the new brief uses fresh data
+        var tod = today();
+        try { localStorage.removeItem(WEATHER_KEY + tod); } catch(e){}
+        try { localStorage.removeItem(NEWS_KEY + tod); } catch(e){}
+        // Spin the icon while generating
+        var icon = briefRefreshBtn.querySelector('svg');
+        if (icon) { icon.style.transition = 'transform 0.8s'; icon.style.transform = 'rotate(360deg)'; setTimeout(function(){ if (icon) icon.style.transform = ''; }, 800); }
+        if (_briefArgs) {
+          _renderMorningBrief(_briefArgs[0], _briefArgs[1], _briefArgs[2], _briefArgs[3], _briefArgs[4], _briefArgs[5], true);
         }
       });
     }
