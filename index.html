@@ -8737,13 +8737,6 @@ window.canonicalJson = function(obj) {
       <div id="peakMarketsTickers" style="display:flex;gap:14px;flex-wrap:wrap"></div>
     </div>
 
-    <!-- Hey JARVIS voice indicator -->
-    <div id="peakVoiceBar" style="display:none;background:rgba(110,231,183,0.06);border:1px solid rgba(110,231,183,0.2);border-radius:12px;padding:9px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
-      <div id="peakVoiceOrb" style="width:10px;height:10px;border-radius:50%;background:#6EE7B7;box-shadow:0 0 8px #6EE7B7;flex-shrink:0;animation:peakOrb 1s ease-in-out infinite alternate"></div>
-      <span id="peakVoiceStatus" style="font-family:var(--font-mono);font-size:11px;color:rgba(110,231,183,0.8);letter-spacing:0.06em">Listening…</span>
-    </div>
-    <style>@keyframes peakOrb{from{transform:scale(1);opacity:1}to{transform:scale(1.5);opacity:0.5}}</style>
-
     <!-- Morning Brief -->
     <div class="peak-card" id="peakMorningBriefCard" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -8993,10 +8986,18 @@ window.canonicalJson = function(obj) {
         <button class="peak-coach-chip" type="button" data-chip="how is my recovery looking?">Recovery check</button>
       </div>
       <div class="peak-coach-input-row">
-        <input id="peakCoachInput" class="peak-coach-input" type="text" placeholder="Ask your coach…">
+        <input id="peakCoachInput" class="peak-coach-input" type="text" placeholder="Ask JARVIS…">
+        <button id="peakMicBtn" type="button" title="Hold conversation with JARVIS" style="width:38px;height:38px;border-radius:50%;border:1px solid rgba(110,231,183,0.25);background:rgba(110,231,183,0.07);color:rgba(110,231,183,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s">
+          <svg id="peakMicIcon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
         <button id="peakCoachSend" class="peak-coach-send" type="button">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
+      </div>
+      <div id="peakConvBar" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(110,231,183,0.05);border:1px solid rgba(110,231,183,0.15);border-radius:10px;display:flex;align-items:center;gap:10px">
+        <div id="peakConvOrb" style="width:8px;height:8px;border-radius:50%;background:#6EE7B7;flex-shrink:0"></div>
+        <span id="peakConvStatus" style="font-family:var(--font-mono);font-size:11px;color:rgba(110,231,183,0.75);flex:1;letter-spacing:0.04em">Listening…</span>
+        <button id="peakConvStop" type="button" style="background:none;border:none;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.06em;padding:0">END</button>
       </div>
     </div>
 
@@ -21911,102 +21912,137 @@ function switchTab(tab) {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // FEATURE 6 — Hey JARVIS always-on voice
+  // FEATURE 6 — JARVIS voice conversation (mic button triggers)
   // ══════════════════════════════════════════════════════════════
-  var _voiceActive = false, _voiceListening = false, _voiceRecognition = null, _voiceWakeRecog = null;
+  var _convActive = false;       // conversation mode on/off
+  var _convListening = false;    // currently capturing speech
+  var _convRecog = null;         // active SpeechRecognition instance
+  var _convWaitTimer = null;     // wait-for-reply timer
 
-  function _initHeyJarvis() {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return; // browser doesn't support it
-    _startWakeWordListener(SR);
-  }
+  // No-op kept so old _initHeyJarvis boot call is harmless
+  function _initHeyJarvis() {}
 
-  function _setVoiceBar(show, status) {
-    var bar = document.getElementById('peakVoiceBar');
-    var statusEl = document.getElementById('peakVoiceStatus');
+  function _setConvBar(show, status, orbColor) {
+    var bar  = document.getElementById('peakConvBar');
+    var stat = document.getElementById('peakConvStatus');
+    var orb  = document.getElementById('peakConvOrb');
     if (!bar) return;
     bar.style.display = show ? 'flex' : 'none';
-    if (statusEl && status) statusEl.textContent = status;
+    if (stat && status) stat.textContent = status;
+    if (orb)  orb.style.background = orbColor || '#6EE7B7';
+    if (orb)  orb.style.boxShadow  = show ? '0 0 6px ' + (orbColor || '#6EE7B7') : 'none';
   }
 
-  function _startWakeWordListener(SR) {
-    if (_voiceWakeRecog) { try { _voiceWakeRecog.stop(); } catch(e){} }
+  function _setMicBtn(active) {
+    var btn = document.getElementById('peakMicBtn');
+    if (!btn) return;
+    if (active) {
+      btn.style.background   = 'rgba(110,231,183,0.22)';
+      btn.style.borderColor  = 'rgba(110,231,183,0.6)';
+      btn.style.color        = '#6EE7B7';
+      btn.style.boxShadow    = '0 0 12px rgba(110,231,183,0.25)';
+      btn.title = 'End conversation';
+    } else {
+      btn.style.background   = 'rgba(110,231,183,0.07)';
+      btn.style.borderColor  = 'rgba(110,231,183,0.25)';
+      btn.style.color        = 'rgba(110,231,183,0.7)';
+      btn.style.boxShadow    = 'none';
+      btn.title = 'Start conversation with JARVIS';
+    }
+  }
+
+  // Called after JARVIS finishes speaking — listen for next turn
+  function _convNextTurn() {
+    if (!_convActive) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    _setConvBar(true, 'Listening…', '#6EE7B7');
+    if (window._arcSetMood) window._arcSetMood('idle');
+    if (_convRecog) { try { _convRecog.stop(); } catch(e){} }
     var recog = new SR();
-    recog.continuous = true;
-    recog.interimResults = false;
+    recog.continuous = false;
+    recog.interimResults = true;
     recog.lang = 'en-IN';
-    recog.onresult = function(e) {
-      var transcript = e.results[e.results.length - 1][0].transcript.toLowerCase().trim();
-      if (transcript.indexOf('jarvis') >= 0 || transcript.indexOf('travis') >= 0) {
+    recog.onresult = function(ev) {
+      var interim = '', final = '';
+      for (var i = ev.resultIndex; i < ev.results.length; i++) {
+        if (ev.results[i].isFinal) final += ev.results[i][0].transcript;
+        else interim += ev.results[i][0].transcript;
+      }
+      var stat = document.getElementById('peakConvStatus');
+      if (stat && (final || interim)) stat.textContent = '"' + (final || interim) + '"';
+      if (final) {
+        _convListening = false;
         recog.stop();
-        _voiceWakeRecog = null;
-        _startCommandListener(SR);
+        // Check stop words
+        var lc = final.toLowerCase().trim();
+        if (lc === 'stop' || lc === 'stop jarvis' || lc === 'goodbye' || lc === 'end') {
+          _endConversation(true);
+          return;
+        }
+        var inp = document.getElementById('peakCoachInput');
+        if (inp) inp.value = final;
+        _setConvBar(true, 'Processing…', '#F59E0B');
+        if (window._arcSetMood) window._arcSetMood('thinking');
+        // sendCoachMessage will call _jarvisSpeak when done,
+        // we hook into the audio end to restart listening
+        sendCoachMessage(final, true /* convMode */);
       }
     };
     recog.onend = function() {
-      // Restart wake listener unless a command is active
-      if (!_voiceActive) {
-        setTimeout(function() { _startWakeWordListener(SR); }, 500);
+      _convListening = false;
+      // If still active and no result fired, restart listening
+      if (_convActive) {
+        _convWaitTimer = setTimeout(_convNextTurn, 300);
       }
     };
-    recog.onerror = function() {
-      setTimeout(function() { _startWakeWordListener(SR); }, 2000);
+    recog.onerror = function(ev) {
+      _convListening = false;
+      if (ev.error === 'no-speech' && _convActive) {
+        _convWaitTimer = setTimeout(_convNextTurn, 500);
+      } else if (ev.error !== 'aborted') {
+        _endConversation(false);
+      }
     };
-    try { recog.start(); } catch(e){}
-    _voiceWakeRecog = recog;
+    // Auto end after 12s silence
+    _convListening = true;
+    var _silenceTimer = setTimeout(function(){
+      if (_convListening && _convActive) { try { recog.stop(); } catch(e){} }
+    }, 12000);
+    recog.onresult._silenceTimer = _silenceTimer;
+    try { recog.start(); } catch(e){ _endConversation(false); }
+    _convRecog = recog;
   }
 
-  function _startCommandListener(SR) {
-    _voiceActive = true;
-    _setVoiceBar(true, 'Listening, sir…');
-    if (window._arcSetMood) window._arcSetMood('thinking');
-    _jarvisSpeak('Sir?'); // brief acknowledgement
+  function _startConversation() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      appendCoachMsg('Voice not supported in this browser, sir. Use Chrome or Edge.', 'coach');
+      return;
+    }
+    _convActive = true;
+    _setMicBtn(true);
+    _setConvBar(true, 'Conversation mode — say "stop" to end', '#6EE7B7');
+    _jarvisSpeak('Conversation mode activated, sir. I\'m listening.');
+    // Start listening after JARVIS finishes intro (~2.5s)
+    setTimeout(_convNextTurn, 2800);
+  }
 
-    var recog2 = new SR();
-    recog2.continuous = false;
-    recog2.interimResults = true;
-    recog2.lang = 'en-IN';
-    recog2.onresult = function(e) {
-      var interims = '', finals = '';
-      for (var i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finals += e.results[i][0].transcript;
-        else interims += e.results[i][0].transcript;
-      }
-      var statusEl = document.getElementById('peakVoiceStatus');
-      if (statusEl && (finals || interims)) statusEl.textContent = '"' + (finals || interims) + '"';
-      if (finals) {
-        recog2.stop();
-        _voiceActive = false;
-        _setVoiceBar(false);
-        var input = document.getElementById('peakCoachInput');
-        if (input) input.value = finals;
-        sendCoachMessage(finals);
-        // Restart wake listener after TTS finishes (delay)
-        var SR2 = window.SpeechRecognition || window.webkitSpeechRecognition;
-        setTimeout(function(){ _startWakeWordListener(SR2); }, 4000);
-      }
-    };
-    recog2.onend = function() {
-      if (_voiceActive) {
-        _voiceActive = false;
-        _setVoiceBar(false);
-        var SR2 = window.SpeechRecognition || window.webkitSpeechRecognition;
-        setTimeout(function(){ _startWakeWordListener(SR2); }, 500);
-      }
-    };
-    recog2.onerror = function() {
-      _voiceActive = false;
-      _setVoiceBar(false);
-      var SR2 = window.SpeechRecognition || window.webkitSpeechRecognition;
-      setTimeout(function(){ _startWakeWordListener(SR2); }, 2000);
-    };
-    // Auto-timeout after 8s silence
-    var _vTimeout = setTimeout(function(){
-      try { recog2.stop(); } catch(e){}
-    }, 8000);
-    recog2.onresult._timeout = _vTimeout;
-    try { recog2.start(); } catch(e){ _voiceActive = false; _setVoiceBar(false); }
-    _voiceRecognition = recog2;
+  function _endConversation(graceful) {
+    _convActive = false;
+    _convListening = false;
+    if (_convRecog) { try { _convRecog.stop(); } catch(e){} _convRecog = null; }
+    if (_convWaitTimer) { clearTimeout(_convWaitTimer); _convWaitTimer = null; }
+    _setMicBtn(false);
+    _setConvBar(false);
+    if (window._arcSetMood) window._arcSetMood('idle');
+    if (graceful) _jarvisSpeak('Understood, sir. Signing off.');
+  }
+
+  // Called by mic button
+  function _toggleConversation() {
+    if (_convActive) _endConversation(true);
+    else _startConversation();
   }
 
   // ── Weather + News fetch helpers ─────────────────────────────
@@ -22741,7 +22777,7 @@ function switchTab(tab) {
     msgs.scrollTop = msgs.scrollHeight;
   }
 
-  async function sendCoachMessage(msg) {
+  async function sendCoachMessage(msg, convMode) {
     if (!msg.trim() || _coachFlight) return;
     _coachFlight = true;
     if (window._arcSetMood) window._arcSetMood('thinking');
@@ -22820,11 +22856,22 @@ function switchTab(tab) {
       if (!replyText) replyText = 'My apologies, sir. I was unable to generate a response. Please try again.';
       if (window._arcSetMood) window._arcSetMood('responding');
       appendCoachMsg(replyText, 'coach');
-      _jarvisSpeak(replyText);
+      if (convMode && _convActive) {
+        // Estimate speech duration (~100 words/min for JARVIS paced voice)
+        var wordCount = replyText.split(/\s+/).length;
+        var estMs = Math.max(3000, wordCount * 600 + 1000);
+        _jarvisSpeak(replyText);
+        setTimeout(function() {
+          if (_convActive) _convNextTurn();
+        }, estMs);
+      } else {
+        _jarvisSpeak(replyText);
+      }
     } catch(e) {
       if (msgs && msgs.contains(loading)) msgs.removeChild(loading);
       appendCoachMsg('Could not reach coach, sir. (' + (e && e.message || 'unknown error') + ')', 'coach');
       if (window._arcSetMood) window._arcSetMood('idle');
+      if (convMode && _convActive) setTimeout(_convNextTurn, 1500);
     } finally { _coachFlight = false; }
   }
 
@@ -23846,6 +23893,14 @@ function switchTab(tab) {
       coachSend.addEventListener('click', function() { var msg = coachInp.value.trim(); if (msg) { sendCoachMessage(msg); coachInp.value = ''; } });
       coachInp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { var msg = coachInp.value.trim(); if (msg) { sendCoachMessage(msg); coachInp.value = ''; } } });
     }
+
+    // ── Mic button — start / stop conversation ────────────────
+    var micBtn = document.getElementById('peakMicBtn');
+    if (micBtn) micBtn.addEventListener('click', _toggleConversation);
+
+    // ── Conv END button ───────────────────────────────────────
+    var convStop = document.getElementById('peakConvStop');
+    if (convStop) convStop.addEventListener('click', function() { _endConversation(true); });
 
     document.querySelectorAll('.vit-meal-tab').forEach(function(btn) {
       btn.addEventListener('click', function() {
