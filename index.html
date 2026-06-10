@@ -8728,6 +8728,22 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
+    <!-- Markets strip -->
+    <div id="peakMarketsStrip" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:9px 14px;margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">
+        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:rgba(255,255,255,0.3)">MARKETS</span>
+        <span id="peakMarketsTime" style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.2)"></span>
+      </div>
+      <div id="peakMarketsTickers" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+    </div>
+
+    <!-- Hey JARVIS voice indicator -->
+    <div id="peakVoiceBar" style="display:none;background:rgba(110,231,183,0.06);border:1px solid rgba(110,231,183,0.2);border-radius:12px;padding:9px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+      <div id="peakVoiceOrb" style="width:10px;height:10px;border-radius:50%;background:#6EE7B7;box-shadow:0 0 8px #6EE7B7;flex-shrink:0;animation:peakOrb 1s ease-in-out infinite alternate"></div>
+      <span id="peakVoiceStatus" style="font-family:var(--font-mono);font-size:11px;color:rgba(110,231,183,0.8);letter-spacing:0.06em">Listening…</span>
+    </div>
+    <style>@keyframes peakOrb{from{transform:scale(1);opacity:1}to{transform:scale(1.5);opacity:0.5}}</style>
+
     <!-- Morning Brief -->
     <div class="peak-card" id="peakMorningBriefCard" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -8747,6 +8763,47 @@ window.canonicalJson = function(obj) {
         <div id="peakTrainBadge" style="font-size:11px;font-family:var(--font-mono);letter-spacing:0.08em;padding:4px 10px;border-radius:20px;font-weight:700">—</div>
       </div>
       <div id="peakTrainDetail" style="font-size:12px;color:var(--text-tertiary);margin-top:6px;line-height:1.5">—</div>
+    </div>
+
+    <!-- Body weight trend -->
+    <div class="peak-card" id="peakWeightCard" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="peak-section-label">Body Weight</div>
+        <div id="peakWeightDelta" style="font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600"></div>
+      </div>
+      <canvas id="peakWeightCanvas" height="56" style="width:100%;display:block"></canvas>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <span id="peakWeightMin" style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28)"></span>
+        <span id="peakWeightCurrent" style="font-family:var(--font-mono);font-size:11px;color:var(--text-primary);font-weight:600"></span>
+        <span id="peakWeightMax" style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28)"></span>
+      </div>
+    </div>
+
+    <!-- Focus session timer -->
+    <div class="peak-card" id="peakFocusCard">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="peak-section-label">Focus Session</div>
+        <div id="peakFocusZone" style="font-family:var(--font-mono);font-size:10px;color:rgba(110,231,183,0.6);letter-spacing:0.08em"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px">
+        <div id="peakFocusTimer" style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--text-primary);letter-spacing:0.04em;min-width:80px">—</div>
+        <div style="flex:1">
+          <div id="peakFocusBar" style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden"><div id="peakFocusBarFill" style="height:100%;width:0%;background:#6EE7B7;border-radius:2px;transition:width 1s linear"></div></div>
+          <div id="peakFocusMsg" style="font-size:11px;color:var(--text-tertiary);margin-top:5px;font-family:var(--font-mono)">Start when you're ready</div>
+        </div>
+        <button id="peakFocusBtn" type="button" style="background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);border-radius:20px;color:#6EE7B7;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;padding:7px 14px;cursor:pointer;white-space:nowrap">START</button>
+      </div>
+    </div>
+
+    <!-- Smart alarm suggestion -->
+    <div id="peakAlarmCard" style="display:none;background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.2);border-radius:14px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">⏰</span>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(196,181,253,0.5);margin-bottom:2px">SMART ALARM</div>
+          <div id="peakAlarmText" style="font-size:12px;color:rgba(196,181,253,0.9);line-height:1.5"></div>
+        </div>
+      </div>
     </div>
 
     <div class="peak-card">
@@ -21467,9 +21524,17 @@ function switchTab(tab) {
     _renderNudge(caffLogs, avgBed, wakeHour);
     _renderHistoryChart(_nowScore);
     _renderWeeklyReport(oura);
+    _renderWeightChart();
+    _initFocusTimer(arr, wakeHour);
+    _renderMarkets();
     if (_peakDayOffset === 0) {
       _renderMorningBrief(readiness, sleepScore, recovery, debtStr, wakeHour, arr);
       _renderTomorrowPredict(readiness, debtStr, wakeHour, caffLogs, loadAlc());
+      _renderSmartAlarm(readiness, debtStr, oura);
+      // Commute alert uses cached weather
+      var _wxCached = null;
+      try { _wxCached = JSON.parse(localStorage.getItem(WEATHER_KEY + today())); } catch(e2) {}
+      if (_wxCached) _checkCommuteAlert(_wxCached);
     } else {
       var _bc = document.getElementById('peakMorningBriefCard'); if (_bc) _bc.style.display = 'none';
       var _tp = document.getElementById('peakTomorrowPredict'); if (_tp) _tp.style.display = 'none';
@@ -21599,6 +21664,403 @@ function switchTab(tab) {
     detail.textContent = text;
   }
 
+  // ══════════════════════════════════════════════════════════════
+  // FEATURE 1 — Markets strip (Nifty, Sensex, BTC, Gold, USD/INR)
+  // ══════════════════════════════════════════════════════════════
+  var MARKETS_KEY = 'goals_peak_markets_';
+  async function _fetchMarkets() {
+    var tod = today();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(MARKETS_KEY + tod)); } catch(e) {}
+    // Cache valid for 5 min
+    if (cached && cached.ts && (Date.now()/1000 - cached.ts) < 300) return cached;
+    try {
+      var r = await fetch('/api/markets');
+      if (!r.ok) return cached;
+      var data = await r.json();
+      localStorage.setItem(MARKETS_KEY + tod, JSON.stringify(data));
+      return data;
+    } catch(e) { return cached; }
+  }
+
+  async function _renderMarkets() {
+    var strip = document.getElementById('peakMarketsStrip');
+    var tickersEl = document.getElementById('peakMarketsTickers');
+    var timeEl = document.getElementById('peakMarketsTime');
+    if (!strip || !tickersEl) return;
+    var data = await _fetchMarkets();
+    if (!data || !data.tickers) return;
+    strip.style.display = '';
+    tickersEl.innerHTML = data.tickers.map(function(t) {
+      if (t.price == null) return '';
+      var chg = t.change != null ? t.change : 0;
+      var up = chg >= 0;
+      var col = up ? '#6EE7B7' : '#EF4444';
+      var arrow = up ? '▲' : '▼';
+      var fmt = t.label === 'BTC' ? Math.round(t.price).toLocaleString() :
+                t.label === 'GOLD' ? t.price.toFixed(1) :
+                t.label === 'USD/INR' ? t.price.toFixed(2) :
+                Math.round(t.price).toLocaleString();
+      return '<div style="display:flex;flex-direction:column;gap:1px">' +
+        '<span style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:0.06em">' + t.label + '</span>' +
+        '<span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text-primary)">' + fmt + '</span>' +
+        '<span style="font-family:var(--font-mono);font-size:9px;color:' + col + '">' + arrow + ' ' + Math.abs(chg).toFixed(2) + '%</span>' +
+        '</div>';
+    }).join('');
+    if (timeEl && data.ts) {
+      var d = new Date(data.ts * 1000);
+      timeEl.textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FEATURE 2 — Body weight 30-day trend chart
+  // ══════════════════════════════════════════════════════════════
+  function _renderWeightChart() {
+    var card = document.getElementById('peakWeightCard');
+    if (!card) return;
+    var weights = [];
+    try { weights = JSON.parse(localStorage.getItem('po_coach_weights') || '[]'); } catch(e) {}
+    if (weights.length < 2) return;
+    // Last 30 entries
+    var pts = weights.slice(-30);
+    card.style.display = '';
+    var canvas = document.getElementById('peakWeightCanvas');
+    if (!canvas) return;
+    var W = canvas.offsetWidth || 300;
+    canvas.width = W;
+    var H = 56;
+    var ctx2 = canvas.getContext('2d');
+    ctx2.clearRect(0, 0, W, H);
+    var vals = pts.map(function(p){ return p.weight; });
+    var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+    var range = mx - mn || 1;
+    var pad = 6;
+    function xp(i) { return pad + (i / (pts.length - 1)) * (W - pad*2); }
+    function yp(v) { return H - pad - ((v - mn) / range) * (H - pad*2); }
+    // Fill
+    var grad = ctx2.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, 'rgba(110,231,183,0.18)');
+    grad.addColorStop(1, 'rgba(110,231,183,0)');
+    ctx2.beginPath();
+    ctx2.moveTo(xp(0), yp(vals[0]));
+    for (var i = 1; i < pts.length; i++) ctx2.lineTo(xp(i), yp(vals[i]));
+    ctx2.lineTo(xp(pts.length-1), H);
+    ctx2.lineTo(xp(0), H);
+    ctx2.closePath();
+    ctx2.fillStyle = grad;
+    ctx2.fill();
+    // Line
+    ctx2.beginPath();
+    ctx2.moveTo(xp(0), yp(vals[0]));
+    for (var j = 1; j < pts.length; j++) ctx2.lineTo(xp(j), yp(vals[j]));
+    ctx2.strokeStyle = '#6EE7B7';
+    ctx2.lineWidth = 1.5;
+    ctx2.stroke();
+    // Latest dot
+    ctx2.beginPath();
+    ctx2.arc(xp(pts.length-1), yp(vals[vals.length-1]), 3, 0, Math.PI*2);
+    ctx2.fillStyle = '#6EE7B7';
+    ctx2.fill();
+    // Stats
+    var first = vals[0], last = vals[vals.length-1];
+    var delta = +(last - first).toFixed(1);
+    var deltaEl = document.getElementById('peakWeightDelta');
+    if (deltaEl) {
+      var dSign = delta > 0 ? '+' : '';
+      deltaEl.textContent = dSign + delta + ' kg (' + pts.length + ' logs)';
+      deltaEl.style.background = delta <= 0 ? 'rgba(110,231,183,0.1)' : 'rgba(239,68,68,0.1)';
+      deltaEl.style.color = delta <= 0 ? '#6EE7B7' : '#EF4444';
+    }
+    var curEl = document.getElementById('peakWeightCurrent');
+    if (curEl) curEl.textContent = last + ' kg';
+    var minEl = document.getElementById('peakWeightMin');
+    if (minEl) minEl.textContent = mn + ' kg';
+    var maxEl = document.getElementById('peakWeightMax');
+    if (maxEl) maxEl.textContent = mx + ' kg';
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FEATURE 3 — Focus session timer
+  // ══════════════════════════════════════════════════════════════
+  var _focusActive = false, _focusEnd = 0, _focusDur = 0, _focusRaf = null;
+  function _initFocusTimer(arr, wakeHour) {
+    var btn = document.getElementById('peakFocusBtn');
+    var zoneEl = document.getElementById('peakFocusZone');
+    if (!btn) return;
+    // Show current window
+    var wins = (typeof findBestWindows === 'function') ? findBestWindows(arr, wakeHour) : [];
+    var curWin = wins && wins[0];
+    if (zoneEl && curWin) zoneEl.textContent = curWin.label + ' · ' + curWin.dur + 'min window';
+    btn.addEventListener('click', function() {
+      if (_focusActive) {
+        // Stop
+        _focusActive = false;
+        if (_focusRaf) cancelAnimationFrame(_focusRaf);
+        _focusRaf = null;
+        btn.textContent = 'START';
+        btn.style.background = 'rgba(110,231,183,0.1)';
+        document.getElementById('peakFocusTimer').textContent = '—';
+        document.getElementById('peakFocusBarFill').style.width = '0%';
+        document.getElementById('peakFocusMsg').textContent = 'Start when you\'re ready';
+        if (window._arcSetMood) window._arcSetMood('idle');
+      } else {
+        // Start
+        var durMin = (curWin && curWin.dur) ? Math.min(curWin.dur, 90) : 90;
+        _focusDur = durMin * 60;
+        _focusEnd = Date.now() + _focusDur * 1000;
+        _focusActive = true;
+        btn.textContent = 'STOP';
+        btn.style.background = 'rgba(239,68,68,0.1)';
+        btn.style.borderColor = 'rgba(239,68,68,0.3)';
+        btn.style.color = '#EF4444';
+        if (window._arcSetMood) window._arcSetMood('responding');
+        _jarvisSpeak('Focus block initiated, ' + durMin + ' minutes, sir. Eliminating distractions.');
+        document.getElementById('peakFocusMsg').textContent = 'In the zone — deep work mode';
+        _tickFocus(durMin);
+      }
+    });
+  }
+  function _tickFocus(totalMin) {
+    if (!_focusActive) return;
+    var rem = Math.max(0, (_focusEnd - Date.now()) / 1000);
+    var m = Math.floor(rem / 60), s = Math.floor(rem % 60);
+    var timerEl = document.getElementById('peakFocusTimer');
+    var fillEl = document.getElementById('peakFocusBarFill');
+    var msgEl = document.getElementById('peakFocusMsg');
+    if (timerEl) timerEl.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    var pct = (1 - rem / _focusDur) * 100;
+    if (fillEl) fillEl.style.width = pct.toFixed(1) + '%';
+    if (rem <= 0) {
+      // Done
+      _focusActive = false;
+      if (timerEl) timerEl.textContent = 'DONE';
+      if (msgEl) msgEl.textContent = 'Session complete. Well done, sir.';
+      document.getElementById('peakFocusBtn').textContent = 'START';
+      document.getElementById('peakFocusBtn').style.background = 'rgba(110,231,183,0.1)';
+      document.getElementById('peakFocusBtn').style.borderColor = 'rgba(110,231,183,0.3)';
+      document.getElementById('peakFocusBtn').style.color = '#6EE7B7';
+      if (window._arcSetMood) window._arcSetMood('idle');
+      _jarvisSpeak('Focus block complete, sir. ' + totalMin + ' minutes of deep work logged.');
+      return;
+    }
+    // 80% warning once
+    if (pct >= 80 && pct < 80 + (100 / _focusDur)) {
+      _jarvisSpeak('Heads up, sir — ' + Math.round(rem / 60) + ' minutes remaining in your focus block.');
+    }
+    _focusRaf = requestAnimationFrame(function(){ setTimeout(function(){ _tickFocus(totalMin); }, 1000); });
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FEATURE 4 — Smart alarm (optimal wake suggestion)
+  // ══════════════════════════════════════════════════════════════
+  var ALARM_KEY = 'goals_peak_alarm_';
+  async function _renderSmartAlarm(readiness, debtStr, oura) {
+    var card = document.getElementById('peakAlarmCard');
+    var textEl = document.getElementById('peakAlarmText');
+    if (!card || !textEl) return;
+    var tod = today();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(ALARM_KEY + tod)); } catch(e) {}
+    if (cached && cached.text) {
+      card.style.display = '';
+      textEl.textContent = cached.text;
+      return;
+    }
+    // Only run after 18:00
+    if (nowHour() < 18) return;
+    var debtH = 0;
+    try { var dm = debtStr && debtStr.match(/(\d+)h\s*(\d+)?m?/); if (dm) debtH = parseInt(dm[1]) + (dm[2] ? parseInt(dm[2])/60 : 0); } catch(e){}
+    var tasks = [];
+    try { var sched = localStorage.getItem('goals_peak_schedule_' + tod); if (sched) tasks = JSON.parse(sched); } catch(e){}
+    var hasEarlyTask = tasks.some(function(t){ return t.time && t.time < '08:00'; });
+    var prompt = 'You are JARVIS. Based on: readiness=' + readiness + ', sleep_debt=' + debtStr + ', tomorrow_early_task=' + hasEarlyTask + '. Suggest a single optimal wake time for tomorrow. Consider 90-minute sleep cycles (best wake times: after 4.5h, 6h, 7.5h of sleep). If debt > 1h, recommend extra 30min sleep. Reply in exactly one sentence, e.g. "I recommend a 06:30 wake tomorrow for a complete 7.5-hour cycle, sir." Address as sir. Be specific.';
+    try {
+      var reply = await gemini(prompt);
+      var text = (reply && reply.trim()) || null;
+      if (!text) return;
+      localStorage.setItem(ALARM_KEY + tod, JSON.stringify({text: text}));
+      card.style.display = '';
+      textEl.textContent = text;
+      _jarvisSpeak(text);
+    } catch(e) {}
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FEATURE 5 — Commute rain alert
+  // ══════════════════════════════════════════════════════════════
+  var COMMUTE_HOUR = 17; // default leave time 5pm, user can change via JARVIS
+  function _checkCommuteAlert(wx) {
+    if (!wx) return;
+    var h = nowHour();
+    if (h < COMMUTE_HOUR - 1 || h > COMMUTE_HOUR + 1) return;
+    var rainTypes = ['Rain', 'Drizzle', 'Thunderstorm'];
+    var isRain = rainTypes.indexOf(wx.icon) >= 0;
+    if (!isRain) return;
+    var nudgeBar = document.getElementById('peakNudgeBar');
+    var nudgeText = document.getElementById('peakNudgeText');
+    if (!nudgeBar || !nudgeText) return;
+    var msg = 'Rain detected outside, sir — consider leaving by ' + (COMMUTE_HOUR - 1) + ':30 or carry an umbrella.';
+    nudgeBar.style.display = '';
+    nudgeText.textContent = msg;
+    var spokenKey = 'peak_commute_alert_' + today();
+    if (!localStorage.getItem(spokenKey)) {
+      localStorage.setItem(spokenKey, '1');
+      _jarvisSpeak(msg);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FEATURE 6 — Hey JARVIS always-on voice
+  // ══════════════════════════════════════════════════════════════
+  var _voiceActive = false, _voiceListening = false, _voiceRecognition = null, _voiceWakeRecog = null;
+
+  function _initHeyJarvis() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return; // browser doesn't support it
+    _startWakeWordListener(SR);
+  }
+
+  function _setVoiceBar(show, status) {
+    var bar = document.getElementById('peakVoiceBar');
+    var statusEl = document.getElementById('peakVoiceStatus');
+    if (!bar) return;
+    bar.style.display = show ? 'flex' : 'none';
+    if (statusEl && status) statusEl.textContent = status;
+  }
+
+  function _startWakeWordListener(SR) {
+    if (_voiceWakeRecog) { try { _voiceWakeRecog.stop(); } catch(e){} }
+    var recog = new SR();
+    recog.continuous = true;
+    recog.interimResults = false;
+    recog.lang = 'en-IN';
+    recog.onresult = function(e) {
+      var transcript = e.results[e.results.length - 1][0].transcript.toLowerCase().trim();
+      if (transcript.indexOf('jarvis') >= 0 || transcript.indexOf('travis') >= 0) {
+        recog.stop();
+        _voiceWakeRecog = null;
+        _startCommandListener(SR);
+      }
+    };
+    recog.onend = function() {
+      // Restart wake listener unless a command is active
+      if (!_voiceActive) {
+        setTimeout(function() { _startWakeWordListener(SR); }, 500);
+      }
+    };
+    recog.onerror = function() {
+      setTimeout(function() { _startWakeWordListener(SR); }, 2000);
+    };
+    try { recog.start(); } catch(e){}
+    _voiceWakeRecog = recog;
+  }
+
+  function _startCommandListener(SR) {
+    _voiceActive = true;
+    _setVoiceBar(true, 'Listening, sir…');
+    if (window._arcSetMood) window._arcSetMood('thinking');
+    _jarvisSpeak('Sir?'); // brief acknowledgement
+
+    var recog2 = new SR();
+    recog2.continuous = false;
+    recog2.interimResults = true;
+    recog2.lang = 'en-IN';
+    recog2.onresult = function(e) {
+      var interims = '', finals = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finals += e.results[i][0].transcript;
+        else interims += e.results[i][0].transcript;
+      }
+      var statusEl = document.getElementById('peakVoiceStatus');
+      if (statusEl && (finals || interims)) statusEl.textContent = '"' + (finals || interims) + '"';
+      if (finals) {
+        recog2.stop();
+        _voiceActive = false;
+        _setVoiceBar(false);
+        var input = document.getElementById('peakCoachInput');
+        if (input) input.value = finals;
+        sendCoachMessage(finals);
+        // Restart wake listener after TTS finishes (delay)
+        var SR2 = window.SpeechRecognition || window.webkitSpeechRecognition;
+        setTimeout(function(){ _startWakeWordListener(SR2); }, 4000);
+      }
+    };
+    recog2.onend = function() {
+      if (_voiceActive) {
+        _voiceActive = false;
+        _setVoiceBar(false);
+        var SR2 = window.SpeechRecognition || window.webkitSpeechRecognition;
+        setTimeout(function(){ _startWakeWordListener(SR2); }, 500);
+      }
+    };
+    recog2.onerror = function() {
+      _voiceActive = false;
+      _setVoiceBar(false);
+      var SR2 = window.SpeechRecognition || window.webkitSpeechRecognition;
+      setTimeout(function(){ _startWakeWordListener(SR2); }, 2000);
+    };
+    // Auto-timeout after 8s silence
+    var _vTimeout = setTimeout(function(){
+      try { recog2.stop(); } catch(e){}
+    }, 8000);
+    recog2.onresult._timeout = _vTimeout;
+    try { recog2.start(); } catch(e){ _voiceActive = false; _setVoiceBar(false); }
+    _voiceRecognition = recog2;
+  }
+
+  // ── Weather + News fetch helpers ─────────────────────────────
+  var WEATHER_KEY = 'goals_peak_weather_';
+  var NEWS_KEY    = 'goals_peak_news_';
+  var _GEO_KEY    = 'peak_geo_v1';
+
+  async function _getLocation() {
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(_GEO_KEY)); } catch(e) {}
+    if (cached && cached.lat) return cached;
+    return new Promise(function(resolve) {
+      if (!navigator.geolocation) { resolve({lat:18.5204, lng:73.8567, city:'Pune'}); return; }
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          var g = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+          localStorage.setItem(_GEO_KEY, JSON.stringify(g));
+          resolve(g);
+        },
+        function() { resolve({lat:18.5204, lng:73.8567, city:'Pune'}); },
+        {timeout:5000, maximumAge:3600000}
+      );
+    });
+  }
+
+  async function _fetchWeather() {
+    var tod = today();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(WEATHER_KEY + tod)); } catch(e) {}
+    if (cached && cached.temp != null) return cached;
+    try {
+      var geo = await _getLocation();
+      var r = await fetch('/api/weather?lat=' + geo.lat + '&lng=' + geo.lng);
+      if (!r.ok) return null;
+      var data = await r.json();
+      localStorage.setItem(WEATHER_KEY + tod, JSON.stringify(data));
+      return data;
+    } catch(e) { return null; }
+  }
+
+  async function _fetchNews() {
+    var tod = today();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(NEWS_KEY + tod)); } catch(e) {}
+    if (cached && (cached.india || cached.business)) return cached;
+    try {
+      var r = await fetch('/api/news');
+      if (!r.ok) return null;
+      var data = await r.json();
+      localStorage.setItem(NEWS_KEY + tod, JSON.stringify(data));
+      return data;
+    } catch(e) { return null; }
+  }
+
   // ── Morning Brief (auto-generate once per day) ─────────────
   var _briefFlight = false;
   var BRIEF_KEY = 'goals_peak_brief_';
@@ -21611,33 +22073,98 @@ function switchTab(tab) {
     try { cached = JSON.parse(localStorage.getItem(BRIEF_KEY + tod)); } catch(e) {}
     if (cached && cached.text) {
       card.style.display = '';
-      textEl.textContent = cached.text;
+      textEl.innerHTML = cached.text;
       var _sb = document.getElementById('peakBriefSpeakBtn'); if (_sb) _sb.style.display = '';
+      if (typeof _jarvisSpeak === 'function') _jarvisSpeak(_briefPlainText(cached.text));
       return;
     }
     if (_briefFlight) return;
     _briefFlight = true;
     card.style.display = '';
-    textEl.textContent = 'Generating your brief…';
+    textEl.textContent = 'Gathering intel… ';
     try {
-      // Find best window label for the prompt
+      // Fetch weather + news in parallel alongside existing data
       var windows = findBestWindows(arr, wakeHour);
       var bestWin = windows && windows[0] ? windows[0].label : 'mid-morning';
       var debtText = debtStr ? 'sleep debt ' + debtStr : 'no sleep debt';
-      var _gymB = 'none'; try { var _dd = JSON.parse(localStorage.getItem('po_coach_workout_done')||'{}'); var _dk = Object.keys(_dd).sort().reverse(); if (_dd[tod]) _gymB='trained today'; else if (_dk.length) _gymB='last trained '+_dk[0]; } catch(e){}
-      var _wtB = ''; try { var _wt2 = JSON.parse(localStorage.getItem('po_coach_weights')||'[]'); if (_wt2.length) { var _lw2=_wt2[_wt2.length-1]; _wtB=', body_weight='+_lw2.weight+'kg'; } } catch(e){}
-      var alcB = 0; try { alcB = loadAlc().reduce(function(s,l){return s+(l.units||0);},0); } catch(e){}
-      var prompt = 'You are JARVIS, personal AI performance coach. Generate a 3-line morning brief for sir. ' +
-        'Data: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + ', peak_window=' + bestWin + ', wake=' + Math.floor(wakeHour) + ':00, gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
-        'Format: exactly 3 short lines (no bullets, no numbering). Line 1: one-sentence readiness assessment. Line 2: one training/energy recommendation referencing gym history. Line 3: one caffeine or sleep action. Address as sir. Be specific and concise.';
+      var _gymB = 'none';
+      try { var _dd = JSON.parse(localStorage.getItem('po_coach_workout_done')||'{}'); var _dk = Object.keys(_dd).sort().reverse(); if (_dd[tod]) _gymB='trained today'; else if (_dk.length) _gymB='last trained '+_dk[0]; } catch(e){}
+      var _wtB = '';
+      try { var _wt2 = JSON.parse(localStorage.getItem('po_coach_weights')||'[]'); if (_wt2.length) { var _lw2=_wt2[_wt2.length-1]; _wtB=', body_weight='+_lw2.weight+'kg'; } } catch(e){}
+      var alcB = 0;
+      try { alcB = loadAlc().reduce(function(s,l){return s+(l.units||0);},0); } catch(e){}
+
+      var results = await Promise.all([_fetchWeather(), _fetchNews()]);
+      var wx   = results[0];
+      var news = results[1];
+
+      // Build weather context string
+      var wxStr = '';
+      var wxEmoji = '';
+      if (wx) {
+        var icon = wx.icon || '';
+        wxEmoji = icon === 'Clear' ? '☀️' : icon === 'Rain' || icon === 'Drizzle' ? '🌧️' : icon === 'Clouds' ? '⛅' : icon === 'Thunderstorm' ? '⛈️' : icon === 'Mist' || icon === 'Haze' ? '🌫️' : '🌤️';
+        wxStr = 'weather=' + wx.temp + '°C (feels ' + wx.feels_like + '°C), ' + wx.description + ', humidity=' + wx.humidity + '%, wind=' + wx.wind_kph + 'kph, AQI=' + wx.aqi_label;
+        if (wx.sunrise) {
+          var srDate = new Date(wx.sunrise * 1000);
+          var ssDate = new Date(wx.sunset  * 1000);
+          wxStr += ', sunrise=' + srDate.getHours() + ':' + String(srDate.getMinutes()).padStart(2,'0') + ', sunset=' + ssDate.getHours() + ':' + String(ssDate.getMinutes()).padStart(2,'0');
+        }
+      }
+
+      // Build news context string
+      var newsStr = '';
+      if (news) {
+        var headlines = [].concat(news.india || [], news.business || []).slice(0, 3);
+        if (headlines.length) newsStr = 'headlines: ' + headlines.join(' | ');
+      }
+
+      var nowH = Math.floor(wakeHour);
+      var prompt = 'You are JARVIS, Tony Stark\'s AI. Generate a morning brief for sir in the JARVIS style — confident, intelligent, slightly formal, addresses as "sir". ' +
+        'Current time: ' + nowH + ':00. ' +
+        (wxStr ? wxStr + '. ' : '') +
+        'Biometrics: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + '. ' +
+        'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
+        (newsStr ? newsStr + '. ' : '') +
+        'Format your response as exactly 4 lines separated by newlines (no bullets, no dashes, no numbering): ' +
+        'Line 1: Greeting + time + weather summary with one outdoor recommendation if AQI good, or warning if poor. ' +
+        'Line 2: Biometric status — readiness, sleep, HRV in one sentence. ' +
+        'Line 3: Training and focus window recommendation based on gym history and readiness. ' +
+        'Line 4: One news headline woven into a market/world context sentence. ' +
+        'Be specific, concise, and speak exactly as JARVIS would. No markdown.';
+
       var reply = await gemini(prompt);
       var text = (reply && reply.trim()) || 'Unable to generate brief — check Gemini connection.';
-      localStorage.setItem(BRIEF_KEY + tod, JSON.stringify({text: text}));
-      textEl.textContent = text;
+
+      // Render with weather chip header
+      var html = '';
+      if (wx) {
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
+          '<span style="font-size:18px">' + wxEmoji + '</span>' +
+          '<span style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600">' + wx.temp + '°C</span>' +
+          '<span style="font-size:11px;color:var(--text-tertiary)">' + wx.description + '</span>' +
+          '<span style="font-family:var(--font-mono);font-size:10px;background:rgba(255,255,255,0.05);padding:2px 7px;border-radius:10px;color:' + (wx.aqi <= 2 ? '#6EE7B7' : wx.aqi === 3 ? '#F59E0B' : '#EF4444') + '">' +
+          'AQI ' + wx.aqi_label + '</span>' +
+          '<span style="font-size:10px;color:rgba(255,255,255,0.25)">💧' + wx.humidity + '%</span>' +
+          '<span style="font-size:10px;color:rgba(255,255,255,0.25)">💨' + wx.wind_kph + 'km/h</span>' +
+          '</div>';
+      }
+      html += '<div style="white-space:pre-line;font-size:13px;line-height:1.7;color:var(--text-secondary)">' + _escHtml(text) + '</div>';
+
+      localStorage.setItem(BRIEF_KEY + tod, JSON.stringify({text: html, plain: text}));
+      textEl.innerHTML = html;
       var _sb2 = document.getElementById('peakBriefSpeakBtn'); if (_sb2) _sb2.style.display = '';
+      if (typeof _jarvisSpeak === 'function') _jarvisSpeak(text);
     } catch(e) {
       textEl.textContent = 'Brief unavailable — ' + (e && e.message || 'connection error');
     } finally { _briefFlight = false; }
+  }
+
+  function _briefPlainText(html) {
+    var d = document.createElement('div'); d.innerHTML = html; return d.textContent || '';
+  }
+  function _escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   // ── Sick flag ─────────────────────────────────────────────
@@ -22259,7 +22786,17 @@ function switchTab(tab) {
       var _wts = JSON.parse(localStorage.getItem('po_coach_weights') || '[]');
       if (_wts.length) { var _lw = _wts[_wts.length - 1]; wtSummary = _lw.weight + 'kg (' + _lw.dateKey + ')'; }
     } catch(e) {}
-    var context = 'Oura readiness='+readiness+', sleep_score='+sleepScore+', HRV_ms='+hrv+', HRV_balance='+hrvBalance+', caffeine='+caffSummary+', alcohol_today='+alcSummary+', meds='+medSummary+', feel='+feelSummary+', gym='+gymSummary+', body_weight='+wtSummary+', time='+Math.floor(nowHour())+':00';
+    // Pull latest markets for context
+    var mktStr = '';
+    try {
+      var _mkt = JSON.parse(localStorage.getItem(MARKETS_KEY + tod3) || 'null');
+      if (_mkt && _mkt.tickers) {
+        mktStr = _mkt.tickers.filter(function(t){ return t.price != null; }).map(function(t){
+          return t.label + '=' + (t.label === 'NIFTY' || t.label === 'SENSEX' ? Math.round(t.price) : t.price) + (t.change != null ? '(' + (t.change >= 0 ? '+' : '') + t.change + '%)' : '');
+        }).join(', ');
+      }
+    } catch(e2) {}
+    var context = 'Oura readiness='+readiness+', sleep_score='+sleepScore+', HRV_ms='+hrv+', HRV_balance='+hrvBalance+', caffeine='+caffSummary+', alcohol_today='+alcSummary+', meds='+medSummary+', feel='+feelSummary+', gym='+gymSummary+', body_weight='+wtSummary+', time='+Math.floor(nowHour())+':00'+(mktStr?', markets='+mktStr:'');
     var prompt = 'You are JARVIS, a sophisticated AI performance coach. Always address the user as "sir". Context: '+context+'. User: '+msg+'. Answer concisely in 2-3 sentences. Be specific, data-driven, and actionable. Reference the actual numbers from context. Start your response by addressing sir directly.';
     var loading = document.createElement('div');
     loading.className = 'peak-coach-msg coach-msg';
@@ -23423,6 +23960,9 @@ function switchTab(tab) {
       function setMood(m) { _mood = m; }
       window._arcSetMood = setMood;
       window._jarvisSpeak = function(text) { _jarvisSpeak(text); };
+
+      // Boot Hey JARVIS voice listener
+      _initHeyJarvis();
 
       function hexToRgb(hex) {
         var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
