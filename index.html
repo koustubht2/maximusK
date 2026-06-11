@@ -22185,11 +22185,14 @@ function switchTab(tab) {
         'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
         (newsStr ? newsStr + '. ' : '') +
         'Format your response as exactly 4 lines separated by newlines (no bullets, no dashes, no numbering): ' +
-        'Line 1: Greeting + time + weather summary with one outdoor recommendation if AQI good, or warning if poor. ' +
+        'Line 1: Greeting + time, then ALWAYS state the weather in natural spoken language with the actual numbers — ' +
+        'temperature in degrees, the condition, humidity, wind, and air quality — e.g. "It is 26 degrees in Pune, partly cloudy, ' +
+        'with moderate air quality and a light 14 kilometre wind, sir." Add one outdoor recommendation if AQI is good, or a caution if poor. ' +
+        'Spell units out as words (degrees, percent, kilometres per hour) — never use symbols like ° % or km/h. ' +
         'Line 2: Biometric status — readiness, sleep, HRV in one sentence. ' +
         'Line 3: Training and focus window recommendation based on gym history and readiness. ' +
         'Line 4: One news headline woven into a market/world context sentence. ' +
-        'Be specific, concise, and speak exactly as JARVIS would. No markdown.';
+        'Be specific, concise, and speak exactly as JARVIS would. No markdown, no emojis.';
 
       var reply = await gemini(prompt);
       var text = (reply && reply.trim()) || 'Unable to generate brief — check Gemini connection.';
@@ -22296,21 +22299,20 @@ function switchTab(tab) {
 
   // Speak the morning brief via Gemini TTS. Uses cached audio if present for
   // today; otherwise fetches /api/tts, caches the blob, then plays.
-  // Strip the weather chip / emojis / unit stats so TTS reads only the prose.
+  // Clean text for TTS. The Gemini PROSE already weaves weather/temp/AQI in
+  // naturally ("It's 26 degrees with moderate air quality, sir") — we KEEP all
+  // of that (the Iron Man brief). We only strip stray emoji icons and jump past
+  // any leftover visual-chip fragment to the greeting, so the spoken stats are
+  // the natural-language ones, not the raw "🌤️ 26°C 💧56% 💨14km/h" widget.
   function _stripBriefChip(s) {
     if (!s) return s;
     var t = String(s);
-    // Remove emoji & pictographic symbols (weather/water/wind icons)
+    // Remove emoji & pictographic symbols only (icons don't read well aloud)
     try { t = t.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️]/gu, ' '); } catch(e){}
-    // Remove leftover stat fragments like "26°C", "56%", "14km/h", "AQI Good"
-    t = t.replace(/\d+\s*°\s*C/gi, ' ')
-         .replace(/\bAQI\b[^.,]*/gi, ' ')
-         .replace(/\d+\s*%/g, ' ')
-         .replace(/\d+\s*km\/?h/gi, ' ');
-    // If the prose clearly starts at a greeting, cut anything before it
+    // If a greeting exists, start there — this drops any chip text that may
+    // precede the prose, WITHOUT removing the natural stats inside the prose.
     var m = t.match(/(good (morning|afternoon|evening)|hello|greetings)[\s,]/i);
     if (m && m.index > 0) t = t.slice(m.index);
-    // Tidy whitespace
     return t.replace(/\s{2,}/g, ' ').trim();
   }
 
