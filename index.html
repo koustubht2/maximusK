@@ -24086,35 +24086,34 @@ function switchTab(tab) {
           try { log('WebGPU: ' + (navigator.gpu ? 'available' : 'absent')); } catch(e){}
 
           setStatus('Loading neural engine…');
-          var ORT_VER = '1.19.2';
 
-          log('=== IMPORTS ===');
-          log('importing onnxruntime-web@' + ORT_VER + ' …');
-          var ort = await import('https://esm.sh/onnxruntime-web@' + ORT_VER);
-          log('ort imported. version=' + (ort && ort.env && ort.env.versions && ort.env.versions.common || '?'));
+          log('=== IMPORTS (upstream @diffusionstudio/vits-web via jsdelivr) ===');
+          // KEY FIX: Mintplex/esm.sh mangled the phonemizer's relative import
+          // (await import("./dist/...")), so the espeak WASM never loaded and
+          // predict() hung forever. The UPSTREAM library @diffusionstudio/vits-web
+          // served via jsdelivr's +esm preserves the internal import path
+          // (rewrites it to a proper absolute CDN URL), so the phonemizer loads.
+          log('importing onnxruntime-web (for thread config)…');
+          var ort = null;
+          try { ort = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/+esm'); log('ort imported via jsdelivr.'); }
+          catch(e) { log('ort import failed (non-fatal): ' + e.message); }
 
-          log('importing piper-tts-web@1.0.4 …');
-          var tts = await import('https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4?deps=onnxruntime-web@' + ORT_VER);
-          log('piper imported. exports: ' + Object.keys(tts).join(','));
+          log('importing vits-web@1.0.3 via jsdelivr +esm …');
+          var tts = await import('https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm');
+          log('vits-web imported. exports: ' + Object.keys(tts).join(','));
 
-          // ── Force single-thread (the suspected hang cause) ──────────
+          // ── Force single-thread (our proven SharedArrayBuffer fix) ──
+          // vits-web ALSO sets numThreads = hardwareConcurrency with no SAB
+          // check. We set it on the shared ort env before predict() runs.
           log('=== ORT CONFIG ===');
           var coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
           if (ort && ort.env && ort.env.wasm) {
             ort.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
             ort.env.wasm.proxy = false;
-            ort.env.wasm.simd = true;
-            log('set numThreads=' + ort.env.wasm.numThreads + ' proxy=false simd=true');
+            log('set numThreads=' + ort.env.wasm.numThreads + ' (coi=' + coi + ')');
           } else {
-            log('WARNING: ort.env.wasm not accessible — cannot set threads!');
+            log('WARNING: separate ort env not reachable — relying on lib default (may hang if multi-threaded)');
           }
-
-          var WASM_PATHS = {
-            onnxWasm:  'https://cdn.jsdelivr.net/npm/onnxruntime-web@' + ORT_VER + '/dist/',
-            piperData: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data',
-            piperWasm: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm'
-          };
-          log('onnxWasm path: ' + WASM_PATHS.onnxWasm);
 
           // ── Model cache check ──────────────────────────────────────
           log('=== MODEL ===');
@@ -24141,33 +24140,13 @@ function switchTab(tab) {
             log('model already cached — skipping download.');
           }
 
-          // ── Session init ───────────────────────────────────────────
-          log('=== SESSION ===');
-          log('calling TtsSession.create() …');
-          setStatus('Initialising session…');
-          var session = await tts.TtsSession.create({
-            voiceId: PIPER_VOICE,
-            wasmPaths: WASM_PATHS,
-            logger: function(m){ log('  [lib] ' + m); },
-            progress: function(p) {
-              if (p && p.total) { var pc = Math.round(p.loaded*100/p.total); log('  init progress ' + pc + '%'); setStatus('Loading… ' + pc + '%'); }
-            }
-          });
-          log('session created. ready=' + (session && session.ready));
-
-          // Re-assert single-thread AFTER create() (lib resets it in init())
-          if (ort && ort.env && ort.env.wasm) {
-            ort.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
-            log('re-asserted numThreads=' + ort.env.wasm.numThreads + ' (post-init)');
-          }
-
-          // ── Synthesis ──────────────────────────────────────────────
+          // ── Synthesis (upstream predict() loads phonemizer internally) ──
           log('=== SYNTHESIS ===');
-          log('calling session.predict() …');
+          log('calling tts.predict() — this loads the phonemizer + runs inference…');
           setStatus('Synthesising… (watch the log below)');
           var _synthStart = Date.now();
           var wav = await Promise.race([
-            session.predict('Good evening, sir. I am JARVIS.'),
+            tts.predict({ text: 'Good evening, sir. I am JARVIS.', voiceId: PIPER_VOICE }),
             new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('synthesis timed out after 60s')); }, 60000); })
           ]);
           log('predict() returned in ' + ((Date.now()-_synthStart)/1000).toFixed(2) + 's. blob size=' + (wav && wav.size) + ' bytes, type=' + (wav && wav.type));
