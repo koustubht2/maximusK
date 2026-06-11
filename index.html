@@ -22811,7 +22811,9 @@ function switchTab(tab) {
       var coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
       if (_piperOrt && _piperOrt.env && _piperOrt.env.wasm) {
         _piperOrt.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
-        _piperOrt.env.wasm.proxy = false;
+        // proxy=true runs inference in a Web Worker so the UI stays responsive.
+        // Without this the heavy ryan-high model blocks the main thread (~5s freeze).
+        _piperOrt.env.wasm.proxy = true;
       }
       // Pre-download the model if not cached (so first real line isn't a surprise)
       try {
@@ -24200,8 +24202,8 @@ function switchTab(tab) {
           var coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
           if (ort && ort.env && ort.env.wasm) {
             ort.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
-            ort.env.wasm.proxy = false;
-            log('set numThreads=' + ort.env.wasm.numThreads + ' (coi=' + coi + ')');
+            ort.env.wasm.proxy = true; // run inference in a worker — keep UI responsive
+            log('set numThreads=' + ort.env.wasm.numThreads + ' proxy=true (coi=' + coi + ')');
           } else {
             log('WARNING: separate ort env not reachable — relying on lib default (may hang if multi-threaded)');
           }
