@@ -22123,7 +22123,12 @@ function switchTab(tab) {
       card.style.display = '';
       textEl.innerHTML = cached.text;
       var _sb = document.getElementById('peakBriefSpeakBtn'); if (_sb) _sb.style.display = '';
-      // No auto-speak — brief shows silently. Tap the speaker button to hear it.
+      // Auto-speak (Gemini voice) only if opened before 10am, once per session.
+      if (nowHour() < 10 && !_briefSpokenThisSession) {
+        _briefSpokenThisSession = true;
+        var _plain = (cached.plain) || _briefPlainText(cached.text);
+        _speakBriefGemini(_plain);
+      }
       return;
     }
     if (force) {
@@ -22207,8 +22212,13 @@ function switchTab(tab) {
       localStorage.setItem(BRIEF_KEY + tod, JSON.stringify({text: html, plain: text}));
       textEl.innerHTML = html;
       var _sb2 = document.getElementById('peakBriefSpeakBtn'); if (_sb2) _sb2.style.display = '';
-      // Only speak when the user explicitly hits refresh (force) — never auto on launch.
-      if (force && typeof _jarvisSpeak === 'function') _jarvisSpeak(text);
+      // A freshly generated brief invalidates any cached audio for today.
+      _briefAudioClear();
+      // Speak (Gemini voice) on manual refresh, or auto if opened before 10am.
+      if (force || nowHour() < 10) {
+        _briefSpokenThisSession = true;
+        _speakBriefGemini(text);
+      }
     } catch(e) {
       textEl.textContent = 'Brief unavailable — ' + (e && e.message || 'connection error');
     } finally { _briefFlight = false; }
@@ -22219,6 +22229,125 @@ function switchTab(tab) {
   }
   function _escHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // Morning brief audio — Gemini TTS (Charon), cached locally in
+  // IndexedDB by date so it is NOT pushed into the Supabase JSON sync.
+  // Only the morning brief uses Gemini; everything else uses Piper.
+  // ══════════════════════════════════════════════════════════════
+  var _briefAudioDB = null;
+  function _briefDB() {
+    if (_briefAudioDB) return Promise.resolve(_briefAudioDB);
+    return new Promise(function(resolve, reject) {
+      var req = indexedDB.open('peak_brief_audio', 1);
+      req.onupgradeneeded = function(){ req.result.createObjectStore('audio'); };
+      req.onsuccess = function(){ _briefAudioDB = req.result; resolve(_briefAudioDB); };
+      req.onerror = function(){ reject(req.error); };
+    });
+  }
+  function _briefAudioGet(dateKey) {
+    return _briefDB().then(function(db){
+      return new Promise(function(resolve){
+        try {
+          var tx = db.transaction('audio','readonly').objectStore('audio').get(dateKey);
+          tx.onsuccess = function(){ resolve(tx.result || null); };
+          tx.onerror = function(){ resolve(null); };
+        } catch(e){ resolve(null); }
+      });
+    }).catch(function(){ return null; });
+  }
+  function _briefAudioPut(dateKey, blob) {
+    return _briefDB().then(function(db){
+      return new Promise(function(resolve){
+        try {
+          // keep only today's entry — clear the store first to avoid buildup
+          var store = db.transaction('audio','readwrite').objectStore('audio');
+          store.clear();
+          var tx = store.put(blob, dateKey);
+          tx.onsuccess = function(){ resolve(true); };
+          tx.onerror = function(){ resolve(false); };
+        } catch(e){ resolve(false); }
+      });
+    }).catch(function(){ return false; });
+  }
+
+  function _briefAudioClear() {
+    return _briefDB().then(function(db){
+      try { db.transaction('audio','readwrite').objectStore('audio').clear(); } catch(e){}
+    }).catch(function(){});
+  }
+
+  var _briefAudioEl = null;
+  function _briefPlayBlob(blob, onDone) {
+    try { if (_briefAudioEl) { _briefAudioEl.pause(); } } catch(e){}
+    _stopAllSpeech(); // stop any Piper line that may be playing
+    var url = URL.createObjectURL(blob);
+    var audio = new Audio();
+    _briefAudioEl = audio;
+    audio.src = url;
+    window._jarvisSpeaking = true;
+    if (window._arcSetMood) window._arcSetMood('responding');
+    var fired = false;
+    function done(){ if (fired) return; fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); URL.revokeObjectURL(url); if (onDone) onDone(); }
+    audio.onended = done; audio.onerror = done;
+    audio.play().catch(function(){ done(); });
+  }
+
+  // Speak the morning brief via Gemini TTS. Uses cached audio if present for
+  // today; otherwise fetches /api/tts, caches the blob, then plays.
+  // Strip the weather chip / emojis / unit stats so TTS reads only the prose.
+  function _stripBriefChip(s) {
+    if (!s) return s;
+    var t = String(s);
+    // Remove emoji & pictographic symbols (weather/water/wind icons)
+    try { t = t.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️]/gu, ' '); } catch(e){}
+    // Remove leftover stat fragments like "26°C", "56%", "14km/h", "AQI Good"
+    t = t.replace(/\d+\s*°\s*C/gi, ' ')
+         .replace(/\bAQI\b[^.,]*/gi, ' ')
+         .replace(/\d+\s*%/g, ' ')
+         .replace(/\d+\s*km\/?h/gi, ' ');
+    // If the prose clearly starts at a greeting, cut anything before it
+    var m = t.match(/(good (morning|afternoon|evening)|hello|greetings)[\s,]/i);
+    if (m && m.index > 0) t = t.slice(m.index);
+    // Tidy whitespace
+    return t.replace(/\s{2,}/g, ' ').trim();
+  }
+
+  var _briefTtsFlight = false;
+  async function _speakBriefGemini(rawText) {
+    var plainText = _stripBriefChip(rawText);
+    if (!plainText || _briefTtsFlight) return;
+    var dateKey = today();
+    // 1. Try cached audio for today
+    var cachedBlob = await _briefAudioGet(dateKey);
+    if (cachedBlob) { _briefPlayBlob(cachedBlob); return; }
+    // 2. Generate via Gemini TTS
+    _briefTtsFlight = true;
+    try {
+      var r = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: plainText, voice: 'Charon' })
+      });
+      var data = await r.json();
+      var part = data && data.candidates && data.candidates[0] &&
+                 data.candidates[0].content && data.candidates[0].content.parts &&
+                 data.candidates[0].content.parts[0];
+      if (!part || !part.inlineData) throw new Error('no audio');
+      var b64 = part.inlineData.data;
+      var mime = part.inlineData.mimeType || '';
+      var binary = atob(b64);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      var wavBuf = mime.indexOf('pcm') >= 0 ? _pcmToWav(bytes, 24000) : bytes.buffer;
+      var blob = new Blob([wavBuf], { type: 'audio/wav' });
+      _briefAudioPut(dateKey, blob); // cache for the rest of today (local only)
+      _briefPlayBlob(blob);
+    } catch(e) {
+      // Gemini unavailable → fall back to Piper so the brief still speaks
+      if (typeof _jarvisSpeak === 'function') _jarvisSpeak(plainText);
+    } finally { _briefTtsFlight = false; }
   }
 
   // ── Sick flag ─────────────────────────────────────────────
@@ -23607,14 +23736,16 @@ function switchTab(tab) {
       });
     }
 
-    // ── Morning Brief speaker ────────────────────────────────────
+    // ── Morning Brief speaker (Gemini voice, cached audio) ───────
     var briefSpeakBtn = document.getElementById('peakBriefSpeakBtn');
     if (briefSpeakBtn) {
       briefSpeakBtn.addEventListener('click', function() {
-        var textEl = document.getElementById('peakMorningBriefText');
-        var text = textEl && textEl.textContent;
-        if (text && text !== 'Generating your brief…' && typeof _jarvisSpeak === 'function') {
-          _jarvisSpeak(text);
+        // Speak the stored prose only — NOT the weather chip / emojis at the top.
+        var plain = '';
+        try { var c = JSON.parse(localStorage.getItem(BRIEF_KEY + today())); if (c) plain = c.plain || _briefPlainText(c.text); } catch(e){}
+        if (!plain) { var el = document.getElementById('peakMorningBriefText'); plain = el && el.textContent; }
+        if (plain && plain !== 'Generating your brief…') {
+          _speakBriefGemini(plain);
         }
       });
     }
