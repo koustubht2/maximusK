@@ -22790,7 +22790,7 @@ function switchTab(tab) {
   // Loads the engine + model once, caches in OPFS, reuses for every line.
   // Falls back to the browser voice if anything fails.
   // ══════════════════════════════════════════════════════════════
-  var PIPER_VOICE_ID = 'en_US-ryan-high';
+  var PIPER_VOICE_ID = 'en_GB-northern_english_male-medium';
   var _piperLib = null;       // imported vits-web module
   var _piperOrt = null;       // imported ort (for thread config)
   var _piperReady = null;     // promise that resolves once engine+model ready
@@ -24173,7 +24173,7 @@ function switchTab(tab) {
       var btn    = document.getElementById('peakPiperTest');
       var status = document.getElementById('peakPiperStatus');
       if (!btn) return;
-      var PIPER_VOICE = 'en_US-ryan-high';
+      var PIPER_VOICE = 'en_GB-northern_english_male-medium';
       var _busy = false;
 
       function setStatus(msg) { if (status) status.textContent = msg; }
