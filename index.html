@@ -9019,6 +9019,7 @@ window.canonicalJson = function(obj) {
           <button id="peakPiperTest" type="button" style="flex:1;background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.3);border-radius:10px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;padding:9px 12px;cursor:pointer;white-space:nowrap">🎙 TEST JARVIS NEURAL VOICE (Alan · en-GB)</button>
         </div>
         <div id="peakPiperStatus" style="margin-top:6px;font-size:10px;color:rgba(196,181,253,0.6);line-height:1.45;font-family:var(--font-mono)">First tap downloads a ~63MB voice model (one time, then cached). Free, runs on your device.</div>
+        <div id="peakPiperLog" style="margin-top:8px;display:none;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;font-family:var(--font-mono);font-size:9px;line-height:1.6;color:rgba(255,255,255,0.6);white-space:pre-wrap;word-break:break-word"></div>
       </div>
     </div>
 
@@ -24063,94 +24064,132 @@ function switchTab(tab) {
         _busy = true;
         btn.style.opacity = '0.6';
         var t0 = Date.now();
-        try {
-          setStatus('Loading neural engine…');
-          // Dynamic ESM import from CDN (app scripts are non-module).
-          // The library v1.0.4 is internally broken: its bundled glue expects a
-          // newer ONNX runtime (.mjs files) but hardcodes the cdnjs 1.18.0 path,
-          // which has no .mjs → "no available backend found". We fix this two ways:
-          //  1. ?deps pins esm.sh to bundle the ORT glue at 1.19.2
-          //  2. wasmPaths.onnxWasm points the binaries at the SAME 1.19.2 build
-          // Matching glue + binary version avoids the "t.getValue" mismatch error.
-          var ORT_VER = '1.19.2';
-          // Import the SAME ort instance the library will use (?deps pins it),
-          // so we can force single-thread mode below.
-          var ort = await import('https://esm.sh/onnxruntime-web@' + ORT_VER);
-          var tts = await import('https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4?deps=onnxruntime-web@' + ORT_VER);
 
-          // ── THE ACTUAL BUG FIX ──────────────────────────────────────
-          // The library sets numThreads = hardwareConcurrency without checking
-          // for SharedArrayBuffer. Without COOP/COEP headers (Vercel default),
-          // multi-threaded WASM hangs FOREVER waiting on threads it can't spawn
-          // — on every browser, desktop included. Force single-threaded.
-          try {
-            if (ort && ort.env && ort.env.wasm) {
-              var coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
-              ort.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
-              ort.env.wasm.proxy = false;
-              ort.env.wasm.simd = true;
-            }
-          } catch(e) {}
+        // ── On-screen + console logger (visible on iPhone too) ──────
+        var logEl = document.getElementById('peakPiperLog');
+        if (logEl) { logEl.style.display = 'block'; logEl.textContent = ''; }
+        function log(msg) {
+          var dt = ((Date.now() - t0) / 1000).toFixed(2);
+          var line = '[' + dt + 's] ' + msg;
+          try { console.log('[Piper] ' + line); } catch(e){}
+          if (logEl) { logEl.textContent += line + '\n'; logEl.scrollTop = logEl.scrollHeight; }
+        }
+
+        try {
+          // ── Environment probe ──────────────────────────────────────
+          log('=== ENVIRONMENT ===');
+          log('UA: ' + navigator.userAgent.slice(0, 80));
+          log('hardwareConcurrency: ' + (navigator.hardwareConcurrency || 'unknown'));
+          log('crossOriginIsolated: ' + (typeof crossOriginIsolated !== 'undefined' ? crossOriginIsolated : 'undefined'));
+          log('SharedArrayBuffer: ' + (typeof SharedArrayBuffer !== 'undefined' ? 'available' : 'MISSING'));
+          log('WebAssembly: ' + (typeof WebAssembly !== 'undefined' ? 'available' : 'MISSING'));
+          try { log('WebGPU: ' + (navigator.gpu ? 'available' : 'absent')); } catch(e){}
+
+          setStatus('Loading neural engine…');
+          var ORT_VER = '1.19.2';
+
+          log('=== IMPORTS ===');
+          log('importing onnxruntime-web@' + ORT_VER + ' …');
+          var ort = await import('https://esm.sh/onnxruntime-web@' + ORT_VER);
+          log('ort imported. version=' + (ort && ort.env && ort.env.versions && ort.env.versions.common || '?'));
+
+          log('importing piper-tts-web@1.0.4 …');
+          var tts = await import('https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4?deps=onnxruntime-web@' + ORT_VER);
+          log('piper imported. exports: ' + Object.keys(tts).join(','));
+
+          // ── Force single-thread (the suspected hang cause) ──────────
+          log('=== ORT CONFIG ===');
+          var coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
+          if (ort && ort.env && ort.env.wasm) {
+            ort.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
+            ort.env.wasm.proxy = false;
+            ort.env.wasm.simd = true;
+            log('set numThreads=' + ort.env.wasm.numThreads + ' proxy=false simd=true');
+          } else {
+            log('WARNING: ort.env.wasm not accessible — cannot set threads!');
+          }
 
           var WASM_PATHS = {
             onnxWasm:  'https://cdn.jsdelivr.net/npm/onnxruntime-web@' + ORT_VER + '/dist/',
             piperData: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data',
             piperWasm: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm'
           };
+          log('onnxWasm path: ' + WASM_PATHS.onnxWasm);
 
-          // Is the model already cached on this device?
+          // ── Model cache check ──────────────────────────────────────
+          log('=== MODEL ===');
           var alreadyStored = false;
           try {
             var stored = await tts.stored();
             alreadyStored = stored && stored.indexOf(PIPER_VOICE) >= 0;
-          } catch(e) {}
+            log('cached voices: [' + (stored || []).join(', ') + ']');
+          } catch(e) { log('stored() error: ' + e.message); }
 
           if (!alreadyStored) {
+            log('model NOT cached — downloading ~63MB…');
             setStatus('Downloading voice model (~63MB, one time)… 0%');
+            var _lastPct = -1;
             await tts.download(PIPER_VOICE, function(p) {
               if (p && p.total) {
                 var pct = Math.round(p.loaded * 100 / p.total);
+                if (pct !== _lastPct && pct % 10 === 0) { log('download ' + pct + '%'); _lastPct = pct; }
                 setStatus('Downloading voice model… ' + pct + '%');
               }
             });
+            log('download complete.');
+          } else {
+            log('model already cached — skipping download.');
           }
 
+          // ── Session init ───────────────────────────────────────────
+          log('=== SESSION ===');
+          log('calling TtsSession.create() …');
           setStatus('Initialising session…');
-          // Use TtsSession directly so we can pass the corrected wasmPaths
           var session = await tts.TtsSession.create({
             voiceId: PIPER_VOICE,
             wasmPaths: WASM_PATHS,
+            logger: function(m){ log('  [lib] ' + m); },
             progress: function(p) {
-              if (p && p.total) setStatus('Loading… ' + Math.round(p.loaded * 100 / p.total) + '%');
+              if (p && p.total) { var pc = Math.round(p.loaded*100/p.total); log('  init progress ' + pc + '%'); setStatus('Loading… ' + pc + '%'); }
             }
           });
+          log('session created. ready=' + (session && session.ready));
 
-          // The library's init() re-sets numThreads = hardwareConcurrency.
-          // Re-assert single-thread AFTER create(), before we synthesise.
-          try {
-            var _coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
-            if (ort && ort.env && ort.env.wasm) ort.env.wasm.numThreads = _coi ? (navigator.hardwareConcurrency || 4) : 1;
-          } catch(e) {}
+          // Re-assert single-thread AFTER create() (lib resets it in init())
+          if (ort && ort.env && ort.env.wasm) {
+            ort.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
+            log('re-asserted numThreads=' + ort.env.wasm.numThreads + ' (post-init)');
+          }
 
-          setStatus('Synthesising… (first run can take a few seconds)');
-          // Safety timeout — if synthesis hangs, surface it instead of silent stall
+          // ── Synthesis ──────────────────────────────────────────────
+          log('=== SYNTHESIS ===');
+          log('calling session.predict() …');
+          setStatus('Synthesising… (watch the log below)');
+          var _synthStart = Date.now();
           var wav = await Promise.race([
-            session.predict('Good evening, sir. All systems are operational. I am JARVIS, and I am at your service.'),
-            new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('synthesis timed out after 45s — likely a threading/SharedArrayBuffer issue')); }, 45000); })
+            session.predict('Good evening, sir. I am JARVIS.'),
+            new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('synthesis timed out after 60s')); }, 60000); })
           ]);
+          log('predict() returned in ' + ((Date.now()-_synthStart)/1000).toFixed(2) + 's. blob size=' + (wav && wav.size) + ' bytes, type=' + (wav && wav.type));
 
+          // ── Playback ───────────────────────────────────────────────
+          log('=== PLAYBACK ===');
           var url = URL.createObjectURL(wav);
           var audio = new Audio();
           audio.src = url;
-          audio.onended = function(){ URL.revokeObjectURL(url); };
           if (window._arcSetMood) window._arcSetMood('responding');
-          audio.onended = function(){ URL.revokeObjectURL(url); if (window._arcSetMood) window._arcSetMood('idle'); };
+          audio.onended = function(){ log('audio playback ended.'); URL.revokeObjectURL(url); if (window._arcSetMood) window._arcSetMood('idle'); };
+          audio.onerror = function(){ log('audio playback ERROR'); };
+          log('calling audio.play() …');
           await audio.play();
+          log('audio.play() resolved — should be audible now.');
 
           var secs = ((Date.now() - t0) / 1000).toFixed(1);
-          setStatus('✓ Played in ' + secs + 's. If this sounds good and ran smoothly, we can make it JARVIS\'s default voice.');
+          setStatus('✓ Played in ' + secs + 's total. Check the log for the synthesis time.');
         } catch(err) {
-          setStatus('✗ Failed: ' + (err && err.message || 'unknown error') + '. Your device may not support in-browser neural TTS.');
+          log('!!! ERROR: ' + (err && err.message || err));
+          log('stack: ' + (err && err.stack ? err.stack.slice(0, 300) : 'n/a'));
+          setStatus('✗ Failed: ' + (err && err.message || 'unknown error') + ' — see log below.');
           if (window._arcSetMood) window._arcSetMood('idle');
         } finally {
           _busy = false;
