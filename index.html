@@ -9013,6 +9013,13 @@ window.canonicalJson = function(obj) {
         <button id="peakVoiceTest" type="button" title="Test voice" style="background:rgba(110,231,183,0.08);border:1px solid rgba(110,231,183,0.25);border-radius:10px;color:rgba(110,231,183,0.8);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;padding:8px 11px;cursor:pointer;white-space:nowrap;flex-shrink:0">TEST</button>
       </div>
       <div id="peakVoiceHint" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,0.3);line-height:1.45;font-family:var(--font-mono)"></div>
+      <!-- Piper neural voice test (JARVIS — Alan en-GB, free on-device) -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="peakPiperTest" type="button" style="flex:1;background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.3);border-radius:10px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;padding:9px 12px;cursor:pointer;white-space:nowrap">🎙 TEST JARVIS NEURAL VOICE (Alan · en-GB)</button>
+        </div>
+        <div id="peakPiperStatus" style="margin-top:6px;font-size:10px;color:rgba(196,181,253,0.6);line-height:1.45;font-family:var(--font-mono)">First tap downloads a ~63MB voice model (one time, then cached). Free, runs on your device.</div>
+      </div>
     </div>
 
     <div class="peak-card" id="peakLastWeekCard">
@@ -24038,6 +24045,69 @@ function switchTab(tab) {
       });
       if (test) test.addEventListener('click', function() {
         if (typeof _jarvisSpeak === 'function') _jarvisSpeak('Good evening, sir. All systems are operational and standing by.');
+      });
+    })();
+
+    // ── Piper neural voice test (free, on-device, JARVIS-like en-GB) ──
+    (function() {
+      var btn    = document.getElementById('peakPiperTest');
+      var status = document.getElementById('peakPiperStatus');
+      if (!btn) return;
+      var PIPER_VOICE = 'en_GB-alan-medium';
+      var _busy = false;
+
+      function setStatus(msg) { if (status) status.textContent = msg; }
+
+      btn.addEventListener('click', async function() {
+        if (_busy) return;
+        _busy = true;
+        btn.style.opacity = '0.6';
+        var t0 = Date.now();
+        try {
+          setStatus('Loading neural engine…');
+          // Dynamic ESM import from CDN (app scripts are non-module)
+          var tts = await import('https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4');
+
+          // Is the model already cached on this device?
+          var alreadyStored = false;
+          try {
+            var stored = await tts.stored();
+            alreadyStored = stored && stored.indexOf(PIPER_VOICE) >= 0;
+          } catch(e) {}
+
+          if (!alreadyStored) {
+            setStatus('Downloading voice model (~63MB, one time)… 0%');
+            await tts.download(PIPER_VOICE, function(p) {
+              if (p && p.total) {
+                var pct = Math.round(p.loaded * 100 / p.total);
+                setStatus('Downloading voice model… ' + pct + '%');
+              }
+            });
+          }
+
+          setStatus('Synthesising…');
+          var wav = await tts.predict({
+            text: 'Good evening, sir. All systems are operational. I am JARVIS, and I am at your service.',
+            voiceId: PIPER_VOICE
+          });
+
+          var url = URL.createObjectURL(wav);
+          var audio = new Audio();
+          audio.src = url;
+          audio.onended = function(){ URL.revokeObjectURL(url); };
+          if (window._arcSetMood) window._arcSetMood('responding');
+          audio.onended = function(){ URL.revokeObjectURL(url); if (window._arcSetMood) window._arcSetMood('idle'); };
+          await audio.play();
+
+          var secs = ((Date.now() - t0) / 1000).toFixed(1);
+          setStatus('✓ Played in ' + secs + 's. If this sounds good and ran smoothly, we can make it JARVIS\'s default voice.');
+        } catch(err) {
+          setStatus('✗ Failed: ' + (err && err.message || 'unknown error') + '. Your device may not support in-browser neural TTS.');
+          if (window._arcSetMood) window._arcSetMood('idle');
+        } finally {
+          _busy = false;
+          btn.style.opacity = '1';
+        }
       });
     })();
 
