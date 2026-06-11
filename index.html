@@ -22853,9 +22853,13 @@ function switchTab(tab) {
     window.speechSynthesis.speak(utter);
   }
 
-  // Playback speed for the neural voice. 1.0 = native (too fast). Lower = slower,
-  // more deliberate/human. Pitch is preserved so it doesn't sound deep/slurred.
-  var _jarvisPace = 0.88;
+  // Playback speed for the neural voice. 1.0 = native (matches the Piper demo,
+  // best quality). Lower values time-stretch the audio (slower, but adds slight
+  // artifacts). Leave at 1.0 unless you specifically want it slower.
+  var _jarvisPace = 1.0;
+  // When true, lightly reshape text to add comma/period pauses. Off = the model
+  // speaks your exact text, identical to the demo site.
+  var _jarvisShapeText = false;
 
   // Shape text so Piper produces natural pauses. It pauses on commas / periods /
   // ellipses, so we add gentle breaks: after a leading "Sir,", between clauses,
@@ -22887,7 +22891,7 @@ function switchTab(tab) {
     window._jarvisSpeaking = true;
     if (window._arcSetMood) window._arcSetMood('responding');
 
-    var shaped = _shapeForSpeech(text);
+    var shaped = _jarvisShapeText ? _shapeForSpeech(text) : text;
 
     // Instant replay if we've already synthesised this exact line
     if (_piperCache[shaped]) { _piperPlay(_piperCache[shaped], onDone); return; }
@@ -22910,11 +22914,14 @@ function switchTab(tab) {
     var audio = new Audio();
     _piperAudio = audio;
     audio.src = url;
-    // Slow it down for a more human, deliberate pace — keep pitch natural.
-    audio.preservesPitch = true;
-    audio.mozPreservesPitch = true;
-    audio.webkitPreservesPitch = true;
-    audio.playbackRate = _jarvisPace;
+    // Native playback — pitch-preserving time-stretch adds artifacts, so we
+    // only apply it if pace is explicitly dialed away from 1.0.
+    if (_jarvisPace !== 1.0) {
+      audio.preservesPitch = true;
+      audio.mozPreservesPitch = true;
+      audio.webkitPreservesPitch = true;
+      audio.playbackRate = _jarvisPace;
+    }
     var _fired = false;
     function done(){ if (_fired) return; _fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (onDone) onDone(); }
     audio.onended = done;
