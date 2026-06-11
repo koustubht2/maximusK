@@ -24065,15 +24065,18 @@ function switchTab(tab) {
         var t0 = Date.now();
         try {
           setStatus('Loading neural engine…');
-          // Dynamic ESM import from CDN (app scripts are non-module)
-          var tts = await import('https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4');
+          // Dynamic ESM import from CDN (app scripts are non-module).
+          // The library v1.0.4 is internally broken: its bundled glue expects a
+          // newer ONNX runtime (.mjs files) but hardcodes the cdnjs 1.18.0 path,
+          // which has no .mjs → "no available backend found". We fix this two ways:
+          //  1. ?deps pins esm.sh to bundle the ORT glue at 1.19.2
+          //  2. wasmPaths.onnxWasm points the binaries at the SAME 1.19.2 build
+          // Matching glue + binary version avoids the "t.getValue" mismatch error.
+          var ORT_VER = '1.19.2';
+          var tts = await import('https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4?deps=onnxruntime-web@' + ORT_VER);
 
-          // The bundled default points ORT wasm at cdnjs, which is MISSING the
-          // .mjs runtime files (causes "no available backend found"). Override
-          // onnxWasm to jsdelivr, which hosts the full onnxruntime-web build.
-          // Keep piper phonemizer data/wasm at their working jsdelivr defaults.
           var WASM_PATHS = {
-            onnxWasm:  'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/',
+            onnxWasm:  'https://cdn.jsdelivr.net/npm/onnxruntime-web@' + ORT_VER + '/dist/',
             piperData: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data',
             piperWasm: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm'
           };
