@@ -22031,9 +22031,11 @@ function switchTab(tab) {
     _convActive = true;
     _setMicBtn(true);
     _setConvBar(true, 'Conversation mode — say "stop" to end', '#6EE7B7');
-    _jarvisSpeak('Conversation mode activated, sir. I\'m listening.');
-    // Start listening after JARVIS finishes intro (~2.5s)
-    setTimeout(_convNextTurn, 2800);
+    // Start listening only AFTER the intro finishes speaking (callback, not timer —
+    // neural voice synth delay makes a fixed timeout unreliable).
+    _jarvisSpeak('Conversation mode activated, sir. I\'m listening.', function() {
+      if (_convActive) _convNextTurn();
+    });
   }
 
   function _endConversation(graceful) {
@@ -22787,9 +22789,56 @@ function switchTab(tab) {
     window.speechSynthesis.onvoiceschanged = function(){ _jarvisVoice = _pickJarvisVoice(); };
   }
 
-  function _jarvisSpeak(text) {
-    if (!('speechSynthesis' in window)) return;
-    // Cancel anything currently speaking
+  // ══════════════════════════════════════════════════════════════
+  // JARVIS neural voice (Piper / @diffusionstudio/vits-web, en_US-ryan-high)
+  // Loads the engine + model once, caches in OPFS, reuses for every line.
+  // Falls back to the browser voice if anything fails.
+  // ══════════════════════════════════════════════════════════════
+  var PIPER_VOICE_ID = 'en_US-ryan-high';
+  var _piperLib = null;       // imported vits-web module
+  var _piperOrt = null;       // imported ort (for thread config)
+  var _piperReady = null;     // promise that resolves once engine+model ready
+  var _piperFailed = false;   // if true, stop trying Piper, use browser voice
+  var _piperAudio = null;     // current Audio element (so we can stop it)
+  var _piperCache = {};       // text → object URL, so repeats are instant
+
+  async function _piperInit() {
+    if (_piperReady) return _piperReady;
+    _piperReady = (async function() {
+      // import ort first so we can force single-thread (no SharedArrayBuffer)
+      try { _piperOrt = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/+esm'); } catch(e) { _piperOrt = null; }
+      _piperLib = await import('https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm');
+      var coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
+      if (_piperOrt && _piperOrt.env && _piperOrt.env.wasm) {
+        _piperOrt.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
+        _piperOrt.env.wasm.proxy = false;
+      }
+      // Pre-download the model if not cached (so first real line isn't a surprise)
+      try {
+        var stored = await _piperLib.stored();
+        if (!stored || stored.indexOf(PIPER_VOICE_ID) < 0) {
+          await _piperLib.download(PIPER_VOICE_ID, function(){});
+        }
+      } catch(e) {}
+      return true;
+    })();
+    return _piperReady;
+  }
+
+  // Kick off engine load in the background as soon as the app is ready,
+  // so the model is cached before JARVIS first needs to speak.
+  function _piperWarmup() {
+    if (!_piperFailed && !_piperReady) { _piperInit().catch(function(){}); }
+  }
+
+  function _stopAllSpeech() {
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){}
+    if (_piperAudio) { try { _piperAudio.pause(); _piperAudio.currentTime = 0; } catch(e){} }
+  }
+
+  // Browser speechSynthesis fallback (original behaviour). onDone fires when finished.
+  function _browserSpeak(text, onDone) {
+    if (!('speechSynthesis' in window)) { if (onDone) onDone(); return; }
     try { window.speechSynthesis.cancel(); } catch(e){}
     window._jarvisSpeaking = true;
     if (window._arcSetMood) window._arcSetMood('responding');
@@ -22797,11 +22846,55 @@ function switchTab(tab) {
     if (!_jarvisVoice) _jarvisVoice = _pickJarvisVoice();
     if (_jarvisVoice) utter.voice = _jarvisVoice;
     utter.lang  = (_jarvisVoice && _jarvisVoice.lang) || 'en-GB';
-    utter.rate  = 0.98;  // natural pace
-    utter.pitch = 1.0;   // neutral — pitch-shifting compact voices sounds worse
-    utter.onend = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); };
-    utter.onerror = function(){ window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); };
+    utter.rate  = 0.98;
+    utter.pitch = 1.0;
+    var _fired = false;
+    function done(){ if (_fired) return; _fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (onDone) onDone(); }
+    utter.onend = done;
+    utter.onerror = done;
     window.speechSynthesis.speak(utter);
+  }
+
+  // Main entry — neural Piper voice, browser fallback on any failure.
+  // onDone (optional) fires when audio actually finishes playing.
+  function _jarvisSpeak(text, onDone) {
+    if (!text) { if (onDone) onDone(); return; }
+    _stopAllSpeech();
+    // If Piper already permanently failed, go straight to browser voice
+    if (_piperFailed) { _browserSpeak(text, onDone); return; }
+
+    window._jarvisSpeaking = true;
+    if (window._arcSetMood) window._arcSetMood('responding');
+
+    // Instant replay if we've already synthesised this exact line
+    if (_piperCache[text]) { _piperPlay(_piperCache[text], onDone); return; }
+
+    _piperInit().then(function() {
+      return _piperLib.predict({ text: text, voiceId: PIPER_VOICE_ID });
+    }).then(function(wav) {
+      var url = URL.createObjectURL(wav);
+      _piperCache[text] = url;
+      _piperPlay(url, onDone);
+    }).catch(function(err) {
+      // First failure → fall back to browser voice for THIS line and all future
+      _piperFailed = true;
+      window._jarvisSpeaking = false;
+      _browserSpeak(text, onDone);
+    });
+  }
+
+  function _piperPlay(url, onDone) {
+    var audio = new Audio();
+    _piperAudio = audio;
+    audio.src = url;
+    var _fired = false;
+    function done(){ if (_fired) return; _fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (onDone) onDone(); }
+    audio.onended = done;
+    audio.onerror = done;
+    audio.play().catch(function(){
+      // Autoplay blocked (e.g. iOS before first tap)
+      done();
+    });
   }
 
   function _coachMsgDiv(text, role) {
@@ -22925,13 +23018,11 @@ function switchTab(tab) {
       if (window._arcSetMood) window._arcSetMood('responding');
       appendCoachMsg(replyText, 'coach');
       if (convMode && _convActive) {
-        // Estimate speech duration (~100 words/min for JARVIS paced voice)
-        var wordCount = replyText.split(/\s+/).length;
-        var estMs = Math.max(3000, wordCount * 600 + 1000);
-        _jarvisSpeak(replyText);
-        setTimeout(function() {
+        // Wait for JARVIS to ACTUALLY finish speaking, then listen again.
+        // (Neural voice has a synth delay, so a time estimate would be wrong.)
+        _jarvisSpeak(replyText, function() {
           if (_convActive) _convNextTurn();
-        }, estMs);
+        });
       } else {
         _jarvisSpeak(replyText);
       }
@@ -24054,7 +24145,7 @@ function switchTab(tab) {
       var btn    = document.getElementById('peakPiperTest');
       var status = document.getElementById('peakPiperStatus');
       if (!btn) return;
-      var PIPER_VOICE = 'en_GB-alan-medium';
+      var PIPER_VOICE = 'en_US-ryan-high';
       var _busy = false;
 
       function setStatus(msg) { if (status) status.textContent = msg; }
@@ -24293,6 +24384,8 @@ function switchTab(tab) {
 
       // Boot Hey JARVIS voice listener
       _initHeyJarvis();
+      // Start loading the neural voice model in the background (cached after 1st)
+      _piperWarmup();
 
       function hexToRgb(hex) {
         var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
