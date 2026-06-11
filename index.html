@@ -24073,7 +24073,24 @@ function switchTab(tab) {
           //  2. wasmPaths.onnxWasm points the binaries at the SAME 1.19.2 build
           // Matching glue + binary version avoids the "t.getValue" mismatch error.
           var ORT_VER = '1.19.2';
+          // Import the SAME ort instance the library will use (?deps pins it),
+          // so we can force single-thread mode below.
+          var ort = await import('https://esm.sh/onnxruntime-web@' + ORT_VER);
           var tts = await import('https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4?deps=onnxruntime-web@' + ORT_VER);
+
+          // ── THE ACTUAL BUG FIX ──────────────────────────────────────
+          // The library sets numThreads = hardwareConcurrency without checking
+          // for SharedArrayBuffer. Without COOP/COEP headers (Vercel default),
+          // multi-threaded WASM hangs FOREVER waiting on threads it can't spawn
+          // — on every browser, desktop included. Force single-threaded.
+          try {
+            if (ort && ort.env && ort.env.wasm) {
+              var coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
+              ort.env.wasm.numThreads = coi ? (navigator.hardwareConcurrency || 4) : 1;
+              ort.env.wasm.proxy = false;
+              ort.env.wasm.simd = true;
+            }
+          } catch(e) {}
 
           var WASM_PATHS = {
             onnxWasm:  'https://cdn.jsdelivr.net/npm/onnxruntime-web@' + ORT_VER + '/dist/',
@@ -24098,7 +24115,7 @@ function switchTab(tab) {
             });
           }
 
-          setStatus('Synthesising…');
+          setStatus('Initialising session…');
           // Use TtsSession directly so we can pass the corrected wasmPaths
           var session = await tts.TtsSession.create({
             voiceId: PIPER_VOICE,
@@ -24107,7 +24124,20 @@ function switchTab(tab) {
               if (p && p.total) setStatus('Loading… ' + Math.round(p.loaded * 100 / p.total) + '%');
             }
           });
-          var wav = await session.predict('Good evening, sir. All systems are operational. I am JARVIS, and I am at your service.');
+
+          // The library's init() re-sets numThreads = hardwareConcurrency.
+          // Re-assert single-thread AFTER create(), before we synthesise.
+          try {
+            var _coi = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
+            if (ort && ort.env && ort.env.wasm) ort.env.wasm.numThreads = _coi ? (navigator.hardwareConcurrency || 4) : 1;
+          } catch(e) {}
+
+          setStatus('Synthesising… (first run can take a few seconds)');
+          // Safety timeout — if synthesis hangs, surface it instead of silent stall
+          var wav = await Promise.race([
+            session.predict('Good evening, sir. All systems are operational. I am JARVIS, and I am at your service.'),
+            new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('synthesis timed out after 45s — likely a threading/SharedArrayBuffer issue')); }, 45000); })
+          ]);
 
           var url = URL.createObjectURL(wav);
           var audio = new Audio();
