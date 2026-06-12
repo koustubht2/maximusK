@@ -7327,6 +7327,16 @@ window.canonicalJson = function(obj) {
     </div>
   </div>
 
+  <!-- JARVIS cross-domain insight (Patterns) -->
+  <div id="jvInsightCard" style="display:none;margin:14px 16px 0;background:linear-gradient(135deg,rgba(110,231,183,0.06),rgba(0,170,255,0.05));border:1px solid rgba(110,231,183,0.2);border-radius:14px;padding:13px 15px;cursor:pointer">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#6EE7B7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></svg>
+      <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(110,231,183,0.7)">JARVIS · Insight</span>
+      <span id="jvInsightRefresh" style="margin-left:auto;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.08em">↻</span>
+    </div>
+    <div id="jvInsightText" style="font-size:13px;line-height:1.6;color:var(--text-secondary)">—</div>
+  </div>
+
   <div class="day-ring-container">
     <div class="day-ring-left">
       <svg class="day-ring-svg" viewBox="0 0 120 120">
@@ -22326,13 +22336,16 @@ function switchTab(tab) {
       var nowH = _nowD.getHours();
       var nowClock = String(nowH).padStart(2,'0') + ':' + String(_nowD.getMinutes()).padStart(2,'0');
       var wakeClock = String(Math.floor(wakeHour)).padStart(2,'0') + ':' + String(Math.round((wakeHour % 1)*60)).padStart(2,'0');
+      // pull a compact all-domain snapshot so the brief can mention goals/finance too
+      var lifeCtx = (typeof window.getJarvisContext === 'function') ? window.getJarvisContext('', 'summary') : '';
       var prompt = 'You are JARVIS, Tony Stark\'s AI. Generate a morning brief for sir in the JARVIS style — confident, intelligent, slightly formal, addresses as "sir". ' +
         'Current time right now: ' + nowClock + ' (sir woke at ' + wakeClock + '). ' +
         (wxStr ? wxStr + '. ' : '') +
         'Biometrics: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + '. ' +
         'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
         (newsStr ? newsStr + '. ' : '') +
-        'Format your response as exactly 4 lines separated by newlines (no bullets, no dashes, no numbering): ' +
+        (lifeCtx ? ('\nFULL LIFE SNAPSHOT (for line 5):\n' + lifeCtx + '\n') : '') +
+        'Format your response as exactly 5 lines separated by newlines (no bullets, no dashes, no numbering): ' +
         'Line 1: Greeting + time, then ALWAYS state the weather in natural spoken language with the actual numbers — ' +
         'temperature in degrees, the condition, humidity, wind, and air quality — e.g. "It is 26 degrees in Pune, partly cloudy, ' +
         'with moderate air quality and a light 14 kilometre wind, sir." Add one outdoor recommendation if AQI is good, or a caution if poor. ' +
@@ -22340,6 +22353,7 @@ function switchTab(tab) {
         'Line 2: Biometric status — readiness, sleep, HRV in one sentence. ' +
         'Line 3: Training and focus window recommendation based on gym history and readiness. ' +
         'Line 4: One news headline woven into a market/world context sentence. ' +
+        'Line 5: ONE actionable note from the rest of his life today — pending goals/tasks, spending vs budget, or savings — whichever is most relevant, in one sentence. ' +
         'Be specific, concise, and speak exactly as JARVIS would. No markdown, no emojis.';
 
       var reply = await gemini(prompt);
@@ -22597,6 +22611,28 @@ function switchTab(tab) {
       nudge = 'No morning sunlight logged yet, sir. Step outside to anchor your circadian rhythm.';
     }
 
+    // Goals nudge: many tasks still pending in the afternoon
+    if (!nudge && h >= 16) {
+      try {
+        var _tk = (typeof gsDateKey==='function') ? ('goals_daily_'+gsDateKey()) : null;
+        var _tasks = _tk ? (JSON.parse(localStorage.getItem(_tk)||'[]')) : [];
+        var _pending = _tasks.filter(function(t){ return !t.checked && !t.skipped; });
+        if (_tasks.length && _pending.length >= 3) {
+          nudge = _pending.length + ' tasks still open today, sir — ' + _pending.slice(0,2).map(function(t){return t.title;}).join(', ') + '…';
+        }
+      } catch(e){}
+    }
+
+    // Finance nudge: a subscription renews within 3 days
+    if (!nudge) {
+      try {
+        var _subs = JSON.parse(localStorage.getItem('subs')||'[]');
+        var _now = new Date(); var _soon = null, _soonD = 99;
+        _subs.forEach(function(s){ if(!s.renewalDate) return; var rd=new Date(s.renewalDate+'T12:00:00'); var days=Math.ceil((rd-_now)/86400000); if(days>=0 && days<=3 && days<_soonD){ _soonD=days; _soon=s; } });
+        if (_soon) nudge = _soon.name + ' renews ' + (_soonD===0?'today':('in '+_soonD+'d')) + ', sir.';
+      } catch(e){}
+    }
+
     if (nudge) {
       text.textContent = nudge;
       bar.style.display = 'flex';
@@ -22735,9 +22771,13 @@ function switchTab(tab) {
       var bestDayName = bestDay && bestDay.day ? dayNames[new Date(bestDay.day+'T12:00:00').getDay()] : '—';
       var hist = []; try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); } catch(e){}
       var avgEnergy = hist.slice(-7).length ? Math.round(hist.slice(-7).reduce(function(s,e){return s+e.s;},0)/hist.slice(-7).length) : null;
-      var prompt = 'You are JARVIS. Generate a 5-line weekly performance debrief for sir. ' +
-        'Data: avg_readiness='+avgR+', best_readiness='+maxR+'('+bestDayName+'), worst_readiness='+minR+', avg_energy_score='+avgEnergy+'. ' +
-        'Format: 5 lines, no bullets or numbering. Line 1: week summary. Line 2: what drove best day. Line 3: what dragged worst day. Line 4: trend observation. Line 5: one specific recommendation for next week. Address as sir. Plain text only.';
+      // Full omniscient context → a LIFE-ARC debrief across all domains
+      var fullCtx = (typeof window.getJarvisContext === 'function') ? window.getJarvisContext('weekly review health training nutrition goals finance', 'full') : '';
+      var prompt = 'You are JARVIS. Generate a 6-line weekly LIFE-ARC debrief for sir, spanning ALL domains (health, training, nutrition, goals, finance), not just readiness.\n\n' +
+        fullCtx + '\n\n' +
+        'Quick health figures: avg_readiness='+avgR+', best='+maxR+'('+bestDayName+'), worst='+minR+', avg_energy='+avgEnergy+'.\n' +
+        'Format: exactly 6 short lines, no bullets/numbering. ' +
+        'Line 1: overall week summary across life. Line 2: health/recovery. Line 3: training + nutrition. Line 4: goals/productivity. Line 5: finance (spending vs income, savings progress). Line 6: ONE cross-domain pattern you noticed (e.g. how spending, sleep, training or nutrition relate) + a specific recommendation. Address as sir. Plain text only.';
       var reply = await gemini(prompt);
       var text = reply && reply.trim() ? reply.trim() : 'Unable to generate weekly report, sir.';
       localStorage.setItem(WEEKLY_KEY + weekKey, JSON.stringify({text: text}));
@@ -25920,6 +25960,46 @@ function switchTab(tab) {
       jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach');
     }
   };
+
+  // ---------- DASHBOARD "Insight" card: one daily cross-domain correlation ----------
+  var INSIGHT_KEY = 'goals_jv_insight_';   // goals_ prefix → syncs; per-day cache
+  var _insightFlight = false;
+  function _insightDayKey(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  async function renderJvInsight(force){
+    var card=document.getElementById('jvInsightCard'), txt=document.getElementById('jvInsightText');
+    if(!card||!txt) return;
+    var dk=_insightDayKey();
+    if(!force){
+      var cached=null; try { cached=JSON.parse(localStorage.getItem(INSIGHT_KEY+dk)); } catch(e){}
+      if(cached && cached.text){ txt.textContent=cached.text; card.style.display='block'; return; }
+    }
+    if(_insightFlight) return;
+    _insightFlight=true;
+    card.style.display='block'; txt.textContent='JARVIS is analysing your patterns…';
+    try {
+      var ctx = (typeof window.getJarvisContext==='function') ? window.getJarvisContext('patterns correlation health training nutrition goals finance', 'full') : '';
+      var prompt = 'You are JARVIS. From the full life-data snapshot below, identify ONE genuinely interesting CROSS-DOMAIN pattern or correlation for sir — something connecting two or more areas (e.g. sleep vs spending, training vs readiness, nutrition vs energy, goals vs mood). '+
+        'It must be grounded in the actual numbers/history shown, not generic advice. One or two sentences, specific, address as sir. If there is genuinely not enough data to find a pattern, say so in one short sentence.\n\n'+ctx;
+      var reply = await window.gemini(prompt);
+      var t = reply && reply.trim() ? reply.trim() : null;
+      if(t){ localStorage.setItem(INSIGHT_KEY+dk, JSON.stringify({text:t})); txt.textContent=t; }
+      else { card.style.display='none'; }
+    } catch(e){ txt.textContent='Insight unavailable right now, sir.'; }
+    finally { _insightFlight=false; }
+  }
+  window.renderJvInsight = renderJvInsight;
+
+  // wire click-to-refresh + auto-run shortly after load
+  function _initInsight(){
+    var card=document.getElementById('jvInsightCard');
+    if(card && !card._wired){ card._wired=true;
+      card.addEventListener('click', function(){ renderJvInsight(true); });
+    }
+    renderJvInsight(false);
+  }
+  if(document.readyState==='complete' || document.readyState==='interactive'){ setTimeout(_initInsight, 3000); }
+  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(_initInsight, 3000); });
 
   // ========== JARVIS-TAB 3D AVATAR (independent instance, render-gated) ==========
   var _jvMood = 'idle';   // 'idle' | 'thinking' | 'responding'
