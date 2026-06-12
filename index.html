@@ -8985,7 +8985,7 @@ window.canonicalJson = function(obj) {
     <div class="peak-card">
       <div class="peak-section-label">Your Coach</div>
       <div style="display:flex;justify-content:center;margin-bottom:14px;">
-        <canvas id="peakArcReactor" width="240" height="240" style="cursor:pointer;width:240px;height:240px;max-width:82vw;" title="Tap JARVIS"></canvas>
+        <canvas id="peakArcReactor" width="300" height="300" style="cursor:pointer;width:300px;height:300px;max-width:90vw;" title="Tap JARVIS"></canvas>
       </div>
       <div class="peak-coach-messages" id="peakCoachMessages"></div>
       <div class="peak-coach-chips">
@@ -24711,9 +24711,9 @@ function switchTab(tab) {
 
         var scene = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-        // Fill the canvas like the reference while keeping the outer ring visible.
-        // half-height = tan(21°)*z. At z=5.4 that's ~2.07 → outer ring (1.90) fits snug.
-        camera.position.set(0, 0, 5.4);
+        // Fill the canvas like the reference — pull in so rings nearly touch edges.
+        // half-height = tan(21°)*z. At z=5.0 that's ~1.92 → outer ring (1.90) edge-to-edge.
+        camera.position.set(0, 0, 5.0);
 
         var root = new THREE.Group(); scene.add(root);          // holds the particle cloud (rotates in 3D)
         var rig  = new THREE.Group(); scene.add(rig);           // holds flat rings (face camera)
@@ -24768,11 +24768,15 @@ function switchTab(tab) {
             '  vec3 dir = normalize(position);',
             // cloud reaches ~1.18 radius → fills most of the inner ring (1.34)
             '  float baseR = length(position) * 1.18;',
-            // breathing: each dot drifts in/out along its radius on its own phase.
-            // amplitude is small at idle, large when speaking (driven by uBreathe).
             '  float ph = aRnd * 6.2831;',
-            '  float pulse = sin(uTime * 1.5 + ph) * (0.03 + 0.30 * uBreathe);',
-            '  float r = baseR + pulse;',
+            // IDLE: gentle per-dot shimmer (each drifts a touch on its own phase).
+            '  float idle = sin(uTime * 1.5 + ph) * 0.03;',
+            // SPEAKING: a SYNCHRONISED radial pulse — all dots converge toward the
+            // core then surge outward together (uBreathe drives the amplitude).
+            // negative sin first → dots pull IN, then push OUT past their rest radius.
+            '  float wave = -sin(uTime * 3.0) ;',
+            '  float converge = wave * uBreathe * (0.28 + 0.12 * aRnd);',
+            '  float r = baseR + idle + converge;',
             '  vR = clamp(length(position), 0.0, 1.0);',     // 0 center → 1 rim
             '  vSize = aSize;',
             '  vec3 p = dir * r;',
@@ -24805,18 +24809,36 @@ function switchTab(tab) {
             '}'
           ].join('\n')
         });
+        // glow-texture helper (used by the nebula cloud + the center core)
+        function glowTexture(stops) {
+          var c = document.createElement('canvas'); c.width = c.height = 256;
+          var g = c.getContext('2d');
+          var rad = g.createRadialGradient(128,128,0, 128,128,128);
+          stops.forEach(function(s){ rad.addColorStop(s[0], s[1]); });
+          g.fillStyle = rad; g.fillRect(0,0,256,256);
+          var tx = new THREE.CanvasTexture(c); return tx;
+        }
+
+        // ════ NEBULA CLOUD — soft blue glow BEHIND the dots (the "cloud") ════
+        // This is the diffuse haze the sharp dots sit on top of, like the ref.
+        var nebulaTex = glowTexture([
+          [0,   'rgba(120,180,255,0.55)'],
+          [0.3, 'rgba(70,140,255,0.30)'],
+          [0.6, 'rgba(40,90,220,0.12)'],
+          [1,   'rgba(30,70,180,0)']
+        ]);
+        var nebulaMat = new THREE.SpriteMaterial({ map: nebulaTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85 });
+        var nebula = new THREE.Sprite(nebulaMat);
+        nebula.scale.set(2.5, 2.5, 2.5);     // fills the inner sphere area
+        nebula.position.z = -0.5;             // sit it behind the dot cloud
+        nebula.renderOrder = -1;              // always drawn first (behind dots)
+        scene.add(nebula);
+
         var cloud = new THREE.Points(pGeo, pMat);
+        cloud.renderOrder = 1;                // dots drawn ON TOP of the nebula
         root.add(cloud);
 
         // ════ CENTER CORE — breathing cyan glow (the "active" heart) ════
-        function glowTexture(stops) {
-          var c = document.createElement('canvas'); c.width = c.height = 128;
-          var g = c.getContext('2d');
-          var rad = g.createRadialGradient(64,64,0, 64,64,64);
-          stops.forEach(function(s){ rad.addColorStop(s[0], s[1]); });
-          g.fillStyle = rad; g.fillRect(0,0,128,128);
-          var tx = new THREE.CanvasTexture(c); return tx;
-        }
         var coreTex = glowTexture([
           [0,'rgba(255,255,255,1)'], [0.18,'rgba(190,245,255,0.95)'],
           [0.45,'rgba(90,210,255,0.4)'], [1,'rgba(90,210,255,0)']
@@ -24925,13 +24947,15 @@ function switchTab(tab) {
           root.rotation.y = t * cloudSpin;
           root.rotation.x = Math.sin(t * 0.2) * 0.10;
 
-          // BREATHING — subtle at idle, much bigger when speaking (your note)
-          var breathe = _mood === 'responding' ? (0.9 + 0.1 * Math.sin(t * 4.0))
-                      : _mood === 'thinking'  ? (0.45 + 0.2 * Math.sin(t * 2.4))
-                      : (0.12 + 0.06 * Math.sin(t * 1.0));
+          // BREATHING (converge→surge) amount: ~0 at idle so the cloud is calm,
+          // strong when speaking so dots pull into the core then push outward.
+          var breathe = _mood === 'responding' ? 1.0
+                      : _mood === 'thinking'  ? 0.4
+                      : 0.0;
+          // smooth the breathe value so it eases in/out, not a hard switch
+          pUniforms.uBreathe.value += (breathe - pUniforms.uBreathe.value) * 0.04;
           pUniforms.uTime.value = t;
           pUniforms.uActive.value = active;
-          pUniforms.uBreathe.value = breathe;
 
           // RINGS — slow & smooth, distinct directions (fixed base speeds, not
           // mood-scaled, so motion stays calm and constant like the refs).
@@ -24941,6 +24965,14 @@ function switchTab(tab) {
           ring3.rotation.z = -t * 0.035;  // outer ticks + degrees · slow CLOCKWISE
           // arcs brighten a touch when active
           r1arcMat.opacity = 0.8 + active * 0.2;
+
+          // nebula cloud: always-on soft blue haze, breathes with the dots and
+          // brightens / pulls in when speaking (it's the cloud BEHIND the dots)
+          var neb = 0.7 + 0.12 * Math.sin(t * 1.2) + active * 0.25;
+          nebulaMat.opacity = neb;
+          var nbWave = -Math.sin(t * 3.0) * pUniforms.uBreathe.value * 0.25;
+          var nbScale = 2.5 + active * 0.25 + nbWave;   // pulses in/out when speaking
+          nebula.scale.set(nbScale, nbScale, nbScale);
 
           // core glow: a faint always-on blue ember at idle, bright cyan when active
           var idleEmber = 0.12 + 0.05 * Math.sin(t * 1.3);
