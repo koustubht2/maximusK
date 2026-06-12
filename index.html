@@ -24791,21 +24791,18 @@ function switchTab(tab) {
             'uniform vec3 uColorIdle; uniform vec3 uColorActive; uniform float uActive;',
             'varying float vR; varying float vTwinkle; varying float vSize;',
             'void main(){',
-            // CRISP, near-SOLID round dot. Edge AA band is only 0.46→0.50 so the
-            // dot is a hard disc, not a soft glow. Alpha stays high so dots read as
-            // distinct opaque points instead of translucent smears.
+            // FLAT solid dot — a plain filled circle with a 1px AA edge. No center
+            // hotspot, no brightness halo: the dot does NOT fake its own glow.
+            // (The glow now comes only from the nebula cloud behind them.)
             '  vec2 d = gl_PointCoord - vec2(0.5);',
             '  float dist = length(d);',
-            '  float edge = smoothstep(0.50, 0.46, dist);',   // tight 0.04 AA rim
-            '  if (edge < 0.02) discard;',
-            // a hot white pinpoint center on bigger dots → star-like identity
-            '  float pin = smoothstep(0.30, 0.0, dist) * step(0.95, vSize);',
-            '  vec3 base = mix(uColorIdle, uColorActive, uActive);',
-            '  vec3 col = mix(base, vec3(0.97,0.99,1.0), pin);',
-            // brightness varies per dot for identity, but alpha stays near-opaque
-            '  float bright = (0.8 + 0.4 * vSize) * (0.85 + 0.15 * uActive);',
-            '  float a = edge * (0.65 + 0.35 * vTwinkle) * min(1.0, bright);',
-            '  gl_FragColor = vec4(col * bright, a);',
+            '  float edge = smoothstep(0.50, 0.47, dist);',   // hard circle, thin AA
+            '  if (edge < 0.5) discard;',                      // fully cut outside → no soft ring
+            '  vec3 col = mix(uColorIdle, uColorActive, uActive);',
+            // gentle per-dot brightness variation for identity (no glow, just tone)
+            '  float tone = 0.7 + 0.3 * vSize;',
+            '  float a = edge * (0.7 + 0.3 * vTwinkle);',
+            '  gl_FragColor = vec4(col * tone, a);',
             '}'
           ].join('\n')
         });
@@ -24821,15 +24818,17 @@ function switchTab(tab) {
 
         // ════ NEBULA CLOUD — soft blue glow BEHIND the dots (the "cloud") ════
         // This is the diffuse haze the sharp dots sit on top of, like the ref.
+        // Brighter, fuller gradient so it clearly reads as a cloud (was too faint).
         var nebulaTex = glowTexture([
-          [0,   'rgba(120,180,255,0.55)'],
-          [0.3, 'rgba(70,140,255,0.30)'],
-          [0.6, 'rgba(40,90,220,0.12)'],
-          [1,   'rgba(30,70,180,0)']
+          [0,   'rgba(150,200,255,1.0)'],
+          [0.25,'rgba(90,160,255,0.75)'],
+          [0.5, 'rgba(55,120,240,0.40)'],
+          [0.75,'rgba(35,85,210,0.16)'],
+          [1,   'rgba(25,60,170,0)']
         ]);
-        var nebulaMat = new THREE.SpriteMaterial({ map: nebulaTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85 });
+        var nebulaMat = new THREE.SpriteMaterial({ map: nebulaTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 1.0 });
         var nebula = new THREE.Sprite(nebulaMat);
-        nebula.scale.set(2.5, 2.5, 2.5);     // fills the inner sphere area
+        nebula.scale.set(2.8, 2.8, 2.8);     // fills the inner sphere area
         nebula.position.z = -0.5;             // sit it behind the dot cloud
         nebula.renderOrder = -1;              // always drawn first (behind dots)
         scene.add(nebula);
@@ -24968,10 +24967,10 @@ function switchTab(tab) {
 
           // nebula cloud: always-on soft blue haze, breathes with the dots and
           // brightens / pulls in when speaking (it's the cloud BEHIND the dots)
-          var neb = 0.7 + 0.12 * Math.sin(t * 1.2) + active * 0.25;
+          var neb = 0.95 + 0.1 * Math.sin(t * 1.2) + active * 0.25;
           nebulaMat.opacity = neb;
-          var nbWave = -Math.sin(t * 3.0) * pUniforms.uBreathe.value * 0.25;
-          var nbScale = 2.5 + active * 0.25 + nbWave;   // pulses in/out when speaking
+          var nbWave = -Math.sin(t * 3.0) * pUniforms.uBreathe.value * 0.3;
+          var nbScale = 2.8 + active * 0.3 + nbWave;   // pulses in/out when speaking
           nebula.scale.set(nbScale, nbScale, nbScale);
 
           // core glow: a faint always-on blue ember at idle, bright cyan when active
