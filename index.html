@@ -12188,6 +12188,9 @@ setInterval(updateDayBar, 60 * 1000);
         if (cache && cache.items && typeof window._peakRenderInsights === 'function') window._peakRenderInsights(cache.items);
       }
     } catch(e) {}
+    // Re-render the JARVIS tab from cache if it's the active tab, so synced
+    // patterns/debrief/chat from another device replace the stale local copy.
+    try { if (typeof window._jvRepaintFromCache === 'function') window._jvRepaintFromCache(); } catch(e) {}
   }
 
   function applyRemote(remote) {
@@ -12305,6 +12308,9 @@ setInterval(updateDayBar, 60 * 1000);
     sLastKeysJson = window.canonicalJson(collectKeys());
   }
 
+  // Exposed so AI features can pull-merge the latest remote BEFORE deciding to
+  // generate fresh content — prevents two devices generating different copies.
+  window._poSyncPull = pollRemote;
   async function pollRemote() {
     if (!sReady) return;
     try {
@@ -25953,12 +25959,29 @@ function switchTab(tab) {
     return div;
   }
 
+  // chat history persistence (goals_ prefix → syncs to Supabase). Keyed per-day.
+  var JVCHAT_KEY='goals_jv_chat_';
+  function _jvChatKey(){ return JVCHAT_KEY + todayKey(); }
+  function jvLoadHistory(){ try { return JSON.parse(localStorage.getItem(_jvChatKey())) || []; } catch(e){ return []; } }
+  function jvSaveTurn(role, text){
+    var h=jvLoadHistory(); h.push({ r:role, t:text });
+    if (h.length>60) h=h.slice(h.length-60);   // cap to avoid bloat
+    try { localStorage.setItem(_jvChatKey(), JSON.stringify(h)); } catch(e){}
+  }
+  function jvRestoreHistory(){
+    var feed=document.getElementById('jvCoachMessages'); if(!feed) return false;
+    var h=jvLoadHistory(); if(!h.length) return false;
+    feed.innerHTML='';
+    h.forEach(function(m){ jvAppend(m.t, m.r==='user'?'user':'coach'); });
+    return true;
+  }
+
   var jvFlight=false;
   async function jvSend(msg){
     if(!msg || !msg.trim() || jvFlight) return;
     jvFlight=true;
     if(window._jvAvatarSetMood) window._jvAvatarSetMood('thinking');   // avatar reacts
-    jvAppend(msg,'user');
+    jvAppend(msg,'user'); jvSaveTurn('user', msg);
     var loading=jvAppend('Analysing your data...','coach');
     try {
       var ctx = window.getJarvisContext(msg, 'smart');
@@ -25974,7 +25997,7 @@ function switchTab(tab) {
       if(loading && loading.parentNode) loading.parentNode.removeChild(loading);
       if(lastErr) throw lastErr;
       var txt=(reply&&reply.trim())||'My apologies, sir - I could not generate a response. Please try again.';
-      jvAppend(txt,'coach');
+      jvAppend(txt,'coach'); jvSaveTurn('coach', txt);
       if(window._jvAvatarSetMood) window._jvAvatarSetMood('responding');
       if(typeof window._jarvisSpeak==='function') window._jarvisSpeak(txt);
       // estimate speech duration → return avatar to idle when done
@@ -26040,6 +26063,9 @@ function switchTab(tab) {
     if(!force){
       var cached=null; try{ cached=JSON.parse(localStorage.getItem(PATTERNS_KEY+dk)); }catch(e){}
       if(cached && cached.items && cached.items.length){ _paintPatterns(cached.items); return; }
+      // No local cache yet — pull remote first; another device may already have
+      // generated today's patterns. Adopt theirs rather than generating a rival copy.
+      try { if(typeof window._poSyncPull==='function'){ await window._poSyncPull(); var rc=JSON.parse(localStorage.getItem(PATTERNS_KEY+dk)); if(rc && rc.items && rc.items.length){ _paintPatterns(rc.items); return; } } } catch(e){}
     }
     if(_patFlight) return; _patFlight=true;
     list.innerHTML='<div style="font-size:12px;color:var(--text-tertiary)">JARVIS is scanning all your data for patterns…</div>';
@@ -26075,7 +26101,12 @@ function switchTab(tab) {
     // cache by week (Monday)
     var d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7));
     var wk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    if(!force){ var cached=null; try{ cached=JSON.parse(localStorage.getItem(JVDEBRIEF_KEY+wk)); }catch(e){} if(cached && cached.text){ txt.textContent=cached.text; var sb=document.getElementById('jvDebriefSpeak'); if(sb)sb.style.display=''; return; } }
+    if(!force){
+      var cached=null; try{ cached=JSON.parse(localStorage.getItem(JVDEBRIEF_KEY+wk)); }catch(e){}
+      if(cached && cached.text){ txt.textContent=cached.text; var sb=document.getElementById('jvDebriefSpeak'); if(sb)sb.style.display=''; return; }
+      // No local copy — pull remote first; adopt another device's debrief if it has one.
+      try { if(typeof window._poSyncPull==='function'){ await window._poSyncPull(); var rc=JSON.parse(localStorage.getItem(JVDEBRIEF_KEY+wk)); if(rc && rc.text){ txt.textContent=rc.text; var sb2=document.getElementById('jvDebriefSpeak'); if(sb2)sb2.style.display=''; return; } } } catch(e){}
+    }
     if(_debFlight) return; _debFlight=true;
     txt.textContent='Generating your full-life weekly debrief, sir…';
     try {
@@ -26094,7 +26125,10 @@ function switchTab(tab) {
     _bootJvAvatar();   // mount the 3D avatar on first open (render-gated after)
     var feed=document.getElementById('jvCoachMessages');
     if(feed && !feed._greeted){ feed._greeted=true;
-      jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach');
+      // restore today's synced conversation; greet only if there's none
+      if(!jvRestoreHistory()){
+        jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach');
+      }
     }
     renderJvNudges();
     renderJvPatterns(false);   // shows cached patterns if present
@@ -26106,6 +26140,22 @@ function switchTab(tab) {
     if(dr && !dr._wired){ dr._wired=true; dr.addEventListener('click', function(){ renderJvDebrief(true); }); }
     var ds=document.getElementById('jvDebriefSpeak');
     if(ds && !ds._wired){ ds._wired=true; ds.addEventListener('click', function(){ var t=document.getElementById('jvDebriefText'); if(t && window._jarvisSpeak) window._jarvisSpeak(t.textContent); }); }
+  };
+
+  // Repaint every JARVIS card + chat from localStorage WITHOUT calling Gemini.
+  // Called by the sync engine when newer data arrives from another device so the
+  // on-screen JARVIS tab can't keep showing a stale locally-generated copy.
+  window._jvRepaintFromCache = function(){
+    try {
+      var view=document.getElementById('jarvisView');
+      if(!view || !view.classList.contains('active')) return; // only repaint if visible
+      // Chat: rebuild today's thread from the synced key
+      var feed=document.getElementById('jvCoachMessages');
+      if(feed){ feed.innerHTML=''; if(!jvRestoreHistory()){ jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach'); } }
+      renderJvNudges();
+      renderJvPatterns(false);
+      renderJvDebrief(false);
+    } catch(e){}
   };
 
   // ---------- DASHBOARD "Insight" card: one daily cross-domain correlation ----------
