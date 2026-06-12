@@ -22177,9 +22177,13 @@ function switchTab(tab) {
         if (headlines.length) newsStr = 'headlines: ' + headlines.join(' | ');
       }
 
-      var nowH = Math.floor(wakeHour);
+      // Actual wall-clock time (was mistakenly using wakeHour → "it's 10am, sir")
+      var _nowD = new Date();
+      var nowH = _nowD.getHours();
+      var nowClock = String(nowH).padStart(2,'0') + ':' + String(_nowD.getMinutes()).padStart(2,'0');
+      var wakeClock = String(Math.floor(wakeHour)).padStart(2,'0') + ':' + String(Math.round((wakeHour % 1)*60)).padStart(2,'0');
       var prompt = 'You are JARVIS, Tony Stark\'s AI. Generate a morning brief for sir in the JARVIS style — confident, intelligent, slightly formal, addresses as "sir". ' +
-        'Current time: ' + nowH + ':00. ' +
+        'Current time right now: ' + nowClock + ' (sir woke at ' + wakeClock + '). ' +
         (wxStr ? wxStr + '. ' : '') +
         'Biometrics: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + '. ' +
         'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
@@ -22282,6 +22286,7 @@ function switchTab(tab) {
   }
 
   var _briefAudioEl = null;
+  var _pendingBriefBlob = null; // set when autoplay is blocked; plays on first tap
   function _briefPlayBlob(blob, onDone) {
     try { if (_briefAudioEl) { _briefAudioEl.pause(); } } catch(e){}
     _stopAllSpeech(); // stop any Piper line that may be playing
@@ -22294,7 +22299,16 @@ function switchTab(tab) {
     var fired = false;
     function done(){ if (fired) return; fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); URL.revokeObjectURL(url); if (onDone) onDone(); }
     audio.onended = done; audio.onerror = done;
-    audio.play().catch(function(){ done(); });
+    audio.play().then(function(){
+      _pendingBriefBlob = null; // played fine, nothing pending
+    }).catch(function(){
+      // Autoplay blocked (iOS/Safari before first interaction). Queue it so the
+      // user's first tap anywhere plays the brief, instead of losing it silently.
+      _pendingBriefBlob = blob;
+      window._jarvisSpeaking = false;
+      if (window._arcSetMood) window._arcSetMood('idle');
+      URL.revokeObjectURL(url);
+    });
   }
 
   // Speak the morning brief via Gemini TTS. Uses cached audio if present for
@@ -24534,6 +24548,20 @@ function switchTab(tab) {
       if (v && v.classList.contains('active')) _refreshEnergyChart(null);
     });
 
+    // First user interaction unlocks audio (iOS/Safari autoplay policy). If the
+    // morning brief was queued because autoplay was blocked, play it now.
+    (function() {
+      function flushPendingBrief() {
+        if (_pendingBriefBlob) {
+          var b = _pendingBriefBlob; _pendingBriefBlob = null;
+          _briefPlayBlob(b);
+        }
+      }
+      ['pointerdown','touchstart','click','keydown'].forEach(function(ev){
+        document.addEventListener(ev, flushPendingBrief, { passive: true });
+      });
+    })();
+
     // ── Arc Reactor ───────────────────────────────────────────
     (function() {
       var canvas = document.getElementById('peakArcReactor');
@@ -24942,12 +24970,37 @@ function switchTab(tab) {
     pinWrap.style.display = '';
     pinInput.value = '';
     updateDots('');
-    pinInput.focus();
+    // Programmatic focus() is unreliable on mobile / fresh browsers (the keyboard
+    // won't pop unless focus is tied to a user gesture). Try it, but also make the
+    // whole lock surface tappable so a single tap reliably opens the keyboard.
+    try { pinInput.focus(); } catch(e) {}
+    setTimeout(function(){ try { pinInput.focus(); } catch(e){} }, 250);
+    // Remove any prior tap-to-focus handler before adding a fresh one
+    if (lock._focusPin) {
+      lock.removeEventListener('click', lock._focusPin);
+      lock.removeEventListener('touchend', lock._focusPin);
+    }
+    lock._focusPin = function(e) {
+      if (e && e.target === pinInput) return; // don't fight native focus
+      try { pinInput.focus(); pinInput.click(); } catch(e2){}
+    };
+    lock.addEventListener('click', lock._focusPin);
+    lock.addEventListener('touchend', lock._focusPin);
+    // Show a hint so the user knows to tap
+    if (sub && !sub.textContent) sub.textContent = 'Tap here, then type your PIN';
     pinInput.oninput = () => {
       const v = pinInput.value.replace(/\D/g, '').slice(0, 6);
       pinInput.value = v;
       updateDots(v);
-      if (v.length === 6) { pinInput.oninput = null; onSubmit(v); }
+      if (v.length === 6) {
+        pinInput.oninput = null;
+        if (lock._focusPin) {
+          lock.removeEventListener('click', lock._focusPin);
+          lock.removeEventListener('touchend', lock._focusPin);
+          lock._focusPin = null;
+        }
+        onSubmit(v);
+      }
     };
   }
   function hidePin() { pinWrap.style.display = 'none'; pinInput.value = ''; updateDots(''); }
