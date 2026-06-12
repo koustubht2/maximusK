@@ -8985,7 +8985,7 @@ window.canonicalJson = function(obj) {
     <div class="peak-card">
       <div class="peak-section-label">Your Coach</div>
       <div style="display:flex;justify-content:center;margin-bottom:14px;">
-        <canvas id="peakArcReactor" width="260" height="260" style="cursor:pointer;width:240px;height:240px;max-width:80vw;" title="Tap JARVIS"></canvas>
+        <canvas id="peakArcReactor" width="240" height="240" style="cursor:pointer;width:240px;height:240px;max-width:82vw;" title="Tap JARVIS"></canvas>
       </div>
       <div class="peak-coach-messages" id="peakCoachMessages"></div>
       <div class="peak-coach-chips">
@@ -24721,7 +24721,7 @@ function switchTab(tab) {
         // ════ PARTICLE CLOUD — round glowing dots that breathe in/out ════
         // Custom shader so each point is a soft ROUND dot (not a GL square),
         // sized by distance, and animated radially by a per-point phase.
-        var N = 1300;
+        var N = 950;
         var pos = new Float32Array(N * 3);   // direction × baseRadius (volumetric)
         var rnd = new Float32Array(N);       // per-particle random 0..1 (phase + twinkle)
         for (var i = 0; i < N; i++) {
@@ -24745,7 +24745,7 @@ function switchTab(tab) {
           uTime:    { value: 0 },
           uActive:  { value: 0 },          // 0 idle (blue) → 1 active (cyan)
           uBreathe: { value: 0 },          // radial pulse amount
-          uSize:    { value: 21.0 * DPR },
+          uSize:    { value: 15.0 * DPR },
           uColorIdle:   { value: new THREE.Color('#4ea0ff') },
           uColorActive: { value: new THREE.Color('#7af0ff') }
         };
@@ -24777,18 +24777,17 @@ function switchTab(tab) {
             'uniform vec3 uColorIdle; uniform vec3 uColorActive; uniform float uActive;',
             'varying float vR; varying float vTwinkle;',
             'void main(){',
-            // crisp round dot: a sharp bright core + a thin soft halo (not a big blur)
+            // CRISP round dot: nearly-hard edge (tiny AA band only). No soft halo —
+            // that was making every dot look like a fuzzy blob.
             '  vec2 d = gl_PointCoord - vec2(0.5);',
             '  float dist = length(d);',
-            '  if (dist > 0.5) discard;',
-            '  float core = smoothstep(0.30, 0.06, dist);',    // tight solid center
-            '  float halo = smoothstep(0.5, 0.30, dist) * 0.35;', // faint thin glow ring
-            '  float alpha = clamp(core + halo, 0.0, 1.0);',
+            '  float alpha = smoothstep(0.5, 0.42, dist);',   // hard disc, 0.08 AA edge
+            '  if (alpha < 0.01) discard;',
             // center dots glow whiter; rim dots take the idle/active hue
             '  vec3 base = mix(uColorIdle, uColorActive, uActive);',
-            '  vec3 col = mix(vec3(0.9,0.98,1.0), base, clamp(vR + 0.1, 0.0, 1.0));',
+            '  vec3 col = mix(vec3(0.92,0.98,1.0), base, clamp(vR + 0.1, 0.0, 1.0));',
             // center brighter, rim dimmer; everything lifts when active
-            '  float bright = (1.2 - vR * 0.45) * (0.75 + 0.25 * uActive);',
+            '  float bright = (1.25 - vR * 0.4) * (0.8 + 0.2 * uActive);',
             '  gl_FragColor = vec4(col, alpha * vTwinkle * bright);',
             '}'
           ].join('\n')
