@@ -24751,9 +24751,9 @@ function switchTab(tab) {
           uTime:    { value: 0 },
           uActive:  { value: 0 },          // 0 idle (blue) → 1 active (cyan)
           uBreathe: { value: 0 },          // radial pulse amount
-          uSize:    { value: 20.0 * DPR },  // base px size; per-dot aSize multiplies it
-          uColorIdle:   { value: new THREE.Color('#5aa8ff') },
-          uColorActive: { value: new THREE.Color('#86f2ff') }
+          uSize:    { value: 16.0 * DPR },  // base px size; per-dot aSize multiplies it
+          uColorIdle:   { value: new THREE.Color('#2f6dd6') },
+          uColorActive: { value: new THREE.Color('#4fc8f5') }
         };
         var pMat = new THREE.ShaderMaterial({
           uniforms: pUniforms,
@@ -24836,6 +24836,66 @@ function switchTab(tab) {
         var cloud = new THREE.Points(pGeo, pMat);
         cloud.renderOrder = 1;                // dots drawn ON TOP of the nebula
         root.add(cloud);
+
+        // ════ CONSTELLATION LINES — thin segments linking nearby dots ════
+        // Like the reference: each dot connects to its closest few neighbours,
+        // forming a faint web. Pairs are precomputed from base positions; the
+        // line shader applies the SAME breathing so lines track the dots.
+        var pairs = [];
+        var LINK_DIST = 0.34;        // max distance to draw a link
+        var MAX_LINKS = 3;           // cap links per dot so it isn't a solid mesh
+        var linkCount = new Int8Array(N);
+        for (var a2 = 0; a2 < N; a2++) {
+          if (linkCount[a2] >= MAX_LINKS) continue;
+          for (var b2 = a2 + 1; b2 < N; b2++) {
+            if (linkCount[a2] >= MAX_LINKS) break;
+            if (linkCount[b2] >= MAX_LINKS) continue;
+            var ddx = pos[a2*3]-pos[b2*3], ddy = pos[a2*3+1]-pos[b2*3+1], ddz = pos[a2*3+2]-pos[b2*3+2];
+            var dd = Math.sqrt(ddx*ddx + ddy*ddy + ddz*ddz);
+            if (dd < LINK_DIST) { pairs.push(a2, b2); linkCount[a2]++; linkCount[b2]++; }
+          }
+        }
+        // build line geometry: 2 verts per pair, carrying their own aRnd/aSize
+        var LV = pairs.length;       // total line vertices (pairs.length = 2 per segment already)
+        var lpos = new Float32Array(LV * 3);
+        var lrnd = new Float32Array(LV);
+        for (var pi = 0; pi < LV; pi++) {
+          var idx = pairs[pi];
+          lpos[pi*3] = pos[idx*3]; lpos[pi*3+1] = pos[idx*3+1]; lpos[pi*3+2] = pos[idx*3+2];
+          lrnd[pi] = rnd[idx];
+        }
+        var lGeo = new THREE.BufferGeometry();
+        lGeo.setAttribute('position', new THREE.BufferAttribute(lpos, 3));
+        lGeo.setAttribute('aRnd', new THREE.BufferAttribute(lrnd, 1));
+        var lMat = new THREE.ShaderMaterial({
+          uniforms: pUniforms,        // share breathing uniforms with the dots
+          transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+          vertexShader: [
+            'attribute float aRnd;',
+            'uniform float uTime; uniform float uBreathe;',
+            'void main(){',
+            '  vec3 dir = normalize(position);',
+            '  float baseR = length(position) * 1.18;',
+            '  float ph = aRnd * 6.2831;',
+            '  float idle = sin(uTime * 1.5 + ph) * 0.03;',
+            '  float converge = -sin(uTime * 3.0) * uBreathe * (0.28 + 0.12 * aRnd);',
+            '  float r = baseR + idle + converge;',
+            '  vec3 p = dir * r;',
+            '  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);',
+            '}'
+          ].join('\n'),
+          fragmentShader: [
+            'uniform float uActive;',
+            'void main(){',
+            // faint cool-blue web; brightens slightly when active
+            '  vec3 col = mix(vec3(0.25,0.45,0.85), vec3(0.35,0.75,0.95), uActive);',
+            '  gl_FragColor = vec4(col, 0.12 + 0.10 * uActive);',
+            '}'
+          ].join('\n')
+        });
+        var netLines = new THREE.LineSegments(lGeo, lMat);
+        netLines.renderOrder = 0;     // behind the dots, in front of the nebula
+        root.add(netLines);
 
         // ════ CENTER CORE — breathing cyan glow (the "active" heart) ════
         var coreTex = glowTexture([
