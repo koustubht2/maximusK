@@ -9211,7 +9211,32 @@ window.canonicalJson = function(obj) {
   </div>
 </div>
 
-<!-- Tab Bar -->
+<!-- ========== JARVIS VIEW (omniscient assistant) ========== -->
+<div id="jarvisView" class="view-container">
+  <div style="max-width:680px;margin:0 auto;padding:0 4px;">
+    <div style="text-align:center;padding:18px 0 4px;">
+      <div style="font-family:var(--font-mono);font-size:20px;letter-spacing:0.18em;color:#6EE7B7;font-weight:700;">JARVIS</div>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-tertiary);margin-top:4px;">Omniscient · sees all your data</div>
+    </div>
+
+    <!-- chat -->
+    <div class="peak-card" style="margin-top:10px;">
+      <div id="jvCoachMessages" class="peak-coach-messages" style="min-height:120px;max-height:46vh;"></div>
+      <div class="peak-coach-chips" id="jvChips">
+        <button class="peak-coach-chip" type="button" data-chip="give me a full life summary right now">Life summary</button>
+        <button class="peak-coach-chip" type="button" data-chip="how is my money this month?">Money check</button>
+        <button class="peak-coach-chip" type="button" data-chip="am i on track with my goals?">Goals check</button>
+        <button class="peak-coach-chip" type="button" data-chip="what patterns do you see across my health, training and spending?">Find patterns</button>
+      </div>
+      <div class="peak-coach-input-row">
+        <input id="jvCoachInput" class="peak-coach-input" type="text" placeholder="Ask JARVIS anything about your data…">
+        <button id="jvCoachSend" class="peak-coach-send" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ========== PROFILE VIEW ========== -->
 <div id="profileView" class="view-container">
@@ -9348,6 +9373,10 @@ window.canonicalJson = function(obj) {
     <button class="tab" id="tabFinance" onclick="switchTab('finance')">
       <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
       Finance
+    </button>
+    <button class="tab" id="tabJarvis" onclick="switchTab('jarvis')">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></svg></span>
+      JARVIS
     </button>
   </div>
 </nav>
@@ -16508,6 +16537,7 @@ function switchTab(tab) {
     gym: document.getElementById('gymView'),
     finance: document.getElementById('financeView'),
     peak: document.getElementById('peakView'),
+    jarvis: document.getElementById('jarvisView'),
     profile: document.getElementById('profileView')
   };
   const tabs = {
@@ -16516,6 +16546,7 @@ function switchTab(tab) {
     gym: document.getElementById('tabGym'),
     finance: document.getElementById('tabFinance'),
     peak: document.getElementById('tabPeak'),
+    jarvis: document.getElementById('tabJarvis'),
     profile: document.getElementById('topbarProfileBtn')
   };
 
@@ -16534,6 +16565,9 @@ function switchTab(tab) {
   }
   if (tab === 'profile' && typeof renderProfile === 'function') {
     renderProfile();
+  }
+  if (tab === 'jarvis' && typeof window.renderJarvisTab === 'function') {
+    setTimeout(window.renderJarvisTab, 0);
   }
 }
 
@@ -21251,6 +21285,7 @@ function switchTab(tab) {
     if (!r.ok) throw new Error((j && j.error && (j.error.message || JSON.stringify(j.error))) || ('HTTP ' + r.status));
     return (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text) || '';
   }
+  window.gemini = gemini;   // expose for the JARVIS omniscient engine (separate script scope)
 
   async function geminiVision(base64, mimeType, textPrompt) {
     var r = await fetch('/api/gemini', {
@@ -22708,8 +22743,20 @@ function switchTab(tab) {
     } finally { _weeklyFlight = false; }
   }
 
+  // shared tooltip element for the Last Week trend lines
+  function _lwTooltip() {
+    var tip = document.getElementById('peakLwTip');
+    if (!tip) {
+      tip = document.createElement('div'); tip.id = 'peakLwTip';
+      tip.style.cssText = 'position:fixed;z-index:100;pointer-events:none;display:none;background:#0e1422;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 9px;font-family:var(--font-mono);font-size:11px;color:#fff;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.5)';
+      document.body.appendChild(tip);
+    }
+    return tip;
+  }
+
   // draw a small Oura-style trend line (filled gradient + line + last dot)
-  function _lwLine(canvasId, vals, colour) {
+  // + store geometry so the canvas can show a hover tooltip per point.
+  function _lwLine(canvasId, vals, colour, label, unit, dayLabels) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
     var W = canvas.offsetWidth || 300; canvas.width = W;
@@ -22721,11 +22768,9 @@ function switchTab(tab) {
     var range = (mx - mn) || 1, pad = 6;
     var xp = function(i){ return pad + (i/(vals.length-1))*(W-pad*2); };
     var yp = function(v){ return H - pad - ((v - mn)/range)*(H-pad*2); };
-    // build path skipping nulls
     var first = -1;
     for (var k=0;k<vals.length;k++){ if (vals[k]!=null && !isNaN(vals[k])) { first=k; break; } }
     if (first<0) return;
-    // fill
     var grad = ctx.createLinearGradient(0,0,0,H);
     var rgb = colour.replace('#','');
     var r=parseInt(rgb.slice(0,2),16), g=parseInt(rgb.slice(2,4),16), b=parseInt(rgb.slice(4,6),16);
@@ -22735,12 +22780,60 @@ function switchTab(tab) {
     var lastI = vals.length-1; while(lastI>0 && (vals[lastI]==null||isNaN(vals[lastI]))) lastI--;
     ctx.lineTo(xp(lastI), H); ctx.lineTo(xp(first), H); ctx.closePath();
     ctx.fillStyle = grad; ctx.fill();
-    // line
     ctx.beginPath(); ctx.moveTo(xp(first), yp(vals[first]));
     for (var j=first+1;j<vals.length;j++){ if (vals[j]==null||isNaN(vals[j])) continue; ctx.lineTo(xp(j), yp(vals[j])); }
     ctx.strokeStyle = colour; ctx.lineWidth = 1.6; ctx.stroke();
-    // last dot
     ctx.beginPath(); ctx.arc(xp(lastI), yp(vals[lastI]), 3, 0, Math.PI*2); ctx.fillStyle = colour; ctx.fill();
+
+    // ── hover/touch tooltip ──
+    var geom = { W:W, H:H, pad:pad, vals:vals, xp:xp, yp:yp, colour:colour, label:label, unit:unit||'', days:dayLabels||[] };
+    function nearestIdx(mx2){
+      var best=-1, bd=1e9;
+      for (var n=0;n<vals.length;n++){ if (vals[n]==null||isNaN(vals[n])) continue; var d=Math.abs(xp(n)-mx2); if (d<bd){bd=d;best=n;} }
+      return best;
+    }
+    function show(clientX, clientY, localX){
+      var idx = nearestIdx(localX);
+      if (idx<0) return;
+      // redraw + highlight the hovered point
+      _redrawLwWithHighlight(canvas, geom, idx);
+      var tip = _lwTooltip();
+      var dayLbl = geom.days[idx] || '';
+      tip.innerHTML = '<span style="color:'+colour+'">●</span> '+label+' '+(dayLbl?('· '+dayLbl):'')+' &nbsp;<b>'+Math.round(vals[idx])+geom.unit+'</b>';
+      tip.style.display='block';
+      tip.style.left = (clientX + 12) + 'px';
+      tip.style.top  = (clientY - 34) + 'px';
+    }
+    function hide(){ var tip=document.getElementById('peakLwTip'); if(tip)tip.style.display='none'; _redrawLwWithHighlight(canvas, geom, -1); }
+    canvas.onmousemove = function(e){ var rc=canvas.getBoundingClientRect(); show(e.clientX, e.clientY, e.clientX-rc.left); };
+    canvas.onmouseleave = hide;
+    canvas.ontouchstart = canvas.ontouchmove = function(e){ var t=e.touches[0]; if(!t)return; var rc=canvas.getBoundingClientRect(); show(t.clientX, t.clientY, t.clientX-rc.left); };
+    canvas.ontouchend = hide;
+    canvas.style.cursor = 'crosshair';
+  }
+
+  // redraw a stored trend line, optionally drawing a marker at index `hi`
+  function _redrawLwWithHighlight(canvas, geom, hi) {
+    var ctx = canvas.getContext('2d'), vals=geom.vals, xp=geom.xp, yp=geom.yp, colour=geom.colour, H=geom.H, W=geom.W, pad=geom.pad;
+    ctx.clearRect(0,0,W,H);
+    var first=-1; for (var k=0;k<vals.length;k++){ if (vals[k]!=null&&!isNaN(vals[k])){first=k;break;} }
+    if (first<0) return;
+    var grad=ctx.createLinearGradient(0,0,0,H); var rgb=colour.replace('#',''); var r=parseInt(rgb.slice(0,2),16),g=parseInt(rgb.slice(2,4),16),b=parseInt(rgb.slice(4,6),16);
+    grad.addColorStop(0,'rgba('+r+','+g+','+b+',0.18)'); grad.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
+    ctx.beginPath(); ctx.moveTo(xp(first),yp(vals[first]));
+    for (var i=first+1;i<vals.length;i++){ if(vals[i]==null||isNaN(vals[i]))continue; ctx.lineTo(xp(i),yp(vals[i])); }
+    var lastI=vals.length-1; while(lastI>0&&(vals[lastI]==null||isNaN(vals[lastI])))lastI--;
+    ctx.lineTo(xp(lastI),H); ctx.lineTo(xp(first),H); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(xp(first),yp(vals[first]));
+    for (var j=first+1;j<vals.length;j++){ if(vals[j]==null||isNaN(vals[j]))continue; ctx.lineTo(xp(j),yp(vals[j])); }
+    ctx.strokeStyle=colour; ctx.lineWidth=1.6; ctx.stroke();
+    ctx.beginPath(); ctx.arc(xp(lastI),yp(vals[lastI]),3,0,Math.PI*2); ctx.fillStyle=colour; ctx.fill();
+    // highlight marker
+    if (hi>=0 && vals[hi]!=null && !isNaN(vals[hi])) {
+      ctx.beginPath(); ctx.moveTo(xp(hi),0); ctx.lineTo(xp(hi),H); ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(xp(hi),yp(vals[hi]),4,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(xp(hi),yp(vals[hi]),4,0,Math.PI*2); ctx.strokeStyle=colour; ctx.lineWidth=1.5; ctx.stroke();
+    }
   }
 
   function renderLastWeek(oura) {
@@ -22772,10 +22865,17 @@ function switchTab(tab) {
     setText('peakLwAvgSleep', avgSl != null ? avgSl : '—');
     setText('peakLwBestDay', bestDayStr);
 
-    // draw the three trend lines
-    _lwLine('peakLwReadinessCanvas', scores, '#6EE7B7');
-    _lwLine('peakLwHrvCanvas', hrvSeries.map(function(v){ return v==null?null:v; }), '#818cf8');
-    _lwLine('peakLwSleepCanvas', sleepSeries, '#38bdf8');
+    // per-day labels (e.g. "Mon 09") for the tooltip
+    var tipDays = readArr.map(function(r){
+      if (!r.day) return '';
+      var d = new Date(r.day + 'T12:00:00');
+      return dayNames[d.getDay()] + ' ' + String(d.getDate()).padStart(2,'0');
+    });
+
+    // draw the three trend lines (with hover tooltips)
+    _lwLine('peakLwReadinessCanvas', scores, '#6EE7B7', 'Readiness', '', tipDays);
+    _lwLine('peakLwHrvCanvas', hrvSeries.map(function(v){ return v==null?null:v; }), '#818cf8', 'HRV', 'ms', tipDays);
+    _lwLine('peakLwSleepCanvas', sleepSeries, '#38bdf8', 'Sleep', '', tipDays);
 
     // day labels under the charts (Mon..Sun for the 7 shown days)
     var daysEl = document.getElementById('peakLwDays');
@@ -25555,5 +25655,260 @@ function switchTab(tab) {
 })();
 </script>
 
+<!-- ========== JARVIS OMNISCIENT ENGINE ========== -->
+<script>
+(function(){
+  // ---------- helpers ----------
+  function ls(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
+  function lsRaw(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function dkey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function todayKey(){ return (typeof today === 'function') ? today() : dkey(new Date()); }
+  // list of YYYY-MM-DD keys for the last N days (today first)
+  function lastDays(n){ var out=[]; var base=new Date(); for(var i=0;i<n;i++){ var d=new Date(base); d.setDate(base.getDate()-i); out.push(dkey(d)); } return out; }
+  function sum(arr,f){ return arr.reduce(function(a,b){ return a+(f?f(b):b); },0); }
+  function round(x){ return Math.round(x); }
+
+  var WINDOW = 14; // correlation history window (days)
+
+  // ---------- per-domain summarisers ----------
+  // each returns { summary: "one line", detail: "fuller multiline (optional)" }
+
+  function domOura(){
+    var o = (typeof getOura === 'function') ? getOura() : null;
+    if (!o || !o.readiness || !o.readiness.length) return { summary:'Health(Oura): no data' };
+    var tod = todayKey();
+    var tR = o.readiness.find(function(r){return r.day===tod;});
+    var tS = o.sleep && o.sleep.find(function(s){return s.day===tod;});
+    var last = o.readiness.slice(0,WINDOW);
+    var avgR = round(sum(last,function(r){return r.score||0;})/last.length);
+    var hrvNow = tR && tR.contributors && tR.contributors.hrv_balance;
+    var summary = 'Health(Oura): readiness today=' + (tR?tR.score:'n/a') + ', sleep=' + (tS?tS.score:'n/a') + ', HRV_balance=' + (hrvNow!=null?hrvNow:'n/a') + ', '+WINDOW+'d avg readiness=' + avgR;
+    // detail: day-by-day for correlation
+    var detail = last.map(function(r){
+      var s = o.sleep && o.sleep.find(function(x){return x.day===r.day;});
+      return r.day+': readiness '+(r.score||'-')+', sleep '+(s?s.score:'-')+', hrv '+((r.contributors&&r.contributors.hrv_balance)||'-');
+    }).join('\n');
+    return { summary:summary, detail:'Oura '+WINDOW+'-day history:\n'+detail };
+  }
+
+  function domNutrition(){
+    var rows=[], totK=0,totP=0;
+    var days = lastDays(WINDOW);
+    var todayRows = ls('goals_vitality_'+todayKey()) || [];
+    var tk=sum(todayRows,function(m){return m.kcal*(m.qty||1);}), tp=sum(todayRows,function(m){return (m.protein||0)*(m.qty||1);});
+    var summary = 'Nutrition today: '+round(tk)+' kcal, '+round(tp)+'g protein, '+todayRows.length+' items ('+todayRows.map(function(m){return m.name;}).slice(0,6).join(', ')+')';
+    var detail = days.map(function(dk){
+      var r = ls('goals_vitality_'+dk) || [];
+      if (!r.length) return null;
+      var k=sum(r,function(m){return (m.kcal||0)*(m.qty||1);}), p=sum(r,function(m){return (m.protein||0)*(m.qty||1);});
+      return dk+': '+round(k)+'kcal '+round(p)+'g protein - '+r.map(function(m){return m.name+(m.meal?'('+m.meal+')':'');}).join(', ');
+    }).filter(Boolean).join('\n');
+    return { summary:summary, detail:'Nutrition '+WINDOW+'-day log:\n'+detail };
+  }
+
+  function domWater(){
+    var w = ls('po_water_v1'); if (!w) return { summary:'Hydration: not set up' };
+    var done = (w.logs||{})[todayKey()]||0;
+    var uv = w.bottleMl||500; if (w.unit==='glass') uv=w.glassMl||250; else if(w.unit==='oz') uv=30; else if(w.unit==='ml') uv=1;
+    var p=w.profile||{}; var wKg=(p.weightKg||70); var tgt=Math.max(1500, wKg*35);
+    var ml = done*uv;
+    var summary = 'Hydration today: '+ml+'ml of ~'+round(tgt)+'ml target ('+round(ml/tgt*100)+'%)';
+    return { summary:summary };
+  }
+
+  function domStimulants(){
+    var caff = (typeof loadCaff==='function') ? loadCaff() : (ls('goals_caffeine_'+todayKey())||[]);
+    var alc  = (typeof loadAlc==='function')  ? loadAlc()  : (ls('goals_alcohol_'+todayKey())||[]);
+    var meds = (typeof loadMedLogs==='function') ? loadMedLogs(todayKey()) : [];
+    var cmg = sum(caff,function(c){return c.mg||0;});
+    var au  = sum(alc,function(a){return a.units||0;});
+    var summary = 'Stimulants today: caffeine '+round(cmg)+'mg ('+caff.length+' drinks), alcohol '+au+' units, meds/supps '+(meds.length?meds.map(function(m){return m.name;}).join(', '):'none');
+    // 14-day alcohol + caffeine for correlation
+    var days=lastDays(WINDOW);
+    var detail = days.map(function(dk){
+      var c=ls('goals_caffeine_'+dk)||[], a=ls('goals_alcohol_'+dk)||[];
+      var cm=sum(c,function(x){return x.mg||0;}), am=sum(a,function(x){return x.units||0;});
+      if(!cm && !am) return null;
+      return dk+': '+round(cm)+'mg caffeine, '+am+' alcohol units';
+    }).filter(Boolean).join('\n');
+    return { summary:summary, detail:detail?('Caffeine/alcohol '+WINDOW+'-day:\n'+detail):'' };
+  }
+
+  function domFlags(){
+    var sick = lsRaw('goals_peak_sick_'+todayKey())==='1';
+    var sun  = lsRaw('goals_peak_sun_'+todayKey())==='1';
+    return { summary:'Flags today: '+(sick?'SICK':'not sick')+', morning sunlight '+(sun?'logged':'not logged') };
+  }
+
+  function domEnergy(){
+    // current energy score is computed live; expose if a global exists
+    var s = (typeof window._peakNowScore === 'number') ? window._peakNowScore : null;
+    if (s==null) return { summary:'Energy curve: (open Peak to compute)' };
+    return { summary:'Energy now: '+round(s)+'/100' };
+  }
+
+  function domGym(){
+    var st = ls('po_coach_v1');
+    var done = ls('po_coach_workout_done')||{};
+    var weights = ls('po_coach_weights')||[];
+    var doneKeys = Object.keys(done).sort().reverse();
+    var lastTrained = doneKeys.length ? doneKeys[0] : 'unknown';
+    var wt = weights.length ? weights[weights.length-1] : null;
+    var trainedThisWeek = doneKeys.filter(function(k){ return lastDays(7).indexOf(k)>=0; }).length;
+    var summary = 'Gym: last trained '+lastTrained+', '+trainedThisWeek+' sessions in last 7d, body weight '+(wt?wt.weight+'kg':'n/a');
+    // recent exercise PRs / logs detail
+    var detail='';
+    if (st && st.exercises && st.logs){
+      var lines = st.exercises.slice(0,12).map(function(ex){
+        var lg = st.logs[ex.id]; if(!lg||!lg.length) return null;
+        var last = lg[lg.length-1];
+        return ex.name+': last '+last.weight+(st.units||'kg')+' Ã— '+last.reps;
+      }).filter(Boolean);
+      detail = lines.length ? ('Recent lifts:\n'+lines.join('\n')) : '';
+    }
+    return { summary:summary, detail:detail };
+  }
+
+  function domGoals(){
+    var tod = (typeof gsDateKey==='function') ? ('goals_daily_'+gsDateKey()) : ('goals_daily_'+todayKey());
+    var tasks = ls(tod) || [];
+    var done = tasks.filter(function(t){return t.checked;}).length;
+    var commits = ls('goals_commitments_v3') || [];
+    var summary = 'Goals today: '+done+'/'+tasks.length+' tasks done. Pending: '+tasks.filter(function(t){return !t.checked && !t.skipped;}).map(function(t){return t.title;}).slice(0,6).join(', ');
+    var detail = tasks.length ? ('Today tasks:\n'+tasks.map(function(t){return (t.checked?'[x] ':'[ ] ')+t.title+' ('+t.category+')';}).join('\n')) : '';
+    return { summary:summary, detail:detail };
+  }
+
+  function domJournal(){
+    var days=lastDays(WINDOW); var entries=[];
+    days.forEach(function(dk){ var j=ls('goals_journal_'+dk); if(j && (j.q1||j.q2||j.q3)) entries.push({dk:dk,j:j}); });
+    if(!entries.length) return { summary:'Journal: no recent entries' };
+    var latest=entries[0];
+    var summary='Journal: '+entries.length+' entries in last '+WINDOW+'d. Latest ('+latest.dk+'): "'+String(latest.j.q1||latest.j.q2||'').slice(0,90)+'..."';
+    var detail='Recent journal:\n'+entries.slice(0,5).map(function(e){
+      return e.dk+': experience="'+String(e.j.q1||'').slice(0,140)+'" bottleneck="'+String(e.j.q2||'').slice(0,140)+'" hours='+(e.j.hours||'-');
+    }).join('\n');
+    return { summary:summary, detail:detail };
+  }
+
+  function domFinance(){
+    function arr(k){ return ls(k)||[]; }
+    var bank=arr('nw:bank'), stocks=arr('nw:stocks'), crypto=arr('nw:crypto'), other=arr('nw:other'), locked=arr('nw:locked'), lent=arr('nw:lent');
+    var amt=function(a){ return sum(a,function(x){return x.amount||0;}); };
+    var nw = amt(bank)+amt(stocks)+amt(crypto)+amt(other)+amt(locked)+amt(lent);
+    var ccy = lsRaw('nw_currency') || 'CHF';
+    var expenses=arr('expenses'), incomes=arr('incomes'), subs=arr('subs'), wish=arr('wishlist'), orders=arr('incoming_orders');
+    var goal = ls('savings_goal');
+    // this month's expenses
+    var now=new Date(), mStart=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+    var monthExp = expenses.filter(function(e){ return (e.ts||new Date(e.date).getTime())>=mStart; });
+    var monthSpend = sum(monthExp,function(e){return e.amountCHF||0;});
+    var subTotal = sum(subs,function(s){return s.amountCHF||0;});
+    var incomeTotal = sum(incomes,function(i){return i.amountCHF||0;});
+    var summary = 'Finance: net worth ~'+round(nw)+ccy+', spent this month '+round(monthSpend)+ccy+', subs '+round(subTotal)+ccy+'/mo, income streams '+round(incomeTotal)+ccy+(goal?(', savings goal '+round(goal.amountCHF)+ccy):'')+', wishlist '+wish.length+' items';
+    // category breakdown + recent expenses for detail
+    var catMap={}; monthExp.forEach(function(e){ var c=e.category||'uncat'; catMap[c]=(catMap[c]||0)+(e.amountCHF||0); });
+    var cats=Object.keys(catMap).map(function(c){return c+': '+round(catMap[c])+ccy;}).join(', ');
+    var recent = expenses.slice(-12).reverse().map(function(e){return (e.name||'?')+' '+round(e.amountCHF||0)+ccy+(e.category?' ['+e.category+']':'');}).join('\n');
+    var subList = subs.map(function(s){return s.name+' '+round(s.amountCHF||0)+ccy+(s.renewalDate?' (renews '+s.renewalDate+')':'');}).join('\n');
+    var detail = 'Finance detail:\nMonth by category: '+cats+'\nSubscriptions:\n'+subList+'\nRecent expenses:\n'+recent+(wish.length?('\nWishlist: '+wish.map(function(w){return w.name+' '+round(w.amountCHF||0)+ccy;}).join(', ')):'');
+    return { summary:summary, detail:detail };
+  }
+
+  // domain registry with keyword triggers for "smart detail"
+  var DOMAINS = [
+    { fn:domOura,       keys:['readiness','sleep','hrv','recovery','rested','tired','oura','health'] },
+    { fn:domNutrition,  keys:['eat','ate','food','meal','protein','calorie','kcal','carb','fat','nutrition','diet','breakfast','lunch','dinner'] },
+    { fn:domWater,      keys:['water','hydrat','drink','thirsty'] },
+    { fn:domStimulants, keys:['caffeine','coffee','alcohol','drink','meds','supplement','nicotine','stimulant'] },
+    { fn:domFlags,      keys:['sick','ill','sunlight','sun'] },
+    { fn:domEnergy,     keys:['energy','peak','focus','dip','alert'] },
+    { fn:domGym,        keys:['gym','workout','train','lift','exercise','weight','muscle','strength','pr','overload','squat','bench','deadlift'] },
+    { fn:domGoals,      keys:['goal','task','todo','commit','productiv','done','priorit'] },
+    { fn:domJournal,    keys:['journal','reflect','wrote','feeling','bottleneck','experience'] },
+    { fn:domFinance,    keys:['money','spend','spent','expense','income','net worth','networth','save','saving','budget','sub','subscription','wishlist','buy','afford','finance','cash','order','drip'] }
+  ];
+
+  // ---------- public collector ----------
+  // mode: 'summary' (compact only) | 'smart' (summary + detail for matched domains) | 'full' (everything)
+  window.getJarvisContext = function(question, mode){
+    mode = mode || 'smart';
+    var q = (question||'').toLowerCase();
+    var summaries=[], details=[];
+    DOMAINS.forEach(function(d){
+      var res; try { res = d.fn(); } catch(e){ res = null; }
+      if (!res) return;
+      if (res.summary) summaries.push('- '+res.summary);
+      var matched = mode==='full' || (mode==='smart' && d.keys.some(function(k){ return q.indexOf(k)>=0; }));
+      if (matched && res.detail) details.push(res.detail);
+    });
+    var now = new Date();
+    var head = 'CURRENT TIME: '+dkey(now)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    var ctx = head + '\n\n=== SNAPSHOT (all life domains) ===\n' + summaries.join('\n');
+    if (details.length) ctx += '\n\n=== RELEVANT DETAIL ===\n' + details.join('\n\n');
+    return ctx;
+  };
+
+  // ---------- JARVIS tab chat ----------
+  function jvAppend(text, role){
+    var feed=document.getElementById('jvCoachMessages'); if(!feed) return;
+    var div=document.createElement('div');
+    div.className='peak-coach-msg '+(role==='user'?'user-msg':'coach-msg');
+    if(role!=='user'){ div.innerHTML='<span class="peak-coach-tag">JARVIS</span>'+'<span class="jv-body"></span>';
+      var b=div.querySelector('.jv-body'); b.textContent=text; }
+    else { div.textContent=text; }
+    feed.appendChild(div); feed.scrollTop=feed.scrollHeight;
+    return div;
+  }
+
+  var jvFlight=false;
+  async function jvSend(msg){
+    if(!msg || !msg.trim() || jvFlight) return;
+    jvFlight=true;
+    jvAppend(msg,'user');
+    var loading=jvAppend('Analysing your data...','coach');
+    try {
+      var ctx = window.getJarvisContext(msg, 'smart');
+      var prompt = 'You are JARVIS, an omniscient personal life assistant with full access to the user\'s health, nutrition, training, goals, journal and finance data. Always address the user as "sir". '+
+        'Below is a live snapshot of ALL their life domains plus deeper detail on whatever is relevant to their question.\n\n'+ctx+'\n\n'+
+        'USER QUESTION: '+msg+'\n\n'+
+        'Answer specifically and data-driven. Cite the actual numbers. If the question spans multiple domains, connect them (e.g. how spending, sleep, training and nutrition relate). Be concise but complete. If data is missing for something, say so briefly. Start by addressing sir.';
+      var reply='', lastErr=null;
+      for (var attempt=0; attempt<3; attempt++){
+        if(attempt>0){ var bd=loading.querySelector('.jv-body')||loading; bd.textContent='Retrying... ('+attempt+'/2)'; await new Promise(function(r){setTimeout(r,2500*attempt);}); }
+        try { reply = await window.gemini(prompt); lastErr=null; break; } catch(err){ lastErr=err; }
+      }
+      if(loading && loading.parentNode) loading.parentNode.removeChild(loading);
+      if(lastErr) throw lastErr;
+      var txt=(reply&&reply.trim())||'My apologies, sir - I could not generate a response. Please try again.';
+      jvAppend(txt,'coach');
+      if(typeof window._jarvisSpeak==='function') window._jarvisSpeak(txt);
+    } catch(e){
+      if(loading && loading.parentNode) loading.parentNode.removeChild(loading);
+      jvAppend('Could not reach JARVIS, sir. ('+(e&&e.message||'unknown error')+')','coach');
+    } finally { jvFlight=false; }
+  }
+
+  function wireJarvis(){
+    var send=document.getElementById('jvCoachSend'), inp=document.getElementById('jvCoachInput');
+    if(send && inp && !send._wired){ send._wired=true;
+      send.addEventListener('click', function(){ var m=inp.value.trim(); if(m){ jvSend(m); inp.value=''; } });
+      inp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ var m=inp.value.trim(); if(m){ jvSend(m); inp.value=''; } } });
+    }
+    document.querySelectorAll('#jvChips .peak-coach-chip').forEach(function(chip){
+      if(chip._wired) return; chip._wired=true;
+      chip.addEventListener('click', function(){ jvSend(chip.dataset.chip); });
+    });
+  }
+
+  window.renderJarvisTab = function(){
+    wireJarvis();
+    var feed=document.getElementById('jvCoachMessages');
+    if(feed && !feed._greeted){ feed._greeted=true;
+      jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach');
+    }
+  };
+})();
+</script>
 </body>
 </html>
