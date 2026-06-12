@@ -1086,7 +1086,9 @@ body::after {
 .peak-workout-badge.rest { color:var(--text-tertiary); border-color:rgba(255,255,255,0.08); }
 .peak-workout-badge.pending { color:#F59E0B; border-color:rgba(245,158,11,0.3); background:rgba(245,158,11,0.06); }
 /* ── Meds card ── */
-.peak-meds-log-row { margin-bottom:10px; }
+.peak-meds-log-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:nowrap; }
+.peak-meds-log-row .peak-caff-search-wrap { flex:1; min-width:0; margin-bottom:0; }
+.peak-meds-log-row .peak-caff-search { width:100%; box-sizing:border-box; }
 .peak-meds-logs { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
 .peak-meds-log-item { display:flex; justify-content:space-between; align-items:center; padding:9px 12px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.04); }
 .peak-meds-log-left { flex:1; }
@@ -9009,28 +9011,19 @@ window.canonicalJson = function(obj) {
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
-      <div id="peakConvBar" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(110,231,183,0.05);border:1px solid rgba(110,231,183,0.15);border-radius:10px;display:flex;align-items:center;gap:10px">
-        <div id="peakConvOrb" style="width:8px;height:8px;border-radius:50%;background:#6EE7B7;flex-shrink:0"></div>
-        <span id="peakConvStatus" style="font-family:var(--font-mono);font-size:11px;color:rgba(110,231,183,0.75);flex:1;letter-spacing:0.04em">Listening…</span>
-        <button id="peakConvStop" type="button" style="background:none;border:none;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.06em;padding:0">END</button>
+      <!-- conversation stop (shown only while a voice conversation is active) -->
+      <div id="peakConvBar" style="display:none;margin-top:8px;justify-content:flex-end">
+        <span id="peakConvStatus" style="display:none"></span>
+        <button id="peakConvStop" type="button" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:#f87171;letter-spacing:0.06em;padding:7px 14px">■ STOP</button>
       </div>
-      <!-- Voice picker -->
-      <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(110,231,183,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        <select id="peakVoiceSelect" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 10px;color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;outline:none;-webkit-appearance:none;appearance:none;cursor:pointer">
-          <option value="">JARVIS voice — auto (best available)</option>
-        </select>
-        <button id="peakVoiceTest" type="button" title="Test voice" style="background:rgba(110,231,183,0.08);border:1px solid rgba(110,231,183,0.25);border-radius:10px;color:rgba(110,231,183,0.8);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;padding:8px 11px;cursor:pointer;white-space:nowrap;flex-shrink:0">TEST</button>
+      <!-- voice picker (hidden select, kept for logic) + small download button -->
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px;justify-content:flex-end">
+        <select id="peakVoiceSelect" style="display:none"><option value="">auto</option></select>
+        <button id="peakPiperTest" type="button" style="background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.3);border-radius:10px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;padding:7px 14px;cursor:pointer">Download JARVIS</button>
       </div>
-      <div id="peakVoiceHint" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,0.3);line-height:1.45;font-family:var(--font-mono)"></div>
-      <!-- Piper neural voice test (JARVIS — Alan en-GB, free on-device) -->
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
-        <div style="display:flex;align-items:center;gap:8px">
-          <button id="peakPiperTest" type="button" style="flex:1;background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.3);border-radius:10px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;padding:9px 12px;cursor:pointer;white-space:nowrap">🎙 TEST JARVIS NEURAL VOICE (Alan · en-GB)</button>
-        </div>
-        <div id="peakPiperStatus" style="margin-top:6px;font-size:10px;color:rgba(196,181,253,0.6);line-height:1.45;font-family:var(--font-mono)">First tap downloads a ~63MB voice model (one time, then cached). Free, runs on your device.</div>
-        <div id="peakPiperLog" style="margin-top:8px;display:none;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;font-family:var(--font-mono);font-size:9px;line-height:1.6;color:rgba(255,255,255,0.6);white-space:pre-wrap;word-break:break-word"></div>
-      </div>
+      <span id="peakVoiceHint" style="display:none"></span>
+      <span id="peakPiperStatus" style="display:none"></span>
+      <span id="peakPiperLog" style="display:none"></span>
     </div>
 
     <div class="peak-card" id="peakLastWeekCard">
@@ -9062,7 +9055,7 @@ window.canonicalJson = function(obj) {
       <div id="peakWeeklyText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your weekly debrief…</div>
     </div>
 
-    <div class="peak-card" id="peakScheduleCard">
+    <div class="peak-card" id="peakScheduleCard" style="display:none">
       <div class="peak-section-label">Today's Plan</div>
       <textarea id="peakScheduleInput" class="peak-schedule-input" rows="2" placeholder="e.g. deep work 9–11, gym 7pm, read 1h…"></textarea>
       <div id="peakScheduleList" class="peak-schedule-list"></div>
@@ -12014,6 +12007,8 @@ setInterval(updateDayBar, 60 * 1000);
   let sSuppress = false;
   let sPending = null;
   let sLastJson = null;
+  let sLastKeysJson = null;   // data-keys-only snapshot for the dirty indicator
+                              // (timestamps must NOT count toward "dirty")
   let sReady = false;
 
   function isSyncKey(k) {
@@ -12059,7 +12054,8 @@ setInterval(updateDayBar, 60 * 1000);
     try { if (!sSuppress && isSyncKey(k)) { stampDel(k); sSchedule(); } } catch(e) {}
   };
 
-  function collect() {
+  // collect just the synced DATA keys (no timestamp metadata)
+  function collectKeys() {
     const keys = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
@@ -12067,8 +12063,11 @@ setInterval(updateDayBar, 60 * 1000);
         try { keys[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
       }
     }
+    return keys;
+  }
+  function collect() {
     // v2 envelope: data + per-key timestamps + tombstones
-    return { v: 2, keys: keys, ts: sMeta.ts, del: sMeta.del };
+    return { v: 2, keys: collectKeys(), ts: sMeta.ts, del: sMeta.del };
   }
 
   function isEditing() {
@@ -12143,6 +12142,8 @@ setInterval(updateDayBar, 60 * 1000);
     } finally { sSuppress = false; }
     if (metaChanged) saveMeta();
     if (changed) doRender();
+    // local data now matches what we just merged in → not "dirty"
+    sLastKeysJson = window.canonicalJson(collectKeys());
     return changed;
   }
 
@@ -12180,6 +12181,7 @@ setInterval(updateDayBar, 60 * 1000);
     } catch (e) { /* offline — push what we have anyway */ }
     const s = collect();
     const json = window.canonicalJson(s);
+    sLastKeysJson = window.canonicalJson(collectKeys());   // data now in sync
     if (json === sLastJson) return;
     sLastJson = json;
     sRawPush(s, true).catch(() => { sLastJson = null; });
@@ -12201,6 +12203,7 @@ setInterval(updateDayBar, 60 * 1000);
     if (json === sLastJson) return;
     sRawPush(s, true).catch(() => {});
     sLastJson = json;
+    sLastKeysJson = window.canonicalJson(collectKeys());
   }
 
   async function pollRemote() {
@@ -12251,7 +12254,7 @@ setInterval(updateDayBar, 60 * 1000);
     window.registerSync(
       pushNow,
       pollRemote,
-      () => sReady && window.canonicalJson(collect()) !== sLastJson
+      () => sReady && window.canonicalJson(collectKeys()) !== sLastKeysJson
     );
   }
 })();
@@ -19780,7 +19783,9 @@ function switchTab(tab) {
     {name:'Matcha Latte',mg:70,eq:1.1},{name:'Matcha Shot',mg:35,eq:1.1},
     {name:'Green Tea',mg:35,eq:1.05},{name:'Black Tea',mg:47},
     {name:'Earl Grey',mg:55},{name:'Oolong Tea',mg:37},
-    {name:'White Tea',mg:15},{name:'Chai Latte',mg:50},{name:'Yerba Mate 500ml',mg:80,eq:1.1},
+    {name:'White Tea',mg:15},{name:'Chai Latte',mg:50},
+    {name:'Chai (milk & sugar)',mg:35},{name:'Chai (milk & sugar) 2 cups',mg:70},
+    {name:'Yerba Mate 500ml',mg:80,eq:1.1},
     {name:'Pre-workout',mg:200,eq:1.2},{name:'Jack3d',mg:150,eq:1.15},
     {name:'Creatine + Caffeine',mg:150},{name:'Coke 330ml',mg:34},
     {name:'Diet Coke 330ml',mg:46},{name:'Pepsi 330ml',mg:38},
@@ -22517,6 +22522,21 @@ function switchTab(tab) {
         if (wst2.unit === 'glass') uv2 = wst2.glassMl || 250;
         var p2 = wst2.profile || {}; var wKg2 = (p2.weightKg || 70); var tgt2 = Math.max(1500, wKg2 * 35);
         if (doneUnits * uv2 < tgt2 * 0.5) nudge = 'You\'re behind on hydration, sir. Drink up before evening.';
+      }
+    }
+
+    // Meal nudges: prompt for an unlogged meal once its window has passed.
+    // Auto-clears the moment that meal is logged (checked live each render).
+    //   after 11am → breakfast · after 3pm → lunch · after 10pm → dinner
+    if (!nudge) {
+      var meals = []; try { meals = loadVit(); } catch(e){}
+      var hasMeal = function(type){ return meals.some(function(m){ return m.meal === type; }); };
+      if (h >= 22 && !hasMeal('dinner')) {
+        nudge = 'No dinner logged yet, sir. What did you have this evening?';
+      } else if (h >= 15 && !hasMeal('lunch')) {
+        nudge = 'No lunch logged yet, sir. Log it so I can track your fuel.';
+      } else if (h >= 11 && !hasMeal('breakfast')) {
+        nudge = 'No breakfast logged yet, sir. What did you start the day with?';
       }
     }
 
