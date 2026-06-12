@@ -76,6 +76,8 @@
     const scene  = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 0, 6.0);
+    camera.layers.enableAll();   // CRITICAL: see BOTH layer 0 (sharp) AND layer 1
+                                 // (core/nebula) — else the nucleus never renders.
 
     const brain = new THREE.Group(); scene.add(brain);   // particle sphere (rotates 3D)
     const rig   = new THREE.Group(); scene.add(rig);     // flat HUD rings
@@ -94,14 +96,20 @@
     }
     const nebulas = [];   // (kept empty so the animation loop's nebula code no-ops)
 
-    // internal core: small soft blue/cyan glow lighting the inside of the sphere
+    // NUCLEUS — a LARGE, SOFT radiant glow at center (per the reference: a hazy
+    // sun that bleeds smoothly into the surrounding dots, brightest in the middle
+    // fading gradually out — NOT a hard disc). Bloomed for the radiant halo.
     const coreTex = gradientTex([
-      [0,'rgba(255,255,255,1)'],[0.10,'rgba(210,250,255,0.95)'],
-      [0.30,'rgba(0,225,255,0.5)'],[0.6,'rgba(0,90,255,0.12)'],[1,'rgba(0,50,200,0)']
+      [0,   'rgba(255,255,255,0.95)'],   // hot white heart
+      [0.18,'rgba(210,255,240,0.6)'],
+      [0.4, 'rgba(60,255,200,0.30)'],    // gradual GREEN-CYAN bleed
+      [0.65,'rgba(0,220,165,0.12)'],
+      [0.85,'rgba(0,175,135,0.04)'],
+      [1,   'rgba(0,150,120,0)']          // smooth fade — no edge
     ]);
-    const coreMat = new THREE.SpriteMaterial({ map:coreTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.85 });
+    const coreMat = new THREE.SpriteMaterial({ map:coreTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:1.0 });
     const core = new THREE.Sprite(coreMat);
-    core.scale.setScalar(1.1);            // small — well within the dot sphere (R≈1.5)
+    core.scale.setScalar(1.6);            // LARGE soft glow (~40% of sphere Ø)
     core.layers.set(BLOOM_LAYER);
     scene.add(core);
 
@@ -109,11 +117,14 @@
     // network so the sphere reads as solid, not hollow. Royal-blue center →
     // transparent edge. On Layer 1 → caught by bloom for an ambient inner glow.
     const innerGlowTex = gradientTex([
-      [0,   'rgba(160,220,255,0.9)'],   // bright cyan-white center
-      [0.25,'rgba(40,120,255,0.6)'],
-      [0.55,'rgba(0,68,255,0.35)'],     // vibrant royal blue #0044ff
-      [0.8, 'rgba(0,50,200,0.12)'],
-      [1,   'rgba(0,40,160,0)']         // transparent edge
+      [0,   'rgba(200,255,235,0.85)'],  // green-cyan/white hint dead center
+      [0.10,'rgba(20,225,170,0.5)'],
+      [0.24,'rgba(0,205,150,0.30)'],    // GREEN-CYAN nebula
+      [0.40,'rgba(0,185,138,0.16)'],
+      [0.56,'rgba(0,160,125,0.08)'],
+      [0.72,'rgba(0,135,108,0.035)'],
+      [0.88,'rgba(0,110,90,0.01)'],     // very long, smooth tail → no edge at all
+      [1,   'rgba(0,0,0,0)']
     ]);
     const innerGlowMat = new THREE.SpriteMaterial({ map:innerGlowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:1.0 });
     const innerGlow = new THREE.Sprite(innerGlowMat);
@@ -127,7 +138,12 @@
     const dirs = new Float32Array(N*3);     // unit directions
     const base = new Float32Array(N);       // base radius 0..1
     const big  = new Uint8Array(N);
+    const phase = new Float32Array(N*3);    // per-particle drift phase (x,y,z)
     for (let i=0;i<N;i++){
+      // each dot drifts on its own unique frequency → fluid, non-rigid motion
+      phase[i*3]   = Math.random()*Math.PI*2;
+      phase[i*3+1] = Math.random()*Math.PI*2;
+      phase[i*3+2] = Math.random()*Math.PI*2;
       // true spherical coords, even angular distribution (cosθ uniform)
       const cosT = Math.random()*2-1;
       const phi  = Math.random()*Math.PI*2;
@@ -224,7 +240,7 @@
     const lGeo = new THREE.BufferGeometry();
     lGeo.setAttribute('position', new THREE.BufferAttribute(linePos,3));
     lGeo.setAttribute('color',    new THREE.BufferAttribute(lineCol,3));
-    const lMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true, opacity:0.10, blending:THREE.AdditiveBlending, depthWrite:false });
+    const lMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true, opacity:0.15, blending:THREE.AdditiveBlending, depthWrite:false });
     const plexus = new THREE.LineSegments(lGeo, lMat);
     plexus.layers.set(0); plexus.frustumCulled=false;
     brain.add(plexus);
@@ -324,7 +340,7 @@
     // HUD can never catch or amplify the glow → no blowout.
     const renderScene = new RenderPass(scene, camera);
     // strength up now that foreground is safely hidden during the bloom pass
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 1.7, 0.55, 0.0);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 0.9, 0.5, 0.1);
     const bloomComposer = new EffectComposer(renderer);
     bloomComposer.renderToScreen = false;
     bloomComposer.addPass(renderScene);
@@ -371,14 +387,29 @@
     // ════════ per-frame particle + plexus update (CPU, depth-keyed) ════════
     const zArr = new Float32Array(N);   // hoisted — no per-frame allocation
     function updateParticles(ay, ax){
-      const breath = SPHERE_R * (1 + state.pulse*state.amp*0.16);
+      // SPEAKING = a gentle "breathing" CONVERGENCE: dots pull inward toward the
+      // centre on each pulse, then ease back out — the sphere gathers and relaxes
+      // instead of just scaling bigger/smaller. Each dot keeps its own size/shape.
+      //   converge 0 (rest) → ~0.22 (peak inhale): r shrinks toward centre.
+      const converge = state.pulse * state.amp * 0.22;
+      // a faint idle breathing even when not speaking, so it never looks frozen
+      const idleBreath = Math.sin(state.t*1.1) * 0.012;
       const cosY=Math.cos(ay), sinY=Math.sin(ay), cosX=Math.cos(ax), sinX=Math.sin(ax);
       for(let i=0;i<N;i++){
         let x=dirs[i*3], y=dirs[i*3+1], z=dirs[i*3+2];
         const x1=x*cosY+z*sinY, z1=-x*sinY+z*cosY;
         const y1=y*cosX-z1*sinX, z2=y*sinX+z1*cosX;
-        const r=base[i]*breath;
-        pPos[i*3]=x1*r; pPos[i*3+1]=y1*r; pPos[i*3+2]=z2*r;
+        // inner dots converge a touch MORE than outer (gather toward the core),
+        // giving a natural inhale; sizes/colours below are untouched by this.
+        const pull = converge * (1.15 - 0.3*base[i]);
+        const r = base[i]*SPHERE_R * (1 - pull + idleBreath);
+        // CHAOTIC INTERNAL DRIFT — each dot floats gently around its home coord
+        // on its own phase, so the sphere feels fluid, not a rigid body.
+        const dA = 0.05, dS = 0.8;   // drift amplitude (tiny) & speed
+        const dx = Math.sin(state.t*dS + phase[i*3])   * dA;
+        const dy = Math.cos(state.t*dS + phase[i*3+1]) * dA;
+        const dz = Math.sin(state.t*dS + phase[i*3+2]) * dA;
+        pPos[i*3]=x1*r + dx; pPos[i*3+1]=y1*r + dy; pPos[i*3+2]=z2*r + dz;
         zArr[i]=z2;
         const depth=(z2+1)/2;                       // 0 back .. 1 front
         // keep a visible floor so even back particles read (was 0.08 → too dark)
@@ -398,22 +429,51 @@
       pGeo.attributes.color.needsUpdate=true;
       pGeo.attributes.aSize.needsUpdate=true;
 
-      // plexus: only foreground pairs (both z>0); fade by depth
-      let w=0;
-      for(let k=0;k<pairs.length;k+=2){
-        const a=pairs[k], b=pairs[k+1];
-        if(zArr[a]<=0 || zArr[b]<=0) continue;
-        const md=((zArr[a]+1)/2 + (zArr[b]+1)/2)/2;
-        const c=0.6+0.4*md;                       // bright, only mild depth fade
-        linePos[w*6]=pPos[a*3]; linePos[w*6+1]=pPos[a*3+1]; linePos[w*6+2]=pPos[a*3+2];
-        linePos[w*6+3]=pPos[b*3]; linePos[w*6+4]=pPos[b*3+1]; linePos[w*6+5]=pPos[b*3+2];
-        lineCol[w*6]=0; lineCol[w*6+1]=c; lineCol[w*6+2]=c;       // bright cyan
-        lineCol[w*6+3]=0; lineCol[w*6+4]=c; lineCol[w*6+5]=c;
-        w++;
+      // ── TRANSIENT TRIANGLE PLEXUS ─────────────────────────────────
+      // Every few frames, pick a few foreground dots, connect each to its 2
+      // nearest neighbours (a faint cyan triangle), then clear & redraw so the
+      // network appears to "spark" and vanish as the sphere rotates.
+      _plexusTick++;
+      if (_plexusTick % 12 === 0) _rebuildTriangles();
+      // keep the current triangle set anchored to live (rotated) positions
+      let lw=0;
+      for (let s=0; s<_triSeeds.length; s++){
+        const tri = _triSeeds[s];   // [a,b,c] indices
+        const edges = [[tri[0],tri[1]],[tri[1],tri[2]],[tri[2],tri[0]]];
+        for (let e=0;e<3;e++){
+          const a=edges[e][0], b=edges[e][1];
+          const md=((zArr[a]+1)/2 + (zArr[b]+1)/2)/2;
+          const c=0.55+0.45*md;
+          linePos[lw*6]=pPos[a*3]; linePos[lw*6+1]=pPos[a*3+1]; linePos[lw*6+2]=pPos[a*3+2];
+          linePos[lw*6+3]=pPos[b*3]; linePos[lw*6+4]=pPos[b*3+1]; linePos[lw*6+5]=pPos[b*3+2];
+          lineCol[lw*6]=0; lineCol[lw*6+1]=c; lineCol[lw*6+2]=c;      // cyan
+          lineCol[lw*6+3]=0; lineCol[lw*6+4]=c; lineCol[lw*6+5]=c;
+          lw++;
+        }
       }
-      lGeo.setDrawRange(0, w*2);
+      lGeo.setDrawRange(0, lw*2);
       lGeo.attributes.position.needsUpdate=true;
       lGeo.attributes.color.needsUpdate=true;
+    }
+
+    // pick ~14 foreground dots, find their 2 nearest neighbours → triangles
+    let _plexusTick=0; let _triSeeds=[];
+    function _rebuildTriangles(){
+      _triSeeds.length=0;
+      const TRIS=14, MAXR2=0.55*0.55;   // tight neighbour distance
+      for (let n=0;n<TRIS;n++){
+        const a=(Math.random()*N)|0;
+        if (zArr[a]<=0.15) continue;     // foreground only
+        // 2 nearest among a random sample (cheap, no full search)
+        let b1=-1,b2=-1,d1=1e9,d2=1e9;
+        for (let s=0;s<28;s++){
+          const b=(Math.random()*N)|0; if(b===a||zArr[b]<=0) continue;
+          const dx=pPos[a*3]-pPos[b*3],dy=pPos[a*3+1]-pPos[b*3+1],dz=pPos[a*3+2]-pPos[b*3+2];
+          const dd=dx*dx+dy*dy+dz*dz; if(dd>MAXR2) continue;
+          if(dd<d1){ d2=d1;b2=b1; d1=dd;b1=b; } else if(dd<d2){ d2=dd;b2=b; }
+        }
+        if(b1>=0 && b2>=0) _triSeeds.push([a,b1,b2]);
+      }
     }
 
     // ════════ LOOP ════════
@@ -423,9 +483,10 @@
       const dt=Math.min(clock.getDelta(),0.05); state.t+=dt; const t=state.t;
       state.amp += (state.ampTarget-state.amp)*0.08;
       if(state.mode==='speak'){ pulseClock+=dt;
-        const wave=0.5+0.5*Math.sin(pulseClock*12.0)*Math.abs(Math.sin(pulseClock*3.7+0.5));
-        state.pulse += (wave-state.pulse)*0.45;
-      } else state.pulse += (0-state.pulse)*0.08;
+        // SLOW, SMOOTH breathing — one gentle sine (~0.35 Hz), not a fast jitter
+        const wave = 0.5 + 0.5*Math.sin(pulseClock*2.2);
+        state.pulse += (wave-state.pulse)*0.10;       // gentle easing
+      } else state.pulse += (0-state.pulse)*0.05;
 
       const ay=t*(0.12+state.amp*0.05), ax=Math.sin(t*0.22)*0.18;
       brain.rotation.set(0,0,0);                   // we rotate in CPU per-particle
@@ -446,14 +507,12 @@
         sp.scale.setScalar(bs);
         sp.material.opacity = sp.userData.baseOp*(0.85+0.15*Math.sin(t*0.7+ph));
       });
-      // core starburst — tight & bounded; flashes with amplitude but the sprite
-      // stays well inside the innermost ring (~1.96) so it never floods outward.
-      const coreBase = 0.8;
-      const coreFlash = state.amp*(0.35+0.5*state.pulse);
-      coreMat.opacity = Math.min(1.3, coreBase + coreFlash);
-      // stays small — inside the dot sphere (R≈1.5), glow never reaches the rings
-      const cs = 0.95 + state.amp*0.15 + state.pulse*state.amp*0.2;
-      core.scale.setScalar(Math.min(cs, 1.25));
+      // NUCLEUS + NEBULA — ONLY appear when speaking. SMALL & compact: a tiny
+      // glowing heart at the centre, not an overpowering blob. Fade to 0 at idle.
+      coreMat.opacity   = state.amp * (0.7 + 0.3*state.pulse);
+      core.scale.setScalar(0.26 + state.amp*(0.10 + 0.08*state.pulse));   // tiny nucleus
+      innerGlowMat.opacity = state.amp * (0.32 + 0.18*state.pulse);
+      innerGlow.scale.setScalar(0.55 + state.amp*(0.25 + 0.15*state.pulse)); // small nebula
 
       if((frameN++ % 8)===0) refreshText();
 
