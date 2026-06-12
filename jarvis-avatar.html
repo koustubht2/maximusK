@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JARVIS Avatar — Holographic Core</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#050814; --blue:#0066ff; --cyan:#00aaff; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:var(--bg); overflow:hidden; font-family:'Share Tech Mono',ui-monospace,monospace; }
+
+  #stage {
+    position:fixed; inset:0; display:grid; place-items:center;
+    background:
+      radial-gradient(50% 50% at 50% 50%, rgba(0,60,140,0.18), transparent 72%),
+      var(--bg);
+  }
+  /* glowing square grid overlay across the whole background */
+  #stage::before {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(0,100,255,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,100,255,0.15) 1px, transparent 1px);
+    background-size: 46px 46px;
+    /* fade the grid toward the edges so it feels like depth, not flat tile */
+    -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000 40%, transparent 85%);
+            mask-image: radial-gradient(70% 70% at 50% 50%, #000 40%, transparent 85%);
+  }
+  #avatar { position:relative; width:min(84vmin,660px); height:min(84vmin,660px); display:block; cursor:pointer; z-index:2; }
+
+  .controls { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); display:flex; gap:10px; z-index:10; }
+  .controls button {
+    font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--cyan); background:rgba(0,120,255,0.08); border:1px solid rgba(0,150,255,0.32);
+    padding:11px 20px; border-radius:999px; cursor:pointer; transition:.2s;
+  }
+  .controls button:hover { background:rgba(0,150,255,0.16); }
+  .controls button.active { background:var(--cyan); color:#041018; font-weight:700; }
+  .hint { position:fixed; top:20px; left:50%; transform:translateX(-50%); color:rgba(0,160,255,0.5); font-size:11px; letter-spacing:0.26em; text-transform:uppercase; z-index:10; }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <canvas id="avatar"></canvas>
+  </div>
+  <div class="hint">JARVIS · Holographic Core</div>
+  <div class="controls">
+    <button id="btnIdle" class="active">Idle</button>
+    <button id="btnSpeak">Speaking</button>
+    <button id="btnTalkSim">Talk (5s)</button>
+  </div>
+
+  <script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+  // ════════════════════════════════════════════════════════════════
+  //  JARVIS AVATAR — 4-layer rings + bounded holographic particle core
+  //  API: startSpeaking() / stopSpeaking() / toggle()
+  // ════════════════════════════════════════════════════════════════
+  function createJarvisAvatar(canvas) {
+    const C_DEEP = new THREE.Color('#0044ff');   // deep electric blue (rim particles)
+    const C_CYAN = new THREE.Color('#00d2ff');   // bright cyan (core particles)
+    const C_RING = new THREE.Color('#0099ff');   // ring electric blue
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 0, 5.4);
+
+    const brain = new THREE.Group(); scene.add(brain);   // rotating particle sphere
+    const rig   = new THREE.Group(); scene.add(rig);     // flat ring layers
+
+    const state = { speaking:0, target:0, pulse:0, t:0 };
+
+    // ════════════ CENTRAL CORE — bounded "starburst sun" ════════════
+    function radialSprite(stops) {
+      const c = document.createElement('canvas'); c.width=c.height=256;
+      const g = c.getContext('2d');
+      const grd = g.createRadialGradient(128,128,0,128,128,128);
+      stops.forEach(s=>grd.addColorStop(s[0], s[1]));
+      g.fillStyle=grd; g.fillRect(0,0,256,256);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:new THREE.CanvasTexture(c), transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, opacity:0 }));
+      return sp;
+    }
+    // tight star: pure white → cyan → electric blue, fades fast so it stays a
+    // distinct central "sun" and does NOT wash the particles or reach the rings.
+    const core = radialSprite([
+      [0,   'rgba(255,255,255,1)'],
+      [0.10,'rgba(210,250,255,0.95)'],
+      [0.22,'rgba(0,210,255,0.6)'],
+      [0.45,'rgba(0,70,255,0.15)'],
+      [1,   'rgba(0,40,200,0)']
+    ]);
+    core.position.z = -0.05; core.renderOrder = -1; scene.add(core);
+
+    // ════════════ PARTICLE SPHERE — distinct glowing nodes ══════════
+    // Bounded, concentrated network (not a loose galaxy). Fewer than dust,
+    // but each a distinct glowing node.
+    const N = 1700;
+    const positions = new Float32Array(N*3);
+    const seeds = new Float32Array(N), radii = new Float32Array(N), cmix = new Float32Array(N), nsize = new Float32Array(N);
+    const R_MAX = 1.18;
+    for (let i=0;i<N;i++){
+      const u = Math.random()*2-1, th = Math.random()*Math.PI*2, s=Math.sqrt(1-u*u);
+      const dx=s*Math.cos(th), dy=s*Math.sin(th), dz=u;
+      // concentrated center, bounded edge (pow 1.6 = fuller than dust, still denser core)
+      const r = Math.pow(Math.random(), 1.6) * R_MAX;
+      radii[i]=r;
+      positions[i*3]=dx*r; positions[i*3+1]=dy*r; positions[i*3+2]=dz*r;
+      seeds[i]=Math.random();
+      cmix[i]=Math.min(1, r/R_MAX);                 // outer → deep blue
+      nsize[i]=0.7 + Math.pow(Math.random(),2.0)*1.1; // most small, a few larger nodes
+    }
+    const pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    pGeo.setAttribute('aSeed', new THREE.BufferAttribute(seeds,1));
+    pGeo.setAttribute('aRadius', new THREE.BufferAttribute(radii,1));
+    pGeo.setAttribute('aMix', new THREE.BufferAttribute(cmix,1));
+    pGeo.setAttribute('aSize', new THREE.BufferAttribute(nsize,1));
+
+    const pUniforms = {
+      uTime:{value:0}, uSpeak:{value:0}, uPulse:{value:0},
+      uCore:{value:C_CYAN.clone()}, uEdge:{value:C_DEEP.clone()}, uDpr:{value:renderer.getPixelRatio()}
+    };
+    const pMat = new THREE.ShaderMaterial({
+      uniforms:pUniforms, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+      vertexShader:`
+        attribute float aSeed, aRadius, aMix, aSize;
+        uniform float uTime, uSpeak, uPulse, uDpr;
+        varying float vGlow; varying float vMix;
+        void main(){
+          vec3 dir = normalize(position + 1e-5);
+          float ph = aSeed*6.2831;
+          float shimmer = sin(uTime*1.3 + ph)*0.008;
+          // speaking: outer boundary FLEXES outward with pulses (rim moves more)
+          float flex = uPulse*uSpeak*0.14*(0.4 + 0.6*(aRadius/1.18));
+          float r = (aRadius + shimmer) + flex;
+          vec3 p = dir*r;
+          vec4 mv = modelViewMatrix*vec4(p,1.0);
+          float coreBias = 1.0 - clamp(aRadius/1.18,0.0,1.0);
+          // DISTINCT NODES — larger than dust, depth-attenuated
+          float size = aSize * (1.3 + coreBias*1.2) * (1.0 + uSpeak*0.2);
+          gl_PointSize = clamp(size*uDpr*26.0/-mv.z, 1.2, 7.0*uDpr);
+          vGlow = 0.55 + coreBias*0.45 + uSpeak*0.2;
+          vMix = aMix;
+          gl_Position = projectionMatrix*mv;
+        }
+      `,
+      fragmentShader:`
+        uniform vec3 uCore, uEdge;
+        varying float vGlow; varying float vMix;
+        void main(){
+          vec2 d = gl_PointCoord - vec2(0.5);
+          float dist = length(d);
+          if (dist > 0.5) discard;
+          // distinct node: bright tight center + small soft falloff
+          float a = smoothstep(0.5, 0.12, dist);
+          float hot = smoothstep(0.28, 0.0, dist);
+          vec3 col = mix(uEdge, uCore, (1.0 - vMix));     // inner cyan, outer deep blue
+          col = mix(col, vec3(0.85,0.97,1.0), hot*0.5);   // hot pinpoint
+          gl_FragColor = vec4(col*vGlow, a*vGlow);
+        }
+      `
+    });
+    brain.add(new THREE.Points(pGeo, pMat));
+
+    // ════════════ 4-LAYER RING SYSTEM ══════════════════════════════
+    const addMat = (hex,op)=> new THREE.MeshBasicMaterial({ color:new THREE.Color(hex), transparent:true, opacity:op, blending:THREE.AdditiveBlending, depthWrite:false });
+
+    // ── Layer 1 (outermost): compass — ticks + block-tabs + numbers ──
+    const L1 = new THREE.Group(); rig.add(L1);
+    const tickR = 2.04, TICKS = 72;
+    const mTickSm = addMat('#7fc4ff',0.4), mTickLg = addMat('#ffffff',0.85), mTab = addMat('#00aaff',0.9);
+    const gTickSm = new THREE.PlaneGeometry(0.006,0.05), gTickLg = new THREE.PlaneGeometry(0.012,0.10), gTab = new THREE.PlaneGeometry(0.07,0.05);
+    for (let i=0;i<TICKS;i++){
+      const major = i % 6 === 0;                    // every 30°
+      const a = (i/TICKS)*Math.PI*2;
+      const tk = new THREE.Mesh(major?gTickLg:gTickSm, major?mTickLg:mTickSm);
+      tk.position.set(Math.cos(a)*tickR, Math.sin(a)*tickR, 0); tk.rotation.z = a+Math.PI/2; L1.add(tk);
+      if (major){ // glowing block-tab just outside the tick
+        const tab = new THREE.Mesh(gTab, mTab);
+        tab.position.set(Math.cos(a)*(tickR+0.10), Math.sin(a)*(tickR+0.10), 0);
+        tab.rotation.z = a+Math.PI/2; L1.add(tab);
+      }
+    }
+    // blocky monospaced numbers (every 30°), facing inward
+    function buildDegrees(){
+      const cv=document.createElement('canvas'); cv.width=cv.height=1024; const g=cv.getContext('2d');
+      g.font='22px "Share Tech Mono", monospace'; g.fillStyle='#bfe6ff'; g.textAlign='center'; g.textBaseline='middle';
+      g.shadowColor='#00aaff'; g.shadowBlur=6;
+      const PLANE=4.9, px=(1.84/PLANE)*1024;
+      for(let k=0;k<12;k++){ const deg=k*30, a=(k/12)*Math.PI*2-Math.PI/2;
+        g.save(); g.translate(512+Math.cos(a)*px,512+Math.sin(a)*px); g.rotate(a+Math.PI/2);
+        g.fillText(String(deg).padStart(3,'0'),0,0); g.restore(); }
+      const plane=new THREE.Mesh(new THREE.PlaneGeometry(PLANE,PLANE),
+        new THREE.MeshBasicMaterial({ map:new THREE.CanvasTexture(cv), transparent:true, opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false }));
+      L1.add(plane); return plane;
+    }
+    let degPlane = buildDegrees();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ L1.remove(degPlane); degPlane=buildDegrees(); });
+
+    // ── Layer 2: solid continuous thin glowing circle ──
+    const L2 = new THREE.Group(); rig.add(L2);
+    const ring2mat = addMat('#00aaff',0.7);
+    L2.add(new THREE.Mesh(new THREE.TorusGeometry(1.80, 0.006, 8, 220), ring2mat));
+
+    // ── Layer 3: finely dotted continuous thin circle ──
+    const L3 = new THREE.Group(); rig.add(L3);
+    const dotMat = addMat('#8fd4ff',0.6); const dotGeo = new THREE.CircleGeometry(0.012, 8);
+    const DOTS = 130, dotR = 1.66;
+    for (let i=0;i<DOTS;i++){ const a=(i/DOTS)*Math.PI*2; const m=new THREE.Mesh(dotGeo,dotMat);
+      m.position.set(Math.cos(a)*dotR, Math.sin(a)*dotR, 0); L3.add(m); }
+
+    // ── Layer 4 (innermost): thicker segmented sweeping arcs ──
+    const L4 = new THREE.Group(); rig.add(L4);
+    const segMat = addMat('#00c6ff',0.95);
+    const segs = [ [0.2,2.0], [2.6,1.5] ];   // 2 long sweeping arcs, asymmetrical gaps
+    segs.forEach(([start,span])=> {
+      const m=new THREE.Mesh(new THREE.TorusGeometry(1.50, 0.016, 10, 140, span), segMat);
+      m.rotation.z=start; L4.add(m);
+    });
+
+    // ════════════ BLOOM — controlled ════════════════════════════════
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene,camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1,1), 0.45, 0.55, 0.5);
+    composer.addPass(bloom);
+
+    function resize(){ const s=canvas.clientWidth||600; renderer.setSize(s,s,false); composer.setSize(s,s); pUniforms.uDpr.value=renderer.getPixelRatio(); camera.aspect=1; camera.updateProjectionMatrix(); }
+    new ResizeObserver(resize).observe(canvas); resize();
+
+    const clock=new THREE.Clock(); let pulseClock=0;
+    function frame(){
+      requestAnimationFrame(frame);
+      const dt=Math.min(clock.getDelta(),0.05); state.t+=dt; const t=state.t;
+      state.speaking += (state.target-state.speaking)*0.07;
+      if (state.target>0.5){ pulseClock+=dt;
+        const wave=0.5+0.5*Math.sin(pulseClock*12.0)*Math.abs(Math.sin(pulseClock*3.7+0.5));
+        state.pulse += (wave-state.pulse)*0.45;
+      } else state.pulse += (0-state.pulse)*0.08;
+
+      pUniforms.uTime.value=t; pUniforms.uSpeak.value=state.speaking; pUniforms.uPulse.value=state.pulse;
+
+      // brain sphere smooth multi-axis rotation
+      const spin=0.07+state.speaking*0.04;
+      brain.rotation.y=t*spin; brain.rotation.x=Math.sin(t*0.24)*0.16;
+
+      // RINGS rotate slowly in ALTERNATING directions; structural (don't pulse)
+      L1.rotation.z =  t*0.03;   // compass · CW
+      L2.rotation.z = -t*0.05;   // solid · CCW
+      L3.rotation.z =  t*0.04;   // dotted · CW
+      L4.rotation.z = -t*0.08;   // segmented · CCW (most visible motion)
+
+      // CORE starburst — faint idle breath; scales with pulses but stays bounded
+      const idle = state.speaking*(0.10+0.04*Math.sin(t*1.2));
+      const speak = state.speaking*(0.55+0.35*state.pulse);
+      core.material.opacity = Math.max(idle, speak);
+      const cs = 1.0 + state.speaking*0.25 + state.pulse*state.speaking*0.35; // bounded, < inner ring
+      core.scale.set(cs,cs,cs);
+
+      bloom.strength = 0.4 + state.speaking*0.3 + state.pulse*state.speaking*0.2;
+      composer.render();
+    }
+    frame();
+
+    return {
+      startSpeaking(){ state.target=1; pulseClock=0; },
+      stopSpeaking(){ state.target=0; },
+      toggle(){ state.target=state.target>0.5?0:1; if(state.target)pulseClock=0; },
+      isSpeaking(){ return state.target>0.5; }
+    };
+  }
+
+  const avatar = createJarvisAvatar(document.getElementById('avatar'));
+  window.jarvisAvatar = avatar;
+  const bIdle=document.getElementById('btnIdle'), bSpeak=document.getElementById('btnSpeak'), bTalk=document.getElementById('btnTalkSim');
+  const setActive=w=>{ bIdle.classList.toggle('active',w==='idle'); bSpeak.classList.toggle('active',w==='speak'); };
+  bIdle.addEventListener('click',()=>{ avatar.stopSpeaking(); setActive('idle'); });
+  bSpeak.addEventListener('click',()=>{ avatar.startSpeaking(); setActive('speak'); });
+  bTalk.addEventListener('click',()=>{ avatar.startSpeaking(); setActive('speak'); setTimeout(()=>{ avatar.stopSpeaking(); setActive('idle'); },5000); });
+  document.getElementById('avatar').addEventListener('click',()=>{ avatar.toggle(); setActive(avatar.isSpeaking()?'speak':'idle'); });
+  </script>
+</body>
+</html>
