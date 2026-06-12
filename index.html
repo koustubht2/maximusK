@@ -9250,6 +9250,37 @@ window.canonicalJson = function(obj) {
         </button>
       </div>
     </div>
+
+    <!-- proactive nudges -->
+    <div class="peak-card" id="jvNudgeCard" style="display:none;margin-top:10px;">
+      <div class="peak-section-label">Attention, sir</div>
+      <div id="jvNudgeList" style="margin-top:8px;display:flex;flex-direction:column;gap:7px;"></div>
+    </div>
+
+    <!-- cross-domain patterns (scrollable, up to 10) -->
+    <div class="peak-card" id="jvPatternsCard" style="margin-top:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="peak-section-label">Patterns &amp; Correlations</div>
+        <button id="jvPatternsRefresh" type="button" style="background:none;border:none;cursor:pointer;color:rgba(110,231,183,0.6);font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;padding:2px 4px">↻ Scan</button>
+      </div>
+      <div id="jvPatternsList" style="margin-top:8px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:12px;color:var(--text-tertiary)">Tap ↻ Scan to find patterns across your data, sir.</div>
+      </div>
+    </div>
+
+    <!-- weekly life-arc debrief -->
+    <div class="peak-card" id="jvDebriefCard" style="margin-top:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="peak-section-label">Weekly Life-Arc Debrief</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button id="jvDebriefSpeak" type="button" title="Read aloud" style="background:none;border:none;cursor:pointer;color:rgba(110,231,183,0.5);padding:3px;display:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+          <button id="jvDebriefRefresh" type="button" style="background:none;border:none;cursor:pointer;color:rgba(110,231,183,0.6);font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;padding:2px 4px">↻</button>
+        </div>
+      </div>
+      <div id="jvDebriefText" style="font-size:13px;line-height:1.7;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Tap ↻ for your full-life weekly debrief, sir.</div>
+    </div>
   </div>
 </div>
 
@@ -22740,6 +22771,10 @@ function switchTab(tab) {
   async function _renderWeeklyReport(oura) {
     var card = document.getElementById('peakWeeklyCard');
     if (!card) return;
+    // Retired in Peak — the weekly life-arc debrief now lives in the JARVIS tab.
+    card.style.display = 'none';
+    return;
+    // (legacy code below kept but unreachable)
     // Only show on Sunday (day 0) or if cached
     var isSunday = new Date().getDay() === 0;
     var tod = today();
@@ -25807,7 +25842,7 @@ function switchTab(tab) {
       var lines = st.exercises.slice(0,12).map(function(ex){
         var lg = st.logs[ex.id]; if(!lg||!lg.length) return null;
         var last = lg[lg.length-1];
-        return ex.name+': last '+last.weight+(st.units||'kg')+' Ã— '+last.reps;
+        return ex.name+': last '+last.weight+(st.units||'kg')+' x '+last.reps;
       }).filter(Boolean);
       detail = lines.length ? ('Recent lifts:\n'+lines.join('\n')) : '';
     }
@@ -25952,6 +25987,96 @@ function switchTab(tab) {
     });
   }
 
+  // ---------- NUDGES (data-driven, no AI) — surfaced in the JARVIS tab ----------
+  function jvBuildNudges(){
+    var out=[]; var now=new Date(), h=now.getHours()+now.getMinutes()/60;
+    var tk=todayKey();
+    // hydration
+    var w=ls('po_water_v1');
+    if(w && h>=14){ var done=(w.logs||{})[tk]||0; var uv=w.bottleMl||500; if(w.unit==='glass')uv=w.glassMl||250; else if(w.unit==='oz')uv=30; else if(w.unit==='ml')uv=1; var p=w.profile||{}; var tgt=Math.max(1500,(p.weightKg||70)*35); if(done*uv<tgt*0.5) out.push({i:'💧',t:'Behind on hydration — '+round(done*uv)+'ml of ~'+round(tgt)+'ml.'}); }
+    // meals
+    var meals=ls('goals_vitality_'+tk)||[]; var hasMeal=function(m){return meals.some(function(x){return x.meal===m;});};
+    if(h>=22 && !hasMeal('dinner')) out.push({i:'🍽️',t:'No dinner logged yet.'});
+    else if(h>=15 && !hasMeal('lunch')) out.push({i:'🍽️',t:'No lunch logged yet.'});
+    else if(h>=11 && !hasMeal('breakfast')) out.push({i:'🍽️',t:'No breakfast logged yet.'});
+    // sunlight
+    if(h<10 && lsRaw('goals_peak_sun_'+tk)!=='1') out.push({i:'☀',t:'No morning sunlight logged yet.'});
+    // goals
+    try { var gk=(typeof gsDateKey==='function')?('goals_daily_'+gsDateKey()):null; var tasks=gk?(ls(gk)||[]):[]; var pend=tasks.filter(function(t){return !t.checked&&!t.skipped;}); if(h>=16 && tasks.length && pend.length>=3) out.push({i:'✓',t:pend.length+' tasks still open — '+pend.slice(0,2).map(function(t){return t.title;}).join(', ')+'…'}); } catch(e){}
+    // finance: sub renewing soon
+    try { var subs=ls('subs')||[]; var soon=null,sd=99; subs.forEach(function(s){ if(!s.renewalDate)return; var rd=new Date(s.renewalDate+'T12:00:00'); var d=Math.ceil((rd-now)/86400000); if(d>=0&&d<=3&&d<sd){sd=d;soon=s;} }); if(soon) out.push({i:'₹',t:soon.name+' subscription renews '+(sd===0?'today':('in '+sd+'d'))+'.'}); } catch(e){}
+    return out;
+  }
+  function renderJvNudges(){
+    var card=document.getElementById('jvNudgeCard'), list=document.getElementById('jvNudgeList');
+    if(!card||!list) return;
+    var n=jvBuildNudges();
+    if(!n.length){ card.style.display='none'; return; }
+    card.style.display='block';
+    list.innerHTML = n.map(function(x){
+      return '<div style="display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--text-secondary);line-height:1.5"><span style="flex-shrink:0">'+x.i+'</span><span>'+x.t+'</span></div>';
+    }).join('');
+  }
+
+  // ---------- PATTERNS (up to 10, scrollable, AI) ----------
+  var PATTERNS_KEY='goals_jv_patterns_';
+  var _patFlight=false;
+  function _patDay(){ return todayKey(); }
+  async function renderJvPatterns(force){
+    var list=document.getElementById('jvPatternsList'); if(!list) return;
+    var dk=_patDay();
+    if(!force){
+      var cached=null; try{ cached=JSON.parse(localStorage.getItem(PATTERNS_KEY+dk)); }catch(e){}
+      if(cached && cached.items && cached.items.length){ _paintPatterns(cached.items); return; }
+    }
+    if(_patFlight) return; _patFlight=true;
+    list.innerHTML='<div style="font-size:12px;color:var(--text-tertiary)">JARVIS is scanning all your data for patterns…</div>';
+    try {
+      var ctx=(typeof window.getJarvisContext==='function')?window.getJarvisContext('patterns correlation everything','full'):'';
+      var prompt='You are JARVIS analysing sir\'s complete life data below. Find UP TO 10 genuine, specific CROSS-DOMAIN patterns or correlations — each connecting two or more areas (sleep, training, nutrition, energy, goals, mood, spending, savings). Ground every one in the ACTUAL numbers/history shown; do not invent. Prefer the most useful/surprising. If little data exists, return fewer.\n\n'+ctx+'\n\nReturn ONLY a JSON array of objects, no prose: [{"title":"short label","detail":"one specific sentence citing the numbers"}]. Max 10 items.';
+      var reply=await window.gemini(prompt);
+      var items=_parsePatterns(reply);
+      if(items.length){ localStorage.setItem(PATTERNS_KEY+dk, JSON.stringify({items:items})); _paintPatterns(items); }
+      else list.innerHTML='<div style="font-size:12px;color:var(--text-tertiary)">Not enough data yet to find clear patterns, sir. Keep logging.</div>';
+    } catch(e){ list.innerHTML='<div style="font-size:12px;color:var(--text-tertiary)">Pattern scan unavailable, sir. ('+(e&&e.message||'error')+')</div>'; }
+    finally { _patFlight=false; }
+  }
+  function _parsePatterns(reply){
+    if(!reply) return [];
+    try { var m=reply.match(/\[[\s\S]*\]/); if(m){ var arr=JSON.parse(m[0]); if(Array.isArray(arr)) return arr.slice(0,10); } } catch(e){}
+    return [];
+  }
+  function _paintPatterns(items){
+    var list=document.getElementById('jvPatternsList'); if(!list) return;
+    list.innerHTML = items.map(function(p,i){
+      var title=(p.title||('Pattern '+(i+1))); var detail=(p.detail||'');
+      return '<div style="border-left:2px solid rgba(110,231,183,0.4);padding:4px 0 4px 10px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:#6EE7B7;text-transform:uppercase">'+escHtmlJv(title)+'</div><div style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-top:2px">'+escHtmlJv(detail)+'</div></div>';
+    }).join('');
+  }
+  function escHtmlJv(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ---------- WEEKLY LIFE-ARC DEBRIEF (AI, full context) ----------
+  var JVDEBRIEF_KEY='goals_jv_debrief_';
+  var _debFlight=false;
+  async function renderJvDebrief(force){
+    var txt=document.getElementById('jvDebriefText'); if(!txt) return;
+    // cache by week (Monday)
+    var d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7));
+    var wk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!force){ var cached=null; try{ cached=JSON.parse(localStorage.getItem(JVDEBRIEF_KEY+wk)); }catch(e){} if(cached && cached.text){ txt.textContent=cached.text; var sb=document.getElementById('jvDebriefSpeak'); if(sb)sb.style.display=''; return; } }
+    if(_debFlight) return; _debFlight=true;
+    txt.textContent='Generating your full-life weekly debrief, sir…';
+    try {
+      var ctx=(typeof window.getJarvisContext==='function')?window.getJarvisContext('weekly review everything','full'):'';
+      var prompt='You are JARVIS. Write a 6-line weekly LIFE-ARC debrief for sir spanning ALL domains. Use the data below.\n\n'+ctx+'\n\nFormat: exactly 6 short lines, no bullets/numbering. L1 overall week. L2 health/recovery. L3 training+nutrition. L4 goals/productivity. L5 finance (spend vs income, savings). L6 one cross-domain pattern + a specific recommendation. Address as sir. Plain text only.';
+      var reply=await window.gemini(prompt);
+      var t=reply&&reply.trim()?reply.trim():'Unable to generate debrief, sir.';
+      localStorage.setItem(JVDEBRIEF_KEY+wk, JSON.stringify({text:t}));
+      txt.textContent=t; var sb2=document.getElementById('jvDebriefSpeak'); if(sb2)sb2.style.display='';
+    } catch(e){ txt.textContent='Debrief unavailable, sir. ('+(e&&e.message||'error')+')'; }
+    finally { _debFlight=false; }
+  }
+
   window.renderJarvisTab = function(){
     wireJarvis();
     _bootJvAvatar();   // mount the 3D avatar on first open (render-gated after)
@@ -25959,6 +26084,16 @@ function switchTab(tab) {
     if(feed && !feed._greeted){ feed._greeted=true;
       jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach');
     }
+    renderJvNudges();
+    renderJvPatterns(false);   // shows cached patterns if present
+    renderJvDebrief(false);    // shows cached debrief if present
+    // wire the refresh/speak buttons once
+    var pr=document.getElementById('jvPatternsRefresh');
+    if(pr && !pr._wired){ pr._wired=true; pr.addEventListener('click', function(){ renderJvPatterns(true); }); }
+    var dr=document.getElementById('jvDebriefRefresh');
+    if(dr && !dr._wired){ dr._wired=true; dr.addEventListener('click', function(){ renderJvDebrief(true); }); }
+    var ds=document.getElementById('jvDebriefSpeak');
+    if(ds && !ds._wired){ ds._wired=true; ds.addEventListener('click', function(){ var t=document.getElementById('jvDebriefText'); if(t && window._jarvisSpeak) window._jarvisSpeak(t.textContent); }); }
   };
 
   // ---------- DASHBOARD "Insight" card: one daily cross-domain correlation ----------
@@ -25990,16 +26125,9 @@ function switchTab(tab) {
   }
   window.renderJvInsight = renderJvInsight;
 
-  // wire click-to-refresh + auto-run shortly after load
-  function _initInsight(){
-    var card=document.getElementById('jvInsightCard');
-    if(card && !card._wired){ card._wired=true;
-      card.addEventListener('click', function(){ renderJvInsight(true); });
-    }
-    renderJvInsight(false);
-  }
-  if(document.readyState==='complete' || document.readyState==='interactive'){ setTimeout(_initInsight, 3000); }
-  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(_initInsight, 3000); });
+  // NOTE: the Dashboard insight card is retired — patterns now live in the JARVIS
+  // tab (Patterns & Correlations, up to 10). renderJvInsight kept for reference but
+  // no longer auto-runs, and the dashboard card stays hidden.
 
   // ========== JARVIS-TAB 3D AVATAR (independent instance, render-gated) ==========
   var _jvMood = 'idle';   // 'idle' | 'thinking' | 'responding'
