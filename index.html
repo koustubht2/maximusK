@@ -12013,24 +12013,52 @@ setInterval(updateDayBar, 60 * 1000);
   const origSet = localStorage.setItem.bind(localStorage);
   const origRemove = localStorage.removeItem.bind(localStorage);
 
+  // ── Per-key Last-Write-Wins metadata (prevents cross-device data loss) ──
+  // Every synced key carries a last-modified timestamp. Deletions are recorded
+  // as tombstones (key → deletion time) instead of "absence", so a stale device
+  // can NEVER erase a newer change on another device just by omitting the key.
+  // META_KEY is not a goals_ key, so it is not itself treated as synced data.
+  const META_KEY = 'po_sync_meta_v1';
+  function loadMeta() {
+    try { const m = JSON.parse(localStorage.getItem(META_KEY)); if (m && m.ts && m.del) return m; } catch(e){}
+    return { ts: {}, del: {} };
+  }
+  let sMeta = loadMeta();
+  function saveMeta() { try { origSet(META_KEY, JSON.stringify(sMeta)); } catch(e){} }
+  function stampSet(k) { sMeta.ts[k] = Date.now(); delete sMeta.del[k]; saveMeta(); }
+  function stampDel(k) { sMeta.del[k] = Date.now(); delete sMeta.ts[k]; saveMeta(); }
+
+  // First run of this version: baseline-stamp existing keys with ts=1 (very old)
+  // so any genuine future edit beats them and the first cross-device sync takes
+  // the UNION of both devices' data rather than letting one overwrite the other.
+  (function migrateMeta() {
+    let touched = false;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (isSyncKey(k) && !(k in sMeta.ts) && !(k in sMeta.del)) { sMeta.ts[k] = 1; touched = true; }
+    }
+    if (touched) saveMeta();
+  })();
+
   localStorage.setItem = function(k, v) {
     origSet(k, v);
-    try { if (!sSuppress && isSyncKey(k)) sSchedule(); } catch(e) {}
+    try { if (!sSuppress && isSyncKey(k)) { stampSet(k); sSchedule(); } } catch(e) {}
   };
   localStorage.removeItem = function(k) {
     origRemove(k);
-    try { if (!sSuppress && isSyncKey(k)) sSchedule(); } catch(e) {}
+    try { if (!sSuppress && isSyncKey(k)) { stampDel(k); sSchedule(); } } catch(e) {}
   };
 
   function collect() {
-    const out = {};
+    const keys = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (isSyncKey(k)) {
-        try { out[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+        try { keys[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
       }
     }
-    return out;
+    // v2 envelope: data + per-key timestamps + tombstones
+    return { v: 2, keys: keys, ts: sMeta.ts, del: sMeta.del };
   }
 
   function isEditing() {
@@ -12056,20 +12084,54 @@ setInterval(updateDayBar, 60 * 1000);
 
   function applyRemote(remote) {
     if (!remote || typeof remote !== 'object') return false;
+
+    // Normalise: accept both the new v2 envelope and a legacy v1 flat blob.
+    let rKeys, rTs, rDel;
+    if (remote.v === 2 && remote.keys) {
+      rKeys = remote.keys; rTs = remote.ts || {}; rDel = remote.del || {};
+    } else {
+      // Legacy v1: a flat {key: value} blob with no timestamps. Treat every key
+      // as very old (ts=1) so local edits win, and DO NOT honour absence as
+      // deletion — this is exactly what used to wipe data.
+      rKeys = remote; rTs = {}; rDel = {};
+      for (const k in remote) if (isSyncKey(k)) rTs[k] = 1;
+    }
+
     sSuppress = true;
     let changed = false;
+    let metaChanged = false;
     try {
-      // Set new/updated keys
-      for (const k in remote) {
-        const incoming = JSON.stringify(remote[k]);
-        if (localStorage.getItem(k) !== incoming) { origSet(k, incoming); changed = true; }
+      // 1. Merge incoming keys — adopt remote value only if it is NEWER than ours.
+      for (const k in rKeys) {
+        if (!isSyncKey(k)) continue;
+        const theirTs = rTs[k] || 1;
+        const ourTs   = sMeta.ts[k] || (localStorage.getItem(k) != null ? 1 : 0);
+        const ourDel  = sMeta.del[k] || 0;
+        // Skip if we deleted this key more recently than they changed it
+        if (ourDel >= theirTs && ourDel > 0) continue;
+        // Adopt remote only if STRICTLY newer than ours, OR we don't have it at
+        // all. Ties (e.g. both baseline ts=1) favour local → never resurrect a
+        // locally-deleted key or clobber an equal-age local value.
+        const haveLocal = localStorage.getItem(k) != null;
+        if (theirTs > ourTs || (!haveLocal && !ourDel)) {
+          const incoming = JSON.stringify(rKeys[k]);
+          if (localStorage.getItem(k) !== incoming) { origSet(k, incoming); changed = true; }
+          if (theirTs > (sMeta.ts[k] || 0)) { sMeta.ts[k] = theirTs; delete sMeta.del[k]; metaChanged = true; }
+        }
       }
-      // Remove deleted keys
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (isSyncKey(k) && !(k in remote)) { origRemove(k); changed = true; i--; }
+      // 2. Honour remote tombstones — delete locally only if their deletion is
+      //    newer than our last change to that key.
+      for (const k in rDel) {
+        if (!isSyncKey(k)) continue;
+        const theirDel = rDel[k] || 0;
+        const ourTs    = sMeta.ts[k] || 0;
+        if (theirDel > ourTs && localStorage.getItem(k) != null) {
+          origRemove(k); changed = true;
+        }
+        if (theirDel > (sMeta.del[k] || 0)) { sMeta.del[k] = theirDel; delete sMeta.ts[k]; metaChanged = true; }
       }
     } finally { sSuppress = false; }
+    if (metaChanged) saveMeta();
     if (changed) doRender();
     return changed;
   }
@@ -12092,8 +12154,20 @@ setInterval(updateDayBar, 60 * 1000);
     });
   }
 
-  function pushNow() {
+  // Pull the current remote and merge it into local BEFORE pushing, so the blob
+  // we upload is the UNION of both sides — a device can never erase keys it
+  // hasn't seen yet. (Async; used by the debounced/normal push path.)
+  async function pushNow() {
     if (!sReady) return;
+    try {
+      const res = await fetch(S_URL + '/rest/v1/app_state?select=data&key=eq.' + A_KEY, {
+        headers: { 'apikey': S_KEY, 'Authorization': 'Bearer ' + S_KEY }
+      });
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length && rows[0].data) {
+        applyRemote(rows[0].data); // merge remote into local (per-key LWW)
+      }
+    } catch (e) { /* offline — push what we have anyway */ }
     const s = collect();
     const json = window.canonicalJson(s);
     if (json === sLastJson) return;
@@ -12107,6 +12181,9 @@ setInterval(updateDayBar, 60 * 1000);
     sTimer = setTimeout(pushNow, 100);
   }
 
+  // Synchronous best-effort flush for page-hide/unload (no time to pull-merge).
+  // Safe because pushes are now per-key timestamped, so even this can't wipe
+  // newer remote data — the next device's applyRemote ignores our stale keys.
   function flushPush() {
     if (!sReady) return;
     const s = collect();
