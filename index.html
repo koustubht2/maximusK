@@ -24849,10 +24849,11 @@ function switchTab(tab) {
         var seg4Mat=ringMat('#22ccff',0.95);
         [[0.2,2.0],[2.6,1.5],[4.75,0.9]].forEach(function(p){ var s=p[0],l=p[1]; L4.add(circleLine(1.96,80,seg4Mat,s,l)); L4.add(circleLine(1.985,80,seg4Mat,s,l)); });
         var L3=new THREE.Group(); rig.add(L3);
+        var l3Mat;   // kept so sizeRenderer can keep its dot size 1:1 with the 720px standalone
         (function(){ var dp=[], DN=140; for(var i=0;i<DN;i++){ var a=(i/DN)*Math.PI*2; dp.push(Math.cos(a)*2.12,Math.sin(a)*2.12,0); }
           var dg=new THREE.BufferGeometry(); dg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(dp),3));
-          var dm=new THREE.PointsMaterial({ color:new THREE.Color('#8fd4ff'), size:1.6*DPR, sizeAttenuation:false, transparent:true, opacity:0.6, depthWrite:false });
-          var dpts=new THREE.Points(dg,dm); dpts.layers.set(0); L3.add(dpts); })();
+          l3Mat=new THREE.PointsMaterial({ color:new THREE.Color('#8fd4ff'), size:1.6*DPR, sizeAttenuation:false, transparent:true, opacity:0.6, depthWrite:false });
+          var dpts=new THREE.Points(dg,l3Mat); dpts.layers.set(0); L3.add(dpts); })();
         var L2g=new THREE.Group(); rig.add(L2g);
         L2g.add(circleLine(2.30,200,ringMat('#00bfff',0.85)));
         var L1=new THREE.Group(); rig.add(L1);
@@ -24894,8 +24895,9 @@ function switchTab(tab) {
         function restoreVis(){ for(var i=0;i<_hidden.length;i++) _hidden[i].visible=true; _hidden.length=0; }
 
         function sizeRenderer(){ var s=canvas.clientWidth||300; renderer.setSize(s,s,false); bloomComposer.setSize(s,s); finalComposer.setSize(s,s); camera.aspect=1; camera.updateProjectionMatrix();
-          // dot size proportional to rendered buffer so it's 1:1 with the 720px standalone
-          pMat.uniforms.uScale.value = 160.0 * (s * DPR) / 720.0; }
+          // sizes proportional to rendered buffer so they're 1:1 with the 720px standalone
+          pMat.uniforms.uScale.value = 160.0 * (s * DPR) / 720.0;
+          if (l3Mat) l3Mat.size = 1.6 * DPR * (s / 720.0); }
         new ResizeObserver(sizeRenderer).observe(canvas); sizeRenderer();
 
         function updateParticles(ay,ax){
