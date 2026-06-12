@@ -1043,6 +1043,9 @@ body::after {
 .peak-lw-cell { background:rgba(255,255,255,0.02); padding:12px 10px; text-align:center; }
 .peak-lw-val { font-size:22px; font-weight:800; color:var(--text-primary); letter-spacing:-0.02em; }
 .peak-lw-lbl { font-size:10px; color:var(--text-tertiary); margin-top:3px; letter-spacing:0.06em; text-transform:uppercase; }
+.peak-lw-trend-head { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:2px; }
+.peak-lw-trend-name { font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-tertiary); }
+.peak-lw-trend-val { font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--text-primary); }
 .peak-lw-bars { display:flex; align-items:flex-end; gap:4px; height:52px; }
 .peak-lw-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
 .peak-lw-bar { width:100%; border-radius:4px 4px 0 0; min-height:4px; background:rgba(110,231,183,0.35); transition:height 0.4s; }
@@ -1073,7 +1076,7 @@ body::after {
 .peak-meta-strip { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .peak-meta-pill { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:5px 11px; font-family:var(--font-mono); font-size:10px; letter-spacing:0.06em; color:var(--text-secondary); }
 .peak-whyBox { display:none; margin-top:6px; width:100%; }
-.peak-whyBox.on { display:block; }
+.peak-whyBox.on { display:block; margin-bottom:12px; }
 .peak-whyRow { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-tertiary); padding:7px 0; border-top:1px solid rgba(255,255,255,0.06); }
 .peak-whyRow b { color:var(--text-primary); }
 /* ── Workout card (Peak page) ── */
@@ -8741,7 +8744,7 @@ window.canonicalJson = function(obj) {
     </div>
 
     <!-- Markets strip -->
-    <div id="peakMarketsStrip" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:9px 14px;margin-bottom:8px;overflow:hidden">
+    <div id="peakMarketsStrip" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:9px 14px;margin-top:12px;margin-bottom:8px;overflow:hidden">
       <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">
         <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:rgba(255,255,255,0.3)">MARKETS</span>
         <span id="peakMarketsTime" style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.2)"></span>
@@ -9028,13 +9031,22 @@ window.canonicalJson = function(obj) {
 
     <div class="peak-card" id="peakLastWeekCard">
       <div class="peak-section-label">Last Week</div>
-      <div class="peak-lastweek-grid" id="peakLastWeekGrid">
-        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwAvgReadiness">—</div><div class="peak-lw-lbl">Avg Readiness</div></div>
-        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwAvgHrv">—</div><div class="peak-lw-lbl">Avg HRV</div></div>
-        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwAvgSleep">—</div><div class="peak-lw-lbl">Avg Sleep</div></div>
-        <div class="peak-lw-cell"><div class="peak-lw-val" id="peakLwBestDay">—</div><div class="peak-lw-lbl">Best Day</div></div>
+      <!-- three Oura-style trend lines: readiness, HRV, sleep -->
+      <div class="peak-lw-trend" style="margin-top:6px">
+        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">Readiness</span><span class="peak-lw-trend-val" id="peakLwAvgReadiness">—</span></div>
+        <canvas id="peakLwReadinessCanvas" height="46" style="width:100%;display:block"></canvas>
       </div>
-      <div class="peak-lw-bars" id="peakLwBars"></div>
+      <div class="peak-lw-trend" style="margin-top:14px">
+        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">HRV</span><span class="peak-lw-trend-val" id="peakLwAvgHrv">—</span></div>
+        <canvas id="peakLwHrvCanvas" height="46" style="width:100%;display:block"></canvas>
+      </div>
+      <div class="peak-lw-trend" style="margin-top:14px">
+        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">Sleep</span><span class="peak-lw-trend-val" id="peakLwAvgSleep">—</span></div>
+        <canvas id="peakLwSleepCanvas" height="46" style="width:100%;display:block"></canvas>
+      </div>
+      <div class="peak-lw-trend-days" id="peakLwDays" style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.06em"></div>
+      <div class="peak-lw-best" style="margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);letter-spacing:0.06em">Best day: <span id="peakLwBestDay" style="color:#6EE7B7">—</span></div>
+      <span id="peakLwBars" style="display:none"></span>
     </div>
 
     <!-- Peak score history (7-day energy at current hour) -->
@@ -22696,38 +22708,84 @@ function switchTab(tab) {
     } finally { _weeklyFlight = false; }
   }
 
+  // draw a small Oura-style trend line (filled gradient + line + last dot)
+  function _lwLine(canvasId, vals, colour) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var W = canvas.offsetWidth || 300; canvas.width = W;
+    var H = 46, ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    var clean = vals.filter(function(v){ return v != null && !isNaN(v); });
+    if (clean.length < 2) return;
+    var mn = Math.min.apply(null, clean), mx = Math.max.apply(null, clean);
+    var range = (mx - mn) || 1, pad = 6;
+    var xp = function(i){ return pad + (i/(vals.length-1))*(W-pad*2); };
+    var yp = function(v){ return H - pad - ((v - mn)/range)*(H-pad*2); };
+    // build path skipping nulls
+    var first = -1;
+    for (var k=0;k<vals.length;k++){ if (vals[k]!=null && !isNaN(vals[k])) { first=k; break; } }
+    if (first<0) return;
+    // fill
+    var grad = ctx.createLinearGradient(0,0,0,H);
+    var rgb = colour.replace('#','');
+    var r=parseInt(rgb.slice(0,2),16), g=parseInt(rgb.slice(2,4),16), b=parseInt(rgb.slice(4,6),16);
+    grad.addColorStop(0,'rgba('+r+','+g+','+b+',0.18)'); grad.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
+    ctx.beginPath(); ctx.moveTo(xp(first), yp(vals[first]));
+    for (var i2=first+1;i2<vals.length;i2++){ if (vals[i2]==null||isNaN(vals[i2])) continue; ctx.lineTo(xp(i2), yp(vals[i2])); }
+    var lastI = vals.length-1; while(lastI>0 && (vals[lastI]==null||isNaN(vals[lastI]))) lastI--;
+    ctx.lineTo(xp(lastI), H); ctx.lineTo(xp(first), H); ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+    // line
+    ctx.beginPath(); ctx.moveTo(xp(first), yp(vals[first]));
+    for (var j=first+1;j<vals.length;j++){ if (vals[j]==null||isNaN(vals[j])) continue; ctx.lineTo(xp(j), yp(vals[j])); }
+    ctx.strokeStyle = colour; ctx.lineWidth = 1.6; ctx.stroke();
+    // last dot
+    ctx.beginPath(); ctx.arc(xp(lastI), yp(vals[lastI]), 3, 0, Math.PI*2); ctx.fillStyle = colour; ctx.fill();
+  }
+
   function renderLastWeek(oura) {
-    var days = ['M','T','W','T','F','S','S'];
     var readArr = oura && oura.readiness ? oura.readiness.slice(0,7).reverse() : [];
     var sleepArr = oura && oura.sleep ? oura.sleep.slice(0,7).reverse() : [];
     if (!readArr.length) return;
+
     var scores = readArr.map(function(r){ return r.score || 0; });
+    var hrvSeries = readArr.map(function(r){ return (r.contributors && r.contributors.hrv_balance) || null; });
+    // align sleep to the same days as readiness (by day key)
+    var sleepByDay = {}; sleepArr.forEach(function(s){ if (s.day) sleepByDay[s.day] = s.score; });
+    var sleepSeries = readArr.map(function(r){ return r.day && sleepByDay[r.day] != null ? sleepByDay[r.day] : null; });
+
     var avgR = Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length);
-    var hrvVals = readArr.map(function(r){ return r.contributors && r.contributors.hrv_balance; }).filter(Boolean);
+    var hrvVals = hrvSeries.filter(Boolean);
     var avgH = hrvVals.length ? Math.round(hrvVals.reduce(function(a,b){return a+b;},0)/hrvVals.length) : null;
-    var slScores = sleepArr.map(function(s){ return s.score || 0; });
-    var avgSl = slScores.length ? Math.round(slScores.reduce(function(a,b){return a+b;},0)/slScores.length) : null;
+    var slVals = sleepSeries.filter(function(v){ return v != null; });
+    var avgSl = slVals.length ? Math.round(slVals.reduce(function(a,b){return a+b;},0)/slVals.length) : null;
+
     var maxIdx = scores.indexOf(Math.max.apply(null, scores));
     var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var bestDayStr = '—';
     if (readArr[maxIdx] && readArr[maxIdx].day) {
-      var dt = new Date(readArr[maxIdx].day + 'T12:00:00');
-      bestDayStr = dayNames[dt.getDay()];
+      var dt = new Date(readArr[maxIdx].day + 'T12:00:00'); bestDayStr = dayNames[dt.getDay()];
     }
+
     setText('peakLwAvgReadiness', avgR || '—');
     setText('peakLwAvgHrv', avgH != null ? avgH+'ms' : '—');
     setText('peakLwAvgSleep', avgSl != null ? avgSl : '—');
     setText('peakLwBestDay', bestDayStr);
-    var barsEl = document.getElementById('peakLwBars');
-    if (!barsEl) return;
-    var maxScore = Math.max.apply(null, scores.concat([1]));
-    barsEl.innerHTML = scores.map(function(s, i) {
-      var h = Math.round((s / maxScore) * 44) + 4;
-      var cls = s >= 90 ? 'zone-gold' : s >= 70 ? 'zone-green' : s >= 50 ? 'zone-yellow' : 'zone-red';
-      var colour = s >= 90 ? '#F5C842' : s >= 70 ? '#6EE7B7' : s >= 50 ? '#F2C063' : '#FF8A8A';
-      var label = days[i] || '';
-      return '<div class="peak-lw-bar-wrap"><div class="peak-lw-bar" style="height:'+h+'px;background:'+colour+'40;border-top:2px solid '+colour+'"></div><div class="peak-lw-bar-day">'+label+'</div></div>';
-    }).join('');
+
+    // draw the three trend lines
+    _lwLine('peakLwReadinessCanvas', scores, '#6EE7B7');
+    _lwLine('peakLwHrvCanvas', hrvSeries.map(function(v){ return v==null?null:v; }), '#818cf8');
+    _lwLine('peakLwSleepCanvas', sleepSeries, '#38bdf8');
+
+    // day labels under the charts (Mon..Sun for the 7 shown days)
+    var daysEl = document.getElementById('peakLwDays');
+    if (daysEl) {
+      daysEl.innerHTML = readArr.map(function(r){
+        if (!r.day) return '<span>·</span>';
+        var d = new Date(r.day + 'T12:00:00');
+        return '<span>' + ['S','M','T','W','T','F','S'][d.getDay()] + '</span>';
+      }).join('');
+    }
   }
 
   // ── Caffeine rendering ─────────────────────────────────────
