@@ -24819,12 +24819,12 @@ function switchTab(tab) {
         // ════ NEBULA CLOUD — soft blue glow BEHIND the dots (the "cloud") ════
         // This is the diffuse haze the sharp dots sit on top of, like the ref.
         // Brighter, fuller gradient so it clearly reads as a cloud (was too faint).
+        // Even medium-blue haze — NO white-hot center (the ref cloud is uniform blue).
         var nebulaTex = glowTexture([
-          [0,   'rgba(150,200,255,1.0)'],
-          [0.25,'rgba(90,160,255,0.75)'],
-          [0.5, 'rgba(55,120,240,0.40)'],
-          [0.75,'rgba(35,85,210,0.16)'],
-          [1,   'rgba(25,60,170,0)']
+          [0,   'rgba(60,120,230,0.55)'],
+          [0.4, 'rgba(50,105,215,0.42)'],
+          [0.7, 'rgba(38,85,195,0.20)'],
+          [1,   'rgba(28,65,170,0)']
         ]);
         var nebulaMat = new THREE.SpriteMaterial({ map: nebulaTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 1.0 });
         var nebula = new THREE.Sprite(nebulaMat);
@@ -24842,9 +24842,9 @@ function switchTab(tab) {
         // forming a faint web. Pairs are precomputed from base positions; the
         // line shader applies the SAME breathing so lines track the dots.
         var pairs = [];
-        var LINK_DIST = 0.34;        // max distance to draw a link
-        var MAX_LINKS = 3;           // cap links per dot so it isn't a solid mesh
-        var linkCount = new Int8Array(N);
+        var LINK_DIST = 0.30;        // max distance to draw a link
+        var MAX_LINKS = 2;           // links per dot — sparse web, not a solid mesh
+        var linkCount = new Int16Array(N);
         for (var a2 = 0; a2 < N; a2++) {
           if (linkCount[a2] >= MAX_LINKS) continue;
           for (var b2 = a2 + 1; b2 < N; b2++) {
@@ -24887,9 +24887,9 @@ function switchTab(tab) {
           fragmentShader: [
             'uniform float uActive;',
             'void main(){',
-            // faint cool-blue web; brightens slightly when active
-            '  vec3 col = mix(vec3(0.25,0.45,0.85), vec3(0.35,0.75,0.95), uActive);',
-            '  gl_FragColor = vec4(col, 0.12 + 0.10 * uActive);',
+            // cool-blue web connecting the dots; visible but not overpowering
+            '  vec3 col = mix(vec3(0.35,0.60,0.95), vec3(0.45,0.85,1.0), uActive);',
+            '  gl_FragColor = vec4(col, 0.28 + 0.15 * uActive);',
             '}'
           ].join('\n')
         });
@@ -25033,9 +25033,9 @@ function switchTab(tab) {
           var nbScale = 2.8 + active * 0.3 + nbWave;   // pulses in/out when speaking
           nebula.scale.set(nbScale, nbScale, nbScale);
 
-          // core glow: a faint always-on blue ember at idle, bright cyan when active
-          var idleEmber = 0.12 + 0.05 * Math.sin(t * 1.3);
-          var cp = Math.max(idleEmber, activeTarget * (0.7 + 0.3 * Math.sin(t * (_mood === 'responding' ? 9 : 5))));
+          // core glow: NO white center at idle (ref is plain blue at rest).
+          // Only appears — bright cyan — when thinking/speaking.
+          var cp = activeTarget * (0.7 + 0.3 * Math.sin(t * (_mood === 'responding' ? 9 : 5)));
           corePulse += (cp - corePulse) * 0.1;
           coreMat.opacity = Math.max(0, corePulse);
           var cs = 0.65 + corePulse * 0.75;
