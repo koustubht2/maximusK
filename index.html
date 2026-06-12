@@ -1171,6 +1171,18 @@ body::after {
 .peak-coach-body { display:inline; }
 .peak-coach-body.peak-coach-typing::after { content:'▍'; color:#6EE7B7; margin-left:1px; animation:peakCaretBlink 1s steps(1) infinite; }
 @keyframes peakCaretBlink { 50% { opacity:0; } }
+/* JARVIS section grid backdrop — covers the whole tab, fades toward the edges */
+#jarvisView { position:relative; }
+#jarvisView::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    linear-gradient(rgba(0,130,255,0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,130,255,0.14) 1px, transparent 1px);
+  background-size: 40px 40px;
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 38%, #000 45%, transparent 90%);
+          mask-image: radial-gradient(70% 60% at 50% 38%, #000 45%, transparent 90%);
+}
+#jarvisView > div { position:relative; z-index:1; }
 .peak-coach-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
 .peak-coach-chip { border-radius:999px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--text-tertiary); font-size:11px; padding:5px 12px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
 .peak-coach-chip:hover { border-color:rgba(110,231,183,0.3); color:#6EE7B7; }
@@ -9229,9 +9241,9 @@ window.canonicalJson = function(obj) {
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-tertiary);margin-top:4px;">Omniscient · sees all your data</div>
     </div>
 
-    <!-- 3D avatar -->
-    <div style="display:flex;justify-content:center;margin:6px 0 2px;">
-      <canvas id="jvAvatarCanvas" width="300" height="300" style="cursor:pointer;width:280px;height:280px;max-width:86vw;" title="JARVIS"></canvas>
+    <!-- 3D avatar (grid backdrop only behind the avatar, fades at edges) -->
+    <div id="jvAvatarWrap" style="position:relative;display:flex;justify-content:center;align-items:center;margin:28px 0 24px;">
+      <canvas id="jvAvatarCanvas" width="300" height="300" style="position:relative;z-index:1;cursor:pointer;width:500px;height:500px;max-width:90vw;max-height:90vw;" title="JARVIS"></canvas>
     </div>
 
     <!-- chat -->
