@@ -12,20 +12,28 @@
 
   #stage {
     position:fixed; inset:0; display:grid; place-items:center;
+    /* massive soft global glow behind the whole avatar → volumetric depth */
     background:
-      radial-gradient(50% 50% at 50% 50%, rgba(0,60,140,0.18), transparent 72%),
+      radial-gradient(circle at 50% 50%, rgba(0,80,255,0.18) 0%, rgba(0,40,140,0.10) 32%, rgba(5,8,20,1) 62%),
       var(--bg);
   }
-  /* glowing square grid overlay across the whole background */
+  /* glowing square grid overlay — brighter so it reads as a tactical backdrop */
   #stage::before {
     content:''; position:absolute; inset:0; pointer-events:none;
     background-image:
-      linear-gradient(rgba(0,100,255,0.15) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,100,255,0.15) 1px, transparent 1px);
+      linear-gradient(rgba(0,130,255,0.28) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,130,255,0.28) 1px, transparent 1px);
     background-size: 46px 46px;
     /* fade the grid toward the edges so it feels like depth, not flat tile */
-    -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000 40%, transparent 85%);
-            mask-image: radial-gradient(70% 70% at 50% 50%, #000 40%, transparent 85%);
+    -webkit-mask-image: radial-gradient(72% 72% at 50% 50%, #000 50%, transparent 90%);
+            mask-image: radial-gradient(72% 72% at 50% 50%, #000 50%, transparent 90%);
+  }
+  /* a soft inner bloom halo right behind the sphere */
+  #stage::after {
+    content:''; position:absolute; left:50%; top:50%; width:min(70vmin,560px); height:min(70vmin,560px);
+    transform:translate(-50%,-50%); pointer-events:none; z-index:1;
+    background:radial-gradient(circle, rgba(0,120,255,0.22) 0%, rgba(0,90,255,0.08) 35%, transparent 65%);
+    filter:blur(8px);
   }
   #avatar { position:relative; width:min(84vmin,660px); height:min(84vmin,660px); display:block; cursor:pointer; z-index:2; }
 
@@ -98,14 +106,16 @@
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:new THREE.CanvasTexture(c), transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, opacity:0 }));
       return sp;
     }
-    // tight star: pure white → cyan → electric blue, fades fast so it stays a
-    // distinct central "sun" and does NOT wash the particles or reach the rings.
+    // smooth star: pure white dead-center → bright cyan → soft fade into the
+    // blue particle cloud. Many stops = perfectly smooth, no harsh smudge.
     const core = radialSprite([
       [0,   'rgba(255,255,255,1)'],
-      [0.10,'rgba(210,250,255,0.95)'],
-      [0.22,'rgba(0,210,255,0.6)'],
-      [0.45,'rgba(0,70,255,0.15)'],
-      [1,   'rgba(0,40,200,0)']
+      [0.06,'rgba(235,253,255,0.98)'],
+      [0.13,'rgba(150,245,255,0.85)'],
+      [0.24,'rgba(0,220,255,0.55)'],
+      [0.40,'rgba(0,130,255,0.22)'],
+      [0.62,'rgba(0,80,230,0.07)'],
+      [1,   'rgba(0,60,200,0)']
     ]);
     core.position.z = -0.05; core.renderOrder = -1; scene.add(core);
 
@@ -124,7 +134,9 @@
       radii[i]=r;
       positions[i*3]=dx*r; positions[i*3+1]=dy*r; positions[i*3+2]=dz*r;
       seeds[i]=Math.random();
-      cmix[i]=Math.min(1, r/R_MAX);                 // outer → deep blue
+      // color: blend radius bias (outer→blue) with a RANDOM per-node offset so
+      // the cloud is a mix of bright cyan and deep electric blue, not uniform.
+      cmix[i]=Math.min(1, Math.max(0, (r/R_MAX)*0.6 + Math.random()*0.5 - 0.05));
       nsize[i]=0.7 + Math.pow(Math.random(),2.0)*1.1; // most small, a few larger nodes
     }
     const pGeo = new THREE.BufferGeometry();
@@ -202,8 +214,8 @@
     // blocky monospaced numbers (every 30°), facing inward
     function buildDegrees(){
       const cv=document.createElement('canvas'); cv.width=cv.height=1024; const g=cv.getContext('2d');
-      g.font='22px "Share Tech Mono", monospace'; g.fillStyle='#bfe6ff'; g.textAlign='center'; g.textBaseline='middle';
-      g.shadowColor='#00aaff'; g.shadowBlur=6;
+      g.font='22px "Share Tech Mono", monospace'; g.fillStyle='#00f3ff'; g.textAlign='center'; g.textBaseline='middle';
+      g.shadowColor='#00f3ff'; g.shadowBlur=10;
       const PLANE=4.9, px=(1.84/PLANE)*1024;
       for(let k=0;k<12;k++){ const deg=k*30, a=(k/12)*Math.PI*2-Math.PI/2;
         g.save(); g.translate(512+Math.cos(a)*px,512+Math.sin(a)*px); g.rotate(a+Math.PI/2);
@@ -215,10 +227,10 @@
     let degPlane = buildDegrees();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ L1.remove(degPlane); degPlane=buildDegrees(); });
 
-    // ── Layer 2: solid continuous thin glowing circle ──
+    // ── Layer 2: solid continuous glowing circle (clearly visible) ──
     const L2 = new THREE.Group(); rig.add(L2);
-    const ring2mat = addMat('#00aaff',0.7);
-    L2.add(new THREE.Mesh(new THREE.TorusGeometry(1.80, 0.006, 8, 220), ring2mat));
+    const ring2mat = addMat('#00bfff',1.0);
+    L2.add(new THREE.Mesh(new THREE.TorusGeometry(1.80, 0.011, 10, 240), ring2mat));
 
     // ── Layer 3: finely dotted continuous thin circle ──
     const L3 = new THREE.Group(); rig.add(L3);
@@ -227,19 +239,21 @@
     for (let i=0;i<DOTS;i++){ const a=(i/DOTS)*Math.PI*2; const m=new THREE.Mesh(dotGeo,dotMat);
       m.position.set(Math.cos(a)*dotR, Math.sin(a)*dotR, 0); L3.add(m); }
 
-    // ── Layer 4 (innermost): thicker segmented sweeping arcs ──
+    // ── Layer 4 (innermost): THICKER segmented sweeping arcs (structural weight) ──
     const L4 = new THREE.Group(); rig.add(L4);
-    const segMat = addMat('#00c6ff',0.95);
+    const segMat = addMat('#22ccff',1.0);
     const segs = [ [0.2,2.0], [2.6,1.5] ];   // 2 long sweeping arcs, asymmetrical gaps
     segs.forEach(([start,span])=> {
-      const m=new THREE.Mesh(new THREE.TorusGeometry(1.50, 0.016, 10, 140, span), segMat);
+      const m=new THREE.Mesh(new THREE.TorusGeometry(1.50, 0.028, 12, 150, span), segMat);
       m.rotation.z=start; L4.add(m);
     });
 
-    // ════════════ BLOOM — controlled ════════════════════════════════
+    // ════════════ BLOOM — luminous hologram (particles bleed together) ══
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene,camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1,1), 0.45, 0.55, 0.5);
+    // higher strength + wider radius + low threshold so dots glow & overlap into
+    // a luminous energy cloud, but threshold>0 keeps it from a total white-out.
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1,1), 0.85, 0.85, 0.20);
     composer.addPass(bloom);
 
     function resize(){ const s=canvas.clientWidth||600; renderer.setSize(s,s,false); composer.setSize(s,s); pUniforms.uDpr.value=renderer.getPixelRatio(); camera.aspect=1; camera.updateProjectionMatrix(); }
@@ -274,7 +288,8 @@
       const cs = 1.0 + state.speaking*0.25 + state.pulse*state.speaking*0.35; // bounded, < inner ring
       core.scale.set(cs,cs,cs);
 
-      bloom.strength = 0.4 + state.speaking*0.3 + state.pulse*state.speaking*0.2;
+      // strong baseline glow (luminous cloud) that rises modestly when speaking
+      bloom.strength = 0.8 + state.speaking*0.4 + state.pulse*state.speaking*0.25;
       composer.render();
     }
     frame();
