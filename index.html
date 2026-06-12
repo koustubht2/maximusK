@@ -24711,9 +24711,9 @@ function switchTab(tab) {
 
         var scene = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-        // z chosen so the OUTERMOST ring + degree labels fit with clear margin.
-        // half-height = tan(21°)*z. At z=6.4 that's ~2.46 → outer ring (1.95) has margin.
-        camera.position.set(0, 0, 6.4);
+        // Fill the canvas like the reference while keeping the outer ring visible.
+        // half-height = tan(21°)*z. At z=5.4 that's ~2.07 → outer ring (1.90) fits snug.
+        camera.position.set(0, 0, 5.4);
 
         var root = new THREE.Group(); scene.add(root);          // holds the particle cloud (rotates in 3D)
         var rig  = new THREE.Group(); scene.add(rig);           // holds flat rings (face camera)
@@ -24723,71 +24723,79 @@ function switchTab(tab) {
         // sized by distance, and animated radially by a per-point phase.
         var N = 950;
         var pos = new Float32Array(N * 3);   // direction × baseRadius (volumetric)
-        var rnd = new Float32Array(N);       // per-particle random 0..1 (phase + twinkle)
+        var rnd  = new Float32Array(N);      // per-particle phase/twinkle seed 0..1
+        var siz  = new Float32Array(N);      // per-particle size variation (dot identity)
         for (var i = 0; i < N; i++) {
-          // even direction on a sphere…
+          // even direction on a sphere (uniform)
           var v = Math.random() * 2 - 1;
           var theta = Math.random() * Math.PI * 2;
           var s2 = Math.sqrt(1 - v * v);
           var dx = s2 * Math.cos(theta), dy = s2 * Math.sin(theta), dz = v;
-          // …× a radius biased toward the CENTER (cube → dense core, sparse rim)
-          var rr = Math.pow(Math.random(), 0.7);   // 0..1, denser low values
+          // UNIFORM-VOLUME radius (cube root) → dots spread through the whole
+          // sphere instead of piling in the center. Slight outward bias so the
+          // rim is busy like the reference galaxy.
+          var rr = Math.pow(Math.random(), 0.42);   // >0.33 pushes more dots outward
           pos[i*3]   = dx * rr;
           pos[i*3+1] = dy * rr;
           pos[i*3+2] = dz * rr;
           rnd[i] = Math.random();
+          // varied sizes: most small, a few larger "bright stars" → individual identity
+          siz[i] = 0.45 + Math.pow(Math.random(), 2.0) * 1.1;
         }
         var pGeo = new THREE.BufferGeometry();
         pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        pGeo.setAttribute('aRnd', new THREE.BufferAttribute(rnd, 1));
+        pGeo.setAttribute('aRnd',  new THREE.BufferAttribute(rnd, 1));
+        pGeo.setAttribute('aSize', new THREE.BufferAttribute(siz, 1));
 
         var pUniforms = {
           uTime:    { value: 0 },
           uActive:  { value: 0 },          // 0 idle (blue) → 1 active (cyan)
           uBreathe: { value: 0 },          // radial pulse amount
-          uSize:    { value: 15.0 * DPR },
-          uColorIdle:   { value: new THREE.Color('#4ea0ff') },
-          uColorActive: { value: new THREE.Color('#7af0ff') }
+          uSize:    { value: 26.0 * DPR },  // base px size; per-dot aSize multiplies it
+          uColorIdle:   { value: new THREE.Color('#5aa8ff') },
+          uColorActive: { value: new THREE.Color('#86f2ff') }
         };
         var pMat = new THREE.ShaderMaterial({
           uniforms: pUniforms,
           transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
           vertexShader: [
-            'attribute float aRnd;',
+            'attribute float aRnd; attribute float aSize;',
             'uniform float uTime; uniform float uBreathe; uniform float uSize; uniform float uActive;',
-            'varying float vR; varying float vTwinkle;',
+            'varying float vR; varying float vTwinkle; varying float vSize;',
             'void main(){',
             '  vec3 dir = normalize(position);',
-            '  float baseR = length(position) * 1.05;',     // volumetric; sits inside ring1
-            // breathing: every particle drifts in/out along its radius on its own phase
+            // cloud reaches ~1.18 radius → fills most of the inner ring (1.34)
+            '  float baseR = length(position) * 1.18;',
+            // breathing: each dot drifts in/out along its radius on its own phase.
+            // amplitude is small at idle, large when speaking (driven by uBreathe).
             '  float ph = aRnd * 6.2831;',
-            '  float pulse = sin(uTime * 1.6 + ph) * (0.06 + 0.14 * uBreathe);',
+            '  float pulse = sin(uTime * 1.5 + ph) * (0.03 + 0.30 * uBreathe);',
             '  float r = baseR + pulse;',
-            '  vR = clamp(baseR, 0.0, 1.0);',                // center dots = low, rim = high
+            '  vR = clamp(length(position), 0.0, 1.0);',     // 0 center → 1 rim
+            '  vSize = aSize;',
             '  vec3 p = dir * r;',
             '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
-            // size attenuates with depth; center dots slightly larger/brighter
-            '  float sizeBoost = 1.0 + uActive * 0.3 + (1.0 - vR) * 0.5;',
-            '  gl_PointSize = uSize * sizeBoost / -mv.z;',
-            '  vTwinkle = 0.6 + 0.4 * sin(uTime * 3.0 + ph * 2.0);',
+            // per-dot size (identity) × slight active growth; depth attenuation
+            '  gl_PointSize = uSize * aSize * (1.0 + uActive * 0.25) / -mv.z;',
+            '  vTwinkle = 0.55 + 0.45 * sin(uTime * 2.6 + ph * 5.0);',  // each twinkles
             '  gl_Position = projectionMatrix * mv;',
             '}'
           ].join('\n'),
           fragmentShader: [
             'uniform vec3 uColorIdle; uniform vec3 uColorActive; uniform float uActive;',
-            'varying float vR; varying float vTwinkle;',
+            'varying float vR; varying float vTwinkle; varying float vSize;',
             'void main(){',
-            // CRISP round dot: nearly-hard edge (tiny AA band only). No soft halo —
-            // that was making every dot look like a fuzzy blob.
+            // HARD-EDGED round dot — each a distinct point with a tiny AA rim.
             '  vec2 d = gl_PointCoord - vec2(0.5);',
             '  float dist = length(d);',
-            '  float alpha = smoothstep(0.5, 0.42, dist);',   // hard disc, 0.08 AA edge
-            '  if (alpha < 0.01) discard;',
-            // center dots glow whiter; rim dots take the idle/active hue
+            '  float alpha = smoothstep(0.5, 0.40, dist);',
+            '  if (alpha < 0.02) discard;',
+            // a hot white pinpoint center on bigger dots → star-like identity
+            '  float pin = smoothstep(0.22, 0.0, dist) * step(0.95, vSize);',
             '  vec3 base = mix(uColorIdle, uColorActive, uActive);',
-            '  vec3 col = mix(vec3(0.92,0.98,1.0), base, clamp(vR + 0.1, 0.0, 1.0));',
-            // center brighter, rim dimmer; everything lifts when active
-            '  float bright = (1.25 - vR * 0.4) * (0.8 + 0.2 * uActive);',
+            '  vec3 col = mix(base, vec3(0.95,0.99,1.0), pin);',
+            // brightness varies per dot so they don\'t merge into one mass
+            '  float bright = (0.7 + 0.5 * vSize) * (0.8 + 0.2 * uActive);',
             '  gl_FragColor = vec4(col, alpha * vTwinkle * bright);',
             '}'
           ].join('\n')
