@@ -67,7 +67,7 @@
   const bloomLayerMask = new THREE.Layers(); bloomLayerMask.set(BLOOM_LAYER);
 
   function build(canvas) {
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
     renderer.setClearColor(0x050814, 1);
     renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -109,14 +109,15 @@
     // network so the sphere reads as solid, not hollow. Royal-blue center →
     // transparent edge. On Layer 1 → caught by bloom for an ambient inner glow.
     const innerGlowTex = gradientTex([
-      [0,  'rgba(90,150,255,0.8)'],
-      [0.4,'rgba(0,68,255,0.40)'],
-      [0.7,'rgba(0,50,200,0.14)'],
-      [1,  'rgba(0,40,160,0)']
+      [0,   'rgba(160,220,255,0.9)'],   // bright cyan-white center
+      [0.25,'rgba(40,120,255,0.6)'],
+      [0.55,'rgba(0,68,255,0.35)'],     // vibrant royal blue #0044ff
+      [0.8, 'rgba(0,50,200,0.12)'],
+      [1,   'rgba(0,40,160,0)']         // transparent edge
     ]);
     const innerGlowMat = new THREE.SpriteMaterial({ map:innerGlowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:1.0 });
     const innerGlow = new THREE.Sprite(innerGlowMat);
-    innerGlow.scale.setScalar(3.2);       // ~sphere diameter
+    innerGlow.scale.setScalar(3.6);       // slightly larger → fills the interior volume
     innerGlow.position.z = -0.6;          // sit just behind the particle network
     innerGlow.layers.set(BLOOM_LAYER);
     scene.add(innerGlow);
@@ -157,8 +158,8 @@
       const c=document.createElement('canvas'); c.width=c.height=64;
       const g=c.getContext('2d'); const grd=g.createRadialGradient(32,32,0,32,32,32);
       grd.addColorStop(0,   'rgba(255,255,255,1)');
-      grd.addColorStop(0.25,'rgba(190,250,255,0.9)');
-      grd.addColorStop(0.6, 'rgba(0,225,255,0.45)');
+      grd.addColorStop(0.35,'rgba(200,250,255,0.95)');  // tighter solid core
+      grd.addColorStop(0.7, 'rgba(0,225,255,0.30)');    // quicker falloff → sharper dot
       grd.addColorStop(1,   'rgba(0,200,255,0)');
       g.fillStyle=grd; g.fillRect(0,0,64,64);
       return new THREE.CanvasTexture(c);
@@ -172,7 +173,7 @@
         void main(){
           vCol = color;
           vec4 mv = modelViewMatrix * vec4(position,1.0);
-          gl_PointSize = aSize * uDpr * 240.0 / -mv.z;   // 2.7x larger → dense, overlapping
+          gl_PointSize = aSize * uDpr * 160.0 / -mv.z;   // distinct sharp points, no clumping
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader:`
@@ -461,9 +462,10 @@
       scene.traverse(hideNonBloom);
       renderer.setClearColor(0x000000, 1);
       bloomComposer.render();
-      // 2) restore foreground + navy clear, render full sharp scene + ADD glow
+      // 2) restore foreground + TRANSPARENT clear so the CSS tactical grid shows
+      //    through behind the 3D scene; render full sharp scene + ADD glow
       restoreVis();
-      renderer.setClearColor(0x050814, 1);
+      renderer.setClearColor(0x050814, 0);
       finalComposer.render();
     }
     frame();
