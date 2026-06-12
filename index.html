@@ -8985,7 +8985,7 @@ window.canonicalJson = function(obj) {
     <div class="peak-card">
       <div class="peak-section-label">Your Coach</div>
       <div style="display:flex;justify-content:center;margin-bottom:14px;">
-        <canvas id="peakArcReactor" width="110" height="110" style="cursor:pointer;border-radius:50%" title="Click to ping"></canvas>
+        <canvas id="peakArcReactor" width="260" height="260" style="cursor:pointer;width:240px;height:240px;max-width:80vw;" title="Tap JARVIS"></canvas>
       </div>
       <div class="peak-coach-messages" id="peakCoachMessages"></div>
       <div class="peak-coach-chips">
@@ -24701,130 +24701,248 @@ function switchTab(tab) {
 
         var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
         renderer.setClearColor(0x000000, 0);
-        renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+        var DPR = Math.min(devicePixelRatio || 1, 2);
+        renderer.setPixelRatio(DPR);
         function sizeRenderer() {
-          var s = canvas.clientWidth || 110;
+          var s = canvas.clientWidth || 240;
           renderer.setSize(s, s, false);
         }
 
         var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-        camera.position.set(0, 0, 3.4);
+        var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+        camera.position.set(0, 0, 3.6);
 
-        var root = new THREE.Group(); scene.add(root);
+        var root = new THREE.Group(); scene.add(root);          // holds the particle cloud (rotates in 3D)
+        var rig  = new THREE.Group(); scene.add(rig);           // holds flat rings (face camera)
 
-        // ---- particle sphere (volumetric, nebula-like) ----
-        var N = 560;
-        var pos = new Float32Array(N * 3);
-        var baseR = new Float32Array(N);
+        // ════ PARTICLE CLOUD — round glowing dots that breathe in/out ════
+        // Custom shader so each point is a soft ROUND dot (not a GL square),
+        // sized by distance, and animated radially by a per-point phase.
+        var N = 900;
+        var pos = new Float32Array(N * 3);   // direction × baseRadius (volumetric)
+        var rnd = new Float32Array(N);       // per-particle random 0..1 (phase + twinkle)
         for (var i = 0; i < N; i++) {
-          // random point in a sphere volume, denser toward center
-          var u = Math.random(), v = Math.random(), w = Math.random();
-          var theta = u * Math.PI * 2;
-          var phi = Math.acos(2 * v - 1);
-          var r = Math.pow(w, 0.5) * 1.05;        // sqrt → fuller toward edge but soft center
-          baseR[i] = r;
-          pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-          pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-          pos[i*3+2] = r * Math.cos(phi);
+          // even direction on a sphere…
+          var v = Math.random() * 2 - 1;
+          var theta = Math.random() * Math.PI * 2;
+          var s2 = Math.sqrt(1 - v * v);
+          var dx = s2 * Math.cos(theta), dy = s2 * Math.sin(theta), dz = v;
+          // …× a radius biased toward the CENTER (cube → dense core, sparse rim)
+          var rr = Math.pow(Math.random(), 0.7);   // 0..1, denser low values
+          pos[i*3]   = dx * rr;
+          pos[i*3+1] = dy * rr;
+          pos[i*3+2] = dz * rr;
+          rnd[i] = Math.random();
         }
         var pGeo = new THREE.BufferGeometry();
         pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        var pMat = new THREE.PointsMaterial({
-          color: new THREE.Color('#5aa6ff'), size: 0.045,
-          transparent: true, opacity: 0.9,
-          blending: THREE.AdditiveBlending, depthWrite: false
+        pGeo.setAttribute('aRnd', new THREE.BufferAttribute(rnd, 1));
+
+        var pUniforms = {
+          uTime:    { value: 0 },
+          uActive:  { value: 0 },          // 0 idle (blue) → 1 active (cyan)
+          uBreathe: { value: 0 },          // radial pulse amount
+          uSize:    { value: 26.0 * DPR },
+          uColorIdle:   { value: new THREE.Color('#4ea0ff') },
+          uColorActive: { value: new THREE.Color('#7af0ff') }
+        };
+        var pMat = new THREE.ShaderMaterial({
+          uniforms: pUniforms,
+          transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+          vertexShader: [
+            'attribute float aRnd;',
+            'uniform float uTime; uniform float uBreathe; uniform float uSize; uniform float uActive;',
+            'varying float vR; varying float vTwinkle;',
+            'void main(){',
+            '  vec3 dir = normalize(position);',
+            '  float baseR = length(position) * 1.15;',     // keep volumetric distribution
+            // breathing: every particle drifts in/out along its radius on its own phase
+            '  float ph = aRnd * 6.2831;',
+            '  float pulse = sin(uTime * 1.6 + ph) * (0.06 + 0.14 * uBreathe);',
+            '  float r = baseR + pulse;',
+            '  vR = clamp(baseR, 0.0, 1.0);',                // center dots = low, rim = high
+            '  vec3 p = dir * r;',
+            '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
+            // size attenuates with depth; center dots slightly larger/brighter
+            '  float sizeBoost = 1.0 + uActive * 0.3 + (1.0 - vR) * 0.5;',
+            '  gl_PointSize = uSize * sizeBoost / -mv.z;',
+            '  vTwinkle = 0.6 + 0.4 * sin(uTime * 3.0 + ph * 2.0);',
+            '  gl_Position = projectionMatrix * mv;',
+            '}'
+          ].join('\n'),
+          fragmentShader: [
+            'uniform vec3 uColorIdle; uniform vec3 uColorActive; uniform float uActive;',
+            'varying float vR; varying float vTwinkle;',
+            'void main(){',
+            // round soft dot: distance from point-sprite center
+            '  vec2 d = gl_PointCoord - vec2(0.5);',
+            '  float dist = length(d);',
+            '  if (dist > 0.5) discard;',
+            '  float alpha = smoothstep(0.5, 0.0, dist);',     // soft edge
+            '  alpha *= alpha;',                                // tighter, dot-like core
+            // center dots glow whiter; rim dots take the idle/active hue
+            '  vec3 base = mix(uColorIdle, uColorActive, uActive);',
+            '  vec3 col = mix(vec3(0.85,0.97,1.0), base, clamp(vR + 0.15, 0.0, 1.0));',
+            // center brighter, rim dimmer; everything lifts when active
+            '  float bright = (1.2 - vR * 0.5) * (0.7 + 0.3 * uActive);',
+            '  gl_FragColor = vec4(col, alpha * vTwinkle * bright);',
+            '}'
+          ].join('\n')
         });
         var cloud = new THREE.Points(pGeo, pMat);
         root.add(cloud);
 
-        // ---- center glow sprite (the cyan "JARVIS is active" dot) ----
-        function glowTexture() {
+        // ════ CENTER CORE — breathing cyan glow (the "active" heart) ════
+        function glowTexture(stops) {
           var c = document.createElement('canvas'); c.width = c.height = 128;
           var g = c.getContext('2d');
           var rad = g.createRadialGradient(64,64,0, 64,64,64);
-          rad.addColorStop(0, 'rgba(255,255,255,1)');
-          rad.addColorStop(0.25, 'rgba(180,240,255,0.9)');
-          rad.addColorStop(0.55, 'rgba(80,200,255,0.35)');
-          rad.addColorStop(1, 'rgba(80,200,255,0)');
+          stops.forEach(function(s){ rad.addColorStop(s[0], s[1]); });
           g.fillStyle = rad; g.fillRect(0,0,128,128);
-          return new THREE.CanvasTexture(c);
+          var tx = new THREE.CanvasTexture(c); return tx;
         }
-        var coreMat = new THREE.SpriteMaterial({ map: glowTexture(), transparent: true,
-          blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.0 });
-        var core = new THREE.Sprite(coreMat);
-        core.scale.set(0.6, 0.6, 0.6);
-        scene.add(core);
+        var coreTex = glowTexture([
+          [0,'rgba(255,255,255,1)'], [0.18,'rgba(190,245,255,0.95)'],
+          [0.45,'rgba(90,210,255,0.4)'], [1,'rgba(90,210,255,0)']
+        ]);
+        var coreMat = new THREE.SpriteMaterial({ map: coreTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 });
+        var core = new THREE.Sprite(coreMat); core.scale.set(0.9,0.9,0.9); scene.add(core);
 
-        // ---- two rings (inner bright torus + outer dashed circle) ----
-        var innerRing = new THREE.Mesh(
-          new THREE.TorusGeometry(1.35, 0.012, 8, 120),
-          new THREE.MeshBasicMaterial({ color: new THREE.Color('#67e8f9'), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })
-        );
-        scene.add(innerRing);
+        // ════ RING SYSTEM 1 — inner SEGMENTED arc ring (broken, glowing) ════
+        // Built from several thick arc segments with gaps, like the screenshots.
+        function arcRing(radius, tube, segCount, segSpan, color, op) {
+          var grp = new THREE.Group();
+          var mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false });
+          for (var s = 0; s < segCount; s++) {
+            var start = (s / segCount) * Math.PI * 2;
+            var geo = new THREE.TorusGeometry(radius, tube, 6, 64, segSpan);
+            var m = new THREE.Mesh(geo, mat);
+            m.rotation.z = start;
+            grp.add(m);
+          }
+          return { grp: grp, mat: mat };
+        }
+        var innerSeg = arcRing(1.30, 0.018, 3, Math.PI * 0.5, '#5cc8ff', 0.85); // 3 long arcs, big gaps
+        rig.add(innerSeg.grp);
+        var innerSeg2 = arcRing(1.46, 0.010, 5, Math.PI * 0.22, '#8fe0ff', 0.6); // thinner accent arcs
+        rig.add(innerSeg2.grp);
 
-        // outer dashed ring built from short tick segments around a circle
-        var ticks = new THREE.Group();
-        var TICKS = 40, tickGeo = new THREE.BoxGeometry(0.05, 0.012, 0.012);
-        var tickMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#9fd8ff'), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+        // ════ RING SYSTEM 2 — outer DASHED/TICK bezel (radar markings) ════
+        var bezel = new THREE.Group(); rig.add(bezel);
+        var TICKS = 60;
+        var tickMat   = new THREE.MeshBasicMaterial({ color: new THREE.Color('#bfe4ff'), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+        var tickMatLg = new THREE.MeshBasicMaterial({ color: new THREE.Color('#eaf6ff'), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+        var tickGeoSm = new THREE.BoxGeometry(0.018, 0.05, 0.006);
+        var tickGeoLg = new THREE.BoxGeometry(0.022, 0.11, 0.006);
+        var bezelR = 1.74;
         for (var ti = 0; ti < TICKS; ti++) {
-          var tk = new THREE.Mesh(tickGeo, tickMat);
+          var big = (ti % 5 === 0);                          // long tick every 30°
+          var tk = new THREE.Mesh(big ? tickGeoLg : tickGeoSm, big ? tickMatLg : tickMat);
           var a = (ti / TICKS) * Math.PI * 2;
-          tk.position.set(Math.cos(a) * 1.62, Math.sin(a) * 1.62, 0);
-          tk.rotation.z = a;
-          ticks.add(tk);
+          tk.position.set(Math.cos(a) * bezelR, Math.sin(a) * bezelR, 0);
+          tk.rotation.z = a - Math.PI/2;
+          bezel.add(tk);
         }
-        scene.add(ticks);
+        // a faint full circle line just inside the bezel
+        var bezelLine = new THREE.Mesh(
+          new THREE.TorusGeometry(1.66, 0.004, 6, 128),
+          new THREE.MeshBasicMaterial({ color: new THREE.Color('#7ec8ff'), transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false })
+        );
+        rig.add(bezelLine);
+
+        // DASHED circle ring (many small dashes) — the dotted bezel in the refs
+        var dashRing = new THREE.Group(); rig.add(dashRing);
+        var DASHES = 90, dashGeo = new THREE.BoxGeometry(0.05, 0.008, 0.004);
+        var dashMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#cfe8ff'), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
+        var dashR = 1.9;
+        for (var di = 0; di < DASHES; di++) {
+          var dm = new THREE.Mesh(dashGeo, dashMat);
+          var da = (di / DASHES) * Math.PI * 2;
+          dm.position.set(Math.cos(da) * dashR, Math.sin(da) * dashR, 0);
+          dm.rotation.z = da;            // tangent to circle → reads as a dash
+          dashRing.add(dm);
+        }
+
+        // DEGREE LABELS on a transparent canvas ring (030 / 060 / 090 …)
+        var labelCanvas = document.createElement('canvas'); labelCanvas.width = labelCanvas.height = 512;
+        var lg = labelCanvas.getContext('2d');
+        lg.font = 'bold 17px ui-monospace, monospace';
+        lg.fillStyle = '#bfe4ff'; lg.textAlign = 'center'; lg.textBaseline = 'middle';
+        lg.shadowColor = '#67e8f9'; lg.shadowBlur = 6;
+        for (var dg = 0; dg < 12; dg++) {
+          var deg = dg * 30;
+          var la = (dg / 12) * Math.PI * 2 - Math.PI/2;
+          var lr = 232;
+          var lx = 256 + Math.cos(la) * lr, ly = 256 + Math.sin(la) * lr;
+          lg.fillText(String(deg).padStart(3,'0'), lx, ly);
+        }
+        var labelTex = new THREE.CanvasTexture(labelCanvas);
+        var labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
+        var labelPlane = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 4.3), labelMat);
+        rig.add(labelPlane);
 
         sizeRenderer();
         new ResizeObserver(sizeRenderer).observe(canvas);
 
-        var t = 0, corePulse = 0, _running = true;
-        var BLUE = new THREE.Color('#5aa6ff'), CYAN = new THREE.Color('#67e8f9');
+        var t = 0, corePulse = 0, active = 0, _running = true;
 
         function frame() {
           if (!_running) return;
           requestAnimationFrame(frame);
-          // pause work entirely when the Peak tab isn't visible (saves battery)
           var pv = document.getElementById('peakView');
           if (pv && !pv.classList.contains('active')) { return; }
           t += 0.016;
 
-          var speed = _mood === 'responding' ? 1.6 : _mood === 'thinking' ? 0.9 : 0.35;
-          root.rotation.y = t * speed;
-          root.rotation.x = Math.sin(t * 0.3) * 0.15;
-          innerRing.rotation.z = -t * speed * 1.2;
-          innerRing.rotation.x = 1.1;                 // tilt so it reads as a ring around the orb
-          ticks.rotation.z = t * speed * 0.6;
+          // mood → targets
+          var activeTarget = _mood === 'responding' ? 1.0 : _mood === 'thinking' ? 0.7 : 0.0;
+          active += (activeTarget - active) * 0.06;
 
-          // core glow target by mood
-          var target = _mood === 'responding' ? 1.0 : _mood === 'thinking' ? 0.7 : 0.0;
-          var pulse = _mood === 'responding' ? (0.8 + 0.2 * Math.sin(t * 14))
-                    : _mood === 'thinking'  ? (0.55 + 0.45 * Math.sin(t * 8))
-                    : 0;
-          corePulse += ((target * pulse) - corePulse) * 0.12;
+          var spin = _mood === 'responding' ? 0.55 : _mood === 'thinking' ? 0.32 : 0.14;
+
+          // particle cloud rotates gently in 3D
+          root.rotation.y = t * spin;
+          root.rotation.x = Math.sin(t * 0.25) * 0.12;
+
+          // breathing pulse — stronger when active
+          var breathe = _mood === 'responding' ? (0.7 + 0.3 * Math.sin(t * 5.0))
+                      : _mood === 'thinking'  ? (0.5 + 0.5 * Math.sin(t * 3.0))
+                      : (0.25 + 0.15 * Math.sin(t * 1.3));
+          pUniforms.uTime.value = t;
+          pUniforms.uActive.value = active;
+          pUniforms.uBreathe.value = breathe;
+
+          // rings: inner spins one way, accent arcs the other, bezels opposite
+          innerSeg.grp.rotation.z  =  t * (spin * 1.3 + 0.1);
+          innerSeg2.grp.rotation.z = -t * (spin * 1.8 + 0.15);
+          bezel.rotation.z         = -t * (spin * 0.5 + 0.05);
+          dashRing.rotation.z      =  t * (spin * 0.3 + 0.03);   // dashed ring drifts slowly
+          // degree labels ride the bezel but stay individually upright is hard in 3D;
+          // instead rotate the whole label plane very slowly so numbers sweep like a HUD
+          labelPlane.rotation.z    = -t * (spin * 0.5 + 0.05);
+          innerSeg.mat.opacity  = 0.55 + active * 0.4;
+          innerSeg2.mat.opacity = 0.4  + active * 0.5;
+
+          // core glow: a faint always-on blue ember at idle, bright cyan when active
+          var idleEmber = 0.12 + 0.05 * Math.sin(t * 1.3);
+          var cp = Math.max(idleEmber, activeTarget * (0.7 + 0.3 * Math.sin(t * (_mood === 'responding' ? 9 : 5))));
+          corePulse += (cp - corePulse) * 0.1;
           coreMat.opacity = Math.max(0, corePulse);
-          var cs = 0.5 + corePulse * 0.5;
+          var cs = 0.65 + corePulse * 0.75;
           core.scale.set(cs, cs, cs);
 
-          // particles brighten + tint toward cyan when active
-          pMat.opacity = 0.7 + corePulse * 0.3;
-          pMat.size = 0.045 + corePulse * 0.02;
-          pMat.color.copy(BLUE).lerp(CYAN, corePulse * 0.7);
-          innerRing.material.opacity = 0.4 + corePulse * 0.4;
-
-          // click ping → quick brightness/scale kick
+          // click ping → quick scale + glow kick
           if (_pingT >= 0) {
             _pingT += 0.05;
             var k = Math.max(0, 1 - _pingT / 1.0);
-            root.scale.setScalar(1 + k * 0.12);
-            coreMat.opacity = Math.max(coreMat.opacity, k * 0.6);
-            if (_pingT > 1.0) { _pingT = -1; root.scale.setScalar(1); }
+            rig.scale.setScalar(1 + k * 0.10);
+            root.scale.setScalar(1 + k * 0.10);
+            coreMat.opacity = Math.max(coreMat.opacity, k * 0.7);
+            if (_pingT > 1.0) { _pingT = -1; rig.scale.setScalar(1); root.scale.setScalar(1); }
           }
 
           renderer.render(scene, camera);
         }
-        frame(); // self-sustaining via requestAnimationFrame; skips work when tab hidden
+        frame();
       }
 
       // ════════════════════════════════════════════════════════════
