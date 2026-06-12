@@ -11,7 +11,17 @@
   html,body { height:100%; background:#050814; overflow:hidden; font-family:'Share Tech Mono',ui-monospace,monospace; }
   #stage { position:fixed; inset:0; display:grid; place-items:center;
     background:radial-gradient(circle at 50% 50%, rgba(0,60,160,0.10) 0%, #050814 60%); }
-  #avatar { width:min(86vmin,720px); height:min(86vmin,720px); display:block; cursor:pointer; }
+  /* tactical backdrop grid — subtle static blue lines behind everything */
+  #stage::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(rgba(0,100,255,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,100,255,0.15) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(75% 75% at 50% 50%, #000 55%, transparent 92%);
+            mask-image: radial-gradient(75% 75% at 50% 50%, #000 55%, transparent 92%);
+  }
+  #avatar { position:relative; z-index:2; width:min(86vmin,720px); height:min(86vmin,720px); display:block; cursor:pointer; }
   .controls { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); display:flex; gap:10px; z-index:10; }
   .controls button {
     font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
@@ -72,53 +82,66 @@
 
     const state = { mode:'idle', amp:0, ampTarget:0, t:0, pulse:0 };
 
-    // ════════ LAYER 1 — NEBULA (3 drifting gradient sprites) ════════
+    // ════════ LAYER 1 — CENTER CORE LIGHT ONLY (bloomed) ════════
+    // No background nebula plane. The "cloud" IS the dense particle sphere.
+    // The only bloomed element is a small internal core light at dead center,
+    // whose glow stays INSIDE the particle sphere (does not reach the rings).
     function gradientTex(stops){
       const c=document.createElement('canvas'); c.width=c.height=256;
       const g=c.getContext('2d'); const grd=g.createRadialGradient(128,128,0,128,128,128);
       stops.forEach(s=>grd.addColorStop(s[0],s[1])); g.fillStyle=grd; g.fillRect(0,0,256,256);
       return new THREE.CanvasTexture(c);
     }
-    // CONSTRAINED nebula: gradient fades to 0 well before the sprite edge so the
-    // glow stays in the central ~40% and the canvas corners remain dark navy.
-    const nebTex = gradientTex([
-      [0,'rgba(110,190,255,0.85)'],[0.22,'rgba(30,120,255,0.45)'],
-      [0.45,'rgba(10,70,210,0.14)'],[0.62,'rgba(0,40,160,0.03)'],[0.8,'rgba(0,30,140,0)']
-    ]);
-    const nebulas = [];
-    // scale ~2.0 → world radius ~1.0; gradient hits 0 at 0.8 → fades by ~0.8 world
-    // units, comfortably inside the innermost ring (~1.96). Stays central.
-    [[1.0,0.5],[0.72,0.38],[0.5,0.32]].forEach(([sc,op])=>{
-      const m = new THREE.SpriteMaterial({ map:nebTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:op });
-      const sp = new THREE.Sprite(m); sp.scale.setScalar(2.0*sc); sp.layers.set(BLOOM_LAYER);
-      sp.userData = { baseScale:2.0*sc, baseOp:op };
-      scene.add(sp); nebulas.push(sp);
-    });
+    const nebulas = [];   // (kept empty so the animation loop's nebula code no-ops)
 
-    // starburst core (bloomed) — brilliant white → cyan → royal blue
+    // internal core: small soft blue/cyan glow lighting the inside of the sphere
     const coreTex = gradientTex([
-      [0,'rgba(255,255,255,1)'],[0.08,'rgba(225,252,255,0.97)'],
-      [0.22,'rgba(0,243,255,0.6)'],[0.5,'rgba(0,90,255,0.18)'],[1,'rgba(0,50,200,0)']
+      [0,'rgba(255,255,255,1)'],[0.10,'rgba(210,250,255,0.95)'],
+      [0.30,'rgba(0,225,255,0.5)'],[0.6,'rgba(0,90,255,0.12)'],[1,'rgba(0,50,200,0)']
     ]);
-    const coreMat = new THREE.SpriteMaterial({ map:coreTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.9 });
-    const core = new THREE.Sprite(coreMat); core.scale.setScalar(1.5); core.layers.set(BLOOM_LAYER);
+    const coreMat = new THREE.SpriteMaterial({ map:coreTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.85 });
+    const core = new THREE.Sprite(coreMat);
+    core.scale.setScalar(1.1);            // small — well within the dot sphere (R≈1.5)
+    core.layers.set(BLOOM_LAYER);
     scene.add(core);
 
-    // ════════ LAYER 0 — PARTICLE SPHERE (sharp) ════════
-    const N = 3600;
+    // INTERNAL SPHERE GLOW — soft volumetric fill the SAME radius as the dot
+    // network so the sphere reads as solid, not hollow. Royal-blue center →
+    // transparent edge. On Layer 1 → caught by bloom for an ambient inner glow.
+    const innerGlowTex = gradientTex([
+      [0,  'rgba(70,130,255,0.55)'],
+      [0.4,'rgba(0,68,255,0.30)'],
+      [0.7,'rgba(0,50,200,0.10)'],
+      [1,  'rgba(0,40,160,0)']
+    ]);
+    const innerGlowMat = new THREE.SpriteMaterial({ map:innerGlowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.7 });
+    const innerGlow = new THREE.Sprite(innerGlowMat);
+    innerGlow.scale.setScalar(3.0);       // ≈ dot-sphere diameter (R≈1.5 → Ø3.0)
+    innerGlow.layers.set(BLOOM_LAYER);
+    scene.add(innerGlow);
+
+    // ════════ LAYER 0 — DENSE PARTICLE SPHERE (this IS the cloud) ════════
+    const N = 7000;
     const dirs = new Float32Array(N*3);     // unit directions
     const base = new Float32Array(N);       // base radius 0..1
     const big  = new Uint8Array(N);
     for (let i=0;i<N;i++){
-      // true spherical coords, even distribution (cosθ uniform avoids pole clump)
-      const cosT = Math.random()*2-1;          // cosθ
+      // true spherical coords, even angular distribution (cosθ uniform)
+      const cosT = Math.random()*2-1;
       const phi  = Math.random()*Math.PI*2;
       const sinT = Math.sqrt(1-cosT*cosT);
       dirs[i*3]   = sinT*Math.cos(phi);
       dirs[i*3+1] = sinT*Math.sin(phi);
       dirs[i*3+2] = cosT;
-      base[i] = Math.pow(Math.random(), 1.7);  // dense core, sparse rim
-      big[i]  = Math.random() < 0.12 ? 1 : 0;  // ~12% key nodes
+      // RADIAL distribution → a defined sphere with a HARD edge:
+      //   ~62% packed in the OUTER SHELL (0.82..1.0) for the crisp circle edge
+      //   ~28% a dense core cluster in the dead center (0..0.4)
+      //   ~10% scattered between to fill volume
+      const roll = Math.random();
+      if (roll < 0.62)      base[i] = 0.82 + Math.random()*0.18;          // outer shell
+      else if (roll < 0.90) base[i] = Math.pow(Math.random(),1.6)*0.40;   // dense core
+      else                  base[i] = 0.40 + Math.random()*0.42;          // mid fill
+      big[i] = Math.random() < 0.30 ? 1 : 0;   // ~30% are bright-white dots
     }
     const SPHERE_R = 1.5;
     const pPos  = new Float32Array(N*3);
@@ -128,43 +151,68 @@
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
     pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol,3));
     pGeo.setAttribute('aSize',    new THREE.BufferAttribute(pSize,1));
+    // soft glowing-orb sprite texture: tiny white center → cyan → transparent edge
+    const orbTex = (function(){
+      const c=document.createElement('canvas'); c.width=c.height=64;
+      const g=c.getContext('2d'); const grd=g.createRadialGradient(32,32,0,32,32,32);
+      grd.addColorStop(0,   'rgba(255,255,255,1)');
+      grd.addColorStop(0.25,'rgba(190,250,255,0.9)');
+      grd.addColorStop(0.6, 'rgba(0,225,255,0.45)');
+      grd.addColorStop(1,   'rgba(0,200,255,0)');
+      g.fillStyle=grd; g.fillRect(0,0,64,64);
+      return new THREE.CanvasTexture(c);
+    })();
     const pMat = new THREE.ShaderMaterial({
-      uniforms:{ uDpr:{ value:renderer.getPixelRatio() } },
+      uniforms:{ uDpr:{ value:renderer.getPixelRatio() }, uTex:{ value:orbTex } },
       vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
       vertexShader:`
-        attribute float aSize; varying vec3 vCol; varying float vA;
+        attribute float aSize; varying vec3 vCol;
         uniform float uDpr;
         void main(){
           vCol = color;
           vec4 mv = modelViewMatrix * vec4(position,1.0);
-          gl_PointSize = aSize * uDpr * 30.0 / -mv.z;
-          vA = 1.0;
+          gl_PointSize = aSize * uDpr * 90.0 / -mv.z;
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader:`
-        varying vec3 vCol; varying float vA;
+        uniform sampler2D uTex; varying vec3 vCol;
         void main(){
-          vec2 d = gl_PointCoord - vec2(0.5);
-          float dist = length(d);
-          if (dist > 0.5) discard;
-          float a = smoothstep(0.5, 0.08, dist);    // crisp dot
-          gl_FragColor = vec4(vCol, a);
+          // soft glowing orb from the texture, tinted by the per-particle color
+          vec4 tx = texture2D(uTex, gl_PointCoord);
+          gl_FragColor = vec4(vCol * tx.rgb, tx.a);
         }`
     });
     const points = new THREE.Points(pGeo, pMat);
     points.layers.set(0);
     brain.add(points);
 
-    // plexus precompute neighbour pairs (capped 2/node)
+    // plexus precompute neighbour pairs (capped 2/node).
+    // LINK cut ~60% (0.20→0.08): only immediately-adjacent dots connect, so the
+    // lines are subtle geometric texture, not a dominating spiderweb.
+    // Spatial-grid bucketing keeps this fast even at N=7000 (avoids O(N²)).
+    // SPARSE plexus: only ~7% of particles even attempt a connection, each links
+    // to at most 1 neighbour, and the TOTAL is hard-capped at 260 lines. The dots
+    // are the star; lines are a rare accent.
     const pairs = [];
     {
-      const LINK=0.20, MAX=2; const lc=new Uint8Array(N);
-      const bx=[],by=[],bz=[];
+      const LINK=0.09, CELL=LINK, MAX_LINES=260, ATTEMPT=0.07;
+      const linked=new Uint8Array(N);
+      const bx=new Float32Array(N),by=new Float32Array(N),bz=new Float32Array(N);
       for(let i=0;i<N;i++){ bx[i]=dirs[i*3]*base[i]; by[i]=dirs[i*3+1]*base[i]; bz[i]=dirs[i*3+2]*base[i]; }
-      for(let a=0;a<N;a++){ if(lc[a]>=MAX)continue;
-        for(let b=a+1;b<N;b++){ if(lc[a]>=MAX)break; if(lc[b]>=MAX)continue;
-          const dx=bx[a]-bx[b],dy=by[a]-by[b],dz=bz[a]-bz[b];
-          if(dx*dx+dy*dy+dz*dz<LINK*LINK){ pairs.push(a,b); lc[a]++; lc[b]++; }
+      const grid=new Map(); const key=(x,y,z)=>x+','+y+','+z;
+      for(let i=0;i<N;i++){ const cx=Math.floor(bx[i]/CELL),cy=Math.floor(by[i]/CELL),cz=Math.floor(bz[i]/CELL);
+        const k=key(cx,cy,cz); let arr=grid.get(k); if(!arr){arr=[];grid.set(k,arr);} arr.push(i); }
+      const L2=LINK*LINK;
+      for(let a=0;a<N && pairs.length/2 < MAX_LINES;a++){
+        if(linked[a] || Math.random() > ATTEMPT) continue;     // probability throttle
+        const cx=Math.floor(bx[a]/CELL),cy=Math.floor(by[a]/CELL),cz=Math.floor(bz[a]/CELL);
+        let found=false;
+        for(let ox=-1;ox<=1&&!found;ox++)for(let oy=-1;oy<=1&&!found;oy++)for(let oz=-1;oz<=1&&!found;oz++){
+          const arr=grid.get(key(cx+ox,cy+oy,cz+oz)); if(!arr)continue;
+          for(let j=0;j<arr.length;j++){ const b=arr[j]; if(b===a||linked[b])continue;
+            const dx=bx[a]-bx[b],dy=by[a]-by[b],dz=bz[a]-bz[b];
+            if(dx*dx+dy*dy+dz*dz<L2){ pairs.push(a,b); linked[a]=1; linked[b]=1; found=true; break; }
+          }
         }
       }
     }
@@ -174,13 +222,13 @@
     const lGeo = new THREE.BufferGeometry();
     lGeo.setAttribute('position', new THREE.BufferAttribute(linePos,3));
     lGeo.setAttribute('color',    new THREE.BufferAttribute(lineCol,3));
-    const lMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true, opacity:0.12, blending:THREE.AdditiveBlending, depthWrite:false });
+    const lMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true, opacity:0.10, blending:THREE.AdditiveBlending, depthWrite:false });
     const plexus = new THREE.LineSegments(lGeo, lMat);
     plexus.layers.set(0); plexus.frustumCulled=false;
     brain.add(plexus);
 
-    const C_CYAN = new THREE.Color('#00d9ff');
-    const C_WHITE= new THREE.Color('#eafdff');
+    const C_CYAN = new THREE.Color('#00f3ff');   // luminous cyan
+    const C_WHITE= new THREE.Color('#ffffff');   // pure white dots (~30%)
 
     // ════════ LAYER 0 — HUD RINGS (sharp) ════════
     const ringMat = (hex,op)=> new THREE.LineBasicMaterial({ color:new THREE.Color(hex), transparent:true, opacity:op, depthWrite:false });
@@ -273,7 +321,8 @@
     // Black foreground = it contributes 0 to bloom AND 0 when added back, so the
     // HUD can never catch or amplify the glow → no blowout.
     const renderScene = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 0.6, 0.5, 0.2); // tamed
+    // strength up now that foreground is safely hidden during the bloom pass
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 1.7, 0.55, 0.0);
     const bloomComposer = new EffectComposer(renderer);
     bloomComposer.renderToScreen = false;
     bloomComposer.addPass(renderScene);
@@ -318,12 +367,10 @@
     new ResizeObserver(resize).observe(canvas); resize();
 
     // ════════ per-frame particle + plexus update (CPU, depth-keyed) ════════
-    const _v = new THREE.Vector3();
+    const zArr = new Float32Array(N);   // hoisted — no per-frame allocation
     function updateParticles(ay, ax){
       const breath = SPHERE_R * (1 + state.pulse*state.amp*0.16);
       const cosY=Math.cos(ay), sinY=Math.sin(ay), cosX=Math.cos(ax), sinX=Math.sin(ax);
-      // rotate each dir → world; write pos/col/size with depth keying
-      const zArr = new Float32Array(N);
       for(let i=0;i<N;i++){
         let x=dirs[i*3], y=dirs[i*3+1], z=dirs[i*3+2];
         const x1=x*cosY+z*sinY, z1=-x*sinY+z*cosY;
@@ -332,14 +379,17 @@
         pPos[i*3]=x1*r; pPos[i*3+1]=y1*r; pPos[i*3+2]=z2*r;
         zArr[i]=z2;
         const depth=(z2+1)/2;                       // 0 back .. 1 front
-        const opa = 0.08 + 0.92*(depth*depth);      // strong front/back delta
+        // keep a visible floor so even back particles read (was 0.08 → too dark)
+        const opa = 0.30 + 0.70*(depth*depth);      // front/back delta, brighter base
         if(big[i]){
-          // bright white key node — but kept SMALL so it never dominates
-          pCol[i*3]=C_WHITE.r*(0.3+0.7*depth); pCol[i*3+1]=C_WHITE.g*(0.3+0.7*depth); pCol[i*3+2]=C_WHITE.b*(0.3+0.7*depth);
-          pSize[i]=(0.030+0.018*(1-base[i]))*(0.6+0.7*depth);
+          // prominent PURE-WHITE key node
+          const b=0.55+0.45*depth;
+          pCol[i*3]=b; pCol[i*3+1]=b; pCol[i*3+2]=b;
+          pSize[i]=(0.10+0.05*(1-base[i]))*(0.7+0.6*depth);    // ~3x bigger
         } else {
+          // bright luminous cyan dot (3–4x larger than before)
           pCol[i*3]=C_CYAN.r*opa; pCol[i*3+1]=C_CYAN.g*opa; pCol[i*3+2]=C_CYAN.b*opa;
-          pSize[i]=(0.022+0.02*(1-base[i]))*(0.5+0.7*depth);
+          pSize[i]=(0.075+0.05*(1-base[i]))*(0.6+0.6*depth);
         }
       }
       pGeo.attributes.position.needsUpdate=true;
@@ -352,11 +402,11 @@
         const a=pairs[k], b=pairs[k+1];
         if(zArr[a]<=0 || zArr[b]<=0) continue;
         const md=((zArr[a]+1)/2 + (zArr[b]+1)/2)/2;
-        const c=0.7*md*md;
+        const c=0.6+0.4*md;                       // bright, only mild depth fade
         linePos[w*6]=pPos[a*3]; linePos[w*6+1]=pPos[a*3+1]; linePos[w*6+2]=pPos[a*3+2];
         linePos[w*6+3]=pPos[b*3]; linePos[w*6+4]=pPos[b*3+1]; linePos[w*6+5]=pPos[b*3+2];
-        lineCol[w*6]=0; lineCol[w*6+1]=0.95*c; lineCol[w*6+2]=c;
-        lineCol[w*6+3]=0; lineCol[w*6+4]=0.95*c; lineCol[w*6+5]=c;
+        lineCol[w*6]=0; lineCol[w*6+1]=c; lineCol[w*6+2]=c;       // bright cyan
+        lineCol[w*6+3]=0; lineCol[w*6+4]=c; lineCol[w*6+5]=c;
         w++;
       }
       lGeo.setDrawRange(0, w*2);
@@ -399,8 +449,9 @@
       const coreBase = 0.8;
       const coreFlash = state.amp*(0.35+0.5*state.pulse);
       coreMat.opacity = Math.min(1.3, coreBase + coreFlash);
-      const cs = 1.0 + state.amp*0.2 + state.pulse*state.amp*0.25;   // ~1.0–1.45
-      core.scale.setScalar(Math.min(cs, 1.5));
+      // stays small — inside the dot sphere (R≈1.5), glow never reaches the rings
+      const cs = 0.95 + state.amp*0.15 + state.pulse*state.amp*0.2;
+      core.scale.setScalar(Math.min(cs, 1.25));
 
       if((frameN++ % 8)===0) refreshText();
 
