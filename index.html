@@ -24692,12 +24692,16 @@ function switchTab(tab) {
       // Peak tab so it costs nothing when you're elsewhere.
       // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       async function _initAvatar() {
-        var BASE = 'https://cdn.jsdelivr.net/npm/three@0.160.0/';
-        var THREE = await import(BASE + 'build/three.module.js');
-        var EC = await import(BASE + 'examples/jsm/postprocessing/EffectComposer.js');
-        var RP = await import(BASE + 'examples/jsm/postprocessing/RenderPass.js');
-        var SP = await import(BASE + 'examples/jsm/postprocessing/ShaderPass.js');
-        var UB = await import(BASE + 'examples/jsm/postprocessing/UnrealBloomPass.js');
+        // Use esm.sh — it auto-resolves the bare `three` imports INSIDE the
+        // postprocessing addons (no importmap needed). ?deps pins all addons to
+        // the SAME three instance so EffectComposer etc. share one THREE.
+        var V = '0.160.0';
+        var THREE = await import('https://esm.sh/three@' + V);
+        var dep = '?deps=three@' + V + '&target=es2020';
+        var EC = await import('https://esm.sh/three@' + V + '/examples/jsm/postprocessing/EffectComposer.js' + dep);
+        var RP = await import('https://esm.sh/three@' + V + '/examples/jsm/postprocessing/RenderPass.js' + dep);
+        var SP = await import('https://esm.sh/three@' + V + '/examples/jsm/postprocessing/ShaderPass.js' + dep);
+        var UB = await import('https://esm.sh/three@' + V + '/examples/jsm/postprocessing/UnrealBloomPass.js' + dep);
         var EffectComposer = EC.EffectComposer, RenderPass = RP.RenderPass,
             ShaderPass = SP.ShaderPass, UnrealBloomPass = UB.UnrealBloomPass;
 
