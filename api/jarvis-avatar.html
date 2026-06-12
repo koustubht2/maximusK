@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JARVIS Avatar — Selective Bloom Core</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --cyan:#00f3ff; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:#050814; overflow:hidden; font-family:'Share Tech Mono',ui-monospace,monospace; }
+  #stage { position:fixed; inset:0; display:grid; place-items:center;
+    background:radial-gradient(circle at 50% 50%, rgba(0,60,160,0.10) 0%, #050814 60%); }
+  #avatar { width:min(86vmin,720px); height:min(86vmin,720px); display:block; cursor:pointer; }
+  .controls { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); display:flex; gap:10px; z-index:10; }
+  .controls button {
+    font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--cyan); background:rgba(0,120,255,0.08); border:1px solid rgba(0,150,255,0.32);
+    padding:11px 20px; border-radius:999px; cursor:pointer; transition:.2s;
+  }
+  .controls button:hover { background:rgba(0,150,255,0.16); }
+  .controls button.active { background:var(--cyan); color:#041018; font-weight:700; }
+  .hint { position:fixed; top:20px; left:50%; transform:translateX(-50%); color:rgba(0,160,255,0.5); font-size:11px; letter-spacing:0.26em; text-transform:uppercase; z-index:10; }
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="avatar"></canvas></div>
+  <div class="hint">JARVIS · Selective Bloom Core</div>
+  <div class="controls">
+    <button id="btnIdle" class="active">Idle</button>
+    <button id="btnSpeak">Speaking</button>
+    <button id="btnTalkSim">Talk (5s)</button>
+  </div>
+
+  <script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+  // ════════════════════════════════════════════════════════════════
+  //  JARVIS AVATAR — Selective Bloom
+  //  Layer 1 = bloomed backdrop (nebula + starburst core)
+  //  Layer 0 = razor-sharp foreground (particles, plexus, HUD, text)
+  //  Pipeline: bloom-only-pass(layer1) → final composite(sharp + add glow)
+  //  API: window.jarvis.idle() / window.jarvis.speak(amplitude)
+  // ════════════════════════════════════════════════════════════════
+  const BLOOM_LAYER = 1;
+  const bloomLayerMask = new THREE.Layers(); bloomLayerMask.set(BLOOM_LAYER);
+
+  function build(canvas) {
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+    renderer.setClearColor(0x050814, 1);
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 0, 6.0);
+
+    const brain = new THREE.Group(); scene.add(brain);   // particle sphere (rotates 3D)
+    const rig   = new THREE.Group(); scene.add(rig);     // flat HUD rings
+
+    const state = { mode:'idle', amp:0, ampTarget:0, t:0, pulse:0 };
+
+    // ════════ LAYER 1 — NEBULA (3 drifting gradient sprites) ════════
+    function gradientTex(stops){
+      const c=document.createElement('canvas'); c.width=c.height=256;
+      const g=c.getContext('2d'); const grd=g.createRadialGradient(128,128,0,128,128,128);
+      stops.forEach(s=>grd.addColorStop(s[0],s[1])); g.fillStyle=grd; g.fillRect(0,0,256,256);
+      return new THREE.CanvasTexture(c);
+    }
+    const nebTex = gradientTex([
+      [0,'rgba(120,200,255,0.9)'],[0.35,'rgba(30,120,255,0.5)'],
+      [0.7,'rgba(10,70,210,0.2)'],[1,'rgba(0,30,140,0)']
+    ]);
+    const nebulas = [];
+    [[1.0,0.55],[0.72,0.42],[0.5,0.38]].forEach(([sc,op])=>{
+      const m = new THREE.SpriteMaterial({ map:nebTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:op });
+      const sp = new THREE.Sprite(m); sp.scale.setScalar(3.4*sc); sp.layers.set(BLOOM_LAYER);
+      sp.userData = { baseScale:3.4*sc, baseOp:op };
+      scene.add(sp); nebulas.push(sp);
+    });
+
+    // starburst core (bloomed) — brilliant white → cyan → royal blue
+    const coreTex = gradientTex([
+      [0,'rgba(255,255,255,1)'],[0.08,'rgba(225,252,255,0.97)'],
+      [0.22,'rgba(0,243,255,0.6)'],[0.5,'rgba(0,90,255,0.18)'],[1,'rgba(0,50,200,0)']
+    ]);
+    const coreMat = new THREE.SpriteMaterial({ map:coreTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.9 });
+    const core = new THREE.Sprite(coreMat); core.scale.setScalar(1.5); core.layers.set(BLOOM_LAYER);
+    scene.add(core);
+
+    // ════════ LAYER 0 — PARTICLE SPHERE (sharp) ════════
+    const N = 3600;
+    const dirs = new Float32Array(N*3);     // unit directions
+    const base = new Float32Array(N);       // base radius 0..1
+    const big  = new Uint8Array(N);
+    for (let i=0;i<N;i++){
+      // true spherical coords, even distribution (cosθ uniform avoids pole clump)
+      const cosT = Math.random()*2-1;          // cosθ
+      const phi  = Math.random()*Math.PI*2;
+      const sinT = Math.sqrt(1-cosT*cosT);
+      dirs[i*3]   = sinT*Math.cos(phi);
+      dirs[i*3+1] = sinT*Math.sin(phi);
+      dirs[i*3+2] = cosT;
+      base[i] = Math.pow(Math.random(), 1.7);  // dense core, sparse rim
+      big[i]  = Math.random() < 0.12 ? 1 : 0;  // ~12% key nodes
+    }
+    const SPHERE_R = 1.5;
+    const pPos  = new Float32Array(N*3);
+    const pCol  = new Float32Array(N*3);
+    const pSize = new Float32Array(N);
+    const pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
+    pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol,3));
+    pGeo.setAttribute('aSize',    new THREE.BufferAttribute(pSize,1));
+    const pMat = new THREE.ShaderMaterial({
+      uniforms:{ uDpr:{ value:renderer.getPixelRatio() } },
+      vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+      vertexShader:`
+        attribute float aSize; varying vec3 vCol; varying float vA;
+        uniform float uDpr;
+        void main(){
+          vCol = color;
+          vec4 mv = modelViewMatrix * vec4(position,1.0);
+          gl_PointSize = aSize * uDpr * 30.0 / -mv.z;
+          vA = 1.0;
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader:`
+        varying vec3 vCol; varying float vA;
+        void main(){
+          vec2 d = gl_PointCoord - vec2(0.5);
+          float dist = length(d);
+          if (dist > 0.5) discard;
+          float a = smoothstep(0.5, 0.08, dist);    // crisp dot
+          gl_FragColor = vec4(vCol, a);
+        }`
+    });
+    const points = new THREE.Points(pGeo, pMat);
+    points.layers.set(0);
+    brain.add(points);
+
+    // plexus precompute neighbour pairs (capped 2/node)
+    const pairs = [];
+    {
+      const LINK=0.20, MAX=2; const lc=new Uint8Array(N);
+      const bx=[],by=[],bz=[];
+      for(let i=0;i<N;i++){ bx[i]=dirs[i*3]*base[i]; by[i]=dirs[i*3+1]*base[i]; bz[i]=dirs[i*3+2]*base[i]; }
+      for(let a=0;a<N;a++){ if(lc[a]>=MAX)continue;
+        for(let b=a+1;b<N;b++){ if(lc[a]>=MAX)break; if(lc[b]>=MAX)continue;
+          const dx=bx[a]-bx[b],dy=by[a]-by[b],dz=bz[a]-bz[b];
+          if(dx*dx+dy*dy+dz*dz<LINK*LINK){ pairs.push(a,b); lc[a]++; lc[b]++; }
+        }
+      }
+    }
+    const MAXLINE = pairs.length/2;
+    const linePos = new Float32Array(MAXLINE*6);
+    const lineCol = new Float32Array(MAXLINE*6);
+    const lGeo = new THREE.BufferGeometry();
+    lGeo.setAttribute('position', new THREE.BufferAttribute(linePos,3));
+    lGeo.setAttribute('color',    new THREE.BufferAttribute(lineCol,3));
+    const lMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true, opacity:0.12, blending:THREE.AdditiveBlending, depthWrite:false });
+    const plexus = new THREE.LineSegments(lGeo, lMat);
+    plexus.layers.set(0); plexus.frustumCulled=false;
+    brain.add(plexus);
+
+    const C_CYAN = new THREE.Color('#00d9ff');
+    const C_WHITE= new THREE.Color('#eafdff');
+
+    // ════════ LAYER 0 — HUD RINGS (sharp) ════════
+    const ringMat = (hex,op)=> new THREE.LineBasicMaterial({ color:new THREE.Color(hex), transparent:true, opacity:op, depthWrite:false });
+    function circleLine(radius, segs, mat, arcStart, arcLen){
+      const pts=[]; const start=arcStart||0; const len=(arcLen!=null)?arcLen:Math.PI*2;
+      for(let i=0;i<=segs;i++){ const a=start+(i/segs)*len; pts.push(new THREE.Vector3(Math.cos(a)*radius,Math.sin(a)*radius,0)); }
+      const g=new THREE.BufferGeometry().setFromPoints(pts);
+      const l=new THREE.Line(g,mat); l.layers.set(0); return l;
+    }
+    // Layer 4 (innermost): 2 segmented sweeping arcs — drawn thicker via 2 close lines
+    const L4=new THREE.Group(); rig.add(L4);
+    const seg4Mat=ringMat('#22ccff',0.95);
+    [[0.2,2.0],[2.6,1.5]].forEach(([s,l])=>{ L4.add(circleLine(1.96,80,seg4Mat,s,l)); L4.add(circleLine(1.985,80,seg4Mat,s,l)); });
+    // Layer 3: dotted ring (points)
+    const L3=new THREE.Group(); rig.add(L3);
+    { const dp=[]; const DN=140; for(let i=0;i<DN;i++){ const a=(i/DN)*Math.PI*2; dp.push(Math.cos(a)*2.12,Math.sin(a)*2.12,0); }
+      const dg=new THREE.BufferGeometry(); dg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(dp),3));
+      const dm=new THREE.PointsMaterial({ color:new THREE.Color('#8fd4ff'), size:1.6*renderer.getPixelRatio(), sizeAttenuation:false, transparent:true, opacity:0.6, depthWrite:false });
+      const dpts=new THREE.Points(dg,dm); dpts.layers.set(0); L3.add(dpts); }
+    // Layer 2: solid thin ring
+    const L2=new THREE.Group(); rig.add(L2);
+    L2.add(circleLine(2.30,200,ringMat('#00bfff',0.85)));
+    // Layer 1: compass ticks + numbers
+    const L1=new THREE.Group(); rig.add(L1);
+    { const TICKS=72, r1=2.52;
+      const segGeoSm=[], segGeoLg=[];
+      for(let i=0;i<TICKS;i++){ const major=i%6===0; const a=(i/TICKS)*Math.PI*2; const c=Math.cos(a),s=Math.sin(a);
+        const inner=major?r1-0.10:r1-0.05; const arr=major?segGeoLg:segGeoSm;
+        arr.push(c*inner,s*inner,0, c*r1,s*r1,0); }
+      const gSm=new THREE.BufferGeometry(); gSm.setAttribute('position',new THREE.BufferAttribute(new Float32Array(segGeoSm),3));
+      const lSm=new THREE.LineSegments(gSm, new THREE.LineBasicMaterial({color:0x7fc4ff,transparent:true,opacity:0.4,depthWrite:false})); lSm.layers.set(0); L1.add(lSm);
+      const gLg=new THREE.BufferGeometry(); gLg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(segGeoLg),3));
+      const lLg=new THREE.LineSegments(gLg, new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.85,depthWrite:false})); lLg.layers.set(0); L1.add(lLg);
+    }
+
+    // degree numbers + corner data — sharp canvas texture overlay (Layer 0)
+    function buildText(){
+      const cv=document.createElement('canvas'); cv.width=cv.height=1024; const g=cv.getContext('2d');
+      g.clearRect(0,0,1024,1024);
+      g.font='17px "Share Tech Mono", monospace'; g.fillStyle='#00f3ff'; g.textAlign='center'; g.textBaseline='middle';
+      // world plane is 6.0 wide → px/world = 1024/6.0
+      const PW=6.0, k=1024/PW, cx=512, cy=512, rNum=2.66*k;
+      for(let n=0;n<12;n++){ const deg=n*30, a=(n/12)*Math.PI*2-Math.PI/2;
+        g.fillText(String(deg).padStart(3,'0'), cx+Math.cos(a)*rNum, cy+Math.sin(a)*rNum); }
+      // corner micro data
+      g.font='13px "Share Tech Mono", monospace'; g.fillStyle='rgba(0,200,255,0.6)'; g.textAlign='left';
+      g.fillText('SYS • CORE // STANDBY', cx-2.85*k, cy-2.88*k);
+      g.fillText('A: 1.024', cx-2.85*k, cy+2.92*k);
+      g.textAlign='right';
+      g.fillText('TX_ACTIVE', cx+2.85*k, cy-2.88*k);
+      g.fillText('Δ 000', cx+2.85*k, cy+2.92*k);
+      return cv;
+    }
+    const textCv = buildText();
+    const textTex = new THREE.CanvasTexture(textCv);
+    const textMat = new THREE.MeshBasicMaterial({ map:textTex, transparent:true, depthWrite:false, depthTest:false });
+    const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(6.0,6.0), textMat);
+    textPlane.layers.set(0); textPlane.renderOrder=5; scene.add(textPlane);
+    const textCtx = textCv.getContext('2d');
+    function refreshText(){
+      // redraw just the dynamic corners cheaply each ~10 frames
+      const k=1024/6.0, cx=512, cy=512;
+      textCtx.clearRect(cx+1.9*k, cy-3.0*k, 1.6*k, 0.4*k); // TX corner
+      textCtx.clearRect(cx+1.9*k, cy+2.7*k, 1.6*k, 0.4*k); // Δ corner
+      textCtx.font='13px "Share Tech Mono", monospace'; textCtx.textBaseline='middle'; textCtx.textAlign='right';
+      textCtx.fillStyle = state.mode==='speak' ? 'rgba(0,255,200,0.85)' : 'rgba(0,200,255,0.6)';
+      textCtx.fillText(state.mode==='speak'?'TX_ACTIVE':'TX_STANDBY', cx+2.85*k, cy-2.88*k);
+      textCtx.fillStyle='rgba(0,200,255,0.6)';
+      textCtx.fillText('Δ '+(Math.floor(state.t*9)%360).toString().padStart(3,'0'), cx+2.85*k, cy+2.92*k);
+      textTex.needsUpdate=true;
+    }
+
+    // crosshairs + axis micro "+" (Layer 0)
+    const cross=new THREE.Group(); cross.layers && cross.layers.set(0); scene.add(cross);
+    { const ext=2.7;
+      const chMat=new THREE.LineBasicMaterial({color:0x0aa6ff,transparent:true,opacity:0.13,depthWrite:false});
+      const chG=new THREE.BufferGeometry(); chG.setAttribute('position',new THREE.BufferAttribute(new Float32Array([-ext,0,0, ext,0,0, 0,-ext,0, 0,ext,0]),3));
+      const ch=new THREE.LineSegments(chG,chMat); ch.layers.set(0); cross.add(ch);
+      // micro plus marks along axes
+      const plus=[]; for(let d=0.9; d<2.5; d+=0.5){ [[d,0],[-d,0],[0,d],[0,-d]].forEach(([x,y])=>{ plus.push(x-0.04,y,0,x+0.04,y,0, x,y-0.04,0,x,y+0.04,0); }); }
+      const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(plus),3));
+      const pl=new THREE.LineSegments(pg,new THREE.LineBasicMaterial({color:0x33c8ff,transparent:true,opacity:0.35,depthWrite:false})); pl.layers.set(0); cross.add(pl);
+    }
+
+    // ════════ SELECTIVE BLOOM PIPELINE ════════
+    // Bloom composer renders ONLY layer 1 (camera mask) → glow texture.
+    const renderScene = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 1.1, 0.7, 0.0);
+    const bloomComposer = new EffectComposer(renderer);
+    bloomComposer.renderToScreen = false;
+    bloomComposer.addPass(renderScene);
+    bloomComposer.addPass(bloomPass);
+
+    // Final composer: full sharp scene + ADD the bloom texture on top.
+    const finalPass = new ShaderPass(new THREE.ShaderMaterial({
+      uniforms:{ baseTexture:{value:null}, bloomTexture:{value:bloomComposer.renderTarget2.texture} },
+      vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader:`
+        uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv;
+        void main(){
+          vec4 base = texture2D(baseTexture, vUv);
+          vec4 glow = texture2D(bloomTexture, vUv);
+          gl_FragColor = base + glow;     // sharp foreground + additive glow
+        }`,
+      defines:{}
+    }), 'baseTexture');
+    finalPass.needsSwap = true;
+    const finalComposer = new EffectComposer(renderer);
+    finalComposer.addPass(renderScene);
+    finalComposer.addPass(finalPass);
+
+    // ════════ SIZING ════════
+    function resize(){
+      const s = canvas.clientWidth || 600;
+      renderer.setSize(s,s,false);
+      bloomComposer.setSize(s,s); finalComposer.setSize(s,s);
+      camera.aspect=1; camera.updateProjectionMatrix();
+      pMat.uniforms.uDpr.value = renderer.getPixelRatio();
+    }
+    new ResizeObserver(resize).observe(canvas); resize();
+
+    // ════════ per-frame particle + plexus update (CPU, depth-keyed) ════════
+    const _v = new THREE.Vector3();
+    function updateParticles(ay, ax){
+      const breath = SPHERE_R * (1 + state.pulse*state.amp*0.16);
+      const cosY=Math.cos(ay), sinY=Math.sin(ay), cosX=Math.cos(ax), sinX=Math.sin(ax);
+      // rotate each dir → world; write pos/col/size with depth keying
+      const zArr = new Float32Array(N);
+      for(let i=0;i<N;i++){
+        let x=dirs[i*3], y=dirs[i*3+1], z=dirs[i*3+2];
+        const x1=x*cosY+z*sinY, z1=-x*sinY+z*cosY;
+        const y1=y*cosX-z1*sinX, z2=y*sinX+z1*cosX;
+        const r=base[i]*breath;
+        pPos[i*3]=x1*r; pPos[i*3+1]=y1*r; pPos[i*3+2]=z2*r;
+        zArr[i]=z2;
+        const depth=(z2+1)/2;                       // 0 back .. 1 front
+        const opa = 0.08 + 0.92*(depth*depth);      // strong front/back delta
+        if(big[i]){
+          pCol[i*3]=C_WHITE.r*(0.3+0.7*depth); pCol[i*3+1]=C_WHITE.g*(0.3+0.7*depth); pCol[i*3+2]=C_WHITE.b*(0.3+0.7*depth);
+          pSize[i]=(0.045+0.03*(1-base[i]))*(0.6+0.7*depth);
+        } else {
+          pCol[i*3]=C_CYAN.r*opa; pCol[i*3+1]=C_CYAN.g*opa; pCol[i*3+2]=C_CYAN.b*opa;
+          pSize[i]=(0.022+0.02*(1-base[i]))*(0.5+0.7*depth);
+        }
+      }
+      pGeo.attributes.position.needsUpdate=true;
+      pGeo.attributes.color.needsUpdate=true;
+      pGeo.attributes.aSize.needsUpdate=true;
+
+      // plexus: only foreground pairs (both z>0); fade by depth
+      let w=0;
+      for(let k=0;k<pairs.length;k+=2){
+        const a=pairs[k], b=pairs[k+1];
+        if(zArr[a]<=0 || zArr[b]<=0) continue;
+        const md=((zArr[a]+1)/2 + (zArr[b]+1)/2)/2;
+        const c=0.7*md*md;
+        linePos[w*6]=pPos[a*3]; linePos[w*6+1]=pPos[a*3+1]; linePos[w*6+2]=pPos[a*3+2];
+        linePos[w*6+3]=pPos[b*3]; linePos[w*6+4]=pPos[b*3+1]; linePos[w*6+5]=pPos[b*3+2];
+        lineCol[w*6]=0; lineCol[w*6+1]=0.95*c; lineCol[w*6+2]=c;
+        lineCol[w*6+3]=0; lineCol[w*6+4]=0.95*c; lineCol[w*6+5]=c;
+        w++;
+      }
+      lGeo.setDrawRange(0, w*2);
+      lGeo.attributes.position.needsUpdate=true;
+      lGeo.attributes.color.needsUpdate=true;
+    }
+
+    // ════════ LOOP ════════
+    const clock=new THREE.Clock(); let pulseClock=0, frameN=0;
+    function frame(){
+      requestAnimationFrame(frame);
+      const dt=Math.min(clock.getDelta(),0.05); state.t+=dt; const t=state.t;
+      state.amp += (state.ampTarget-state.amp)*0.08;
+      if(state.mode==='speak'){ pulseClock+=dt;
+        const wave=0.5+0.5*Math.sin(pulseClock*12.0)*Math.abs(Math.sin(pulseClock*3.7+0.5));
+        state.pulse += (wave-state.pulse)*0.45;
+      } else state.pulse += (0-state.pulse)*0.08;
+
+      const ay=t*(0.12+state.amp*0.05), ax=Math.sin(t*0.22)*0.18;
+      brain.rotation.set(0,0,0);                   // we rotate in CPU per-particle
+      updateParticles(ay, ax);
+
+      // rings alternate directions
+      L1.rotation.z =  t*0.03;
+      L2.rotation.z = -t*0.05;
+      L3.rotation.z =  t*0.04;
+      L4.rotation.z = -t*0.08;
+      textPlane.rotation.z = 0;                    // text stays upright
+
+      // nebula ripple — drift centers + breathe scale/opacity
+      nebulas.forEach((sp,i)=>{
+        const ph=i*1.7;
+        sp.position.set(Math.sin(t*0.3+ph)*0.25, Math.cos(t*0.25+ph)*0.22, -0.5);
+        const bs=sp.userData.baseScale*(1+0.06*Math.sin(t*0.5+ph));
+        sp.scale.setScalar(bs);
+        sp.material.opacity = sp.userData.baseOp*(0.85+0.15*Math.sin(t*0.7+ph));
+      });
+      // core starburst — bounded; flashes with amplitude but never past inner ring
+      const coreBase = 0.85;
+      const coreFlash = state.amp*(0.4+0.6*state.pulse);
+      coreMat.opacity = Math.min(1.6, coreBase + coreFlash);
+      const cs = 1.45 + state.amp*0.3 + state.pulse*state.amp*0.35;  // < inner ring (~1.96)
+      core.scale.setScalar(Math.min(cs, 1.85));
+
+      if((frameN++ % 8)===0) refreshText();
+
+      // ── selective bloom render ──
+      camera.layers.set(BLOOM_LAYER);              // render ONLY layer 1
+      bloomComposer.render();
+      camera.layers.set(0);                        // back to full sharp scene
+      // make layer-0 objects also visible to the final render (camera sees layer 0)
+      camera.layers.enable(0);
+      finalComposer.render();
+    }
+    frame();
+
+    return {
+      idle(){ state.mode='idle'; state.ampTarget=0; },
+      speak(amplitude){ state.mode='speak'; state.ampTarget=Math.max(0.2,Math.min(1,amplitude||1)); pulseClock=0; },
+      toggle(){ if(state.mode==='speak') this.idle(); else this.speak(1); },
+      isSpeaking(){ return state.mode==='speak'; }
+    };
+  }
+
+  const jarvis = build(document.getElementById('avatar'));
+  window.jarvis = jarvis;
+
+  const bIdle=document.getElementById('btnIdle'), bSpeak=document.getElementById('btnSpeak'), bTalk=document.getElementById('btnTalkSim');
+  const setActive=w=>{ bIdle.classList.toggle('active',w==='idle'); bSpeak.classList.toggle('active',w==='speak'); };
+  bIdle.addEventListener('click',()=>{ jarvis.idle(); setActive('idle'); });
+  bSpeak.addEventListener('click',()=>{ jarvis.speak(1); setActive('speak'); });
+  bTalk.addEventListener('click',()=>{ jarvis.speak(1); setActive('speak'); setTimeout(()=>{ jarvis.idle(); setActive('idle'); },5000); });
+  document.getElementById('avatar').addEventListener('click',()=>{ jarvis.toggle(); setActive(jarvis.isSpeaking()?'speak':'idle'); });
+  </script>
+</body>
+</html>
