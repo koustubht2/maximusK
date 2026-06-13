@@ -54,20 +54,24 @@
     color:var(--beige-muted);
     margin-top:0.45rem;
   }
-  /* The fill TRAIL stays full. A short bright glow segment travels along it
-     (start → mark) and repeats — a comet sweeping the arc, on top of the trail.
-     dasharray "18 100": one 18-unit lit segment; offset moves it across. */
-  .trail-comet{
-    stroke-dasharray:18 100;
-    animation:comet 2.6s cubic-bezier(.45,0,.55,1) infinite;
+  /* The fill TRAIL stays full. A COMET sweeps along it, start → mark, repeating.
+     Built as a motion trail: each layer is a short lit dash on the same path,
+     all running one move animation but offset in TIME by --i. The leading layer
+     (i=0) is brightest/widest; trailing layers lag + dim → one long comet tail. */
+  .comet path{
+    fill:none; stroke-linecap:round;
+    stroke-dasharray:7 100;                              /* short lit segment */
+    animation:cometMove 2.8s linear infinite;
+    animation-delay:calc(var(--i) * -0.05s);             /* each lags behind the one ahead */
+    stroke-width:calc(4px - var(--i) * 0.35px);          /* head thick → tail thin */
+    opacity:calc(1 - var(--i) * 0.14);                   /* head bright → tail faint */
   }
-  @keyframes comet{
-    0%   { stroke-dashoffset:18;  opacity:0; }   /* just before the start, hidden */
-    12%  { opacity:1; }                           /* fade in */
-    88%  { opacity:1; }
-    100% { stroke-dashoffset:-100; opacity:0; }   /* exited past the mark, fade out */
+  @keyframes cometMove{
+    /* dash travels from just before the start (hidden) to past the mark */
+    0%   { stroke-dashoffset:7; }
+    100% { stroke-dashoffset:-107; }
   }
-  @media (prefers-reduced-motion: reduce){ .trail-comet{ display:none; } }
+  @media (prefers-reduced-motion: reduce){ .comet{ display:none; } }
 </style>
 </head>
 <body>
@@ -106,11 +110,18 @@
       <path d="M43.4 156.6 A80 80 0 1 1 169.3 60"
             stroke="url(#fuelFill)" stroke-width="6" stroke-linecap="round"/>
 
-      <!-- TRAVELLING GLOW: a short bright blurred segment that sweeps ALONG the
-           trail (start → mark), on top of the static fill, repeating. -->
-      <path class="trail-comet" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60"
-            stroke="#fffaf2" stroke-width="7" stroke-linecap="round"
-            filter="url(#trailGlow)"/>
+      <!-- COMET: a motion trail. Several copies of one thin lit dash, each
+           lagging a touch behind the one ahead with lower opacity, overlap into
+           a single long glowing streak with a fading tail. --i = layer index. -->
+      <g class="comet" filter="url(#trailGlow)">
+        <path style="--i:0" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
+        <path style="--i:1" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
+        <path style="--i:2" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:3" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:4" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:5" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:6" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+      </g>
     </svg>
 
     <div class="readout">
