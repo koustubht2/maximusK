@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance-to-Empty Gauge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#161412;
+    --beige-bright:#f3ece0;          /* crisp leading-edge / primary metric */
+    --beige-muted:rgba(214,196,160,0.6);
+    --gauge-glow:rgba(243,236,224,0.55);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:radial-gradient(120% 90% at 50% 40%, #1c1815 0%, var(--bg) 70%);
+    font-family:'Inter', system-ui, sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* responsive container, ~300px */
+  .gauge{
+    position:relative;
+    width:300px; max-width:80vw;
+    aspect-ratio:1/1;
+    display:grid; place-items:center;
+  }
+  .gauge svg{ position:absolute; inset:0; width:100%; height:100%; }
+
+  /* centred text stack (sits over the SVG) */
+  .gauge .readout{
+    position:relative; z-index:2;
+    display:flex; flex-direction:column; align-items:center;
+    /* nudge the stack to sit around the horizontal centre, like the reference */
+    transform:translateY(2%);
+  }
+  .gauge .odometer{
+    font-size:1.2rem; font-weight:400; letter-spacing:.01em;
+    color:var(--beige-muted);
+    margin-bottom:0.55rem;
+  }
+  .gauge .primary{
+    font-size:2rem; font-weight:500; letter-spacing:-.01em;
+    color:var(--beige-bright);
+    line-height:1;
+  }
+  .gauge .label{
+    font-size:1rem; font-weight:400; letter-spacing:.005em;
+    color:var(--beige-muted);
+    margin-top:0.45rem;
+  }
+  /* The arc DRAWS from 0 → 88 then holds, on a repeating pulse. pathLength=100
+     makes the whole arc 100 units, so dashoffset 100→0 sweeps the full fill. */
+  .fill-draw, .fill-glow{
+    stroke-dasharray:100;
+    animation:sweep 3.4s cubic-bezier(.22,1,.36,1) infinite;
+  }
+  @keyframes sweep{
+    0%   { stroke-dashoffset:100; }   /* empty (0) */
+    55%  { stroke-dashoffset:0; }      /* drawn to the mark (88) */
+    80%  { stroke-dashoffset:0; }      /* hold */
+    100% { stroke-dashoffset:100; }    /* fade back to empty, then repeat */
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fill-draw, .fill-glow{ animation:none; stroke-dashoffset:0; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===================== GAUGE COMPONENT ===================== -->
+  <div class="gauge" role="img" aria-label="Distance to empty: 240 miles, fuel level approximately 70 percent">
+    <svg viewBox="0 0 200 200" fill="none">
+      <defs>
+        <!-- Fade: faint at the tail (lower-left) → bright glowing beige at the
+             rounded leading edge (upper-right). userSpaceOnUse so the gradient
+             axis runs tail→head along the visible arc. -->
+        <linearGradient id="fuelFill" gradientUnits="userSpaceOnUse"
+                        x1="43.4" y1="156.6" x2="169.3" y2="60">
+          <stop offset="0%"   stop-color="#d6c4a0" stop-opacity="0.05"/>
+          <stop offset="45%"  stop-color="#dccca6" stop-opacity="0.45"/>
+          <stop offset="85%"  stop-color="#f3ece0" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#fffaf2" stop-opacity="1"/>
+        </linearGradient>
+        <!-- strong blur for the trail glow layer (the whole arc's halo) -->
+        <filter id="trailGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="5"/>
+        </filter>
+        <!-- big radial bloom for the leading-edge mark -->
+        <radialGradient id="markBloom">
+          <stop offset="0%"   stop-color="#fffaf2" stop-opacity="0.9"/>
+          <stop offset="35%"  stop-color="#f3ece0" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#f3ece0" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- TRACK: full ~270° open arc (7:30 → over the top → 4:30), very low opacity -->
+      <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6"
+            stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- GLOW LAYER: heavily-blurred copy of the FILL, draws in sync underneath -->
+      <path class="fill-glow" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60"
+            stroke="url(#fuelFill)" stroke-width="9" stroke-linecap="round"
+            filter="url(#trailGlow)"/>
+
+      <!-- FILL: the crisp arc that DRAWS from 0 → 88 (animated stroke-dashoffset) -->
+      <path class="fill-draw" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60"
+            stroke="url(#fuelFill)" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+
+    <div class="readout">
+      <div class="odometer">9.8k mi</div>
+      <div class="primary">240 mi</div>
+      <div class="label">Distance to empty</div>
+    </div>
+  </div>
+
+</body>
+</html>

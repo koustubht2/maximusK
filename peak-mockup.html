@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peak — Mockup (Aston-style)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#c79a4e;
+  --gold-soft:#e6c98a;
+  --red:#c4533a;
+  --green:#7ea974;
+  --text:#efe7d8;
+  --text-dim:#9b9081;
+  --text-faint:rgba(239,231,216,0.32);
+  --line:rgba(231,210,160,0.12);
+  --card:rgba(255,255,255,0.025);
+  --font-display:'Fraunces', serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{
+  min-height:100vh;
+  background:#0b0906;
+  font-family:var(--font-body);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  display:flex; align-items:flex-start; justify-content:center;
+  gap:48px; padding:60px 20px;
+  flex-wrap:wrap;
+}
+
+/* ---- The warm, luxurious backdrop that everything floats on (the UI.png mood) ---- */
+.phone{
+  position:relative;
+  width:390px; min-height:780px;
+  border-radius:46px;
+  padding:0;
+  overflow:hidden;
+  background:
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.30) 0%, transparent 55%),
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
+  box-shadow:0 50px 120px -40px #000, inset 0 0 0 1px rgba(231,210,160,0.06);
+}
+.screen{ padding:18px 22px 30px; }
+
+/* ---- status bar ---- */
+.statusbar{ display:flex; align-items:center; justify-content:space-between; padding:6px 6px 0; font-family:var(--font-mono); font-size:13px; color:var(--text); font-weight:500; }
+.statusbar .icons{ display:flex; gap:6px; align-items:center; opacity:.9; }
+
+/* ---- brand mark (tapered wing strokes that fade thinner as they converge) ---- */
+.brand{ display:flex; flex-direction:column; align-items:center; margin-top:26px; }
+.brand svg{ display:block; }
+.brand .word{ font-family:var(--font-mono); font-size:9px; letter-spacing:.42em; text-transform:uppercase; color:var(--text-faint); margin-top:11px; padding-left:.42em; }
+
+/* ---- two stat tiles (top row) ---- */
+.stat-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:40px; }
+.stat{ position:relative; display:flex; flex-direction:column; align-items:center; text-align:center; }
+.stat .stat-val{ font-family:var(--font-display); font-weight:300; font-size:40px; line-height:1.05; letter-spacing:-.01em; color:var(--text); font-optical-sizing:auto; }
+.stat .stat-val .sm{ font-size:17px; color:var(--text-dim); }
+.stat .stat-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--text-dim); margin-top:8px; }
+.stat.warn .stat-val{ color:var(--red); }
+
+/* ---- approved gauge ring: sits BEHIND the centred text (gauge.html) ---- */
+.stat{ padding:18px 4px 14px; justify-content:center; min-height:150px; }
+.gauge-ring{ position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); width:150px; height:150px; z-index:0; pointer-events:none; }
+/* The arc DRAWS from 0 → mark then holds, on a repeating pulse (pathLength=100) */
+.fill-draw, .fill-glow{ stroke-dasharray:100; animation:sweep 3.4s cubic-bezier(.22,1,.36,1) infinite; }
+@keyframes sweep{
+  0%   { stroke-dashoffset:100; }
+  55%  { stroke-dashoffset:0; }
+  80%  { stroke-dashoffset:0; }
+  100% { stroke-dashoffset:100; }
+}
+@media (prefers-reduced-motion: reduce){ .fill-draw,.fill-glow{ animation:none; stroke-dashoffset:0; } }
+.stat .stat-val, .stat .stat-label, .stat .stat-foot{ position:relative; z-index:1; }
+.stat .stat-val{ font-size:34px; }
+.stat .stat-foot{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.04em; color:var(--text-faint); margin-bottom:4px; }
+.stat .stat-label{ margin-top:6px; }
+
+/* ---- hero media card ---- */
+.hero{
+  position:relative; margin-top:30px; height:188px; border-radius:24px; overflow:hidden;
+  background:
+    radial-gradient(120% 130% at 75% 20%, rgba(220,160,80,0.55) 0%, rgba(60,38,18,0.4) 45%, rgba(14,10,6,0.9) 80%),
+    linear-gradient(120deg, #2a1d10, #0d0905);
+  box-shadow:inset 0 1px 0 rgba(231,210,160,0.10), 0 20px 50px -30px #000;
+}
+.hero::after{ content:''; position:absolute; inset:0;
+  background:linear-gradient(0deg, rgba(8,6,4,0.85) 0%, transparent 55%); }
+.hero .hero-overlay{ position:absolute; left:20px; bottom:18px; z-index:2; }
+.hero .hero-k{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--text-faint); }
+.hero .hero-score{ font-family:var(--font-display); font-weight:300; font-size:60px; line-height:1; color:var(--text); margin-top:4px; }
+.hero .hero-tone{ position:absolute; right:20px; bottom:22px; z-index:2; font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; color:var(--gold-soft); }
+.hero .hero-line{ position:absolute; inset:0; z-index:1; opacity:.5; }
+
+/* ---- two action cards ---- */
+.action-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:30px; }
+.acard{
+  position:relative; border-radius:22px; padding:16px 16px 15px; min-height:120px;
+  background:rgba(255,255,255,0.035);
+  backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 0 1px rgba(255,255,255,0.04), 0 16px 38px -26px #000;
+  display:flex; flex-direction:column; justify-content:space-between;
+}
+.acard .a-top{ display:flex; align-items:center; justify-content:space-between; }
+.acard .a-title{ font-family:var(--font-body); font-weight:500; font-size:14px; color:var(--text); }
+.acard .a-ico{ width:15px; height:15px; color:var(--text-dim); }
+.acard .a-sub{ font-family:var(--font-mono); font-size:10px; letter-spacing:.04em; color:var(--text-dim); margin-top:3px; }
+.acard .a-big{ font-family:var(--font-display); font-weight:300; font-size:30px; color:var(--text); margin-top:auto; }
+.acard .a-btn{ align-self:flex-start; margin-top:14px; font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text); padding:9px 16px; border-radius:30px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); }
+/* small climate gauge */
+.gauge{ width:46px; height:46px; }
+
+/* ---- slide to start pill ---- */
+.slide{
+  margin-top:32px; height:58px; border-radius:34px; position:relative; overflow:hidden;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+  display:flex; align-items:center;
+}
+.slide .knob{ width:46px; height:46px; border-radius:50%; margin-left:6px;
+  background:linear-gradient(160deg, var(--gold-soft), var(--gold)); box-shadow:0 6px 16px -6px var(--gold);
+  display:flex; align-items:center; justify-content:center; color:#1c1304; flex-shrink:0; }
+.slide .slide-txt{ flex:1; text-align:center; font-family:var(--font-mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--text-faint); padding-right:30px; }
+
+.caption{ max-width:300px; color:var(--text-dim); font-size:13px; line-height:1.7; }
+.caption h2{ font-family:var(--font-display); font-weight:400; font-size:22px; color:var(--text); margin-bottom:14px; }
+.caption b{ color:var(--gold-soft); font-weight:500; }
+.caption .tag{ font-family:var(--font-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--text-faint); display:block; margin-top:18px; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- status bar -->
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4.2a10 10 0 0 1 14 0M3.4 6.6a6.5 6.5 0 0 1 9.2 0M5.9 9a3 3 0 0 1 4.2 0"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="15" height="6" rx="1.5" fill="currentColor"/><rect x="23" y="4" width="1.5" height="4" rx="1" fill="currentColor" fill-opacity=".5"/></svg>
+      </span>
+    </div>
+
+    <!-- brand mark: tapered "wing" strokes — thick at the tips, fading thin as
+         they converge to the centre (matches the Aston wings detail) -->
+    <div class="brand">
+      <svg width="120" height="34" viewBox="0 0 120 34" fill="none">
+        <defs>
+          <linearGradient id="wingL" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="wingR" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+        <!-- left wing: 5 feather strokes, each tapering toward the centre -->
+        <g stroke="url(#wingL)" stroke-linecap="round">
+          <path d="M2 7 Q40 9 57 16"  stroke-width="2.6"/>
+          <path d="M6 12 Q40 13 57 18" stroke-width="2.1"/>
+          <path d="M11 17 Q42 17 57 20" stroke-width="1.6"/>
+          <path d="M18 22 Q44 21 57 22" stroke-width="1.2"/>
+          <path d="M27 27 Q46 25 57 24" stroke-width="0.8"/>
+        </g>
+        <!-- right wing (mirrored) -->
+        <g stroke="url(#wingR)" stroke-linecap="round">
+          <path d="M118 7 Q80 9 63 16"  stroke-width="2.6"/>
+          <path d="M114 12 Q80 13 63 18" stroke-width="2.1"/>
+          <path d="M109 17 Q78 17 63 20" stroke-width="1.6"/>
+          <path d="M102 22 Q76 21 63 22" stroke-width="1.2"/>
+          <path d="M93 27 Q74 25 63 24" stroke-width="0.8"/>
+        </g>
+      </svg>
+      <div class="word">Peak</div>
+    </div>
+
+    <!-- two stat tiles, each with a small ring gauge (exactly like UI.png top row) -->
+    <div class="stat-row">
+      <div class="stat">
+        <!-- approved gauge (gauge.html): open ~270deg arc, faint track + gradient
+             fill that fades from a transparent tail to a bright glowing head. -->
+        <svg class="gauge-ring" viewBox="0 0 200 200" fill="none">
+          <defs>
+            <linearGradient id="gg1" gradientUnits="userSpaceOnUse" x1="43.4" y1="156.6" x2="169.3" y2="60">
+              <stop offset="0%"   stop-color="#d6c4a0" stop-opacity="0.05"/>
+              <stop offset="45%"  stop-color="#dccca6" stop-opacity="0.45"/>
+              <stop offset="85%"  stop-color="#f3ece0" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="#fffaf2" stop-opacity="1"/>
+            </linearGradient>
+            <filter id="trail1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+            <radialGradient id="bloom1"><stop offset="0%" stop-color="#fffaf2" stop-opacity="0.9"/><stop offset="35%" stop-color="#f3ece0" stop-opacity="0.35"/><stop offset="100%" stop-color="#f3ece0" stop-opacity="0"/></radialGradient>
+          </defs>
+          <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6" stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
+          <path class="fill-glow" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="url(#gg1)" stroke-width="9" stroke-linecap="round" filter="url(#trail1)"/>
+          <path class="fill-draw" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="url(#gg1)" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        <div class="stat-foot">Today overall</div>
+        <div class="stat-val">88</div>
+        <div class="stat-label">Readiness</div>
+      </div>
+      <div class="stat warn">
+        <svg class="gauge-ring" viewBox="0 0 200 200" fill="none">
+          <defs>
+            <linearGradient id="gg2" gradientUnits="userSpaceOnUse" x1="43.4" y1="156.6" x2="150" y2="90">
+              <stop offset="0%"   stop-color="#c4533a" stop-opacity="0.05"/>
+              <stop offset="50%"  stop-color="#cf6044" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#f0a07f" stop-opacity="1"/>
+            </linearGradient>
+            <filter id="trail2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+            <radialGradient id="bloom2"><stop offset="0%" stop-color="#ffd9c8" stop-opacity="0.9"/><stop offset="35%" stop-color="#f0a07f" stop-opacity="0.35"/><stop offset="100%" stop-color="#f0a07f" stop-opacity="0"/></radialGradient>
+          </defs>
+          <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6" stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
+          <!-- lower fill (~64%): ends at ~1 o'clock, a TRUE point on the r=80 arc (145.9, 34.5) -->
+          <path class="fill-glow" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="url(#gg2)" stroke-width="9" stroke-linecap="round" filter="url(#trail2)"/>
+          <path class="fill-draw" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="url(#gg2)" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        <div class="stat-foot">2h 10m debt</div>
+        <div class="stat-val">64<span class="sm"> %</span></div>
+        <div class="stat-label">Sleep score</div>
+      </div>
+    </div>
+
+    <!-- hero media card -->
+    <div class="hero">
+      <svg class="hero-line" viewBox="0 0 350 188" fill="none" preserveAspectRatio="none">
+        <path d="M-10 150 C 80 140, 140 90, 210 95 S 320 60, 370 30" stroke="rgba(231,210,160,0.35)" stroke-width="1.2"/>
+      </svg>
+      <div class="hero-overlay">
+        <div class="hero-k">Energy now</div>
+        <div class="hero-score">Peaking</div>
+      </div>
+      <div class="hero-tone">▲ best window 14:00–16:00</div>
+    </div>
+
+    <!-- two action cards -->
+    <div class="action-row">
+      <div class="acard">
+        <div class="a-top">
+          <div><div class="a-title">Train</div><div class="a-sub">Moderate</div></div>
+          <svg class="gauge" viewBox="0 0 46 46" fill="none">
+            <circle cx="23" cy="23" r="19" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/>
+            <circle cx="23" cy="23" r="19" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="119" stroke-dashoffset="40" transform="rotate(-90 23 23)"/>
+          </svg>
+        </div>
+        <div class="a-big">81</div>
+      </div>
+      <div class="acard">
+        <div class="a-top">
+          <div><div class="a-title">Caffeine</div><div class="a-sub">120 mg active</div></div>
+          <svg class="a-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9h2a2 2 0 0 1 0 5h-2"/></svg>
+        </div>
+        <button class="a-btn">View timeline</button>
+      </div>
+    </div>
+
+    <!-- slide to start -->
+    <div class="slide">
+      <div class="knob">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="slide-txt">Slide for full report</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="caption">
+  <h2>Peak, the Aston way</h2>
+  One faithful mockup in the UI.png language: a single warm gradient everything floats on, <b>hairline cards with no hard borders</b>, tiny restrained mono labels against large light <b>Fraunces</b> numerals, and generous space. The brand mark uses <b>tapered wing strokes</b> — thick at the tips, fading thin as they converge.
+  <span class="tag">Mockup · not wired to data</span>
+</div>
+
+</body>
+</html>
