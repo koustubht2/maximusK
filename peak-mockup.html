@@ -75,9 +75,9 @@ body{
 .comet path{
   fill:none; stroke-linecap:round; stroke-dasharray:6 100;
   animation:cometMove 3.4s linear infinite;
-  animation-delay:calc(var(--i) * -0.07s);
-  stroke-width:calc(2.6px - var(--i) * 0.14px);          /* thinner: head ~2.6px → tail ~0.7px */
-  opacity:calc(1 - var(--i) * 0.068);                    /* gradual even fade head → faint tail */
+  animation-delay:calc(var(--i) * -0.095s);              /* lag → ~60-unit tail (18 layers) */
+  stroke-width:calc(2.6px - var(--i) * 0.115px);         /* thinner: head ~2.6px → tail ~0.6px */
+  opacity:calc(1 - var(--i) * 0.052);                    /* gradual even fade over 18 layers */
 }
 @keyframes cometMove{ 0%{ stroke-dashoffset:7; } 100%{ stroke-dashoffset:-107; } }
 @media (prefers-reduced-motion: reduce){ .comet{ display:none; } }
@@ -222,6 +222,10 @@ body{
             <path style="--i:11" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
             <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
             <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:14" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:15" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:16" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:17" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
           </g>
         </svg>
         <div class="stat-foot">Today overall</div>
@@ -257,6 +261,10 @@ body{
             <path style="--i:11" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
             <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
             <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:14" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:15" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:16" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:17" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
           </g>
         </svg>
         <div class="stat-foot">2h 10m debt</div>
