@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance-to-Empty Gauge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#161412;
+    --beige-bright:#f3ece0;          /* crisp leading-edge / primary metric */
+    --beige-muted:rgba(214,196,160,0.6);
+    --gauge-glow:rgba(243,236,224,0.55);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:radial-gradient(120% 90% at 50% 40%, #1c1815 0%, var(--bg) 70%);
+    font-family:'Inter', system-ui, sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* responsive container, ~300px */
+  .gauge{
+    position:relative;
+    width:300px; max-width:80vw;
+    aspect-ratio:1/1;
+    display:grid; place-items:center;
+  }
+  .gauge svg{ position:absolute; inset:0; width:100%; height:100%; }
+
+  /* centred text stack (sits over the SVG) */
+  .gauge .readout{
+    position:relative; z-index:2;
+    display:flex; flex-direction:column; align-items:center;
+    /* nudge the stack to sit around the horizontal centre, like the reference */
+    transform:translateY(2%);
+  }
+  .gauge .odometer{
+    font-size:1.2rem; font-weight:400; letter-spacing:.01em;
+    color:var(--beige-muted);
+    margin-bottom:0.55rem;
+  }
+  .gauge .primary{
+    font-size:2rem; font-weight:500; letter-spacing:-.01em;
+    color:var(--beige-bright);
+    line-height:1;
+  }
+  .gauge .label{
+    font-size:1rem; font-weight:400; letter-spacing:.005em;
+    color:var(--beige-muted);
+    margin-top:0.45rem;
+  }
+  /* The fill TRAIL stays full. A COMET sweeps along it, start → mark, repeating.
+     Built as a motion trail: each layer is a short lit dash on the same path,
+     all running one move animation but offset in TIME by --i. The leading layer
+     (i=0) is brightest/widest; trailing layers lag + dim → one long comet tail. */
+  .comet path{
+    fill:none; stroke-linecap:round;
+    stroke-dasharray:6 100;                              /* short lit segment */
+    animation:cometMove 3.4s linear infinite;
+    animation-delay:calc(var(--i) * -0.095s);            /* lag → ~60-unit tail (18 layers) */
+    /* thinner overall: head ~2.6px tapering to ~0.6px */
+    stroke-width:calc(2.6px - var(--i) * 0.115px);
+    /* brightness fades GRADUALLY and evenly head → tail across all 18 layers */
+    opacity:calc(1 - var(--i) * 0.052);
+  }
+  @keyframes cometMove{
+    /* dash travels from just before the start (hidden) to past the mark */
+    0%   { stroke-dashoffset:7; }
+    100% { stroke-dashoffset:-107; }
+  }
+  @media (prefers-reduced-motion: reduce){ .comet{ display:none; } }
+</style>
+</head>
+<body>
+
+  <!-- ===================== GAUGE COMPONENT ===================== -->
+  <div class="gauge" role="img" aria-label="Distance to empty: 240 miles, fuel level approximately 70 percent">
+    <svg viewBox="0 0 200 200" fill="none">
+      <defs>
+        <!-- Fade: faint at the tail (lower-left) → bright glowing beige at the
+             rounded leading edge (upper-right). userSpaceOnUse so the gradient
+             axis runs tail→head along the visible arc. -->
+        <linearGradient id="fuelFill" gradientUnits="userSpaceOnUse"
+                        x1="43.4" y1="156.6" x2="169.3" y2="60">
+          <stop offset="0%"   stop-color="#d6c4a0" stop-opacity="0.05"/>
+          <stop offset="45%"  stop-color="#dccca6" stop-opacity="0.45"/>
+          <stop offset="85%"  stop-color="#f3ece0" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#fffaf2" stop-opacity="1"/>
+        </linearGradient>
+        <!-- strong blur for the trail glow layer (the whole arc's halo) -->
+        <filter id="trailGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="5"/>
+        </filter>
+        <!-- big radial bloom for the leading-edge mark -->
+        <radialGradient id="markBloom">
+          <stop offset="0%"   stop-color="#fffaf2" stop-opacity="0.9"/>
+          <stop offset="35%"  stop-color="#f3ece0" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#f3ece0" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- TRACK: full ~270° open arc (7:30 → over the top → 4:30), very low opacity -->
+      <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6"
+            stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- STATIC FILL TRAIL: the full 0→88 arc, always shown -->
+      <path d="M43.4 156.6 A80 80 0 1 1 169.3 60"
+            stroke="url(#fuelFill)" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- COMET: a motion trail. Several copies of one thin lit dash, each
+           lagging a touch behind the one ahead with lower opacity, overlap into
+           a single long glowing streak with a fading tail. --i = layer index. -->
+      <!-- layers listed TAIL-FIRST (i:17 → i:0) so the bright head paints LAST,
+           sitting on top of the tail (SVG paints in document order) -->
+      <g class="comet" filter="url(#trailGlow)">
+        <path style="--i:17" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:16" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:15" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:14" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:11" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:10" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:9"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:8"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:7"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:6"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:5"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:4"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:3"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:2"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
+        <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
+      </g>
+    </svg>
+
+    <div class="readout">
+      <div class="odometer">9.8k mi</div>
+      <div class="primary">240 mi</div>
+      <div class="label">Distance to empty</div>
+    </div>
+  </div>
+
+</body>
+</html>
