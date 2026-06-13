@@ -12165,7 +12165,13 @@ setInterval(updateDayBar, 60 * 1000);
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (isSyncKey(k)) {
-        try { keys[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+        const raw = localStorage.getItem(k);
+        if (raw == null) continue;
+        // Most synced values are JSON. But some (e.g. photo-thumbnail data URLs,
+        // goals_vit_thumb_*) are RAW strings. JSON.parse throws on those, and the
+        // old empty catch SILENTLY DROPPED the key from the push — so thumbnails
+        // never reached the cloud. Fall back to storing the raw string instead.
+        try { keys[k] = JSON.parse(raw); } catch(e) { keys[k] = raw; }
       }
     }
     return keys;
@@ -12275,7 +12281,10 @@ setInterval(updateDayBar, 60 * 1000);
         // all. Ties (e.g. both baseline ts=1) favour local → never resurrect a
         // locally-deleted key or clobber an equal-age local value.
         if (theirTs > ourTs || (!haveLocal && !ourDel)) {
-          const incoming = JSON.stringify(rKeys[k]);
+          // Mirror collectKeys: raw STRING values (e.g. photo-thumbnail data URLs)
+          // are stored as-is; objects/arrays are JSON-stringified. Using
+          // JSON.stringify on a raw string would wrap it in quotes and corrupt it.
+          const incoming = (typeof rKeys[k] === 'string') ? rKeys[k] : JSON.stringify(rKeys[k]);
           if (localStorage.getItem(k) !== incoming) { origSet(k, incoming); changed = true; }
           if (theirTs > (sMeta.ts[k] || 0)) { sMeta.ts[k] = theirTs; delete sMeta.del[k]; metaChanged = true; }
         }
