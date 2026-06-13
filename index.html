@@ -12132,6 +12132,24 @@ setInterval(updateDayBar, 60 * 1000);
     if (touched) saveMeta();
   })();
 
+  // Heal stale tombstones: if a synced key STILL EXISTS in localStorage but is
+  // marked deleted (del[k]), that tombstone is wrong — the value is right here.
+  // Clear it and stamp the key live, so the device stops re-pushing a deletion
+  // that wipes the value on every other device. (Fixes the photo-thumbnail
+  // "tombstone war" caused by the now-disabled photo pruner.)
+  (function healTombstones() {
+    let touched = false;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (isSyncKey(k) && sMeta.del && (k in sMeta.del)) {
+        delete sMeta.del[k];
+        sMeta.ts[k] = Date.now();   // resurrect as a fresh live value
+        touched = true;
+      }
+    }
+    if (touched) saveMeta();
+  })();
+
   localStorage.setItem = function(k, v) {
     origSet(k, v);
     try { if (!sSuppress && isSyncKey(k)) { stampSet(k); sSchedule(); } } catch(e) {}
