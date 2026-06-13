@@ -23868,8 +23868,19 @@ function switchTab(tab) {
       foodList.style.display = filtered.length ? '' : 'none';
       foodList.innerHTML = filtered.map(function(f) {
         // Thumb is stored as its own synced key (goals_vit_thumb_<id>). Fall back to
-        // the old device-local key and the legacy embedded f.thumb for older entries.
-        var _thumbSrc = f.thumb || (f.hasThumb ? (function(){ try { return localStorage.getItem('goals_vit_thumb_' + f.id) || localStorage.getItem('po_vit_thumb_' + f.id); } catch(e){ return null; } })() : null);
+        // the legacy device-local key and the legacy embedded f.thumb.
+        var _thumbSrc = null, _thumbSynced = false;
+        try {
+          var _syn = (f.hasThumb || f.thumb) ? localStorage.getItem('goals_vit_thumb_' + f.id) : null;
+          if (_syn) { _thumbSrc = _syn; _thumbSynced = true; }
+          else { _thumbSrc = f.thumb || (f.hasThumb ? localStorage.getItem('po_vit_thumb_' + f.id) : null); }
+        } catch(e) {}
+        // Self-heal: if we found a photo from a NON-synced source (embedded or the
+        // old local key), promote it into the synced key now so it reaches other
+        // devices — independent of any one-time migration flag.
+        if (_thumbSrc && !_thumbSynced && f.id) {
+          try { localStorage.setItem('goals_vit_thumb_' + f.id, _thumbSrc); } catch(e){}
+        }
         var thumbHtml = _thumbSrc
           ? '<img class="vit-food-thumb" src="'+_thumbSrc+'" alt="meal">'
           : '';
