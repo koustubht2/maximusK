@@ -12268,7 +12268,13 @@ setInterval(updateDayBar, 60 * 1000);
     sLastKeysJson = window.canonicalJson(collectKeys());   // data now in sync
     if (json === sLastJson) return;
     sLastJson = json;
-    sRawPush(s, true).catch(() => { sLastJson = null; });
+    // NOT keepalive: this is a normal async push. keepalive caps the body at
+    // 64KB, and snap-meal photo thumbnails bloat the goals blob past that — which
+    // made every push reject silently and nothing reached the cloud. A regular
+    // fetch has no such cap. Report failures instead of swallowing them.
+    sRawPush(s, false).then(function(r){
+      if (!r.ok) { sLastJson = null; try { console.warn('[sync] push failed', r.status); } catch(e){} }
+    }).catch(function(){ sLastJson = null; });
   }
 
   function sSchedule() {
@@ -20361,6 +20367,32 @@ function switchTab(tab) {
   function saveAlc(arr) { localStorage.setItem(ALC_KEY + today(), JSON.stringify(arr)); }
   function loadVit(dateStr) { return JSON.parse(localStorage.getItem(VIT_KEY + (dateStr || today())) || '[]'); }
   function saveVit(arr) { localStorage.setItem(VIT_KEY + today(), JSON.stringify(arr)); }
+
+  // One-time migration: older snap meals embedded a base64 photo thumbnail inside
+  // the SYNCED goals_vitality_ entry, bloating the shared sync row past the 64KB
+  // keepalive cap and silently breaking ALL goals sync. Move every embedded thumb
+  // to a device-local key (po_vit_thumb_<id>) and re-save the slimmed entry so it
+  // syncs small. Runs once; cheap no-op afterwards.
+  (function _migrateVitThumbs() {
+    try {
+      if (localStorage.getItem('po_vit_thumb_migrated') === '1') return;
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf(VIT_KEY) !== 0) continue;
+        var arr; try { arr = JSON.parse(localStorage.getItem(k)); } catch(e) { continue; }
+        if (!Array.isArray(arr)) continue;
+        var dirty = false;
+        arr.forEach(function(e) {
+          if (e && e.thumb && e.id) {
+            try { localStorage.setItem('po_vit_thumb_' + e.id, e.thumb); } catch(err){}
+            delete e.thumb; e.hasThumb = true; dirty = true;
+          }
+        });
+        if (dirty) { try { localStorage.setItem(k, JSON.stringify(arr)); } catch(err){} }
+      }
+      localStorage.setItem('po_vit_thumb_migrated', '1');
+    } catch(e) {}
+  })();
   function getOura() {
     try {
       var raw = JSON.parse(localStorage.getItem('oura_cache_v2'));
@@ -23696,8 +23728,11 @@ function switchTab(tab) {
     if (foodList) {
       foodList.style.display = filtered.length ? '' : 'none';
       foodList.innerHTML = filtered.map(function(f) {
-        var thumbHtml = f.thumb
-          ? '<img class="vit-food-thumb" src="'+f.thumb+'" alt="meal">'
+        // Thumb now lives in a device-local key (po_vit_thumb_<id>), not on the
+        // synced entry. Fall back to f.thumb for any legacy entries still carrying it.
+        var _thumbSrc = f.thumb || (f.hasThumb ? (function(){ try { return localStorage.getItem('po_vit_thumb_' + f.id); } catch(e){ return null; } })() : null);
+        var thumbHtml = _thumbSrc
+          ? '<img class="vit-food-thumb" src="'+_thumbSrc+'" alt="meal">'
           : '';
         var bdHtml = f.breakdown
           ? '<div class="vit-food-breakdown">'+escHtml(f.breakdown)+'</div>'
@@ -23720,6 +23755,7 @@ function switchTab(tab) {
         foodList.querySelectorAll('.vit-food-del').forEach(function(btn) {
           btn.addEventListener('click', function() {
             var arr = loadVit().filter(function(x){ return x.id !== btn.dataset.id; });
+            try { localStorage.removeItem('po_vit_thumb_' + btn.dataset.id); } catch(e){}  // drop local photo
             saveVit(arr); renderVitality(); _refreshEnergyChart(null);
           });
         });
@@ -24889,7 +24925,14 @@ function switchTab(tab) {
         var bdBox = document.getElementById('vitBreakdownBox');
         var breakdown = (bdBox && bdBox.textContent) ? bdBox.textContent.replace(/^📸\s*/, '') : '';
         var entry = {id:uid(), name:displayName, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT, qty:qty};
-        if (_pendingSnapThumb) { entry.thumb = _pendingSnapThumb; _pendingSnapThumb = null; }
+        if (_pendingSnapThumb) {
+          // Store the photo thumbnail in a DEVICE-LOCAL key (no goals_ prefix → not
+          // synced). Embedding base64 in the synced vitality entry bloated the
+          // shared row past the 64KB keepalive cap and broke ALL goals sync.
+          try { localStorage.setItem('po_vit_thumb_' + entry.id, _pendingSnapThumb); } catch(e){}
+          entry.hasThumb = true;
+          _pendingSnapThumb = null;
+        }
         if (_pendingSnapQuality && _pendingSnapQuality !== 'balanced') { entry.quality = _pendingSnapQuality; _pendingSnapQuality = 'balanced'; }
         if (breakdown) entry.breakdown = breakdown;
         var items = loadVit();
