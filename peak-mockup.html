@@ -77,7 +77,7 @@ body{
   animation:cometMove 3.4s linear infinite;
   animation-delay:calc(var(--i) * -0.07s);
   stroke-width:calc(2.6px - var(--i) * 0.14px);          /* thinner: head ~2.6px → tail ~0.7px */
-  opacity:calc(1 - (var(--i) * var(--i)) * 0.0052);      /* bright head, descending to faint tail */
+  opacity:calc(1 - var(--i) * 0.068);                    /* gradual even fade head → faint tail */
 }
 @keyframes cometMove{ 0%{ stroke-dashoffset:7; } 100%{ stroke-dashoffset:-107; } }
 /* hot head spark: rides on layer 0, ultra-bright + blurred, additive blend ~3x */
