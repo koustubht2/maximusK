@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peak — Stat Tile Design Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=Sora:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS — everything is driven by these CSS variables.
+   The control panel rewrites them live.
+   ============================================================ */
+:root{
+  --accent: #d9a441;        /* Aston gold default */
+  --accent-2: #f0c674;
+  --warn: #e0623c;
+  --good: #6EE7B7;
+  --bg: #0a0907;
+  --bg-2: #15110b;
+  --card: rgba(255,255,255,0.035);
+  --card-solid: #161310;
+  --border: rgba(217,164,65,0.18);
+  --text: #f4ece0;
+  --text-dim: #9a8f7d;
+  --text-faint: rgba(244,236,224,0.30);
+  --radius: 20px;
+  --font-display: 'Playfair Display', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', sans-serif;
+
+  /* animation controls */
+  --anim-dur: 700ms;
+  --anim-ease: cubic-bezier(.16,1,.3,1);
+  --anim-delay-base: 0ms;
+  --anim-stagger: 90ms;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  background:
+    radial-gradient(120% 90% at 75% 0%, var(--bg-2) 0%, transparent 55%),
+    radial-gradient(90% 70% at 15% 100%, rgba(217,164,65,0.05) 0%, transparent 50%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  display:grid;
+  grid-template-columns: 340px 1fr;
+}
+
+/* ============================================================
+   CONTROL PANEL (left, sticky)
+   ============================================================ */
+.panel{
+  position:sticky; top:0; height:100vh; overflow-y:auto;
+  background:rgba(0,0,0,0.4);
+  border-right:1px solid rgba(255,255,255,0.06);
+  backdrop-filter:blur(12px);
+  padding:22px 20px 60px;
+}
+.panel::-webkit-scrollbar{ width:8px; }
+.panel::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.12); border-radius:4px; }
+.panel h1{
+  font-family:var(--font-display);
+  font-size:22px; font-weight:600; letter-spacing:.01em; margin-bottom:2px;
+}
+.panel .sub{ font-family:var(--font-mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--text-dim); margin-bottom:22px; }
+.group{ margin-bottom:24px; }
+.group > label.glabel{
+  display:block; font-family:var(--font-mono); font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:11px; opacity:.9;
+}
+.row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.row label{ font-size:12px; color:var(--text-dim); flex:1; }
+.row input[type=color]{ width:34px; height:26px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:none; cursor:pointer; padding:0; }
+.row input[type=range]{ flex:1.4; accent-color:var(--accent); cursor:pointer; }
+.row .val{ font-family:var(--font-mono); font-size:10px; color:var(--text); min-width:54px; text-align:right; }
+select, .btn{
+  width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);
+  color:var(--text); border-radius:9px; padding:9px 11px; font-family:var(--font-mono);
+  font-size:12px; cursor:pointer; outline:none;
+}
+select:focus{ border-color:var(--accent); }
+.seg{ display:flex; gap:6px; flex-wrap:wrap; }
+.seg button{
+  flex:1; min-width:60px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+  color:var(--text-dim); border-radius:8px; padding:7px 6px; font-family:var(--font-mono);
+  font-size:10px; letter-spacing:.05em; text-transform:uppercase; cursor:pointer; transition:.15s;
+}
+.seg button.active{ background:var(--accent); color:#1a1206; border-color:var(--accent); font-weight:700; }
+.btn-primary{ background:var(--accent); color:#1a1206; border:none; font-weight:700; letter-spacing:.05em; text-transform:uppercase; font-size:11px; margin-top:6px; }
+.btn-primary:hover{ filter:brightness(1.08); }
+.hint{ font-size:10.5px; color:var(--text-faint); line-height:1.5; margin-top:8px; }
+
+/* ============================================================
+   STAGE (right) — the grid of 20 tile variants
+   ============================================================ */
+.stage{ padding:34px 38px 120px; }
+.stage-head{ margin-bottom:30px; }
+.stage-head .title{ font-family:var(--font-display); font-size:30px; font-weight:600; }
+.stage-head .desc{ color:var(--text-dim); font-size:13px; margin-top:6px; max-width:680px; line-height:1.6; }
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+  gap:26px;
+}
+.cell{ display:flex; flex-direction:column; gap:10px; }
+.cell-head{ display:flex; align-items:center; justify-content:space-between; }
+.cell-name{ font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); }
+.cell-fam{ font-size:9px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.08em; }
+.copy-btn{
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14); color:var(--text-dim);
+  border-radius:7px; padding:4px 10px; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em;
+  cursor:pointer; transition:.15s; text-transform:uppercase;
+}
+.copy-btn:hover{ border-color:var(--accent); color:var(--accent); }
+.copy-btn.done{ background:var(--good); color:#06241a; border-color:var(--good); }
+
+/* Two tiles per cell to mimic the UI.png paired-tile row */
+.tile-pair{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+/* ============================================================
+   BASE TILE — shared structure; variants restyle it
+   ============================================================ */
+.tile{
+  position:relative; overflow:hidden;
+  border-radius:var(--radius);
+  padding:16px 16px 14px;
+  min-height:118px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  background:var(--card);
+  border:1px solid var(--border);
+  will-change:transform,opacity,filter;
+}
+.tile .t-top{ display:flex; align-items:center; justify-content:space-between; }
+.tile .t-icon{ width:20px; height:20px; color:var(--accent); opacity:.9; }
+.tile .t-icon.warn{ color:var(--warn); }
+.tile .t-trend{ font-family:var(--font-mono); font-size:10px; color:var(--text-dim); display:flex; align-items:center; gap:3px; }
+.tile .t-value{ font-family:var(--font-display); font-size:34px; font-weight:600; line-height:1; letter-spacing:-.01em; color:var(--text); }
+.tile .t-value .u{ font-size:14px; color:var(--text-dim); font-weight:400; margin-left:3px; font-family:var(--font-mono); }
+.tile .t-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); margin-top:5px; }
+.tile.is-warn .t-value{ color:var(--warn); }
+
+/* ---- 1 · GLASS (Aston frosted) ---- */
+.s1{ background:rgba(255,255,255,0.04); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.09);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 18px 40px -28px #000; }
+.s1:hover{ border-color:var(--border); }
+
+/* ---- 2 · LUXURY GOLD GLOW ---- */
+.s2{ background:linear-gradient(160deg, rgba(217,164,65,0.10), rgba(0,0,0,0.2)); border:1px solid var(--border);
+  box-shadow:0 0 50px -20px var(--accent), inset 0 1px 0 rgba(240,198,116,0.15); }
+.s2 .t-value{ background:linear-gradient(180deg,var(--accent-2),var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+/* ---- 3 · NEUMORPHIC ---- */
+.s3{ background:var(--card-solid); border:none;
+  box-shadow:8px 8px 20px rgba(0,0,0,0.55), -6px -6px 16px rgba(255,255,255,0.025); }
+.s3:hover{ box-shadow:inset 5px 5px 14px rgba(0,0,0,0.55), inset -4px -4px 12px rgba(255,255,255,0.03); }
+
+/* ---- 4 · BRUTALIST ---- */
+.s4{ background:var(--bg-2); border:2px solid var(--text); border-radius:0;
+  box-shadow:6px 6px 0 var(--accent); }
+.s4 .t-value{ font-family:var(--font-mono); font-weight:700; }
+.s4 .t-label{ color:var(--text); }
+
+/* ---- 5 · EDITORIAL HAIRLINE ---- */
+.s5{ background:transparent; border:none; border-top:1px solid var(--border); border-radius:0; padding-top:14px; }
+.s5 .t-value{ font-style:italic; font-weight:400; font-size:40px; }
+.s5 .t-label{ border-top:1px solid rgba(255,255,255,0.06); padding-top:7px; margin-top:9px; }
+
+/* ---- 6 · NEON / CYBER ---- */
+.s6{ background:#06080c; border:1px solid var(--accent);
+  box-shadow:0 0 14px -2px var(--accent), inset 0 0 18px -10px var(--accent); }
+.s6 .t-value{ color:var(--accent); text-shadow:0 0 12px var(--accent); font-family:var(--font-mono); }
+.s6 .t-label{ color:var(--accent); opacity:.65; }
+
+/* ---- 7 · MINIMAL FLAT ---- */
+.s7{ background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); box-shadow:none; }
+
+/* ---- 8 · OUTLINED GHOST ---- */
+.s8{ background:transparent; border:1.5px solid var(--border); }
+.s8:hover{ background:rgba(217,164,65,0.04); }
+
+/* ---- 9 · GRADIENT FILL ---- */
+.s9{ background:linear-gradient(135deg, var(--accent) 0%, #7a4d12 120%); border:none; }
+.s9 .t-value,.s9 .t-label,.s9 .t-icon,.s9 .t-trend{ color:#1c1304; }
+.s9 .t-value .u{ color:rgba(28,19,4,0.6); }
+.s9.is-warn{ background:linear-gradient(135deg,var(--warn),#5e1f10); }
+.s9.is-warn .t-value{ color:#fff; }
+
+/* ---- 10 · SPLIT BLOCK ---- */
+.s10{ padding:0; flex-direction:row; align-items:stretch; }
+.s10 .t-side{ width:54px; background:var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.s10 .t-side .t-icon{ color:#1c1304; opacity:1; width:22px; height:22px; }
+.s10 .t-body{ padding:15px 14px; display:flex; flex-direction:column; justify-content:center; }
+.s10.is-warn .t-side{ background:var(--warn); }
+
+/* ---- 11 · RING ACCENT ---- */
+.s11{ background:var(--card-solid); border:1px solid rgba(255,255,255,0.06); }
+.s11 .t-ring{ position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%;
+  background:conic-gradient(var(--accent) calc(var(--pct,75)*1%), rgba(255,255,255,0.08) 0); }
+.s11 .t-ring::after{ content:''; position:absolute; inset:4px; border-radius:50%; background:var(--card-solid); }
+
+/* ---- 12 · LEFT ACCENT BAR ---- */
+.s12{ background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-left:3px solid var(--accent); }
+.s12.is-warn{ border-left-color:var(--warn); }
+
+/* ---- 13 · ELEVATED LIGHT ---- */
+.s13{ background:#1d1813; border:1px solid rgba(255,255,255,0.08); box-shadow:0 22px 45px -22px #000, 0 2px 0 rgba(255,255,255,0.04) inset; }
+
+/* ---- 14 · MONO TERMINAL ---- */
+.s14{ background:#080a08; border:1px solid rgba(110,231,183,0.25); }
+.s14 *{ font-family:var(--font-mono) !important; }
+.s14 .t-value{ color:var(--good); }
+.s14 .t-label{ color:rgba(110,231,183,0.5); }
+.s14::before{ content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg, transparent 0 3px, rgba(110,231,183,0.025) 3px 4px); pointer-events:none; }
+
+/* ---- 15 · BIG NUMBER FOCUS ---- */
+.s15{ background:transparent; border:none; }
+.s15 .t-value{ font-size:56px; font-weight:700; }
+.s15 .t-top{ opacity:.6; }
+.s15 .t-label{ font-size:9px; }
+
+/* ---- 16 · PILL ---- */
+.s16{ border-radius:999px; padding:14px 22px; min-height:0; background:rgba(255,255,255,0.04); border:1px solid var(--border);
+  flex-direction:row; align-items:center; gap:14px; justify-content:flex-start; }
+.s16 .t-top{ flex-direction:column; }
+.s16 .t-block{ display:flex; flex-direction:column; }
+.s16 .t-value{ font-size:24px; }
+
+/* ---- 17 · DASHED TICKET ---- */
+.s17{ background:rgba(255,255,255,0.02); border:1.5px dashed var(--border); }
+
+/* ---- 18 · STACKED DEPTH ---- */
+.s18{ background:var(--card-solid); border:1px solid rgba(255,255,255,0.06); }
+.s18::before{ content:''; position:absolute; inset:6px 6px auto 6px; height:100%; border-radius:var(--radius);
+  background:rgba(255,255,255,0.025); z-index:-1; transform:translateY(8px); }
+
+/* ---- 19 · CONIC GRADIENT BORDER ---- */
+.s19{ background:var(--bg-2); border:none; position:relative; }
+.s19::before{ content:''; position:absolute; inset:0; border-radius:var(--radius); padding:1.5px;
+  background:conic-gradient(from 180deg, var(--accent), transparent 40%, var(--accent-2), transparent 75%, var(--accent));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+
+/* ---- 20 · FROST + TOP SHEEN ---- */
+.s20{ background:linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02)); backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.1); }
+.s20::after{ content:''; position:absolute; top:0; left:0; right:0; height:42%;
+  background:linear-gradient(180deg, rgba(255,255,255,0.10), transparent); pointer-events:none; }
+
+/* ============================================================
+   ANIMATIONS — 20 keyframes. Active one is applied via class on .grid
+   ============================================================ */
+@keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+@keyframes slideUp{ from{opacity:0; transform:translateY(26px)} to{opacity:1; transform:none} }
+@keyframes slideDown{ from{opacity:0; transform:translateY(-26px)} to{opacity:1; transform:none} }
+@keyframes slideLeft{ from{opacity:0; transform:translateX(34px)} to{opacity:1; transform:none} }
+@keyframes slideRight{ from{opacity:0; transform:translateX(-34px)} to{opacity:1; transform:none} }
+@keyframes scaleIn{ from{opacity:0; transform:scale(.8)} to{opacity:1; transform:scale(1)} }
+@keyframes popIn{ 0%{opacity:0; transform:scale(.6)} 70%{transform:scale(1.06)} 100%{opacity:1; transform:scale(1)} }
+@keyframes blurIn{ from{opacity:0; filter:blur(14px)} to{opacity:1; filter:blur(0)} }
+@keyframes flipIn{ from{opacity:0; transform:perspective(600px) rotateX(-65deg)} to{opacity:1; transform:perspective(600px) rotateX(0)} }
+@keyframes rotateIn{ from{opacity:0; transform:rotate(-12deg) scale(.85)} to{opacity:1; transform:none} }
+@keyframes bounceIn{ 0%{opacity:0; transform:translateY(40px)} 60%{opacity:1; transform:translateY(-10px)} 80%{transform:translateY(4px)} 100%{transform:none} }
+@keyframes revealMask{ from{clip-path:inset(0 100% 0 0)} to{clip-path:inset(0 0 0 0)} }
+@keyframes revealUp{ from{clip-path:inset(100% 0 0 0)} to{clip-path:inset(0 0 0 0)} }
+@keyframes glowPulse{ 0%,100%{box-shadow:0 0 0 0 transparent} 50%{box-shadow:0 0 28px -6px var(--accent)} }
+@keyframes breathe{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
+@keyframes float{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+@keyframes shimmer{ 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes tilt3d{ 0%,100%{transform:perspective(800px) rotateY(0)} 50%{transform:perspective(800px) rotateY(7deg)} }
+@keyframes borderTrace{ 0%{box-shadow:inset 0 0 0 1px var(--border)} 50%{box-shadow:inset 0 0 0 1.5px var(--accent)} 100%{box-shadow:inset 0 0 0 1px var(--border)} }
+@keyframes swing{ 0%{opacity:0; transform:rotate(8deg)} 60%{transform:rotate(-4deg)} 100%{opacity:1; transform:none} }
+
+/* Entrance animations (run once). Applied to each .tile. */
+.anim-fadeIn .tile{ animation:fadeIn var(--anim-dur) var(--anim-ease) both; }
+.anim-slideUp .tile{ animation:slideUp var(--anim-dur) var(--anim-ease) both; }
+.anim-slideDown .tile{ animation:slideDown var(--anim-dur) var(--anim-ease) both; }
+.anim-slideLeft .tile{ animation:slideLeft var(--anim-dur) var(--anim-ease) both; }
+.anim-slideRight .tile{ animation:slideRight var(--anim-dur) var(--anim-ease) both; }
+.anim-scaleIn .tile{ animation:scaleIn var(--anim-dur) var(--anim-ease) both; }
+.anim-popIn .tile{ animation:popIn var(--anim-dur) var(--anim-ease) both; }
+.anim-blurIn .tile{ animation:blurIn var(--anim-dur) var(--anim-ease) both; }
+.anim-flipIn .tile{ animation:flipIn var(--anim-dur) var(--anim-ease) both; }
+.anim-rotateIn .tile{ animation:rotateIn var(--anim-dur) var(--anim-ease) both; }
+.anim-bounceIn .tile{ animation:bounceIn var(--anim-dur) var(--anim-ease) both; }
+.anim-revealMask .tile{ animation:revealMask var(--anim-dur) var(--anim-ease) both; }
+.anim-revealUp .tile{ animation:revealUp var(--anim-dur) var(--anim-ease) both; }
+.anim-swing .tile{ animation:swing var(--anim-dur) var(--anim-ease) both; }
+/* Looping / ambient animations */
+.anim-glowPulse .tile{ animation:glowPulse var(--anim-dur) var(--anim-ease) infinite; }
+.anim-breathe .tile{ animation:breathe var(--anim-dur) var(--anim-ease) infinite; }
+.anim-float .tile{ animation:float var(--anim-dur) var(--anim-ease) infinite; }
+.anim-tilt3d .tile{ animation:tilt3d var(--anim-dur) var(--anim-ease) infinite; }
+.anim-borderTrace .tile{ animation:borderTrace var(--anim-dur) var(--anim-ease) infinite; }
+
+/* shimmer is special — paints a sweep across the value */
+.anim-shimmer .tile .t-value{
+  background:linear-gradient(90deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%);
+  background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:shimmer var(--anim-dur) linear infinite;
+}
+
+/* hover-trigger mode: animations only play on hover */
+.trigger-hover .tile{ animation:none !important; }
+.trigger-hover .tile:hover{ animation-play-state:running; }
+.trigger-hover.anim-slideUp .tile:hover{ animation:slideUp var(--anim-dur) var(--anim-ease) both; }
+.trigger-hover.anim-popIn .tile:hover{ animation:popIn var(--anim-dur) var(--anim-ease) both; }
+.trigger-hover.anim-scaleIn .tile:hover{ animation:scaleIn var(--anim-dur) var(--anim-ease) both; }
+.trigger-hover.anim-blurIn .tile:hover{ animation:blurIn var(--anim-dur) var(--anim-ease) both; }
+.trigger-hover.anim-float .tile:hover{ animation:float var(--anim-dur) var(--anim-ease) infinite; }
+.trigger-hover.anim-breathe .tile:hover{ animation:breathe var(--anim-dur) var(--anim-ease) infinite; }
+.trigger-hover.anim-glowPulse .tile:hover{ animation:glowPulse var(--anim-dur) var(--anim-ease) infinite; }
+.trigger-hover.anim-tilt3d .tile:hover{ animation:tilt3d var(--anim-dur) var(--anim-ease) infinite; }
+
+/* toast */
+.toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+  background:var(--good); color:#06241a; padding:11px 22px; border-radius:10px; font-family:var(--font-mono);
+  font-size:12px; font-weight:700; letter-spacing:.04em; transition:.3s; z-index:100; pointer-events:none; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ===================== CONTROL PANEL ===================== -->
+<aside class="panel">
+  <h1>Stat Tile Lab</h1>
+  <div class="sub">Peak · 20 variants</div>
+
+  <div class="group">
+    <label class="glabel">Preset</label>
+    <div class="seg" id="presetSeg">
+      <button data-preset="gold" class="active">Aston Gold</button>
+      <button data-preset="emerald">Emerald</button>
+      <button data-preset="ice">Ice Blue</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <label class="glabel">Colors</label>
+    <div class="row"><label>Accent</label><input type="color" id="c-accent" value="#d9a441"></div>
+    <div class="row"><label>Accent 2 (highlight)</label><input type="color" id="c-accent2" value="#f0c674"></div>
+    <div class="row"><label>Warning</label><input type="color" id="c-warn" value="#e0623c"></div>
+    <div class="row"><label>Background</label><input type="color" id="c-bg" value="#0a0907"></div>
+    <div class="row"><label>Card tint</label><input type="color" id="c-card" value="#161310"></div>
+    <div class="row"><label>Text</label><input type="color" id="c-text" value="#f4ece0"></div>
+    <div class="row"><label>Dim text</label><input type="color" id="c-textdim" value="#9a8f7d"></div>
+  </div>
+
+  <div class="group">
+    <label class="glabel">Typography</label>
+    <div class="row" style="margin-bottom:7px"><label>Value font</label></div>
+    <select id="f-display" style="margin-bottom:9px">
+      <option value="'Playfair Display', serif">Playfair Display (serif)</option>
+      <option value="'Fraunces', serif">Fraunces (serif)</option>
+      <option value="'Cormorant Garamond', serif">Cormorant Garamond (serif)</option>
+      <option value="'Instrument Serif', serif">Instrument Serif</option>
+      <option value="'Sora', sans-serif">Sora (sans)</option>
+      <option value="'Space Grotesk', sans-serif">Space Grotesk (sans)</option>
+      <option value="'Manrope', sans-serif">Manrope (sans)</option>
+      <option value="'Inter', sans-serif">Inter (sans)</option>
+      <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+    </select>
+    <div class="row" style="margin-bottom:7px"><label>Label / mono font</label></div>
+    <select id="f-mono">
+      <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+      <option value="'Space Mono', monospace">Space Mono</option>
+      <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+      <option value="'Inter', sans-serif">Inter (sans labels)</option>
+    </select>
+  </div>
+
+  <div class="group">
+    <label class="glabel">Shape</label>
+    <div class="row"><label>Corner radius</label><input type="range" id="r-radius" min="0" max="40" value="20"><span class="val" id="v-radius">20px</span></div>
+  </div>
+
+  <div class="group">
+    <label class="glabel">Animation</label>
+    <select id="a-name" style="margin-bottom:10px">
+      <optgroup label="Entrance (once)">
+        <option value="slideUp">Slide Up</option>
+        <option value="fadeIn">Fade In</option>
+        <option value="slideDown">Slide Down</option>
+        <option value="slideLeft">Slide Left</option>
+        <option value="slideRight">Slide Right</option>
+        <option value="scaleIn">Scale In</option>
+        <option value="popIn">Pop In</option>
+        <option value="blurIn">Blur In</option>
+        <option value="flipIn">Flip In (3D)</option>
+        <option value="rotateIn">Rotate In</option>
+        <option value="bounceIn">Bounce In</option>
+        <option value="revealMask">Reveal (L→R)</option>
+        <option value="revealUp">Reveal (Up)</option>
+        <option value="swing">Swing</option>
+      </optgroup>
+      <optgroup label="Ambient (loop)">
+        <option value="glowPulse">Glow Pulse</option>
+        <option value="breathe">Breathe</option>
+        <option value="float">Float</option>
+        <option value="tilt3d">Tilt 3D</option>
+        <option value="borderTrace">Border Trace</option>
+        <option value="shimmer">Shimmer (value)</option>
+      </optgroup>
+    </select>
+    <div class="row"><label>Trigger</label></div>
+    <div class="seg" id="triggerSeg" style="margin-bottom:12px">
+      <button data-trig="load" class="active">On Load</button>
+      <button data-trig="hover">On Hover</button>
+    </div>
+    <div class="row"><label>Speed (duration)</label><input type="range" id="a-dur" min="120" max="2600" value="700" step="20"><span class="val" id="v-dur">700ms</span></div>
+    <div class="row"><label>Stagger</label><input type="range" id="a-stagger" min="0" max="320" value="90" step="10"><span class="val" id="v-stagger">90ms</span></div>
+    <div class="row"><label>Easing</label></div>
+    <select id="a-ease">
+      <option value="cubic-bezier(.16,1,.3,1)">Smooth out (expo)</option>
+      <option value="ease">Ease</option>
+      <option value="ease-in-out">Ease in-out</option>
+      <option value="cubic-bezier(.34,1.56,.64,1)">Spring / overshoot</option>
+      <option value="cubic-bezier(.68,-0.55,.27,1.55)">Elastic</option>
+      <option value="linear">Linear</option>
+      <option value="steps(8,end)">Steps (8)</option>
+    </select>
+    <button class="btn btn-primary" id="replayBtn">▶ Replay animation</button>
+    <div class="hint">Loop animations (glow, float…) ignore stagger and run continuously. Entrance ones stagger across the grid.</div>
+  </div>
+
+  <div class="group">
+    <label class="glabel">Export</label>
+    <button class="btn" id="copyTokensBtn">Copy current theme tokens (:root)</button>
+    <div class="hint">Each tile also has its own Copy button — grabs that variant's markup + CSS with your current colors/fonts baked in.</div>
+  </div>
+</aside>
+
+<!-- ===================== STAGE ===================== -->
+<main class="stage">
+  <div class="stage-head">
+    <div class="title">Metric Stat Tiles</div>
+    <div class="desc">Twenty takes on the Peak metric tile (HRV · Hydration · Recovery · Readiness), modelled on the Aston Martin dashboard's paired stat tiles. Tune colors, fonts, shape and animation on the left — then hit a tile's <b>Copy</b> button to grab self-contained code for VS Code.</div>
+  </div>
+  <div class="grid anim-slideUp" id="grid"></div>
+</main>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+/* ============================================================
+   DATA — the 20 variants. Each: class, name, design family,
+   and which sample metric it shows (so the grid feels real).
+   ============================================================ */
+var SAMPLES = [
+  { icon:'hrv',  value:'42', unit:'ms', label:'HRV',        warn:false, pct:64 },
+  { icon:'drop', value:'68', unit:'%',  label:'Hydration',  warn:false, pct:68 },
+  { icon:'bolt', value:'81', unit:'',   label:'Recovery',   warn:false, pct:81 },
+  { icon:'star', value:'88', unit:'',   label:'Readiness',  warn:false, pct:88 },
+];
+var VARIANTS = [
+  {c:'s1', n:'Glass Frost', f:'glassmorphism'},
+  {c:'s2', n:'Luxury Gold Glow', f:'automotive'},
+  {c:'s3', n:'Neumorphic', f:'soft-ui'},
+  {c:'s4', n:'Brutalist', f:'brutalist'},
+  {c:'s5', n:'Editorial Hairline', f:'editorial'},
+  {c:'s6', n:'Neon Cyber', f:'cyber'},
+  {c:'s7', n:'Minimal Flat', f:'minimal'},
+  {c:'s8', n:'Outlined Ghost', f:'minimal'},
+  {c:'s9', n:'Gradient Fill', f:'bold'},
+  {c:'s10', n:'Split Block', f:'modular'},
+  {c:'s11', n:'Ring Accent', f:'data-viz'},
+  {c:'s12', n:'Left Accent Bar', f:'editorial'},
+  {c:'s13', n:'Elevated', f:'material'},
+  {c:'s14', n:'Mono Terminal', f:'cyber'},
+  {c:'s15', n:'Big Number', f:'editorial'},
+  {c:'s16', n:'Pill', f:'soft-ui'},
+  {c:'s17', n:'Dashed Ticket', f:'playful'},
+  {c:'s18', n:'Stacked Depth', f:'material'},
+  {c:'s19', n:'Conic Border', f:'bold'},
+  {c:'s20', n:'Frost Sheen', f:'glassmorphism'},
+];
+
+var ICONS = {
+  hrv:'<svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>',
+  drop:'<svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5S5.5 9 5.5 14a6.5 6.5 0 0 0 13 0C18.5 9 12 2.5 12 2.5z"/></svg>',
+  bolt:'<svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+  star:'<svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.7 1.4 6.8L12 17.8 5.9 20.5l1.4-6.8L2.2 9l6.9-.7z"/></svg>',
+};
+
+/* Build the inner HTML of one tile for a given variant + sample */
+function tileInner(v, s){
+  var iconHtml = ICONS[s.icon] || ICONS.star;
+  if (s.warn) iconHtml = iconHtml.replace('class="t-icon"','class="t-icon warn"');
+  var ring = v.c==='s11' ? '<div class="t-ring" style="--pct:'+s.pct+'"></div>' : '';
+  // split-block needs a different structure
+  if (v.c==='s10'){
+    return '<div class="t-side">'+iconHtml+'</div>'+
+      '<div class="t-body">'+
+        '<div class="t-value">'+s.value+'<span class="u">'+s.unit+'</span></div>'+
+        '<div class="t-label">'+s.label+'</div>'+
+      '</div>';
+  }
+  if (v.c==='s16'){
+    return '<div class="t-top">'+iconHtml+'</div>'+
+      '<div class="t-block"><div class="t-value">'+s.value+'<span class="u">'+s.unit+'</span></div>'+
+      '<div class="t-label">'+s.label+'</div></div>';
+  }
+  return ring+
+    '<div class="t-top">'+iconHtml+'<span class="t-trend">▲ '+(s.pct)+'</span></div>'+
+    '<div><div class="t-value">'+s.value+'<span class="u">'+s.unit+'</span></div>'+
+    '<div class="t-label">'+s.label+'</div></div>';
+}
+
+/* Render the grid: each variant shown as a pair of two tiles (like UI.png rows) */
+var grid = document.getElementById('grid');
+function render(){
+  grid.innerHTML = '';
+  VARIANTS.forEach(function(v, i){
+    var s1 = SAMPLES[i % SAMPLES.length];
+    var s2 = SAMPLES[(i+2) % SAMPLES.length];
+    var cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.innerHTML =
+      '<div class="cell-head">'+
+        '<div><span class="cell-name">'+(i+1)+'. '+v.n+'</span> <span class="cell-fam">· '+v.f+'</span></div>'+
+        '<button class="copy-btn" data-i="'+i+'">Copy</button>'+
+      '</div>'+
+      '<div class="tile-pair">'+
+        '<div class="tile '+v.c+(s1.warn?' is-warn':'')+'">'+tileInner(v,s1)+'</div>'+
+        '<div class="tile '+v.c+(s2.warn?' is-warn':'')+'">'+tileInner(v,s2)+'</div>'+
+      '</div>';
+    grid.appendChild(cell);
+  });
+  applyStagger();
+}
+
+/* ---- token wiring ---- */
+var root = document.documentElement;
+function setVar(k,val){ root.style.setProperty(k,val); }
+
+document.getElementById('c-accent').oninput  = e=>setVar('--accent', e.target.value);
+document.getElementById('c-accent2').oninput = e=>setVar('--accent-2', e.target.value);
+document.getElementById('c-warn').oninput    = e=>setVar('--warn', e.target.value);
+document.getElementById('c-bg').oninput      = e=>{ setVar('--bg', e.target.value); };
+document.getElementById('c-card').oninput    = e=>{ setVar('--card-solid', e.target.value); setVar('--bg-2', e.target.value); };
+document.getElementById('c-text').oninput    = e=>setVar('--text', e.target.value);
+document.getElementById('c-textdim').oninput = e=>setVar('--text-dim', e.target.value);
+document.getElementById('f-display').onchange= e=>setVar('--font-display', e.target.value);
+document.getElementById('f-mono').onchange   = e=>setVar('--font-mono', e.target.value);
+
+var rRadius=document.getElementById('r-radius');
+rRadius.oninput = e=>{ setVar('--radius', e.target.value+'px'); document.getElementById('v-radius').textContent=e.target.value+'px'; };
+
+/* ---- presets ---- */
+var PRESETS = {
+  gold:    {accent:'#d9a441',accent2:'#f0c674',warn:'#e0623c',bg:'#0a0907',card:'#161310',text:'#f4ece0',textdim:'#9a8f7d'},
+  emerald: {accent:'#6EE7B7',accent2:'#a7f3d0',warn:'#f87171',bg:'#070b09',card:'#0f1512',text:'#eaf5ef',textdim:'#7f9388'},
+  ice:     {accent:'#7cc4ff',accent2:'#bfe2ff',warn:'#ff7a90',bg:'#06080d',card:'#0e1320',text:'#eaf1fb',textdim:'#7e8aa3'},
+};
+function applyPreset(p){
+  var t=PRESETS[p];
+  setVar('--accent',t.accent); setVar('--accent-2',t.accent2); setVar('--warn',t.warn);
+  setVar('--bg',t.bg); setVar('--card-solid',t.card); setVar('--bg-2',t.card);
+  setVar('--text',t.text); setVar('--text-dim',t.textdim);
+  document.getElementById('c-accent').value=t.accent;
+  document.getElementById('c-accent2').value=t.accent2;
+  document.getElementById('c-warn').value=t.warn;
+  document.getElementById('c-bg').value=t.bg;
+  document.getElementById('c-card').value=t.card;
+  document.getElementById('c-text').value=t.text;
+  document.getElementById('c-textdim').value=t.textdim;
+}
+document.getElementById('presetSeg').addEventListener('click', function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  this.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); applyPreset(b.dataset.preset);
+});
+
+/* ---- animation wiring ---- */
+var curAnim='slideUp', curTrigger='load';
+function setAnimClass(){
+  // strip old anim-/trigger- classes
+  grid.className = 'grid anim-'+curAnim + (curTrigger==='hover' ? ' trigger-hover' : '');
+  applyStagger();
+}
+document.getElementById('a-name').onchange = e=>{ curAnim=e.target.value; replay(); };
+document.getElementById('triggerSeg').addEventListener('click', function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  this.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); curTrigger=b.dataset.trig; setAnimClass();
+});
+var aDur=document.getElementById('a-dur');
+aDur.oninput=e=>{ setVar('--anim-dur', e.target.value+'ms'); document.getElementById('v-dur').textContent=e.target.value+'ms'; };
+var aStag=document.getElementById('a-stagger');
+aStag.oninput=e=>{ setVar('--anim-stagger', e.target.value+'ms'); document.getElementById('v-stagger').textContent=e.target.value+'ms'; applyStagger(); };
+document.getElementById('a-ease').onchange=e=>{ setVar('--anim-ease', e.target.value); replay(); };
+
+/* stagger: set animation-delay per tile based on its index */
+function applyStagger(){
+  var step = parseInt(aStag.value,10)||0;
+  var tiles = grid.querySelectorAll('.tile');
+  tiles.forEach(function(t,idx){ t.style.animationDelay = (idx*step)+'ms'; });
+}
+
+/* replay: re-trigger the entrance animation by reflowing */
+function replay(){
+  setAnimClass();
+  var tiles = grid.querySelectorAll('.tile');
+  tiles.forEach(function(t){ t.style.animation='none'; });
+  void grid.offsetWidth; // force reflow
+  tiles.forEach(function(t){ t.style.animation=''; });
+  applyStagger();
+}
+document.getElementById('replayBtn').onclick = replay;
+
+/* ============================================================
+   COPY — build a self-contained snippet for a variant
+   ============================================================ */
+function cssVarVal(name){ return getComputedStyle(root).getPropertyValue(name).trim(); }
+
+function buildSnippet(i){
+  var v = VARIANTS[i];
+  var s = SAMPLES[i % SAMPLES.length];
+  // gather current token values so the snippet is self-contained
+  var tokens = {
+    '--accent':cssVarVal('--accent'), '--accent-2':cssVarVal('--accent-2'),
+    '--warn':cssVarVal('--warn'), '--good':cssVarVal('--good'),
+    '--bg-2':cssVarVal('--bg-2'), '--card':cssVarVal('--card'), '--card-solid':cssVarVal('--card-solid'),
+    '--border':cssVarVal('--border'), '--text':cssVarVal('--text'), '--text-dim':cssVarVal('--text-dim'),
+    '--radius':cssVarVal('--radius'),
+    '--font-display':cssVarVal('--font-display'), '--font-mono':cssVarVal('--font-mono'),
+    '--anim-dur':cssVarVal('--anim-dur'), '--anim-ease':cssVarVal('--anim-ease')
+  };
+  var rootBlock = ':root{\n'+Object.keys(tokens).map(k=>'  '+k+': '+tokens[k]+';').join('\n')+'\n}';
+
+  // pull the relevant CSS rules (base .tile + this variant + chosen keyframe)
+  var baseCss = grabRules(['.tile','.tile .t-top','.tile .t-icon','.tile .t-icon.warn','.tile .t-trend','.tile .t-value','.tile .t-value .u','.tile .t-label','.tile.is-warn .t-value']);
+  var varCss  = grabRulesPrefix('.'+v.c);
+  var animCss = grabKeyframe(curAnim) + '\n.tile{ animation:'+curAnim+' var(--anim-dur) var(--anim-ease) both; }';
+
+  var html =
+'<!-- Stat tile · variant '+(i+1)+' "'+v.n+'" — paste into your project -->\n'+
+'<div class="tile '+v.c+'">\n  '+tileInner(v,s).replace(/\n/g,'\n  ')+'\n</div>\n\n'+
+'<style>\n'+rootBlock+'\n\n'+baseCss+'\n\n'+varCss+'\n\n/* entrance animation */\n'+animCss+'\n</style>';
+  return html;
+}
+
+/* Helpers that read rules out of the lab's own stylesheet so copied code matches exactly */
+function allRules(){
+  var out=[];
+  for (var i=0;i<document.styleSheets.length;i++){
+    var ss=document.styleSheets[i]; var rules;
+    try{ rules=ss.cssRules; }catch(e){ continue; }
+    if(!rules) continue;
+    for (var j=0;j<rules.length;j++) out.push(rules[j]);
+  }
+  return out;
+}
+function grabRules(selectors){
+  var set={}; selectors.forEach(s=>set[s]=1);
+  return allRules().filter(r=>r.selectorText && set[r.selectorText]).map(r=>r.cssText).join('\n');
+}
+function grabRulesPrefix(prefix){
+  return allRules().filter(function(r){
+    if(!r.selectorText) return false;
+    // match the variant class as a standalone token (.s1, .s1:hover, .s1 .x, .s1::before)
+    return r.selectorText.split(',').some(function(sel){
+      sel=sel.trim();
+      return sel===prefix || sel.indexOf(prefix+':')===0 || sel.indexOf(prefix+' ')===0 || sel.indexOf(prefix+'::')===0 || sel.indexOf(prefix+'.')===0;
+    });
+  }).map(r=>r.cssText).join('\n');
+}
+function grabKeyframe(name){
+  var r = allRules().find(r=>r.type===CSSRule.KEYFRAMES_RULE && r.name===name);
+  return r ? r.cssText : '';
+}
+
+grid.addEventListener('click', function(e){
+  var b=e.target.closest('.copy-btn'); if(!b) return;
+  var i=parseInt(b.dataset.i,10);
+  var code=buildSnippet(i);
+  navigator.clipboard.writeText(code).then(function(){
+    b.textContent='Copied ✓'; b.classList.add('done');
+    showToast('Copied variant '+(i+1)+' — paste into VS Code');
+    setTimeout(function(){ b.textContent='Copy'; b.classList.remove('done'); }, 1600);
+  }).catch(function(){ showToast('Copy failed — clipboard blocked'); });
+});
+
+document.getElementById('copyTokensBtn').onclick=function(){
+  var names=['--accent','--accent-2','--warn','--bg','--bg-2','--card','--card-solid','--border','--text','--text-dim','--radius','--font-display','--font-mono','--anim-dur','--anim-ease'];
+  var block=':root{\n'+names.map(n=>'  '+n+': '+cssVarVal(n)+';').join('\n')+'\n}';
+  navigator.clipboard.writeText(block).then(()=>showToast('Theme tokens copied'));
+};
+
+var toastEl=document.getElementById('toast'), toastT;
+function showToast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove('show'),1900); }
+
+/* boot */
+render();
+setAnimClass();
+</script>
+</body>
+</html>
