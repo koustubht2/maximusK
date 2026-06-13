@@ -9170,10 +9170,11 @@ window.canonicalJson = function(obj) {
       <canvas id="jvAvatarCanvas" width="300" height="300" style="position:relative;z-index:1;cursor:pointer;width:500px;height:500px;max-width:90vw;max-height:90vw;" title="JARVIS"></canvas>
     </div>
 
-    <!-- One-time neural voice (Piper) download + hidden voice picker (kept for logic) -->
+    <!-- One-time neural voice (Piper) download + general STOP (shown while speaking) + hidden voice picker -->
     <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin:-6px 0 14px;">
       <select id="peakVoiceSelect" style="display:none"><option value="">auto</option></select>
       <button id="peakPiperTest" type="button" style="background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.3);border-radius:10px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;padding:7px 14px;cursor:pointer">Download JARVIS voice</button>
+      <button id="jvStopSpeakBtn" type="button" title="Stop JARVIS speaking" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:10px;color:#f87171;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;padding:7px 14px;cursor:pointer">■ STOP</button>
     </div>
     <span id="peakVoiceHint" style="display:none"></span>
     <span id="peakPiperStatus" style="display:none"></span>
@@ -23371,7 +23372,19 @@ function switchTab(tab) {
   function _stopAllSpeech() {
     try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){}
     if (_piperAudio) { try { _piperAudio.pause(); _piperAudio.currentTime = 0; } catch(e){} }
+    if (_briefAudioEl) { try { _briefAudioEl.pause(); _briefAudioEl.currentTime = 0; } catch(e){} }
   }
+
+  // Global "stop talking" — halts EVERY audio path (browser TTS, Piper, brief
+  // blob), clears the speaking flag and returns both avatars to idle. Used by
+  // the always-available STOP button shown whenever JARVIS is speaking.
+  window._jarvisStop = function() {
+    _stopAllSpeech();
+    window._jarvisSpeaking = false;
+    if (window._arcSetMood) window._arcSetMood('idle');
+    if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
+    if (typeof window._jvUpdateStopBtn === 'function') window._jvUpdateStopBtn();
+  };
 
   // Browser speechSynthesis fallback (original behaviour). onDone fires when finished.
   function _browserSpeak(text, onDone) {
@@ -26018,7 +26031,20 @@ function switchTab(tab) {
       if(chip._wired) return; chip._wired=true;
       chip.addEventListener('click', function(){ jvSend(chip.dataset.chip); });
     });
+    // general STOP: silence any JARVIS speech (brief, alarm, answer) on demand
+    var stopBtn=document.getElementById('jvStopSpeakBtn');
+    if(stopBtn && !stopBtn._wired){ stopBtn._wired=true;
+      stopBtn.addEventListener('click', function(){ if(typeof window._jarvisStop==='function') window._jarvisStop(); });
+    }
   }
+  // Show the STOP button only while JARVIS is actually speaking.
+  window._jvUpdateStopBtn = function(){
+    var b=document.getElementById('jvStopSpeakBtn'); if(!b) return;
+    b.style.display = window._jarvisSpeaking ? 'inline-block' : 'none';
+  };
+  // Poll the speaking flag so the button appears/disappears as speech starts/ends
+  // (speech is driven from multiple places; a tiny poll keeps the UI in sync).
+  setInterval(function(){ if(typeof window._jvUpdateStopBtn==='function') window._jvUpdateStopBtn(); }, 300);
 
   // ---------- NUDGES (data-driven, no AI) — surfaced in the JARVIS tab ----------
   function jvBuildNudges(){
