@@ -8765,31 +8765,10 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
-    <!-- Markets strip -->
-    <div id="peakMarketsStrip" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:9px 14px;margin-top:12px;margin-bottom:8px;overflow:hidden">
-      <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:rgba(255,255,255,0.3)">MARKETS</span>
-        <span id="peakMarketsTime" style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.2)"></span>
-      </div>
-      <div id="peakMarketsTickers" style="display:flex;gap:14px;flex-wrap:wrap"></div>
-    </div>
+    <!-- Markets strip moved to the JARVIS tab -->
 
-    <!-- Morning Brief -->
-    <div class="peak-card" id="peakMorningBriefCard" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div class="peak-section-label">JARVIS Morning Brief</div>
-        <div style="display:flex;align-items:center;gap:4px">
-          <button id="peakBriefRefreshBtn" type="button" title="Generate a new brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          </button>
-          <button id="peakBriefSpeakBtn" type="button" title="Read brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5);display:none">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-          </button>
-        </div>
-      </div>
-      <div id="peakMorningBriefText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your brief…</div>
-      <div id="peakTomorrowPredict" style="display:none;margin-top:10px;padding:8px 10px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(196,181,253,0.85);line-height:1.5"></div>
-    </div>
+    <!-- Morning Brief moved to the JARVIS tab -->
+    <div id="peakTomorrowPredict" style="display:none;margin:0 0 12px;padding:8px 10px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(196,181,253,0.85);line-height:1.5"></div>
 
     <!-- Training Load -->
     <div class="peak-card" id="peakTrainCard">
@@ -9246,8 +9225,33 @@ window.canonicalJson = function(obj) {
       <canvas id="jvAvatarCanvas" width="300" height="300" style="position:relative;z-index:1;cursor:pointer;width:500px;height:500px;max-width:90vw;max-height:90vw;" title="JARVIS"></canvas>
     </div>
 
+    <!-- Morning Brief (moved here from Peak) -->
+    <div class="peak-card" id="peakMorningBriefCard" style="display:none;margin-top:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="peak-section-label">JARVIS Morning Brief</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button id="peakBriefRefreshBtn" type="button" title="Generate a new brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+          <button id="peakBriefSpeakBtn" type="button" title="Read brief" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(110,231,183,0.5);display:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="peakMorningBriefText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your brief…</div>
+    </div>
+
+    <!-- Markets strip (moved here from Peak) -->
+    <div id="peakMarketsStrip" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:9px 14px;margin-top:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">
+        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:rgba(255,255,255,0.3)">MARKETS</span>
+        <span id="peakMarketsTime" style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.2)"></span>
+      </div>
+      <div id="peakMarketsTickers" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+    </div>
+
     <!-- chat -->
-    <div class="peak-card" style="margin-top:6px;">
+    <div class="peak-card" style="margin-top:10px;">
       <div id="jvCoachMessages" class="peak-coach-messages" style="min-height:120px;max-height:46vh;"></div>
       <div class="peak-coach-chips" id="jvChips">
         <button class="peak-coach-chip" type="button" data-chip="give me a full life summary right now">Life summary</button>
@@ -21924,6 +21928,8 @@ function switchTab(tab) {
       timeEl.textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
     }
   }
+  // Exposed so the JARVIS tab (where the markets strip now lives) can render it on open.
+  window._jvRenderMarkets = _renderMarkets;
 
   // ══════════════════════════════════════════════════════════════
   // FEATURE 2 — Body weight 30-day trend chart
@@ -22437,6 +22443,32 @@ function switchTab(tab) {
       textEl.textContent = 'Brief unavailable — ' + (e && e.message || 'connection error');
     } finally { _briefFlight = false; }
   }
+
+  // Exposed so the JARVIS tab (where the brief card now lives) can paint the
+  // cached brief on open, and generate one if renderPeak hasn't produced it yet.
+  window._jvShowMorningBrief = function(force) {
+    var card = document.getElementById('peakMorningBriefCard');
+    var textEl = document.getElementById('peakMorningBriefText');
+    if (!card || !textEl) return;
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(BRIEF_KEY + today())); } catch(e) {}
+    if (cached && cached.text && !force) {
+      card.style.display = '';
+      textEl.innerHTML = cached.text;
+      var sb = document.getElementById('peakBriefSpeakBtn'); if (sb) sb.style.display = '';
+      return;
+    }
+    // No cache yet — generate using the latest computed biometrics.
+    if (_briefArgs) {
+      _renderMorningBrief(_briefArgs[0], _briefArgs[1], _briefArgs[2], _briefArgs[3], _briefArgs[4], _briefArgs[5], !!force);
+    } else {
+      // Peak hasn't rendered yet (app opened on another tab) — prime it once to
+      // compute biometrics + _briefArgs, then it generates the brief itself.
+      card.style.display = '';
+      textEl.textContent = 'Gathering intel… ';
+      try { renderPeak(); } catch(e) {}
+    }
+  };
 
   function _briefPlainText(html) {
     var d = document.createElement('div'); d.innerHTML = html; return d.textContent || '';
@@ -26130,6 +26162,8 @@ function switchTab(tab) {
         jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach');
       }
     }
+    if(typeof window._jvShowMorningBrief==='function') window._jvShowMorningBrief(false); // brief now lives here
+    if(typeof window._jvRenderMarkets==='function') window._jvRenderMarkets();            // markets strip now lives here
     renderJvNudges();
     renderJvPatterns(false);   // shows cached patterns if present
     renderJvDebrief(false);    // shows cached debrief if present
@@ -26152,6 +26186,8 @@ function switchTab(tab) {
       // Chat: rebuild today's thread from the synced key
       var feed=document.getElementById('jvCoachMessages');
       if(feed){ feed.innerHTML=''; if(!jvRestoreHistory()){ jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach'); } }
+      if(typeof window._jvShowMorningBrief==='function') window._jvShowMorningBrief(false);
+      if(typeof window._jvRenderMarkets==='function') window._jvRenderMarkets();
       renderJvNudges();
       renderJvPatterns(false);
       renderJvDebrief(false);
