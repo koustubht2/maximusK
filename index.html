@@ -12343,8 +12343,18 @@ setInterval(updateDayBar, 60 * 1000);
     var s = collect();
     var body = JSON.stringify({ key: A_KEY, data: s, updated_at: new Date().toISOString() });
     var sizeKB = Math.round(body.length / 1024);
-    var lines = ['KEY: ' + vkey,
+    // thumbnail audit: for each meal flagged hasThumb, is its synced/legacy key present?
+    var thumbInfo = localArr.filter(function(m){return m.hasThumb||m.thumb;}).map(function(m){
+      var syn = localStorage.getItem('goals_vit_thumb_'+m.id);
+      var leg = localStorage.getItem('po_vit_thumb_'+m.id);
+      return m.name+'→'+(m.thumb?'embedded':syn?'synced('+Math.round(syn.length/1024)+'KB)':leg?'LEGACY-LOCAL':'MISSING');
+    });
+    var allThumbKeys = [];
+    for (var ti=0; ti<localStorage.length; ti++){ var tkk=localStorage.key(ti); if(tkk&&tkk.indexOf('goals_vit_thumb_')===0) allThumbKeys.push(tkk.slice(16)); }
+    var lines = ['MIGRATED: ' + localStorage.getItem('po_vit_thumb_migrated'),
                  'LOCAL meals: ' + localArr.length + ' [' + localArr.map(function(m){return m.name;}).join(', ') + ']',
+                 'THUMBS: ' + (thumbInfo.length?thumbInfo.join(' | '):'none flagged'),
+                 'synced thumb ids: ' + (allThumbKeys.length?allThumbKeys.join(','):'NONE'),
                  'PUSH blob: ' + sizeKB + ' KB',
                  'sReady: ' + sReady];
     try {
