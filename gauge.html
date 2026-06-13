@@ -54,21 +54,20 @@
     color:var(--beige-muted);
     margin-top:0.45rem;
   }
-  /* The arc DRAWS from 0 → 88 then holds, on a repeating pulse. pathLength=100
-     makes the whole arc 100 units, so dashoffset 100→0 sweeps the full fill. */
-  .fill-draw, .fill-glow{
-    stroke-dasharray:100;
-    animation:sweep 3.4s cubic-bezier(.22,1,.36,1) infinite;
+  /* The fill TRAIL stays full. A short bright glow segment travels along it
+     (start → mark) and repeats — a comet sweeping the arc, on top of the trail.
+     dasharray "18 100": one 18-unit lit segment; offset moves it across. */
+  .trail-comet{
+    stroke-dasharray:18 100;
+    animation:comet 2.6s cubic-bezier(.45,0,.55,1) infinite;
   }
-  @keyframes sweep{
-    0%   { stroke-dashoffset:100; }   /* empty (0) */
-    55%  { stroke-dashoffset:0; }      /* drawn to the mark (88) */
-    80%  { stroke-dashoffset:0; }      /* hold */
-    100% { stroke-dashoffset:100; }    /* fade back to empty, then repeat */
+  @keyframes comet{
+    0%   { stroke-dashoffset:18;  opacity:0; }   /* just before the start, hidden */
+    12%  { opacity:1; }                           /* fade in */
+    88%  { opacity:1; }
+    100% { stroke-dashoffset:-100; opacity:0; }   /* exited past the mark, fade out */
   }
-  @media (prefers-reduced-motion: reduce){
-    .fill-draw, .fill-glow{ animation:none; stroke-dashoffset:0; }
-  }
+  @media (prefers-reduced-motion: reduce){ .trail-comet{ display:none; } }
 </style>
 </head>
 <body>
@@ -103,14 +102,15 @@
       <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6"
             stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
 
-      <!-- GLOW LAYER: heavily-blurred copy of the FILL, draws in sync underneath -->
-      <path class="fill-glow" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60"
-            stroke="url(#fuelFill)" stroke-width="9" stroke-linecap="round"
-            filter="url(#trailGlow)"/>
-
-      <!-- FILL: the crisp arc that DRAWS from 0 → 88 (animated stroke-dashoffset) -->
-      <path class="fill-draw" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60"
+      <!-- STATIC FILL TRAIL: the full 0→88 arc, always shown -->
+      <path d="M43.4 156.6 A80 80 0 1 1 169.3 60"
             stroke="url(#fuelFill)" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- TRAVELLING GLOW: a short bright blurred segment that sweeps ALONG the
+           trail (start → mark), on top of the static fill, repeating. -->
+      <path class="trail-comet" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60"
+            stroke="#fffaf2" stroke-width="7" stroke-linecap="round"
+            filter="url(#trailGlow)"/>
     </svg>
 
     <div class="readout">
