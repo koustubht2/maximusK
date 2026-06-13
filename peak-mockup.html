@@ -80,8 +80,30 @@ body{
   opacity:calc(1 - var(--i) * 0.022);                    /* gentle fade: head 1.0 → tail ~0.35 */
 }
 @keyframes cometMove{ 0%{ stroke-dashoffset:7; } 100%{ stroke-dashoffset:-107; } }
+
+/* GOLD ring only: 3s pause between sweeps. Total 6.8s = 3.8s sweep + 3s hold.
+   Sweep happens in the first 55.9% (3.8/6.8), then holds hidden until the loop. */
+.comet-gold path{
+  animation:cometMoveGold 6.8s linear infinite;
+  animation-delay:calc(var(--i) * -0.085s);
+}
+@keyframes cometMoveGold{
+  0%    { stroke-dashoffset:7; }
+  55.9% { stroke-dashoffset:-107; }
+  100%  { stroke-dashoffset:-107; }   /* hold off-screen → 3s pause */
+}
+.comet-gold .comet-nuc{ animation:nucMoveGold 6.8s linear infinite; }
+@keyframes nucMoveGold{
+  0%    { offset-distance:9%;   opacity:0; }
+  3%    { opacity:1; }
+  49%   { offset-distance:97%;  opacity:1; }
+  53%   { offset-distance:100%; opacity:0; }
+  100%  { offset-distance:100%; opacity:0; }   /* paused */
+}
 /* bright nucleus rides the head, glows, disappears at the mark */
 .comet-nuc{ filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff) drop-shadow(0 0 10px #fff6df) drop-shadow(0 0 18px #ffe2a8) drop-shadow(0 0 28px #ffd98e); mix-blend-mode:screen; animation:nucMove 3.8s linear infinite; }
+/* gold ring only: contained glow so the bloom doesn't spill onto the tile border */
+.comet-gold .comet-nuc{ filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff6df) drop-shadow(0 0 9px #ffe2a8); mix-blend-mode:normal; }
 @keyframes nucMove{
   0%   { offset-distance:9%;   opacity:0; }
   6%   { opacity:1; }
@@ -216,7 +238,7 @@ body{
           </defs>
           <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6" stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
           <path d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="url(#gg1)" stroke-width="6" stroke-linecap="round"/>
-          <g class="comet" filter="url(#trail1)" data-d="M43.4 156.6 A80 80 0 1 1 169.3 60" data-nuc="#fffef9"></g>
+          <g class="comet comet-gold" filter="url(#trail1)" data-d="M43.4 156.6 A80 80 0 1 1 169.3 60" data-nuc="#fffef9"></g>
         </svg>
         <div class="stat-foot">Today overall</div>
         <div class="stat-val">88</div>
