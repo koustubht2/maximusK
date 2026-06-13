@@ -7059,7 +7059,15 @@ window.canonicalJson = function(obj) {
     doneTimer = setTimeout(() => { setState(''); checkDirty(); }, 2000);
   }
 
-  btn.addEventListener('click', doSync);
+  // Single tap = normal sync. Double tap = on-device diagnostic (alert with
+  // push status/size) — useful on phones that have no dev console.
+  var _lastTap = 0;
+  btn.addEventListener('click', function() {
+    var now = (window.performance && performance.now) ? performance.now() : (+new Date());
+    if (now - _lastTap < 450) { _lastTap = 0; if (typeof window._syncDiag === 'function') window._syncDiag(); return; }
+    _lastTap = now;
+    doSync();
+  });
   // Poll dirty state every second to keep the highlight accurate
   setInterval(checkDirty, 1000);
 })();
@@ -12175,6 +12183,31 @@ setInterval(updateDayBar, 60 * 1000);
     try { if (typeof window._jvRepaintFromCache === 'function') window._jvRepaintFromCache(); } catch(e) {}
   }
 
+  // Keys that hold a per-day ARRAY of id'd items → merge by id, not whole-key LWW.
+  function _isIdArrayKey(k) {
+    return k.indexOf('goals_vitality_') === 0 ||
+           k.indexOf('goals_caffeine_') === 0 ||
+           k.indexOf('goals_alcohol_')  === 0;
+  }
+  // Union two arrays of {id,...} objects: keep every unique id from both sides.
+  // Returns null if either side isn't a usable array (caller falls back to LWW).
+  function _mergeByIdArray(localJson, remoteVal) {
+    var localArr, remoteArr = remoteVal;
+    try { localArr = JSON.parse(localJson); } catch(e) { return null; }
+    if (!Array.isArray(localArr) || !Array.isArray(remoteArr)) return null;
+    var byId = {}, order = [];
+    function add(item) {
+      if (!item || typeof item !== 'object') return;
+      var id = item.id != null ? item.id : JSON.stringify(item);
+      if (!(id in byId)) order.push(id);
+      byId[id] = item;   // last seen wins for same id (local added last → local edits kept)
+    }
+    // remote first, then local — so a locally-edited duplicate id overrides remote
+    remoteArr.forEach(add);
+    localArr.forEach(add);
+    return order.map(function(id){ return byId[id]; });
+  }
+
   function applyRemote(remote) {
     if (!remote || typeof remote !== 'object') return false;
 
@@ -12202,10 +12235,26 @@ setInterval(updateDayBar, 60 * 1000);
         const ourDel  = sMeta.del[k] || 0;
         // Skip if we deleted this key more recently than they changed it
         if (ourDel >= theirTs && ourDel > 0) continue;
+        // Per-day log keys (vitality meals, caffeine, alcohol) hold an ARRAY of
+        // id'd items under a SINGLE key. Whole-key LWW means two devices editing
+        // the same day overwrite each other (newer timestamp wins the whole array,
+        // discarding the other device's items). Instead, union these by item id so
+        // meals added on different devices both survive.
+        const haveLocal = localStorage.getItem(k) != null;
+        if (_isIdArrayKey(k) && haveLocal) {
+          const mergedArr = _mergeByIdArray(localStorage.getItem(k), rKeys[k]);
+          if (mergedArr != null) {
+            const mergedJson = JSON.stringify(mergedArr);
+            if (localStorage.getItem(k) !== mergedJson) { origSet(k, mergedJson); changed = true; }
+            // adopt the newer of the two timestamps so future merges stay correct
+            const newTs = Math.max(theirTs, sMeta.ts[k] || 0);
+            if (newTs > (sMeta.ts[k] || 0)) { sMeta.ts[k] = newTs; delete sMeta.del[k]; metaChanged = true; }
+            continue;
+          }
+        }
         // Adopt remote only if STRICTLY newer than ours, OR we don't have it at
         // all. Ties (e.g. both baseline ts=1) favour local → never resurrect a
         // locally-deleted key or clobber an equal-age local value.
-        const haveLocal = localStorage.getItem(k) != null;
         if (theirTs > ourTs || (!haveLocal && !ourDel)) {
           const incoming = JSON.stringify(rKeys[k]);
           if (localStorage.getItem(k) !== incoming) { origSet(k, incoming); changed = true; }
@@ -12282,6 +12331,31 @@ setInterval(updateDayBar, 60 * 1000);
     clearTimeout(sTimer);
     sTimer = setTimeout(pushNow, 100);
   }
+
+  // On-device diagnostic (phones have no console). Does a LIVE push and reports
+  // the real HTTP status, blob size and today's meal count via alert(). Trigger
+  // by double-tapping the topbar sync button.
+  window._syncDiag = async function() {
+    function tdk(){ var d=new Date(); if(d.getHours()<6) d.setDate(d.getDate()-1);
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    var vkey = 'goals_vitality_' + tdk();
+    var localArr = []; try { localArr = JSON.parse(localStorage.getItem(vkey)) || []; } catch(e){}
+    var s = collect();
+    var body = JSON.stringify({ key: A_KEY, data: s, updated_at: new Date().toISOString() });
+    var sizeKB = Math.round(body.length / 1024);
+    var lines = ['KEY: ' + vkey,
+                 'LOCAL meals: ' + localArr.length + ' [' + localArr.map(function(m){return m.name;}).join(', ') + ']',
+                 'PUSH blob: ' + sizeKB + ' KB',
+                 'sReady: ' + sReady];
+    try {
+      var r = await sRawPush(s, false);
+      lines.push('PUSH status: ' + r.status + ' ' + r.statusText);
+      if (!r.ok) { try { lines.push('ERR: ' + (await r.text()).slice(0,200)); } catch(e){} }
+      else { sLastJson = window.canonicalJson(s); sLastKeysJson = window.canonicalJson(collectKeys()); }
+    } catch(e) { lines.push('PUSH threw: ' + (e && e.message)); }
+    try { alert(lines.join('\n')); } catch(e) { console.log(lines.join('\n')); }
+    return lines.join('\n');
+  };
 
   // Synchronous best-effort flush for page-hide/unload (no time to pull-merge).
   // Safe because pushes are now per-key timestamped, so even this can't wipe
