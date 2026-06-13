@@ -12348,14 +12348,26 @@ setInterval(updateDayBar, 60 * 1000);
     var thumbInfo = localArr.filter(function(m){return m.hasThumb||m.thumb;}).map(function(m){
       var syn = localStorage.getItem('goals_vit_thumb_'+m.id);
       var leg = localStorage.getItem('po_vit_thumb_'+m.id);
-      return m.name+'→'+(m.thumb?'embedded':syn?'synced('+Math.round(syn.length/1024)+'KB)':leg?'LEGACY-LOCAL':'MISSING');
+      return m.name+'('+m.id+')→'+(m.thumb?'embedded':syn?'synced('+Math.round(syn.length/1024)+'KB)':leg?'LEGACY-LOCAL':'MISSING');
     });
+    // EVERY localStorage key that mentions a meal id OR looks photo-ish — find where the image really lives
+    var photoKeys = [];
+    for (var pi=0; pi<localStorage.length; pi++){
+      var pk = localStorage.key(pi); if(!pk) continue;
+      var hit = pk.indexOf('thumb')>=0 || pk.indexOf('photo')>=0 || pk.indexOf('snap')>=0 || pk.indexOf('img')>=0;
+      if(!hit){ localArr.forEach(function(m){ if(m.id && pk.indexOf(m.id)>=0) hit=true; }); }
+      if(hit){ var v=localStorage.getItem(pk)||''; photoKeys.push(pk+'('+Math.round(v.length/1024)+'KB)'); }
+    }
     var allThumbKeys = [];
     for (var ti=0; ti<localStorage.length; ti++){ var tkk=localStorage.key(ti); if(tkk&&tkk.indexOf('goals_vit_thumb_')===0) allThumbKeys.push(tkk.slice(16)); }
-    var lines = ['DIAG v3 (thumb-sync)',
+    // does the raw meal array text itself contain base64 image data?
+    var rawHasB64 = (localStorage.getItem(vkey)||'').indexOf('data:image')>=0;
+    var lines = ['DIAG v4 (thumb-sync)',
                  'MIGRATED: ' + localStorage.getItem('po_vit_thumb_migrated'),
-                 'LOCAL meals: ' + localArr.length + ' [' + localArr.map(function(m){return m.name;}).join(', ') + ']',
+                 'meals: ' + localArr.map(function(m){return m.name+'['+m.id+' t:'+(m.thumb?'Y':'n')+' h:'+(m.hasThumb?'Y':'n')+']';}).join(', '),
                  'THUMBS: ' + (thumbInfo.length?thumbInfo.join(' | '):'none flagged'),
+                 'meal-array has data:image? ' + rawHasB64,
+                 'photo-ish keys: ' + (photoKeys.length?photoKeys.join(', '):'NONE'),
                  'synced thumb ids: ' + (allThumbKeys.length?allThumbKeys.join(','):'NONE'),
                  'PUSH blob: ' + sizeKB + ' KB',
                  'sReady: ' + sReady];
