@@ -74,26 +74,6 @@
     0%   { stroke-dashoffset:7; }
     100% { stroke-dashoffset:-107; }
   }
-  /* HOT HEAD spark: rides exactly on layer 0, short + bright + heavily blurred,
-     blended additively so it stacks ~3x brighter than the head it sits on. */
-  .comet-spark{
-    stroke-dasharray:3 100; stroke-width:3px;
-    animation:cometMove 3.4s linear infinite;
-    filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 9px #ffe9c2);
-    mix-blend-mode:screen;
-  }
-  /* comet nucleus: a glowing round dot travelling the tip of the head */
-  .comet-dot{
-    filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #ffe9c2);
-    animation:cometDot 3.4s linear infinite;
-  }
-  @keyframes cometDot{
-    /* match the head's travel along the arc (the lit head leads ~6% ahead) */
-    0%   { offset-distance:6%;   opacity:0; }
-    8%   { opacity:1; }
-    92%  { opacity:1; }
-    100% { offset-distance:100%; opacity:0; }
-  }
   @media (prefers-reduced-motion: reduce){ .comet{ display:none; } }
 </style>
 </head>
@@ -137,8 +117,8 @@
            lagging a touch behind the one ahead with lower opacity, overlap into
            a single long glowing streak with a fading tail. --i = layer index. -->
       <g class="comet" filter="url(#trailGlow)">
-        <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#ffffff"/>
-        <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf6"/>
+        <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
+        <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
         <path style="--i:2"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
         <path style="--i:3"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
         <path style="--i:4"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
@@ -151,13 +131,6 @@
         <path style="--i:11" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
         <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
         <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-        <!-- HOT HEAD: a brighter, blurrier spark drawn ON TOP of layer 0 so the
-             leading point reads ~3x brighter (additive bloom) without thickening. -->
-        <path class="comet-spark" style="--i:0" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#ffffff"/>
-        <!-- COMET NUCLEUS: a round bright dot riding the very tip of the head,
-             a hair wider than the trail, with its own glow — the comet's core. -->
-        <circle class="comet-dot" r="2.6" fill="#ffffff"
-                style="offset-path:path('M43.4 156.6 A80 80 0 1 1 169.3 60');"/>
       </g>
     </svg>
 
