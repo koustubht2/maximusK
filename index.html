@@ -8759,7 +8759,7 @@ window.canonicalJson = function(obj) {
     <!-- Markets strip moved to the JARVIS tab -->
 
     <!-- Morning Brief moved to the JARVIS tab -->
-    <div id="peakTomorrowPredict" style="display:none;margin:0 0 12px;padding:8px 10px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(196,181,253,0.85);line-height:1.5"></div>
+    <div id="peakTomorrowPredict" style="display:none;margin:14px 0 12px;padding:8px 10px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(196,181,253,0.85);line-height:1.5"></div>
 
     <!-- Whole-day energy curve (moved up: directly below the tomorrow prediction) -->
     <div class="peak-card">
@@ -8935,9 +8935,10 @@ window.canonicalJson = function(obj) {
       </div>
       <div class="peak-caff-timing">
         <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffPeakTime">—</div><div class="peak-caff-timing-lbl">Peak at</div></div>
+        <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffHalfTime">—</div><div class="peak-caff-timing-lbl">Half-life</div></div>
         <div class="peak-caff-timing-cell"><div class="peak-caff-timing-val" id="peakCaffClearTime">—</div><div class="peak-caff-timing-lbl">Cleared</div></div>
       </div>
-      <div class="peak-caff-timeline-wrap">
+      <div class="peak-caff-timeline-wrap" id="peakCaffTimelineWrap">
         <canvas id="peakCaffCanvas" class="peak-caff-canvas"></canvas>
       </div>
       <div class="peak-section-label" style="margin-top:14px">Custom drink</div>
@@ -12164,6 +12165,9 @@ setInterval(updateDayBar, 60 * 1000);
       if (peakView && peakView.classList.contains('active')) {
         var cache = JSON.parse(localStorage.getItem('goals_peak_insights_v1'));
         if (cache && cache.items && typeof window._peakRenderInsights === 'function') window._peakRenderInsights(cache.items);
+        // Full Peak re-render so synced data (e.g. Fuel/Macros meals snapped on
+        // another device) actually appears instead of the stale local view.
+        if (typeof window.renderPeak === 'function') window.renderPeak();
       }
     } catch(e) {}
     // Re-render the JARVIS tab from cache if it's the active tab, so synced
@@ -23067,8 +23071,14 @@ function switchTab(tab) {
     setText('peakMgLimit', '/ ' + limit + ' mg');
     var peakT  = peakCaffTime(logs);
     var clearT = clearanceTime(logs);
+    // Half-life: ~5.5h after the peak (matches the 0.5^(t/5.5) decay in caffCurve)
+    var halfT  = peakT != null ? peakT + 5.5 : null;
     setText('peakCaffPeakTime',  peakT  ? fmtHour24(peakT)  : '—');
+    setText('peakCaffHalfTime',  halfT  ? fmtHour24(halfT)  : '—');
     setText('peakCaffClearTime', clearT ? fmtHour24(clearT) : '—');
+    // Collapse the timeline chart when there's nothing to draw (no empty gap)
+    var tlWrap = document.getElementById('peakCaffTimelineWrap');
+    if (tlWrap) tlWrap.style.display = logs.length ? '' : 'none';
     var warn = document.getElementById('peakCaffWarning');
     if (warn) {
       if (activeMg >= limit) {
@@ -26407,6 +26417,14 @@ function switchTab(tab) {
       scene.traverse(hideNonBloom); bloomComposer.render(); restoreVis(); finalComposer.render();
     }
     frame();
+  }
+
+  // Cold-load fix: the tab-restore (switchTab) runs far earlier in the file than
+  // this script, so on a hard reload straight to the JARVIS tab, renderJarvisTab
+  // didn't exist yet and the avatar never booted. Now that the engine is defined,
+  // if the JARVIS tab is already the active one, render it (and boot the avatar).
+  if (_jvVisible() && typeof window.renderJarvisTab === 'function') {
+    setTimeout(window.renderJarvisTab, 0);
   }
 })();
 </script>
