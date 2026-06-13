@@ -87,6 +87,16 @@ body{
   filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 9px #ffe9c2);
   mix-blend-mode:screen;
 }
+.comet-dot{
+  filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #ffe9c2);
+  animation:cometDot 3.4s linear infinite;
+}
+@keyframes cometDot{
+  0%   { offset-distance:6%;   opacity:0; }
+  8%   { opacity:1; }
+  92%  { opacity:1; }
+  100% { offset-distance:100%; opacity:0; }
+}
 @media (prefers-reduced-motion: reduce){ .comet{ display:none; } }
 .stat .stat-val, .stat .stat-label, .stat .stat-foot{ position:relative; z-index:1; }
 .stat .stat-val{ font-size:34px; }
@@ -230,6 +240,7 @@ body{
             <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
             <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
             <path class="comet-spark" style="--i:0" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#ffffff"/>
+            <circle class="comet-dot" r="2.6" fill="#ffffff" style="offset-path:path('M43.4 156.6 A80 80 0 1 1 169.3 60');"/>
           </g>
         </svg>
         <div class="stat-foot">Today overall</div>
@@ -266,6 +277,7 @@ body{
             <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
             <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
             <path class="comet-spark" style="--i:0" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#fff6ef"/>
+            <circle class="comet-dot" r="2.6" fill="#fff6ef" style="offset-path:path('M43.4 156.6 A80 80 0 1 1 145.9 34.5');"/>
           </g>
         </svg>
         <div class="stat-foot">2h 10m debt</div>
