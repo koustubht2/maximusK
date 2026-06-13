@@ -23911,6 +23911,12 @@ function switchTab(tab) {
           var _syn = (f.hasThumb || f.thumb) ? localStorage.getItem('goals_vit_thumb_' + f.id) : null;
           if (_syn) { _thumbSrc = _syn; _thumbSynced = true; }
           else { _thumbSrc = f.thumb || (f.hasThumb ? localStorage.getItem('po_vit_thumb_' + f.id) : null); }
+          // Auto-heal: a copy pulled by older code may be JSON-quote-wrapped
+          // ("\"data:image...\""). Unwrap so the <img src> is valid, and persist
+          // the cleaned value back so it only ever happens once.
+          if (_thumbSrc && _thumbSrc.charAt(0) === '"') {
+            try { _thumbSrc = JSON.parse(_thumbSrc); if (_thumbSynced) localStorage.setItem('goals_vit_thumb_' + f.id, _thumbSrc); } catch(e) {}
+          }
         } catch(e) {}
         // Self-heal: if we found a photo from a NON-synced source (embedded or the
         // old local key), promote it into the synced key now so it reaches other
