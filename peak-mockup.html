@@ -70,16 +70,14 @@ body{
 /* ---- approved gauge ring: sits BEHIND the centred text (gauge.html) ---- */
 .stat{ padding:18px 4px 14px; justify-content:center; min-height:150px; }
 .gauge-ring{ position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); width:150px; height:150px; z-index:0; pointer-events:none; }
-/* Static fill trail stays full; a short bright glow segment travels along it
-   (start → mark) on top, repeating — like a comet sweeping the arc. */
-.trail-comet{ stroke-dasharray:18 100; animation:comet 2.6s cubic-bezier(.45,0,.55,1) infinite; }
-@keyframes comet{
-  0%   { stroke-dashoffset:18;  opacity:0; }
-  12%  { opacity:1; }
-  88%  { opacity:1; }
-  100% { stroke-dashoffset:-100; opacity:0; }
-}
-@media (prefers-reduced-motion: reduce){ .trail-comet{ display:none; } }
+/* Static fill trail stays full; a long comet (dim tail + bright head) sweeps
+   along it, start → mark, repeating. Thin, with a fading tail. */
+.comet-tail{ stroke-dasharray:40 100; stroke-opacity:.30; animation:cometMove 2.8s linear infinite, cometFade 2.8s ease-in-out infinite; }
+.comet-head{ stroke-dasharray:9 100; animation:cometHead 2.8s linear infinite, cometFade 2.8s ease-in-out infinite; }
+@keyframes cometMove{ from{ stroke-dashoffset:40; }  to{ stroke-dashoffset:-100; } }
+@keyframes cometHead{ from{ stroke-dashoffset:9; }   to{ stroke-dashoffset:-131; } }
+@keyframes cometFade{ 0%,100%{ opacity:0; } 14%{ opacity:1; } 86%{ opacity:1; } }
+@media (prefers-reduced-motion: reduce){ .comet-tail,.comet-head{ display:none; } }
 .stat .stat-val, .stat .stat-label, .stat .stat-foot{ position:relative; z-index:1; }
 .stat .stat-val{ font-size:34px; }
 .stat .stat-foot{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.04em; color:var(--text-faint); margin-bottom:4px; }
@@ -206,7 +204,8 @@ body{
           </defs>
           <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6" stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
           <path d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="url(#gg1)" stroke-width="6" stroke-linecap="round"/>
-          <path class="trail-comet" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2" stroke-width="7" stroke-linecap="round" filter="url(#trail1)"/>
+          <path class="comet-tail" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2" stroke-width="3" stroke-linecap="round" filter="url(#trail1)"/>
+          <path class="comet-head" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8" stroke-width="3.5" stroke-linecap="round" filter="url(#trail1)"/>
         </svg>
         <div class="stat-foot">Today overall</div>
         <div class="stat-val">88</div>
@@ -226,7 +225,8 @@ body{
           <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6" stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
           <!-- lower fill (~64%): ends at ~1 o'clock, a TRUE point on the r=80 arc (145.9, 34.5) -->
           <path d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="url(#gg2)" stroke-width="6" stroke-linecap="round"/>
-          <path class="trail-comet" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#ffe9dd" stroke-width="7" stroke-linecap="round" filter="url(#trail2)"/>
+          <path class="comet-tail" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#ffe9dd" stroke-width="3" stroke-linecap="round" filter="url(#trail2)"/>
+          <path class="comet-head" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#fff2ea" stroke-width="3.5" stroke-linecap="round" filter="url(#trail2)"/>
         </svg>
         <div class="stat-foot">2h 10m debt</div>
         <div class="stat-val">64<span class="sm"> %</span></div>
