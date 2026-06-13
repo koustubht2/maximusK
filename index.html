@@ -20520,36 +20520,13 @@ function switchTab(tab) {
   // each meal save; removing a goals_ key syncs the deletion (tombstone) too.
   var THUMB_KEEP_DAYS = 14;
   function _pruneVitThumbs() {
-    try {
-      // Map every known meal id → its day (across ALL vitality keys, not just
-      // recent). recentIds = ids within the keep window; allIds = ids that exist
-      // at all. We only expire a thumb whose meal is KNOWN and OLD — never one
-      // whose meal id we can't see yet (e.g. data still syncing in), so a not-yet-
-      // loaded device can't nuke thumbs whose meals simply haven't arrived.
-      var recentIds = {}, allIds = {};
-      var cutoff = new Date(); cutoff.setHours(0,0,0,0); cutoff.setDate(cutoff.getDate() - THUMB_KEEP_DAYS);
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (!k || k.indexOf(VIT_KEY) !== 0) continue;
-        var dstr = k.slice(VIT_KEY.length);              // "YYYY-MM-DD"
-        var d = new Date(dstr + 'T12:00:00');
-        if (isNaN(d)) continue;
-        var arr; try { arr = JSON.parse(localStorage.getItem(k)); } catch(e) { continue; }
-        if (!Array.isArray(arr)) continue;
-        var recent = d >= cutoff;
-        arr.forEach(function(e){ if (e && e.id) { allIds[e.id] = 1; if (recent) recentIds[e.id] = 1; } });
-      }
-      var toRemove = [];
-      for (var j = 0; j < localStorage.length; j++) {
-        var tk = localStorage.key(j);
-        if (tk && tk.indexOf('goals_vit_thumb_') === 0) {
-          var id = tk.slice('goals_vit_thumb_'.length);
-          // expire only if the meal is known AND outside the window; keep unknown ids
-          if (allIds[id] && !recentIds[id]) toRemove.push(tk);
-        }
-      }
-      toRemove.forEach(function(tk){ try { localStorage.removeItem(tk); } catch(e){} });
-    } catch(e) {}
+    // DISABLED. This pruner used localStorage.removeItem on synced goals_vit_thumb_
+    // keys, which creates SYNCABLE tombstones. A date-window mismatch between
+    // devices then caused a "tombstone war": one device kept re-deleting the photo
+    // another had just pushed, so thumbnails never stuck in the cloud. Photos are
+    // tiny (~9KB) and few, so capping isn't worth that risk. If blob size ever
+    // becomes a real problem, prune LOCALLY without tombstones instead.
+    return;
   }
   _pruneVitThumbs();
 
