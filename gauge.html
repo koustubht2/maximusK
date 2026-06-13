@@ -60,11 +60,14 @@
      (i=0) is brightest/widest; trailing layers lag + dim → one long comet tail. */
   .comet path{
     fill:none; stroke-linecap:round;
-    stroke-dasharray:7 100;                              /* short lit segment */
+    stroke-dasharray:6 100;                              /* short lit segment */
     animation:cometMove 3.4s linear infinite;
-    animation-delay:calc(var(--i) * -0.07s);             /* bigger lag → longer tail */
-    stroke-width:calc(4px - var(--i) * 0.22px);          /* head thick → tail thin (over 14) */
-    opacity:calc(1 - var(--i) * 0.07);                   /* head bright → tail faint (over 14) */
+    animation-delay:calc(var(--i) * -0.07s);             /* lag → long tail */
+    /* thinner overall: head ~2.6px tapering to ~0.7px */
+    stroke-width:calc(2.6px - var(--i) * 0.14px);
+    /* brightness descends head → tail; steeper drop near the head so the
+       leading spark clearly pops, gentler fade through the tail */
+    opacity:calc(1 - (var(--i) * var(--i)) * 0.0052);
   }
   @keyframes cometMove{
     /* dash travels from just before the start (hidden) to past the mark */
@@ -114,8 +117,8 @@
            lagging a touch behind the one ahead with lower opacity, overlap into
            a single long glowing streak with a fading tail. --i = layer index. -->
       <g class="comet" filter="url(#trailGlow)">
-        <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
-        <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
+        <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#ffffff"/>
+        <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf6"/>
         <path style="--i:2"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
         <path style="--i:3"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
         <path style="--i:4"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
