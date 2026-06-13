@@ -160,31 +160,29 @@ select:focus{ border-color:var(--accent); }
    a dark translucent frosted surface. The blur + the built-in glow + a bright
    top rim = the Aston Climate/Tires look on ANY calm background. */
 .s1{
-  background:
-    /* dark smoky glass surface (translucent) */
-    linear-gradient(180deg, rgba(26,20,14,0.66) 0%, rgba(10,8,5,0.74) 100%),
-    /* built-in warm light that the glass sits over (the "scene" behind it) */
-    radial-gradient(80% 90% at 75% 115%, rgba(255,180,90,0.42) 0%, transparent 60%),
-    radial-gradient(70% 80% at 10% -10%, rgba(200,80,45,0.30) 0%, transparent 55%);
-  backdrop-filter:blur(24px) saturate(1.2);
-  -webkit-backdrop-filter:blur(24px) saturate(1.2);
-  border:1px solid rgba(255,255,255,0.08);
+  /* LIQUID GLASS (iOS-style): genuinely transparent — backdrop-filter refracts
+     whatever is ACTUALLY behind the card (the page background). No painted scene.
+     saturate+brightness make the real colours behind pop through the frost. */
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(18px) saturate(1.7) brightness(1.08);
+  -webkit-backdrop-filter:blur(18px) saturate(1.7) brightness(1.08);
+  border:1px solid rgba(255,255,255,0.18);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.12),    /* bright top rim — light on glass */
-    inset 0 -1px 0 rgba(0,0,0,0.3),
-    0 24px 55px -28px rgba(0,0,0,0.9);        /* soft deep lift */
+    inset 0 1px 0 rgba(255,255,255,0.30),     /* bright top rim — light on glass */
+    inset 0 -1px 1px rgba(0,0,0,0.25),
+    0 14px 36px -18px rgba(0,0,0,0.65);
 }
-.s1:hover{ border-color:rgba(255,255,255,0.14); }
-.s1 .t-value, .s1 .t-label{ text-shadow:0 1px 10px rgba(0,0,0,0.55); }
+.s1:hover{ border-color:rgba(255,255,255,0.28); }
+.s1 .t-value, .s1 .t-label, .s1 .t-trend{ text-shadow:0 1px 12px rgba(0,0,0,0.5); color:#fff; }
+.s1 .t-label{ color:rgba(255,255,255,0.78); }
+.s1 .t-icon{ color:#fff; opacity:.95; }
 
-/* ---- 2 · LUXURY GOLD GLOW (amber glass + light-catching gold border) ---- */
+/* ---- 2 · LUXURY GLASS (liquid glass + light-catching gold border) ---- */
 .s2{
-  background:
-    linear-gradient(160deg, rgba(60,42,18,0.55) 0%, rgba(24,16,8,0.7) 100%),
-    radial-gradient(85% 90% at 80% 110%, rgba(255,195,100,0.5) 0%, transparent 60%);
-  backdrop-filter:blur(20px) saturate(1.25); -webkit-backdrop-filter:blur(20px) saturate(1.25);
+  background:rgba(217,164,65,0.07);
+  backdrop-filter:blur(20px) saturate(1.6) brightness(1.05); -webkit-backdrop-filter:blur(20px) saturate(1.6) brightness(1.05);
   border:none;
-  box-shadow:0 0 55px -24px var(--accent), 0 20px 45px -28px #000, inset 0 1px 0 rgba(240,198,116,0.22);
+  box-shadow:0 0 55px -26px var(--accent), 0 20px 45px -28px #000, inset 0 1px 0 rgba(240,198,116,0.28);
 }
 .s2::before{ content:''; position:absolute; inset:0; border-radius:inherit; padding:1px;
   background:linear-gradient(140deg, var(--accent-2), rgba(217,164,65,0.25) 50%, rgba(217,164,65,0.10));
@@ -282,15 +280,13 @@ select:focus{ border-color:var(--accent); }
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
 
-/* ---- 20 · FROST + TOP SHEEN (cool neutral glass) ---- */
+/* ---- 20 · FROST + TOP SHEEN (cool liquid glass) ---- */
 .s20{
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)),
-    radial-gradient(90% 90% at 50% 120%, rgba(160,180,220,0.30) 0%, transparent 60%);
-  backdrop-filter:blur(22px) saturate(1.1); -webkit-backdrop-filter:blur(22px) saturate(1.1);
-  border:1px solid rgba(255,255,255,0.16); box-shadow:inset 0 1px 0 rgba(255,255,255,0.2), 0 20px 45px -30px #000; }
+  background:rgba(255,255,255,0.06);
+  backdrop-filter:blur(22px) saturate(1.5) brightness(1.06); -webkit-backdrop-filter:blur(22px) saturate(1.5) brightness(1.06);
+  border:1px solid rgba(255,255,255,0.18); box-shadow:inset 0 1px 0 rgba(255,255,255,0.28), 0 20px 45px -30px #000; }
 .s20::after{ content:''; position:absolute; top:0; left:0; right:0; height:42%;
-  background:linear-gradient(180deg, rgba(255,255,255,0.16), transparent); pointer-events:none; border-radius:inherit; }
+  background:linear-gradient(180deg, rgba(255,255,255,0.14), transparent); pointer-events:none; border-radius:inherit; }
 
 /* ============================================================
    ANIMATIONS — 20 keyframes. Active one is applied via class on .grid
@@ -498,8 +494,8 @@ var SAMPLES = [
   { icon:'star', value:'88', unit:'',   label:'Readiness',  warn:false, pct:88 },
 ];
 var VARIANTS = [
-  {c:'s1', n:'Glass Frost', f:'glassmorphism'},
-  {c:'s2', n:'Luxury Gold Glow', f:'automotive'},
+  {c:'s1', n:'Glass Frost', f:'glassmorphism', glass:true},
+  {c:'s2', n:'Luxury Gold Glow', f:'automotive', glass:true},
   {c:'s3', n:'Neumorphic', f:'soft-ui'},
   {c:'s4', n:'Brutalist', f:'brutalist'},
   {c:'s5', n:'Editorial Hairline', f:'editorial'},
@@ -517,7 +513,7 @@ var VARIANTS = [
   {c:'s17', n:'Dashed Ticket', f:'playful'},
   {c:'s18', n:'Stacked Depth', f:'material'},
   {c:'s19', n:'Conic Border', f:'bold'},
-  {c:'s20', n:'Frost Sheen', f:'glassmorphism'},
+  {c:'s20', n:'Frost Sheen', f:'glassmorphism', glass:true},
 ];
 
 var ICONS = {
@@ -678,9 +674,8 @@ function buildSnippet(i){
   var varCss  = grabRulesPrefix('.'+v.c);
   var animCss = grabKeyframe(curAnim) + '\n.tile{ animation:'+curAnim+' var(--anim-dur) var(--anim-ease) both; }';
 
-  var glassNote = (v.c==='s1'||v.c==='s2'||v.c==='s20') ?
-    '\n<!-- NOTE: this is a GLASS variant. backdrop-filter:blur only shows if there is a\n     colourful/gradient background BEHIND the card. On a flat dark page it will look solid. -->' : '';
-
+  var glassNote = v.glass ?
+    '\n<!-- iOS-style liquid glass: transparent + backdrop-filter blurs whatever is\n     behind it. Place it over a colourful/gradient background to see the effect. -->' : '';
   var html =
 '<!-- Stat tile · variant '+(i+1)+' "'+v.n+'" — paste into your project -->'+glassNote+'\n'+
 '<div class="tile '+v.c+'">\n  '+tileInner(v,s).replace(/\n/g,'\n  ')+'\n</div>\n\n'+
