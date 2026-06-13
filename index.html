@@ -12389,11 +12389,23 @@ setInterval(updateDayBar, 60 * 1000);
                  'synced thumb ids: ' + (allThumbKeys.length?allThumbKeys.join(','):'NONE'),
                  'PUSH blob: ' + sizeKB + ' KB',
                  'sReady: ' + sReady];
+    // Is the photo key actually in the blob we're about to push?
+    var inBlob = !!(s && s.keys && s.keys['goals_vit_thumb_axkg41n']);
+    var inDel  = !!(s && s.del && s.del['goals_vit_thumb_axkg41n']);
+    lines.push('photo in PUSH keys? ' + inBlob + '  | in PUSH del? ' + inDel);
     try {
       var r = await sRawPush(s, false);
       lines.push('PUSH status: ' + r.status + ' ' + r.statusText);
       if (!r.ok) { try { lines.push('ERR: ' + (await r.text()).slice(0,200)); } catch(e){} }
       else { sLastJson = window.canonicalJson(s); sLastKeysJson = window.canonicalJson(collectKeys()); }
+      // Read the cloud RIGHT BACK to see if our push persisted or got clobbered
+      await new Promise(function(res){ setTimeout(res, 1200); });
+      var vr = await fetch(S_URL + '/rest/v1/app_state?select=data,updated_at&key=eq.' + A_KEY,
+        { headers: { apikey: S_KEY, Authorization: 'Bearer ' + S_KEY } });
+      var vrows = await vr.json();
+      var vkeys = vrows && vrows[0] && vrows[0].data && vrows[0].data.keys || {};
+      lines.push('CLOUD after 1.2s — photo? ' + (vkeys['goals_vit_thumb_axkg41n'] ? 'YES' : 'NO'));
+      lines.push('CLOUD updated_at: ' + (vrows && vrows[0] && vrows[0].updated_at));
     } catch(e) { lines.push('PUSH threw: ' + (e && e.message)); }
     try { alert(lines.join('\n')); } catch(e) { console.log(lines.join('\n')); }
     return lines.join('\n');
