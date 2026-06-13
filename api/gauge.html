@@ -60,13 +60,13 @@
      (i=0) is brightest/widest; trailing layers lag + dim → one long comet tail. */
   .comet path{
     fill:none; stroke-linecap:round;
-    stroke-dasharray:6 100;                              /* short lit segment */
+    stroke-dasharray:9 100;                              /* lit segment (longer to fill gaps) */
     animation:cometMove 3.4s linear infinite;
-    animation-delay:calc(var(--i) * -0.095s);            /* lag → ~60-unit tail (18 layers) */
-    /* thinner overall: head ~2.6px tapering to ~0.6px */
-    stroke-width:calc(2.6px - var(--i) * 0.115px);
-    /* brightness fades GRADUALLY and evenly head → tail across all 18 layers */
-    opacity:calc(1 - var(--i) * 0.052);
+    animation-delay:calc(var(--i) * -0.16s);             /* big lag → trail spans ~the whole arc */
+    /* thinner overall: head ~2.6px tapering to ~1px */
+    stroke-width:calc(2.6px - var(--i) * 0.09px);
+    /* gentle fade so the long tail stays visible the whole way (ends ~0.23) */
+    opacity:calc(1 - var(--i) * 0.045);
   }
   @keyframes cometMove{
     /* dash travels from just before the start (hidden) to past the mark */

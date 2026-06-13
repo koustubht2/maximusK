@@ -73,11 +73,11 @@ body{
 /* Static fill trail stays full; a COMET (motion trail of stacked lit dashes,
    each lagging behind + dimmer) sweeps along it, start → mark, repeating. */
 .comet path{
-  fill:none; stroke-linecap:round; stroke-dasharray:6 100;
+  fill:none; stroke-linecap:round; stroke-dasharray:9 100;
   animation:cometMove 3.4s linear infinite;
-  animation-delay:calc(var(--i) * -0.095s);              /* lag → ~60-unit tail (18 layers) */
-  stroke-width:calc(2.6px - var(--i) * 0.115px);         /* thinner: head ~2.6px → tail ~0.6px */
-  opacity:calc(1 - var(--i) * 0.052);                    /* gradual even fade over 18 layers */
+  animation-delay:calc(var(--i) * -0.16s);               /* big lag → trail spans ~the whole arc */
+  stroke-width:calc(2.6px - var(--i) * 0.09px);          /* thinner: head ~2.6px → tail ~1px */
+  opacity:calc(1 - var(--i) * 0.045);                    /* gentle fade, tail visible whole way */
 }
 @keyframes cometMove{ 0%{ stroke-dashoffset:7; } 100%{ stroke-dashoffset:-107; } }
 @media (prefers-reduced-motion: reduce){ .comet{ display:none; } }
