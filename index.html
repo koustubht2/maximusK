@@ -20442,14 +20442,28 @@ function switchTab(tab) {
   function loadVit(dateStr) { return JSON.parse(localStorage.getItem(VIT_KEY + (dateStr || today())) || '[]'); }
   function saveVit(arr) { localStorage.setItem(VIT_KEY + today(), JSON.stringify(arr)); }
 
-  // One-time migration: older snap meals embedded a base64 photo thumbnail inside
-  // the SYNCED goals_vitality_ entry, bloating the shared sync row past the 64KB
-  // keepalive cap and silently breaking ALL goals sync. Move every embedded thumb
-  // to a device-local key (po_vit_thumb_<id>) and re-save the slimmed entry so it
-  // syncs small. Runs once; cheap no-op afterwards.
+  // One-time migration: snap-meal photo thumbnails now live in their OWN small
+  // synced key (goals_vit_thumb_<id>) — separate from the day's meal array so they
+  // never bloat it past the keepalive cap, yet still cross devices. This pass
+  //   (a) pulls any base64 still embedded in a goals_vitality_ entry out into the
+  //       synced thumb key and slims the entry, and
+  //   (b) copies any thumbs from the earlier device-LOCAL key (po_vit_thumb_<id>)
+  //       into the synced key so previously-snapped photos reach other devices.
   (function _migrateVitThumbs() {
     try {
-      if (localStorage.getItem('po_vit_thumb_migrated') === '1') return;
+      if (localStorage.getItem('po_vit_thumb_migrated') === '2') return;
+      // (b) promote old local-only thumbs to the synced key
+      for (var j = 0; j < localStorage.length; j++) {
+        var lk = localStorage.key(j);
+        if (lk && lk.indexOf('po_vit_thumb_') === 0 && lk !== 'po_vit_thumb_migrated') {
+          var id = lk.slice('po_vit_thumb_'.length);
+          var syncedKey = 'goals_vit_thumb_' + id;
+          if (localStorage.getItem(syncedKey) == null) {
+            try { localStorage.setItem(syncedKey, localStorage.getItem(lk)); } catch(err){}
+          }
+        }
+      }
+      // (a) pull embedded thumbs out of meal arrays into the synced key
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
         if (!k || k.indexOf(VIT_KEY) !== 0) continue;
@@ -20458,15 +20472,56 @@ function switchTab(tab) {
         var dirty = false;
         arr.forEach(function(e) {
           if (e && e.thumb && e.id) {
-            try { localStorage.setItem('po_vit_thumb_' + e.id, e.thumb); } catch(err){}
+            try { localStorage.setItem('goals_vit_thumb_' + e.id, e.thumb); } catch(err){}
             delete e.thumb; e.hasThumb = true; dirty = true;
           }
         });
         if (dirty) { try { localStorage.setItem(k, JSON.stringify(arr)); } catch(err){} }
       }
-      localStorage.setItem('po_vit_thumb_migrated', '1');
+      localStorage.setItem('po_vit_thumb_migrated', '2');
     } catch(e) {}
   })();
+
+  // Cap the synced blob: photo thumbnails (goals_vit_thumb_<id>) are kept only for
+  // meals in the last THUMB_KEEP_DAYS. Older photos are dropped (the meal + its
+  // macros stay forever — just the image expires). Keeps the sync row bounded so
+  // it never slowly bloats the way embedded base64 once did. Runs on load + after
+  // each meal save; removing a goals_ key syncs the deletion (tombstone) too.
+  var THUMB_KEEP_DAYS = 14;
+  function _pruneVitThumbs() {
+    try {
+      // Map every known meal id → its day (across ALL vitality keys, not just
+      // recent). recentIds = ids within the keep window; allIds = ids that exist
+      // at all. We only expire a thumb whose meal is KNOWN and OLD — never one
+      // whose meal id we can't see yet (e.g. data still syncing in), so a not-yet-
+      // loaded device can't nuke thumbs whose meals simply haven't arrived.
+      var recentIds = {}, allIds = {};
+      var cutoff = new Date(); cutoff.setHours(0,0,0,0); cutoff.setDate(cutoff.getDate() - THUMB_KEEP_DAYS);
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf(VIT_KEY) !== 0) continue;
+        var dstr = k.slice(VIT_KEY.length);              // "YYYY-MM-DD"
+        var d = new Date(dstr + 'T12:00:00');
+        if (isNaN(d)) continue;
+        var arr; try { arr = JSON.parse(localStorage.getItem(k)); } catch(e) { continue; }
+        if (!Array.isArray(arr)) continue;
+        var recent = d >= cutoff;
+        arr.forEach(function(e){ if (e && e.id) { allIds[e.id] = 1; if (recent) recentIds[e.id] = 1; } });
+      }
+      var toRemove = [];
+      for (var j = 0; j < localStorage.length; j++) {
+        var tk = localStorage.key(j);
+        if (tk && tk.indexOf('goals_vit_thumb_') === 0) {
+          var id = tk.slice('goals_vit_thumb_'.length);
+          // expire only if the meal is known AND outside the window; keep unknown ids
+          if (allIds[id] && !recentIds[id]) toRemove.push(tk);
+        }
+      }
+      toRemove.forEach(function(tk){ try { localStorage.removeItem(tk); } catch(e){} });
+    } catch(e) {}
+  }
+  _pruneVitThumbs();
+
   function getOura() {
     try {
       var raw = JSON.parse(localStorage.getItem('oura_cache_v2'));
@@ -23802,9 +23857,9 @@ function switchTab(tab) {
     if (foodList) {
       foodList.style.display = filtered.length ? '' : 'none';
       foodList.innerHTML = filtered.map(function(f) {
-        // Thumb now lives in a device-local key (po_vit_thumb_<id>), not on the
-        // synced entry. Fall back to f.thumb for any legacy entries still carrying it.
-        var _thumbSrc = f.thumb || (f.hasThumb ? (function(){ try { return localStorage.getItem('po_vit_thumb_' + f.id); } catch(e){ return null; } })() : null);
+        // Thumb is stored as its own synced key (goals_vit_thumb_<id>). Fall back to
+        // the old device-local key and the legacy embedded f.thumb for older entries.
+        var _thumbSrc = f.thumb || (f.hasThumb ? (function(){ try { return localStorage.getItem('goals_vit_thumb_' + f.id) || localStorage.getItem('po_vit_thumb_' + f.id); } catch(e){ return null; } })() : null);
         var thumbHtml = _thumbSrc
           ? '<img class="vit-food-thumb" src="'+_thumbSrc+'" alt="meal">'
           : '';
@@ -23829,7 +23884,7 @@ function switchTab(tab) {
         foodList.querySelectorAll('.vit-food-del').forEach(function(btn) {
           btn.addEventListener('click', function() {
             var arr = loadVit().filter(function(x){ return x.id !== btn.dataset.id; });
-            try { localStorage.removeItem('po_vit_thumb_' + btn.dataset.id); } catch(e){}  // drop local photo
+            try { localStorage.removeItem('goals_vit_thumb_' + btn.dataset.id); localStorage.removeItem('po_vit_thumb_' + btn.dataset.id); } catch(e){}  // drop photo (synced + legacy local)
             saveVit(arr); renderVitality(); _refreshEnergyChart(null);
           });
         });
@@ -25000,10 +25055,11 @@ function switchTab(tab) {
         var breakdown = (bdBox && bdBox.textContent) ? bdBox.textContent.replace(/^📸\s*/, '') : '';
         var entry = {id:uid(), name:displayName, kcal:kcal, protein:protein, carbs:carbs, fat:fat, meal:meal, timeHour:timeHour, timeStr:rawT, qty:qty};
         if (_pendingSnapThumb) {
-          // Store the photo thumbnail in a DEVICE-LOCAL key (no goals_ prefix → not
-          // synced). Embedding base64 in the synced vitality entry bloated the
-          // shared row past the 64KB keepalive cap and broke ALL goals sync.
-          try { localStorage.setItem('po_vit_thumb_' + entry.id, _pendingSnapThumb); } catch(e){}
+          // Store the photo thumbnail as its OWN small synced key (goals_ prefix →
+          // syncs). Keeping it separate from the day's meal array is what avoids the
+          // original bloat: each ~4KB thumb syncs independently and never inflates
+          // the meal-array key past the keepalive cap.
+          try { localStorage.setItem('goals_vit_thumb_' + entry.id, _pendingSnapThumb); } catch(e){}
           entry.hasThumb = true;
           _pendingSnapThumb = null;
         }
@@ -25012,6 +25068,7 @@ function switchTab(tab) {
         var items = loadVit();
         items.push(entry);
         saveVit(items);
+        if (entry.hasThumb) _pruneVitThumbs();   // keep the synced photo set bounded
         closeVitModal();
         renderVitality();
         _refreshEnergyChart(null);
