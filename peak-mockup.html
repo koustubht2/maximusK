@@ -74,10 +74,10 @@ body{
    each lagging behind + dimmer) sweeps along it, start → mark, repeating. */
 .comet path{
   fill:none; stroke-linecap:round; stroke-dasharray:7 100;
-  animation:cometMove 2.8s linear infinite;
-  animation-delay:calc(var(--i) * -0.05s);
-  stroke-width:calc(4px - var(--i) * 0.35px);
-  opacity:calc(1 - var(--i) * 0.14);
+  animation:cometMove 3.4s linear infinite;
+  animation-delay:calc(var(--i) * -0.07s);
+  stroke-width:calc(4px - var(--i) * 0.22px);
+  opacity:calc(1 - var(--i) * 0.07);
 }
 @keyframes cometMove{ 0%{ stroke-dashoffset:7; } 100%{ stroke-dashoffset:-107; } }
 @media (prefers-reduced-motion: reduce){ .comet{ display:none; } }
@@ -208,13 +208,20 @@ body{
           <path d="M43.4 156.6 A80 80 0 1 1 156.6 156.6" stroke="rgba(214,196,160,0.12)" stroke-width="6" stroke-linecap="round"/>
           <path d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="url(#gg1)" stroke-width="6" stroke-linecap="round"/>
           <g class="comet" filter="url(#trail1)">
-            <path style="--i:0" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
-            <path style="--i:1" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
-            <path style="--i:2" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-            <path style="--i:3" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-            <path style="--i:4" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-            <path style="--i:5" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-            <path style="--i:6" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
+            <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
+            <path style="--i:2"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:3"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:4"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:5"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:6"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:7"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:8"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:9"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:10" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:11" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+            <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
           </g>
         </svg>
         <div class="stat-foot">Today overall</div>
@@ -236,13 +243,20 @@ body{
           <!-- lower fill (~64%): ends at ~1 o'clock, a TRUE point on the r=80 arc (145.9, 34.5) -->
           <path d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="url(#gg2)" stroke-width="6" stroke-linecap="round"/>
           <g class="comet" filter="url(#trail2)">
-            <path style="--i:0" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#fff2ea"/>
-            <path style="--i:1" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#ffe9dd"/>
-            <path style="--i:2" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
-            <path style="--i:3" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
-            <path style="--i:4" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
-            <path style="--i:5" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
-            <path style="--i:6" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#fff2ea"/>
+            <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#ffe9dd"/>
+            <path style="--i:2"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:3"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:4"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:5"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:6"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:7"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:8"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:9"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:10" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:11" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
+            <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 145.9 34.5" stroke="#f0a07f"/>
           </g>
         </svg>
         <div class="stat-foot">2h 10m debt</div>

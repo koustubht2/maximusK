@@ -61,10 +61,10 @@
   .comet path{
     fill:none; stroke-linecap:round;
     stroke-dasharray:7 100;                              /* short lit segment */
-    animation:cometMove 2.8s linear infinite;
-    animation-delay:calc(var(--i) * -0.05s);             /* each lags behind the one ahead */
-    stroke-width:calc(4px - var(--i) * 0.35px);          /* head thick → tail thin */
-    opacity:calc(1 - var(--i) * 0.14);                   /* head bright → tail faint */
+    animation:cometMove 3.4s linear infinite;
+    animation-delay:calc(var(--i) * -0.07s);             /* bigger lag → longer tail */
+    stroke-width:calc(4px - var(--i) * 0.22px);          /* head thick → tail thin (over 14) */
+    opacity:calc(1 - var(--i) * 0.07);                   /* head bright → tail faint (over 14) */
   }
   @keyframes cometMove{
     /* dash travels from just before the start (hidden) to past the mark */
@@ -114,13 +114,20 @@
            lagging a touch behind the one ahead with lower opacity, overlap into
            a single long glowing streak with a fading tail. --i = layer index. -->
       <g class="comet" filter="url(#trailGlow)">
-        <path style="--i:0" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
-        <path style="--i:1" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
-        <path style="--i:2" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-        <path style="--i:3" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-        <path style="--i:4" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-        <path style="--i:5" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
-        <path style="--i:6" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:0"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffdf8"/>
+        <path style="--i:1"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#fffaf2"/>
+        <path style="--i:2"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:3"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:4"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:5"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:6"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:7"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:8"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:9"  pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:10" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:11" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:12" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
+        <path style="--i:13" pathLength="100" d="M43.4 156.6 A80 80 0 1 1 169.3 60" stroke="#f3ece0"/>
       </g>
     </svg>
 
