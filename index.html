@@ -1079,15 +1079,6 @@ body::after {
 .peak-whyBox.on { display:block; margin-bottom:12px; }
 .peak-whyRow { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-tertiary); padding:7px 0; border-top:1px solid rgba(255,255,255,0.06); }
 .peak-whyRow b { color:var(--text-primary); }
-/* ── Workout card (Peak page) ── */
-.peak-workout-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
-.peak-workout-row:last-child { border-bottom:none; }
-.peak-workout-split { font-family:var(--font-serif); font-style:italic; font-size:22px; color:var(--text-primary); }
-.peak-workout-meta { font-family:var(--font-mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); margin-top:2px; }
-.peak-workout-badge { font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; padding:5px 12px; border-radius:999px; border:1px solid; }
-.peak-workout-badge.done { color:#6EE7B7; border-color:rgba(110,231,183,0.3); background:rgba(110,231,183,0.06); }
-.peak-workout-badge.rest { color:var(--text-tertiary); border-color:rgba(255,255,255,0.08); }
-.peak-workout-badge.pending { color:#F59E0B; border-color:rgba(245,158,11,0.3); background:rgba(245,158,11,0.06); }
 /* ── Meds card ── */
 .peak-meds-log-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:nowrap; }
 .peak-meds-log-row .peak-caff-search-wrap { flex:1; min-width:0; margin-bottom:0; }
@@ -8824,6 +8815,33 @@ window.canonicalJson = function(obj) {
       <div id="peakTrainDetail" style="font-size:12px;color:var(--text-tertiary);margin-top:6px;line-height:1.5">—</div>
     </div>
 
+    <div class="peak-card" id="peakLastWeekCard">
+      <div class="peak-section-label">Last Week</div>
+      <!-- three Oura-style trend lines: readiness, HRV, sleep -->
+      <div class="peak-lw-trend" style="margin-top:6px">
+        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">Readiness</span><span class="peak-lw-trend-val" id="peakLwAvgReadiness">—</span></div>
+        <canvas id="peakLwReadinessCanvas" height="46" style="width:100%;display:block"></canvas>
+      </div>
+      <div class="peak-lw-trend" style="margin-top:14px">
+        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">HRV</span><span class="peak-lw-trend-val" id="peakLwAvgHrv">—</span></div>
+        <canvas id="peakLwHrvCanvas" height="46" style="width:100%;display:block"></canvas>
+      </div>
+      <div class="peak-lw-trend" style="margin-top:14px">
+        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">Sleep</span><span class="peak-lw-trend-val" id="peakLwAvgSleep">—</span></div>
+        <canvas id="peakLwSleepCanvas" height="46" style="width:100%;display:block"></canvas>
+      </div>
+      <div class="peak-lw-trend-days" id="peakLwDays" style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.06em"></div>
+      <div class="peak-lw-best" style="margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);letter-spacing:0.06em">Best day: <span id="peakLwBestDay" style="color:#6EE7B7">—</span></div>
+      <span id="peakLwBars" style="display:none"></span>
+    </div>
+
+    <!-- Peak score history (7-day energy at current hour) -->
+    <div class="peak-card" id="peakHistoryCard" style="display:none">
+      <div class="peak-section-label">Energy Score · 7 Days</div>
+      <canvas id="peakHistoryCanvas" height="60" style="width:100%;display:block;margin-top:8px"></canvas>
+      <div id="peakHistoryLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.06em"></div>
+    </div>
+
     <!-- Body weight trend -->
     <div class="peak-card" id="peakWeightCard" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -8836,6 +8854,11 @@ window.canonicalJson = function(obj) {
         <span id="peakWeightCurrent" style="font-family:var(--font-mono);font-size:11px;color:var(--text-primary);font-weight:600"></span>
         <span id="peakWeightMax" style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28)"></span>
       </div>
+    </div>
+
+    <div class="peak-card">
+      <div class="peak-section-label" id="peakWinsLabel">Best Hours</div>
+      <div id="peakWinsContainer"></div>
     </div>
 
     <!-- Focus session timer -->
@@ -8854,34 +8877,7 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
-    <!-- Smart alarm suggestion -->
-    <div id="peakAlarmCard" style="display:none;background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.2);border-radius:14px;padding:12px 14px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:16px">⏰</span>
-        <div>
-          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(196,181,253,0.5);margin-bottom:2px">SMART ALARM</div>
-          <div id="peakAlarmText" style="font-size:12px;color:rgba(196,181,253,0.9);line-height:1.5"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="peak-card">
-      <div class="peak-section-label" id="peakWinsLabel">Best Hours</div>
-      <div id="peakWinsContainer"></div>
-    </div>
-
-    <div class="peak-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div class="peak-section-label" style="margin-bottom:0">Today</div>
-        <button id="peakInsightsRefreshBtn" style="background:none;border:1px solid rgba(110,231,183,0.25);border-radius:20px;color:#6EE7B7;font-size:11px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;letter-spacing:0.03em;" title="Refresh insights">
-          <svg id="peakInsightsRefreshIcon" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2A5 5 0 1 0 11 6"/><polyline points="9 1 11 2 10 4"/></svg>
-          Refresh
-        </button>
-      </div>
-      <div id="peakInsightsList">
-        <div class="peak-insight-row"><div class="peak-insight-dot"></div><div class="peak-insight-text">Loading insights…</div></div>
-      </div>
-    </div>
+    <!-- Smart alarm moved to the JARVIS tab -->
 
     <div class="peak-card">
       <div class="peak-feel-wrap">
@@ -8898,9 +8894,17 @@ window.canonicalJson = function(obj) {
       <div class="peak-feel-logs" id="peakFeelLogs"></div>
     </div>
 
-    <div class="peak-card" id="peakWorkoutCard">
-      <div class="peak-section-label">Training</div>
-      <div id="peakWorkoutBody"></div>
+    <div class="peak-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="peak-section-label" style="margin-bottom:0">Today</div>
+        <button id="peakInsightsRefreshBtn" style="background:none;border:1px solid rgba(110,231,183,0.25);border-radius:20px;color:#6EE7B7;font-size:11px;padding:3px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;letter-spacing:0.03em;" title="Refresh insights">
+          <svg id="peakInsightsRefreshIcon" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2A5 5 0 1 0 11 6"/><polyline points="9 1 11 2 10 4"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div id="peakInsightsList">
+        <div class="peak-insight-row"><div class="peak-insight-dot"></div><div class="peak-insight-text">Loading insights…</div></div>
+      </div>
     </div>
 
     <div class="peak-card">
@@ -8996,67 +9000,7 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
-    <div class="peak-card">
-      <div class="peak-section-label">Your Coach</div>
-      <div style="display:flex;justify-content:center;margin-bottom:14px;">
-        <canvas id="peakArcReactor" width="300" height="300" style="cursor:pointer;width:300px;height:300px;max-width:90vw;" title="Tap JARVIS"></canvas>
-      </div>
-      <div class="peak-coach-messages" id="peakCoachMessages"></div>
-      <div class="peak-coach-chips">
-        <button class="peak-coach-chip" type="button" data-chip="when should I train today?">When to train?</button>
-        <button class="peak-coach-chip" type="button" data-chip="optimise my caffeine for today">Optimise caffeine</button>
-        <button class="peak-coach-chip" type="button" data-chip="how is my recovery looking?">Recovery check</button>
-      </div>
-      <div class="peak-coach-input-row">
-        <input id="peakCoachInput" class="peak-coach-input" type="text" placeholder="Ask JARVIS…">
-        <button id="peakMicBtn" type="button" title="Hold conversation with JARVIS" style="width:38px;height:38px;border-radius:50%;border:1px solid rgba(110,231,183,0.25);background:rgba(110,231,183,0.07);color:rgba(110,231,183,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s">
-          <svg id="peakMicIcon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        </button>
-        <button id="peakCoachSend" class="peak-coach-send" type="button">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-      <!-- conversation stop (shown only while a voice conversation is active) -->
-      <div id="peakConvBar" style="display:none;margin-top:8px;justify-content:flex-end">
-        <span id="peakConvStatus" style="display:none"></span>
-        <button id="peakConvStop" type="button" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:#f87171;letter-spacing:0.06em;padding:7px 14px">■ STOP</button>
-      </div>
-      <!-- voice picker (hidden select, kept for logic) + small download button -->
-      <div style="margin-top:10px;display:flex;align-items:center;gap:8px;justify-content:flex-end">
-        <select id="peakVoiceSelect" style="display:none"><option value="">auto</option></select>
-        <button id="peakPiperTest" type="button" style="background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.3);border-radius:10px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;padding:7px 14px;cursor:pointer">Download JARVIS</button>
-      </div>
-      <span id="peakVoiceHint" style="display:none"></span>
-      <span id="peakPiperStatus" style="display:none"></span>
-      <span id="peakPiperLog" style="display:none"></span>
-    </div>
-
-    <div class="peak-card" id="peakLastWeekCard">
-      <div class="peak-section-label">Last Week</div>
-      <!-- three Oura-style trend lines: readiness, HRV, sleep -->
-      <div class="peak-lw-trend" style="margin-top:6px">
-        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">Readiness</span><span class="peak-lw-trend-val" id="peakLwAvgReadiness">—</span></div>
-        <canvas id="peakLwReadinessCanvas" height="46" style="width:100%;display:block"></canvas>
-      </div>
-      <div class="peak-lw-trend" style="margin-top:14px">
-        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">HRV</span><span class="peak-lw-trend-val" id="peakLwAvgHrv">—</span></div>
-        <canvas id="peakLwHrvCanvas" height="46" style="width:100%;display:block"></canvas>
-      </div>
-      <div class="peak-lw-trend" style="margin-top:14px">
-        <div class="peak-lw-trend-head"><span class="peak-lw-trend-name">Sleep</span><span class="peak-lw-trend-val" id="peakLwAvgSleep">—</span></div>
-        <canvas id="peakLwSleepCanvas" height="46" style="width:100%;display:block"></canvas>
-      </div>
-      <div class="peak-lw-trend-days" id="peakLwDays" style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.06em"></div>
-      <div class="peak-lw-best" style="margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);letter-spacing:0.06em">Best day: <span id="peakLwBestDay" style="color:#6EE7B7">—</span></div>
-      <span id="peakLwBars" style="display:none"></span>
-    </div>
-
-    <!-- Peak score history (7-day energy at current hour) -->
-    <div class="peak-card" id="peakHistoryCard" style="display:none">
-      <div class="peak-section-label">Energy Score · 7 Days</div>
-      <canvas id="peakHistoryCanvas" height="60" style="width:100%;display:block;margin-top:8px"></canvas>
-      <div id="peakHistoryLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.06em"></div>
-    </div>
+    <!-- "Your Coach" retired — chat + avatar + voice now live in the JARVIS tab -->
 
     <!-- Weekly Peak Report (Sunday) -->
     <div class="peak-card" id="peakWeeklyCard" style="display:none">
@@ -9226,6 +9170,15 @@ window.canonicalJson = function(obj) {
       <canvas id="jvAvatarCanvas" width="300" height="300" style="position:relative;z-index:1;cursor:pointer;width:500px;height:500px;max-width:90vw;max-height:90vw;" title="JARVIS"></canvas>
     </div>
 
+    <!-- One-time neural voice (Piper) download + hidden voice picker (kept for logic) -->
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin:-6px 0 14px;">
+      <select id="peakVoiceSelect" style="display:none"><option value="">auto</option></select>
+      <button id="peakPiperTest" type="button" style="background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.3);border-radius:10px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;padding:7px 14px;cursor:pointer">Download JARVIS voice</button>
+    </div>
+    <span id="peakVoiceHint" style="display:none"></span>
+    <span id="peakPiperStatus" style="display:none"></span>
+    <span id="peakPiperLog" style="display:none"></span>
+
     <!-- Morning Brief (moved here from Peak) -->
     <div class="peak-card" id="peakMorningBriefCard" style="display:none;margin-top:6px;">
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -9251,6 +9204,17 @@ window.canonicalJson = function(obj) {
       <div id="peakMarketsTickers" style="display:flex;gap:14px;flex-wrap:wrap"></div>
     </div>
 
+    <!-- Smart alarm suggestion (moved here from Peak) -->
+    <div id="peakAlarmCard" style="display:none;background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.2);border-radius:14px;padding:12px 14px;margin-top:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">⏰</span>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(196,181,253,0.5);margin-bottom:2px">SMART ALARM</div>
+          <div id="peakAlarmText" style="font-size:12px;color:rgba(196,181,253,0.9);line-height:1.5"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- chat -->
     <div class="peak-card" style="margin-top:10px;">
       <div id="jvCoachMessages" class="peak-coach-messages" style="min-height:120px;max-height:46vh;"></div>
@@ -9262,9 +9226,17 @@ window.canonicalJson = function(obj) {
       </div>
       <div class="peak-coach-input-row">
         <input id="jvCoachInput" class="peak-coach-input" type="text" placeholder="Ask JARVIS anything about your data…">
+        <button id="peakMicBtn" type="button" title="Hold conversation with JARVIS" style="width:38px;height:38px;border-radius:50%;border:1px solid rgba(110,231,183,0.25);background:rgba(110,231,183,0.07);color:rgba(110,231,183,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s">
+          <svg id="peakMicIcon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
         <button id="jvCoachSend" class="peak-coach-send" type="button">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
+      </div>
+      <!-- voice conversation stop (shown only while a voice conversation is active) -->
+      <div id="peakConvBar" style="display:none;margin-top:8px;justify-content:flex-end">
+        <span id="peakConvStatus" style="display:none"></span>
+        <button id="peakConvStop" type="button" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:#f87171;letter-spacing:0.06em;padding:7px 14px">■ STOP</button>
       </div>
     </div>
 
@@ -20850,7 +20822,7 @@ function switchTab(tab) {
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;">' +
           '<div class="peak-window-badge ' + win.zoneClass + '">' + scoreStr + '</div>' +
-          '<button class="peak-rock-btn" onclick="appendCoachMsg(\'user\',\'' + rockMsg + '\');sendCoachMessage()" type="button">Rock →</button>' +
+          '<button class="peak-rock-btn" onclick="window._jvAsk(\'' + rockMsg + '\')" type="button">Rock →</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -21745,6 +21717,7 @@ function switchTab(tab) {
     _renderMarkets();
     if (_peakDayOffset === 0) {
       _briefArgs = [readiness, sleepScore, recovery, debtStr, wakeHour, arr];
+      _alarmArgs = [readiness, debtStr, oura];
       _renderMorningBrief(readiness, sleepScore, recovery, debtStr, wakeHour, arr);
       _renderTomorrowPredict(readiness, debtStr, wakeHour, caffLogs, loadAlc());
       _renderSmartAlarm(readiness, debtStr, oura);
@@ -22074,6 +22047,23 @@ function switchTab(tab) {
   // FEATURE 4 — Smart alarm (optimal wake suggestion)
   // ══════════════════════════════════════════════════════════════
   var ALARM_KEY = 'goals_peak_alarm_';
+  var _alarmArgs = null;
+  // Exposed so the JARVIS tab (where the alarm card now lives) can paint the
+  // cached suggestion on open, or generate one if Peak hasn't produced it yet.
+  window._jvShowSmartAlarm = function() {
+    var card = document.getElementById('peakAlarmCard');
+    var textEl = document.getElementById('peakAlarmText');
+    if (!card || !textEl) return;
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(ALARM_KEY + today())); } catch(e) {}
+    if (cached && cached.text) { card.style.display = ''; textEl.textContent = cached.text; return; }
+    // No cache — generate if we have the data and it's late enough (fn self-gates to >=18:00).
+    if (_alarmArgs) {
+      _renderSmartAlarm(_alarmArgs[0], _alarmArgs[1], _alarmArgs[2]);
+    } else {
+      try { renderPeak(); } catch(e) {}   // prime Peak to compute args, then it renders the alarm
+    }
+  };
   async function _renderSmartAlarm(readiness, debtStr, oura) {
     var card = document.getElementById('peakAlarmCard');
     var textEl = document.getElementById('peakAlarmText');
@@ -22176,6 +22166,7 @@ function switchTab(tab) {
     if (!SR) return;
     _setConvBar(true, 'Listening…', '#6EE7B7');
     if (window._arcSetMood) window._arcSetMood('idle');
+    if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
     if (_convRecog) { try { _convRecog.stop(); } catch(e){} }
     var recog = new SR();
     recog.continuous = false;
@@ -22198,13 +22189,14 @@ function switchTab(tab) {
           _endConversation(true);
           return;
         }
-        var inp = document.getElementById('peakCoachInput');
+        var inp = document.getElementById('jvCoachInput');
         if (inp) inp.value = final;
         _setConvBar(true, 'Processing…', '#F59E0B');
-        if (window._arcSetMood) window._arcSetMood('thinking');
-        // sendCoachMessage will call _jarvisSpeak when done,
-        // we hook into the audio end to restart listening
-        sendCoachMessage(final, true /* convMode */);
+        if (window._jvAvatarSetMood) window._jvAvatarSetMood('thinking');
+        // Route through the JARVIS-tab chat (omniscient, sees all data). It calls
+        // _jarvisSpeak when done; we listen for the next turn after speech ends.
+        if (inp) inp.value = '';
+        if (typeof window._jvSendConv === 'function') window._jvSendConv(final);
       }
     };
     recog.onend = function() {
@@ -22231,11 +22223,14 @@ function switchTab(tab) {
     try { recog.start(); } catch(e){ _endConversation(false); }
     _convRecog = recog;
   }
+  // Exposed so the JARVIS-tab chat (jvSend convMode) can request the next
+  // listening turn once it has finished speaking its reply.
+  window._jvConvNextTurn = _convNextTurn;
 
   function _startConversation() {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      appendCoachMsg('Voice not supported in this browser, sir. Use Chrome or Edge.', 'coach');
+      if (typeof window._jvAppendMsg === 'function') window._jvAppendMsg('Voice not supported in this browser, sir. Use Chrome or Edge.', 'coach');
       return;
     }
     _convActive = true;
@@ -22256,6 +22251,7 @@ function switchTab(tab) {
     _setMicBtn(false);
     _setConvBar(false);
     if (window._arcSetMood) window._arcSetMood('idle');
+    if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
     if (graceful) _jarvisSpeak('Understood, sir. Signing off.');
   }
 
@@ -24388,56 +24384,6 @@ function switchTab(tab) {
       };
     })();
 
-    // ── Workout integration ────────────────────────────────────
-    (function() {
-      function renderWorkout() {
-        var body = document.getElementById('peakWorkoutBody');
-        if (!body) return;
-        // Read gym tracker state
-        var state = (function(){ try { return JSON.parse(localStorage.getItem('po_coach_v1') || 'null'); } catch(e){ return null; } })();
-        var doneDays = (function(){ try { return JSON.parse(localStorage.getItem('po_coach_workout_done') || '{}'); } catch(e){ return {}; } })();
-        var todStr = today();
-        var isDone = !!doneDays[todStr];
-
-        // Compute today's split from splitRotation + splitAnchor
-        var splitName = '—', isRest = false;
-        if (state && Array.isArray(state.splitRotation) && state.splitRotation.length && state.splitAnchor && state.splitAnchor.date) {
-          var rot = state.splitRotation;
-          var anchor = new Date(state.splitAnchor.date);
-          var t2 = new Date(); anchor.setHours(0,0,0,0); t2.setHours(0,0,0,0);
-          var diffDays = Math.round((t2 - anchor) / 86400000);
-          var idx = ((state.splitAnchor.index + diffDays) % rot.length + rot.length) % rot.length;
-          splitName = rot[idx] || '—';
-          isRest = splitName.toLowerCase() === 'rest';
-          // Next training day
-          var nextIdx = (idx + 1) % rot.length, nextSteps = 1;
-          while (nextSteps < rot.length && rot[nextIdx].toLowerCase() === 'rest') { nextIdx = (nextIdx + 1) % rot.length; nextSteps++; }
-        }
-
-        var badgeClass = isDone ? 'done' : isRest ? 'rest' : 'pending';
-        var badgeText = isDone ? '✓ Done' : isRest ? 'Rest day' : 'Not logged';
-
-        var html = '<div class="peak-workout-row">'
-          + '<div><div class="peak-workout-split">' + escHtml(splitName) + '</div>'
-          + '<div class="peak-workout-meta">' + (isRest ? 'Recovery day' : isDone ? 'Session complete' : 'Log in Gym tracker') + '</div></div>'
-          + '<span class="peak-workout-badge ' + badgeClass + '">' + badgeText + '</span>'
-          + '</div>';
-
-        // Show last logged session summary if available
-        if (state && state.logs && !isRest) {
-          var todayLogs = state.logs[todStr] || [];
-          if (todayLogs.length) {
-            html += '<div class="peak-workout-row"><div style="font-size:12px;color:var(--text-secondary)">'
-              + todayLogs.length + ' exercise' + (todayLogs.length > 1 ? 's' : '') + ' logged today'
-              + '</div></div>';
-          }
-        }
-        body.innerHTML = html;
-      }
-      renderWorkout();
-      window._peakRenderWorkout = renderWorkout;
-    })();
-
     // ── Meds UI ────────────────────────────────────────────────
     (function() {
       var MEDS_TIME_KEY = 'peak_meds_time';
@@ -24661,20 +24607,9 @@ function switchTab(tab) {
     var planTap = document.getElementById('peakPlanTap');
     if (planTap && si) planTap.addEventListener('click', function() { si.focus(); });
 
-    document.querySelectorAll('.peak-coach-chip').forEach(function(chip) {
-      chip.addEventListener('click', function() {
-        var inp = document.getElementById('peakCoachInput');
-        if (inp) inp.value = chip.dataset.chip;
-        sendCoachMessage(chip.dataset.chip);
-      });
-    });
-
-    var coachSend = document.getElementById('peakCoachSend');
-    var coachInp  = document.getElementById('peakCoachInput');
-    if (coachSend && coachInp) {
-      coachSend.addEventListener('click', function() { var msg = coachInp.value.trim(); if (msg) { sendCoachMessage(msg); coachInp.value = ''; } });
-      coachInp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { var msg = coachInp.value.trim(); if (msg) { sendCoachMessage(msg); coachInp.value = ''; } } });
-    }
+    // Peak coach chips/input retired (chat now lives in the JARVIS tab). The old
+    // chip wiring intentionally removed so it can't bind to the JARVIS-tab chips
+    // (same .peak-coach-chip class) and double-fire the dead Peak coach handler.
 
     // ── Mic button — start / stop conversation ────────────────
     var micBtn = document.getElementById('peakMicBtn');
@@ -24987,18 +24922,21 @@ function switchTab(tab) {
 
     // == JARVIS Avatar -- 3D particle sphere (selective bloom), 2D fallback ==
     (function() {
-      var canvas = document.getElementById('peakArcReactor');
-      if (!canvas) return;
       var _mood = 'idle';            // 'idle' | 'thinking' | 'responding'
       var _pingT = -1;
 
-      // Public hooks (synchronous so callers never hit undefined while 3D loads)
+      // Public hooks (synchronous so callers never hit undefined while 3D loads).
+      // Defined BEFORE any canvas check so TTS + mood stay available even though
+      // the Peak arc-reactor avatar was retired (JARVIS tab has its own avatar).
       function setMood(m) { _mood = m; }
       window._arcSetMood = setMood;
-      window._jarvisSpeak = function(text) { _jarvisSpeak(text); };
+      window._jarvisSpeak = function(text, onDone) { _jarvisSpeak(text, onDone); };
 
       _initHeyJarvis();
       _piperWarmup();
+
+      var canvas = document.getElementById('peakArcReactor');
+      if (!canvas) return;   // Peak avatar removed → skip 3D init; hooks above remain live
       canvas.addEventListener('click', function() { _pingT = 0.01; });
 
       _initAvatar().catch(function(err) {
@@ -26002,6 +25940,9 @@ function switchTab(tab) {
     feed.appendChild(div); feed.scrollTop=feed.scrollHeight;
     return div;
   }
+  // Exposed so the (Peak-scoped) voice-conversation engine can post status
+  // messages into the JARVIS-tab chat now that the Peak coach is retired.
+  window._jvAppendMsg = jvAppend;
 
   // chat history persistence (goals_ prefix → syncs to Supabase). Keyed per-day.
   var JVCHAT_KEY='goals_jv_chat_';
@@ -26021,7 +25962,7 @@ function switchTab(tab) {
   }
 
   var jvFlight=false;
-  async function jvSend(msg){
+  async function jvSend(msg, convMode){
     if(!msg || !msg.trim() || jvFlight) return;
     jvFlight=true;
     if(window._jvAvatarSetMood) window._jvAvatarSetMood('thinking');   // avatar reacts
@@ -26042,15 +25983,30 @@ function switchTab(tab) {
       if(lastErr) throw lastErr;
       var txt=(reply&&reply.trim())||'My apologies, sir - I could not generate a response. Please try again.';
       jvAppend(txt,'coach'); jvSaveTurn('coach', txt);
-      // _jarvisSpeak now drives BOTH avatars' mood, tied to real audio start/end.
-      if(typeof window._jarvisSpeak==='function') window._jarvisSpeak(txt);
-      else if(window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
+      // _jarvisSpeak drives BOTH avatars' mood, tied to real audio start/end.
+      // In voice-conversation mode, listen for the next turn once speech ends.
+      if(typeof window._jarvisSpeak==='function'){
+        window._jarvisSpeak(txt, (convMode && typeof window._jvConvNextTurn==='function') ? function(){ window._jvConvNextTurn(); } : undefined);
+      } else {
+        if(window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
+        if(convMode && typeof window._jvConvNextTurn==='function') window._jvConvNextTurn();
+      }
     } catch(e){
       if(window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
       if(loading && loading.parentNode) loading.parentNode.removeChild(loading);
       jvAppend('Could not reach JARVIS, sir. ('+(e&&e.message||'unknown error')+')','coach');
+      if(convMode && typeof window._jvConvNextTurn==='function') setTimeout(function(){ window._jvConvNextTurn(); }, 1500);
     } finally { jvFlight=false; }
   }
+  // Exposed so the Peak voice-conversation engine can route turns through the
+  // omniscient JARVIS-tab chat (which sees all data), not the retired Peak coach.
+  window._jvSendConv = function(msg){ jvSend(msg, true); };
+  // General entry: ask JARVIS a question from anywhere (e.g. Peak "Rock →" button),
+  // jumping to the JARVIS tab so the user sees the conversation.
+  window._jvAsk = function(msg){
+    try { if (typeof window.switchTab === 'function') window.switchTab('jarvis'); } catch(e){}
+    setTimeout(function(){ jvSend(msg); }, 60);
+  };
 
   function wireJarvis(){
     var send=document.getElementById('jvCoachSend'), inp=document.getElementById('jvCoachInput');
@@ -26174,6 +26130,7 @@ function switchTab(tab) {
     }
     if(typeof window._jvShowMorningBrief==='function') window._jvShowMorningBrief(false); // brief now lives here
     if(typeof window._jvRenderMarkets==='function') window._jvRenderMarkets();            // markets strip now lives here
+    if(typeof window._jvShowSmartAlarm==='function') window._jvShowSmartAlarm();           // smart alarm now lives here
     renderJvNudges();
     renderJvPatterns(false);   // shows cached patterns if present
     renderJvDebrief(false);    // shows cached debrief if present
@@ -26198,6 +26155,7 @@ function switchTab(tab) {
       if(feed){ feed.innerHTML=''; if(!jvRestoreHistory()){ jvAppend('Good day, sir. I have full visibility across your health, training, goals and finances. Ask me anything, or tap a prompt below.','coach'); } }
       if(typeof window._jvShowMorningBrief==='function') window._jvShowMorningBrief(false);
       if(typeof window._jvRenderMarkets==='function') window._jvRenderMarkets();
+      if(typeof window._jvShowSmartAlarm==='function') window._jvShowSmartAlarm();
       renderJvNudges();
       renderJvPatterns(false);
       renderJvDebrief(false);
