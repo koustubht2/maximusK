@@ -22536,8 +22536,9 @@ function switchTab(tab) {
     audio.src = url;
     window._jarvisSpeaking = true;
     if (window._arcSetMood) window._arcSetMood('responding');
+    if (window._jvAvatarSetMood) window._jvAvatarSetMood('responding');
     var fired = false;
-    function done(){ if (fired) return; fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); URL.revokeObjectURL(url); if (onDone) onDone(); }
+    function done(){ if (fired) return; fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle'); URL.revokeObjectURL(url); if (onDone) onDone(); }
     audio.onended = done; audio.onerror = done;
     audio.play().then(function(){
       _pendingBriefBlob = null; // played fine, nothing pending
@@ -22547,6 +22548,7 @@ function switchTab(tab) {
       _pendingBriefBlob = blob;
       window._jarvisSpeaking = false;
       if (window._arcSetMood) window._arcSetMood('idle');
+      if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
       URL.revokeObjectURL(url);
     });
   }
@@ -23381,6 +23383,7 @@ function switchTab(tab) {
     try { window.speechSynthesis.cancel(); } catch(e){}
     window._jarvisSpeaking = true;
     if (window._arcSetMood) window._arcSetMood('responding');
+    if (window._jvAvatarSetMood) window._jvAvatarSetMood('responding');
     var utter = new SpeechSynthesisUtterance(text);
     if (!_jarvisVoice) _jarvisVoice = _pickJarvisVoice();
     if (_jarvisVoice) utter.voice = _jarvisVoice;
@@ -23388,7 +23391,7 @@ function switchTab(tab) {
     utter.rate  = 0.98;
     utter.pitch = 1.0;
     var _fired = false;
-    function done(){ if (_fired) return; _fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (onDone) onDone(); }
+    function done(){ if (_fired) return; _fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle'); if (onDone) onDone(); }
     utter.onend = done;
     utter.onerror = done;
     window.speechSynthesis.speak(utter);
@@ -23431,6 +23434,7 @@ function switchTab(tab) {
 
     window._jarvisSpeaking = true;
     if (window._arcSetMood) window._arcSetMood('responding');
+    if (window._jvAvatarSetMood) window._jvAvatarSetMood('responding');
 
     var shaped = _jarvisShapeText ? _shapeForSpeech(text) : text;
 
@@ -23464,7 +23468,7 @@ function switchTab(tab) {
       audio.playbackRate = _jarvisPace;
     }
     var _fired = false;
-    function done(){ if (_fired) return; _fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (onDone) onDone(); }
+    function done(){ if (_fired) return; _fired = true; window._jarvisSpeaking = false; if (window._arcSetMood) window._arcSetMood('idle'); if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle'); if (onDone) onDone(); }
     audio.onended = done;
     audio.onerror = done;
     audio.play().catch(function(){
@@ -25981,12 +25985,19 @@ function switchTab(tab) {
   };
 
   // ---------- JARVIS tab chat ----------
+  var _JV_SPEAK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
   function jvAppend(text, role){
     var feed=document.getElementById('jvCoachMessages'); if(!feed) return;
     var div=document.createElement('div');
     div.className='peak-coach-msg '+(role==='user'?'user-msg':'coach-msg');
-    if(role!=='user'){ div.innerHTML='<span class="peak-coach-tag">JARVIS</span>'+'<span class="jv-body"></span>';
-      var b=div.querySelector('.jv-body'); b.textContent=text; }
+    if(role!=='user'){
+      div.dataset.text=text;
+      div.innerHTML='<span class="peak-coach-tag">JARVIS</span>'+
+        '<span class="jv-body"></span>'+
+        '<button class="peak-coach-speak-btn" title="Read aloud" type="button" onclick="(function(el){var t=el.closest(\'.peak-coach-msg\');var txt=t?t.dataset.text:\'\';if(txt&&window._jarvisSpeak)window._jarvisSpeak(txt);})(this)">'+
+        _JV_SPEAK_SVG+'</button>';
+      var b=div.querySelector('.jv-body'); b.textContent=text;
+    }
     else { div.textContent=text; }
     feed.appendChild(div); feed.scrollTop=feed.scrollHeight;
     return div;
@@ -26031,11 +26042,9 @@ function switchTab(tab) {
       if(lastErr) throw lastErr;
       var txt=(reply&&reply.trim())||'My apologies, sir - I could not generate a response. Please try again.';
       jvAppend(txt,'coach'); jvSaveTurn('coach', txt);
-      if(window._jvAvatarSetMood) window._jvAvatarSetMood('responding');
+      // _jarvisSpeak now drives BOTH avatars' mood, tied to real audio start/end.
       if(typeof window._jarvisSpeak==='function') window._jarvisSpeak(txt);
-      // estimate speech duration → return avatar to idle when done
-      var _ms = Math.max(2500, txt.split(/\s+/).length*380);
-      setTimeout(function(){ if(window._jvAvatarSetMood) window._jvAvatarSetMood('idle'); }, _ms);
+      else if(window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
     } catch(e){
       if(window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
       if(loading && loading.parentNode) loading.parentNode.removeChild(loading);
