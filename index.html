@@ -12389,7 +12389,12 @@ setInterval(updateDayBar, 60 * 1000);
     const s = collect();
     const json = window.canonicalJson(s);
     if (json === sLastJson) return;
-    sRawPush(s, true).catch(() => {});
+    // keepalive caps the body at 64KB; once photo thumbnails push the blob past
+    // that, a keepalive push silently fails. Use keepalive only when safely under
+    // the cap; otherwise fall back to a normal fetch (still usually completes on
+    // hide, and per-key LWW means a partial/lost flush can't corrupt other devices).
+    const useKeepalive = json.length < 60000;
+    sRawPush(s, useKeepalive).catch(() => {});
     sLastJson = json;
     sLastKeysJson = window.canonicalJson(collectKeys());
   }
