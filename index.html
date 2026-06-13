@@ -8770,6 +8770,13 @@ window.canonicalJson = function(obj) {
     <!-- Morning Brief moved to the JARVIS tab -->
     <div id="peakTomorrowPredict" style="display:none;margin:0 0 12px;padding:8px 10px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:rgba(196,181,253,0.85);line-height:1.5"></div>
 
+    <!-- Peak score history (7-day energy at current hour) -->
+    <div class="peak-card" id="peakHistoryCard" style="display:none">
+      <div class="peak-section-label">Energy Score · 7 Days</div>
+      <canvas id="peakHistoryCanvas" height="60" style="width:100%;display:block;margin-top:8px"></canvas>
+      <div id="peakHistoryLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.06em"></div>
+    </div>
+
     <!-- Training Load -->
     <div class="peak-card" id="peakTrainCard">
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -9048,13 +9055,6 @@ window.canonicalJson = function(obj) {
       <div class="peak-lw-trend-days" id="peakLwDays" style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.06em"></div>
       <div class="peak-lw-best" style="margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);letter-spacing:0.06em">Best day: <span id="peakLwBestDay" style="color:#6EE7B7">—</span></div>
       <span id="peakLwBars" style="display:none"></span>
-    </div>
-
-    <!-- Peak score history (7-day energy at current hour) -->
-    <div class="peak-card" id="peakHistoryCard" style="display:none">
-      <div class="peak-section-label">Energy Score · 7 Days</div>
-      <canvas id="peakHistoryCanvas" height="60" style="width:100%;display:block;margin-top:8px"></canvas>
-      <div id="peakHistoryLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.06em"></div>
     </div>
 
     <!-- Weekly Peak Report (Sunday) -->
