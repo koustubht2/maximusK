@@ -7140,11 +7140,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #dashView .gs-reflect-insight-val{ color:var(--pk-gold-soft) !important; border-left-color:rgba(199,154,78,0.3) !important; }
 #dashView .gs-reflections-title, #dashView .gs-journal-title{ font-family:var(--pk-serif); font-weight:400; }
 
-/* ---- day-ring (main score) → gold + Fraunces ---- */
-#dashView .day-ring-fill{ stroke:var(--pk-gold) !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.6)) !important; }
-#dashView .day-ring-track{ stroke:rgba(231,210,160,0.08); }
+/* ---- day-ring (main score) → gold + Fraunces. Thinner stroke to match Peak's
+   ~2.5% proportion (Peak=5 on 200vb; dash viewBox=120 → ~3). ---- */
+#dashView .day-ring-fill{ stroke:var(--pk-gold) !important; stroke-width:3 !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.6)) !important; }
+#dashView .day-ring-track{ stroke:rgba(231,210,160,0.08) !important; stroke-width:3 !important; }
 #dashView .day-ring-percent{ font-family:var(--pk-serif); font-weight:300; }
 #dashView .day-ring-phase, #dashView .day-ring-clock, #dashView .day-ring-range{ color:var(--pk-dim); }
+/* comet sweeping the day-ring — IDENTICAL params to Peak's hero comet */
+#dashView .day-ring-svg{ transform:none !important; }   /* arc pre-oriented; no -90deg */
+#dashView .day-ring-left{ position:relative; }
+#dashView .dash-ring-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
+#dashView .dash-ring-comet path{ fill:none; stroke-linecap:round; stroke-dasharray:6 100;
+  animation:pkHeroComet 6.8s linear infinite; animation-delay:calc(var(--i) * -0.085s);
+  stroke-width:calc(1.4px - var(--i) * 0.03px); opacity:calc(1 - var(--i) * 0.022); }
+#dashView .dash-ring-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); animation:pkHeroNuc 6.8s linear infinite; }
 
 /* ---- focus card eyebrow/dot (brand green → gold; keep its pulse) ---- */
 #dashView .gs-focus-card{ border-color:rgba(231,210,160,0.18) !important; }
@@ -7194,8 +7203,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 /* score/zone greens → gold (keep yellow/red semantic) */
 #healthView .oura-score-num.zone-green, #healthView .oura-hero-fill.zone-green{ color:var(--pk-gold) !important; stroke:var(--pk-gold) !important; }
-#healthView .oura-hero-fill{ stroke:var(--pk-gold) !important; }
+#healthView .oura-hero-fill{ stroke:var(--pk-gold) !important; stroke-width:4.5 !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.5)) !important; }
+#healthView .oura-hero-track{ stroke-width:4.5 !important; }
 #healthView .oura-hero-fill.zone-gold{ stroke:#e0b25e !important; }
+/* gold comet sweeping the oura hero ring — IDENTICAL params to Peak's hero comet */
+#healthView .oura-hero-svg{ transform:none !important; }   /* arc pre-oriented; no -90deg */
+#healthView .oura-hero-wrap{ position:relative; }
+#healthView .oura-hero-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
+#healthView .oura-hero-comet path{ fill:none; stroke-linecap:round; stroke-dasharray:6 100;
+  animation:pkHeroComet 6.8s linear infinite; animation-delay:calc(var(--i) * -0.085s);
+  stroke-width:calc(2.1px - var(--i) * 0.045px); opacity:calc(1 - var(--i) * 0.022); }
+#healthView .oura-hero-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); animation:pkHeroNuc 6.8s linear infinite; }
 #healthView .oura-zone-dot.zone-green{ background:var(--pk-gold) !important; box-shadow:0 0 7px rgba(199,154,78,0.6) !important; }
 #healthView .oura-call-badge.zone-green{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.35) !important; color:var(--pk-gold-soft) !important; }
 #healthView .oura-todays-call.zone-green{ border-left-color:var(--pk-gold) !important; }
@@ -7746,9 +7764,13 @@ window.canonicalJson = function(obj) {
   <div class="day-ring-container">
     <div class="day-ring-left">
       <svg class="day-ring-svg" viewBox="0 0 120 120">
-        <circle class="day-ring-track" cx="60" cy="60" r="52"></circle>
-        <circle class="day-ring-fill" id="dayRingFill" cx="60" cy="60" r="52"></circle>
+        <!-- open ~270deg gauge arc (gap at bottom), pathLength=326.73 (=2*PI*52)
+             so the existing day-ring JS (uses circ=2*PI*52) works unchanged -->
+        <path class="day-ring-track" pathLength="326.726" d="M23.2 96.8 A52 52 0 1 1 96.8 96.8"></path>
+        <path class="day-ring-fill" id="dayRingFill" pathLength="326.726" d="M23.2 96.8 A52 52 0 1 1 96.8 96.8"></path>
       </svg>
+      <!-- decorative gold comet sweeping the gauge arc (Aston flourish) -->
+      <svg class="dash-ring-comet" viewBox="0 0 120 120" aria-hidden="true"></svg>
       <div class="day-ring-inner">
         <div class="day-ring-percent" id="dayRingPercent">--</div>
         <div class="day-ring-phase" id="dayRingPhase">LOADING</div>
@@ -12472,6 +12494,24 @@ function updateDayBar() {
   }
 }
 
+// One-time count-up of the day-ring % (on tab open / unlock), like Peak's hero.
+// updateDayBar() (per-minute) sets the final value; this just animates to it once.
+window._animateDayRingCount = function(){
+  var pctEl = document.getElementById('dayRingPercent');
+  if (!pctEl) return;
+  var raw = (pctEl.textContent || '').replace('%','').trim();
+  var target = parseInt(raw, 10);
+  if (isNaN(target)) return;            // '—' (sleeping) → skip
+  var duration = 900, start = performance.now();
+  function tick(now){
+    var t = Math.min((now - start) / duration, 1);
+    var ease = 1 - Math.pow(1 - t, 3);
+    pctEl.textContent = Math.round(ease * target) + '%';
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+};
+
 // Initial Boot
 performRolloverAndStreak();
 loadGoalsToday();
@@ -15588,10 +15628,11 @@ setInterval(updateDayBar, 60 * 1000);
     const dashTarget = readScore != null ? circumference * (1 - readScore / 100) : circumference;
     html += '<div class="oura-hero-wrap">'
       + '<svg class="oura-hero-svg" viewBox="0 0 180 180" aria-hidden="true">'
-      + '<circle class="oura-hero-track" cx="90" cy="90" r="80"/>'
-      + '<circle class="oura-hero-fill ' + ringZone + '" id="ouraHeroFill" cx="90" cy="90" r="80"'
+      + '<path class="oura-hero-track" pathLength="' + circumference.toFixed(2) + '" d="M33.4 146.6 A80 80 0 1 1 146.6 146.6"/>'
+      + '<path class="oura-hero-fill ' + ringZone + '" id="ouraHeroFill" pathLength="' + circumference.toFixed(2) + '" d="M33.4 146.6 A80 80 0 1 1 146.6 146.6"'
       + ' style="stroke-dasharray:' + circumference.toFixed(2) + ';stroke-dashoffset:' + circumference.toFixed(2) + '"/>'
       + '</svg>'
+      + '<svg class="oura-hero-comet" viewBox="0 0 180 180" aria-hidden="true"></svg>'
       + '<div class="oura-hero-center">'
       + '<div class="oura-hero-num" id="ouraHeroNum" style="color:' + ringColor + '">—</div>'
       + '<div class="oura-hero-unit">Readiness</div>'
@@ -15708,6 +15749,9 @@ setInterval(updateDayBar, 60 * 1000);
     html += renderTrend(sleepArr, readArr, actArr);
 
     body.innerHTML = html;
+
+    // build the gold comet sweep on the oura hero ring (full circle r=80, centre 90,90)
+    try { if (window._pkBuildComet) window._pkBuildComet(body.querySelector('.oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6'); } catch(e){}
 
     // Animate hero ring + count-up after paint
     if (readScore != null) {
@@ -17092,6 +17136,8 @@ function switchTab(tab) {
   window.scrollTo(0, 0);
   // Replay the Aston entrance animation on the opened view (re-add .pk-animate)
   if (views[tab]) { var _v=views[tab]; _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate'); }
+  // count-up the day-ring % when the main tab opens (like Peak's hero count-up)
+  if (tab === 'dash' && typeof window._animateDayRingCount === 'function') setTimeout(window._animateDayRingCount, 60);
   // Re-render Peak canvases every time the tab opens (they need offsetWidth > 0)
   if (tab === 'peak' && typeof renderPeak === 'function') {
     setTimeout(renderPeak, 0);
@@ -26079,6 +26125,8 @@ function switchTab(tab) {
     setTimeout(function(){
       var av = document.querySelector('.view-container.active');
       if (av) { av.classList.remove('pk-animate'); void av.offsetWidth; av.classList.add('pk-animate'); }
+      // if Dashboard is the active view on unlock, count-up its day-ring %
+      if (av && av.id === 'dashView' && typeof window._animateDayRingCount === 'function') window._animateDayRingCount();
     }, 560);
   }
   function setIcon(state) {
@@ -27024,27 +27072,29 @@ function switchTab(tab) {
 })();
 </script>
 
-<!-- Peak hero ring: generate the decorative comet (full-circle r=90 sweep) -->
+<!-- Gold comet generators for the hero/score rings (Peak open-arc + dash circle) -->
 <script>
 (function(){
-  var svg=document.querySelector('#peakView .peak-hero-comet');
-  if(!svg) return;
   var NS='http://www.w3.org/2000/svg';
-  // SAME open ~270deg arc as the score fill (gap at bottom)
-  var d='M36.4 163.6 A90 90 0 1 1 163.6 163.6';
-  var LAYERS=30;
   var heads=['#fffdf8','#fffaf2','#fdf7ee','#faf3e8','#f6efe3','#f6efe3'];
-  for(var i=LAYERS-1;i>=0;i--){
-    var p=document.createElementNS(NS,'path');
-    p.setAttribute('pathLength','100'); p.setAttribute('d',d);
-    p.setAttribute('stroke', i<heads.length?heads[i]:'#e6c98a');
-    p.style.setProperty('--i', i);
-    svg.appendChild(p);
+  // build N tapered comet layers along path `d` into svg `el`; nucDot adds a dot
+  function buildComet(el, d, layers, nucR){
+    if(!el) return;
+    for(var i=layers-1;i>=0;i--){
+      var p=document.createElementNS(NS,'path');
+      p.setAttribute('pathLength','100'); p.setAttribute('d',d);
+      p.setAttribute('stroke', i<heads.length?heads[i]:'#e6c98a');
+      p.style.setProperty('--i', i);
+      el.appendChild(p);
+    }
+    if(nucR){ var c=document.createElementNS(NS,'circle'); c.setAttribute('class','nuc'); c.setAttribute('r',nucR); c.style.offsetPath="path('"+d+"')"; el.appendChild(c); }
   }
-  var c=document.createElementNS(NS,'circle');
-  c.setAttribute('class','nuc'); c.setAttribute('r','2.6');
-  c.style.offsetPath="path('"+d+"')";
-  svg.appendChild(c);
+  // Peak hero: open ~270deg arc r=90
+  buildComet(document.querySelector('#peakView .peak-hero-comet'), 'M36.4 163.6 A90 90 0 1 1 163.6 163.6', 30, '2.6');
+  // Dashboard day-ring: open ~270deg arc r=52, centre 60,60 (gap at bottom). 30 layers like Peak.
+  buildComet(document.querySelector('#dashView .dash-ring-comet'), 'M23.2 96.8 A52 52 0 1 1 96.8 96.8', 30, '1.7');
+  // expose so the health ring (re-rendered by JS) can build its comet after render
+  window._pkBuildComet = buildComet;
 })();
 </script>
 </body>
