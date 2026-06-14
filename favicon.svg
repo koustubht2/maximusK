@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60" fill="none">
+  <defs>
+    <linearGradient id="wingL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+      <stop offset="20%" stop-color="#f0d79a" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+    </linearGradient>
+    <linearGradient id="wingR" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+      <stop offset="20%" stop-color="#f0d79a" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+  <!-- left wing — 5 tapered feather strokes (bolder than the header logo so it reads small) -->
+  <g transform="translate(0 13)" stroke="url(#wingL)" stroke-linecap="round" fill="none">
+    <path d="M2 7 Q40 9 57 16"  stroke-width="3.4"/>
+    <path d="M6 12 Q40 13 57 18" stroke-width="2.8"/>
+    <path d="M11 17 Q42 17 57 20" stroke-width="2.2"/>
+    <path d="M18 22 Q44 21 57 22" stroke-width="1.7"/>
+    <path d="M27 27 Q46 25 57 24" stroke-width="1.2"/>
+  </g>
+  <!-- right wing (mirrored) -->
+  <g transform="translate(0 13)" stroke="url(#wingR)" stroke-linecap="round" fill="none">
+    <path d="M118 7 Q80 9 63 16"  stroke-width="3.4"/>
+    <path d="M114 12 Q80 13 63 18" stroke-width="2.8"/>
+    <path d="M109 17 Q78 17 63 20" stroke-width="2.2"/>
+    <path d="M102 22 Q76 21 63 22" stroke-width="1.7"/>
+    <path d="M93 27 Q74 25 63 24" stroke-width="1.2"/>
+  </g>
+</svg>

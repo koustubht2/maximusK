@@ -6,6 +6,16 @@
 <meta name="theme-color" content="#050506">
 <title>Koustubh.exe</title>
 
+<!-- ===== Favicons / app icons (Aston gold wing mark) ===== -->
+<!-- HD scalable favicon for browser tabs (coloured wings, transparent bg) -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<!-- PNG fallback for browsers without SVG-favicon support -->
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<!-- iOS home-screen icon (iOS composites transparency on black) -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<!-- Android / PWA install -->
+<link rel="manifest" href="/site.webmanifest">
+
 
 <script>
 const WATER_CONFIG = {
@@ -7372,6 +7382,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #profileView.pk-animate .prof-card{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #profileView.pk-animate *{ animation:none !important; } }
 
+/* ============================================================================
+   LIFE ARC LOGO — the Aston-style tapered "wing" mark from peak-mockup.html,
+   reused as the app brand. .la-logo = wings + wordmark stacked & centred.
+   ============================================================================ */
+.la-logo{ display:flex; flex-direction:column; align-items:center; gap:0; }
+.la-logo svg{ display:block; }
+.la-logo .la-word{
+  font-family:var(--font-mono, 'JetBrains Mono', monospace);
+  font-size:10px; letter-spacing:0.42em; text-transform:uppercase;
+  color:rgba(239,231,216,0.55); margin-top:11px; padding-left:0.42em;
+}
+.la-logo .la-word b{ color:#e6c98a; font-weight:500; }
+/* inline (horizontal) variant — wings beside a small wordmark, for headers */
+.la-logo.la-inline{ flex-direction:row; gap:12px; align-items:center; }
+.la-logo.la-inline .la-word{ margin-top:0; font-size:11px; letter-spacing:0.34em; }
+
 /* JARVIS tab — blur-in entrance on its cards too (avatar excluded so the 3D
    render isn't disturbed). switchTab already adds .pk-animate to the view. */
 #jarvisView.pk-animate .peak-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
@@ -7513,6 +7539,38 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <!-- ========== FACE ID LOCK SCREEN ========== -->
 <div id="faceIdLock" class="fid-lock">
   <div class="fid-inner">
+    <!-- Aston-style wing logo -->
+    <div class="la-logo" style="margin-bottom:18px;">
+      <svg width="132" height="38" viewBox="0 0 120 34" fill="none" aria-label="Life Arc">
+        <defs>
+          <linearGradient id="laWingL" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="laWingR" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#laWingL)" stroke-linecap="round">
+          <path d="M2 7 Q40 9 57 16"  stroke-width="2.6"/>
+          <path d="M6 12 Q40 13 57 18" stroke-width="2.1"/>
+          <path d="M11 17 Q42 17 57 20" stroke-width="1.6"/>
+          <path d="M18 22 Q44 21 57 22" stroke-width="1.2"/>
+          <path d="M27 27 Q46 25 57 24" stroke-width="0.8"/>
+        </g>
+        <g stroke="url(#laWingR)" stroke-linecap="round">
+          <path d="M118 7 Q80 9 63 16"  stroke-width="2.6"/>
+          <path d="M114 12 Q80 13 63 18" stroke-width="2.1"/>
+          <path d="M109 17 Q78 17 63 20" stroke-width="1.6"/>
+          <path d="M102 22 Q76 21 63 22" stroke-width="1.2"/>
+          <path d="M93 27 Q74 25 63 24" stroke-width="0.8"/>
+        </g>
+      </svg>
+      <div class="la-word">Life <b>Arc</b></div>
+    </div>
     <div class="fid-app-name">Koustubh.exe</div>
     <div class="fid-title">Life Arc <span style="-webkit-text-fill-color:transparent;-webkit-text-stroke:1.5px #FF5500;text-shadow:0 0 14px rgba(255,85,0,0.7)">MAXXING</span></div>
     <div class="fid-icon-wrap" id="fidIconWrap">
@@ -7938,6 +7996,37 @@ window.canonicalJson = function(obj) {
 <div id="dashView" class="view-container active">
 
   <div class="dash-hero">
+    <!-- Aston-style wing logo -->
+    <div class="la-logo" style="margin-bottom:14px;align-items:flex-start;">
+      <svg width="116" height="33" viewBox="0 0 120 34" fill="none" aria-label="Life Arc">
+        <defs>
+          <linearGradient id="laWingLd" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="laWingRd" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#laWingLd)" stroke-linecap="round">
+          <path d="M2 7 Q40 9 57 16"  stroke-width="2.6"/>
+          <path d="M6 12 Q40 13 57 18" stroke-width="2.1"/>
+          <path d="M11 17 Q42 17 57 20" stroke-width="1.6"/>
+          <path d="M18 22 Q44 21 57 22" stroke-width="1.2"/>
+          <path d="M27 27 Q46 25 57 24" stroke-width="0.8"/>
+        </g>
+        <g stroke="url(#laWingRd)" stroke-linecap="round">
+          <path d="M118 7 Q80 9 63 16"  stroke-width="2.6"/>
+          <path d="M114 12 Q80 13 63 18" stroke-width="2.1"/>
+          <path d="M109 17 Q78 17 63 20" stroke-width="1.6"/>
+          <path d="M102 22 Q76 21 63 22" stroke-width="1.2"/>
+          <path d="M93 27 Q74 25 63 24" stroke-width="0.8"/>
+        </g>
+      </svg>
+    </div>
     <h1 class="dash-title">Life Arc <span class="dash-title-maxxing dtm-molten">MAXXING</span></h1>
     <div class="dash-hero-tag">Koustubh<span class="dash-title-exe">.exe</span></div>
   </div>
