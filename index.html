@@ -3054,8 +3054,8 @@ img, video, canvas, svg { max-width: 100%; }
   /* Progress photos grid — match the available width */
   .wt-photo-grid { gap: 8px; }
 
-  /* Bottom tab bar — slightly smaller pills so both labels always fit */
-  .tab { padding: 11px 10px; font-size: 13px; }
+  /* Bottom tab bar — icons only (labels hidden via font-size:0; do NOT reset it) */
+  .tab { padding: 11px 0; }
   .tabbar { padding-left: 12px; padding-right: 12px; }
 }
 
@@ -22658,7 +22658,16 @@ function switchTab(tab) {
       barEl.style.width = cs + '%';
       barEl.className = 'peak-mg-bar-fill ' + (cs >= 70 ? 'green' : cs >= 40 ? 'yellow' : 'red');
     }
-    var lbl = cs >= 70 ? 'Optimal zone' : cs >= 40 ? 'Sub-optimal' : logs.length ? 'Over limit' : 'None logged';
+    // A low score has TWO opposite causes (the score peaks at 55% of limit):
+    // too MUCH caffeine (genuinely over), or too LITTLE (worn off). Distinguish
+    // by actual active mg vs limit — don't call a near-empty cup "Over limit".
+    var lbl;
+    if (!logs.length)                 lbl = 'None logged';
+    else if (activeMg >= limit)       lbl = 'Over limit';        // genuinely at/over ceiling
+    else if (cs >= 70)                lbl = 'Optimal zone';
+    else if (cs >= 40)                lbl = 'Sub-optimal';
+    else if (activeMg < 0.55 * limit) lbl = 'Wearing off';       // low score + low mg = clearing out
+    else                              lbl = 'Over limit';        // low score + high mg = too much
     setText('peakCoffeeScoreLbl', lbl);
   }
 
