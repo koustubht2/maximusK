@@ -7042,7 +7042,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* entrance animations: cards slide-up, metric chips blur-in, staggered */
-@keyframes pkSlideUp{ from{opacity:0; transform:translateY(22px)} to{opacity:1; transform:none} }
+/* pkSlideUp now does a BLUR-IN (user wants blur-in everywhere, not slide).
+   Kept the name so all existing rules become blur-in via one change. */
+@keyframes pkSlideUp{ from{opacity:0; filter:blur(12px)} to{opacity:1; filter:blur(0)} }
 @keyframes pkBlurIn{ from{opacity:0; filter:blur(12px)} to{opacity:1; filter:blur(0)} }
 /* triggered by JS adding .pk-animate on every Peak tab open (so it replays,
    not just once during the auth/splash on first load) */
@@ -7329,6 +7331,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #profileView .prof-save-msg{ color:var(--pk-gold-soft) !important; }
 #profileView.pk-animate .prof-card{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #profileView.pk-animate *{ animation:none !important; } }
+
+/* JARVIS tab — blur-in entrance on its cards too (avatar excluded so the 3D
+   render isn't disturbed). switchTab already adds .pk-animate to the view. */
+#jarvisView.pk-animate .peak-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce){ #jarvisView.pk-animate *{ animation:none !important; } }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
