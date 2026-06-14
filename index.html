@@ -7031,20 +7031,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* entrance animations: cards slide-up, metric chips blur-in, staggered */
 @keyframes pkSlideUp{ from{opacity:0; transform:translateY(22px)} to{opacity:1; transform:none} }
 @keyframes pkBlurIn{ from{opacity:0; filter:blur(12px)} to{opacity:1; filter:blur(0)} }
-#peakView.active .peak-card{ animation:pkSlideUp .7s cubic-bezier(.16,1,.3,1) both; }
-#peakView.active .peak-card:nth-of-type(2){ animation-delay:.06s; }
-#peakView.active .peak-card:nth-of-type(3){ animation-delay:.12s; }
-#peakView.active .peak-card:nth-of-type(4){ animation-delay:.18s; }
-#peakView.active .peak-card:nth-of-type(n+5){ animation-delay:.24s; }
-#peakView.active .peak-metrics-strip .peak-chip{ animation:pkBlurIn .7s cubic-bezier(.16,1,.3,1) both; }
-#peakView.active .peak-chip:nth-child(2){ animation-delay:.05s; }
-#peakView.active .peak-chip:nth-child(3){ animation-delay:.10s; }
-#peakView.active .peak-chip:nth-child(4){ animation-delay:.15s; }
-#peakView.active .peak-chip:nth-child(5){ animation-delay:.20s; }
-#peakView.active .peak-chip:nth-child(6){ animation-delay:.25s; }
-#peakView.active .peak-chip:nth-child(7){ animation-delay:.30s; }
+/* triggered by JS adding .pk-animate on every Peak tab open (so it replays,
+   not just once during the auth/splash on first load) */
+#peakView.pk-animate .peak-card{ animation:pkSlideUp .7s cubic-bezier(.16,1,.3,1) both; }
+#peakView.pk-animate .peak-card:nth-of-type(2){ animation-delay:.06s; }
+#peakView.pk-animate .peak-card:nth-of-type(3){ animation-delay:.12s; }
+#peakView.pk-animate .peak-card:nth-of-type(4){ animation-delay:.18s; }
+#peakView.pk-animate .peak-card:nth-of-type(n+5){ animation-delay:.24s; }
+#peakView.pk-animate .peak-metrics-strip .peak-chip{ animation:pkBlurIn .7s cubic-bezier(.16,1,.3,1) both; }
+#peakView.pk-animate .peak-chip:nth-child(2){ animation-delay:.05s; }
+#peakView.pk-animate .peak-chip:nth-child(3){ animation-delay:.10s; }
+#peakView.pk-animate .peak-chip:nth-child(4){ animation-delay:.15s; }
+#peakView.pk-animate .peak-chip:nth-child(5){ animation-delay:.20s; }
+#peakView.pk-animate .peak-chip:nth-child(6){ animation-delay:.25s; }
+#peakView.pk-animate .peak-chip:nth-child(7){ animation-delay:.30s; }
 @media (prefers-reduced-motion: reduce){
-  #peakView.active .peak-card, #peakView.active .peak-chip{ animation:none; }
+  #peakView.pk-animate .peak-card, #peakView.pk-animate .peak-chip{ animation:none; }
 }
 </style>
 
@@ -25258,17 +25260,29 @@ function switchTab(tab) {
       vitCoachInp.addEventListener('keydown', function(e){ if (e.key === 'Enter') { var q = vitCoachInp.value.trim(); if (q) { askVitCoach(q); vitCoachInp.value = ''; } } });
     }
 
+    // Replay the Peak entrance animations (cards slide-up, chips blur-in) every
+    // time the tab opens — re-adding the class restarts the CSS animations.
+    function _pkReplayAnim() {
+      var pv = document.getElementById('peakView');
+      if (!pv) return;
+      pv.classList.remove('pk-animate');
+      void pv.offsetWidth;           // force reflow so the animation can re-run
+      pv.classList.add('pk-animate');
+    }
+
     // Hook into switchTab
     var origSwitch = window.switchTab;
     if (typeof origSwitch === 'function') {
       window.switchTab = function(tab) {
         origSwitch(tab);
-        if (tab === 'peak') setTimeout(renderPeak, 50);
+        if (tab === 'peak') { setTimeout(renderPeak, 50); _pkReplayAnim(); }
       };
     }
 
     if (localStorage.getItem('activeTab') === 'peak') {
       setTimeout(renderPeak, 150);
+      // first load lands on Peak — play once auth/splash is done & it's visible
+      setTimeout(_pkReplayAnim, 250);
     }
 
     window.addEventListener('resize', function() {
@@ -25832,6 +25846,14 @@ function switchTab(tab) {
   function unlock() {
     lock.classList.add('fid-unlocking');
     setTimeout(() => lock.classList.add('fid-gone'), 520);
+    // once the lock clears, replay the Peak entrance animation if Peak is active
+    // (it was finishing hidden behind the lock screen otherwise)
+    setTimeout(function(){
+      var pv = document.getElementById('peakView');
+      if (pv && pv.classList.contains('active')) {
+        pv.classList.remove('pk-animate'); void pv.offsetWidth; pv.classList.add('pk-animate');
+      }
+    }, 560);
   }
   function setIcon(state) {
     iconWrap.classList.remove('fid-scanning', 'fid-success', 'fid-fail');
