@@ -6919,16 +6919,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #peakView .peak-chip-label{ color:var(--pk-dim); letter-spacing:0.14em; }
 #peakView .peak-chip-val{ font-family:var(--pk-serif); font-weight:400; font-size:16px; color:var(--pk-text); }
 
-/* ---- hero ring → gold tapered glow, light Fraunces score ---- */
-#peakView .peak-hero-fill.zone-green  { --peak-ringc:var(--pk-gold); }
-#peakView .peak-hero-fill.zone-gold   { --peak-ringc:#e0b25e; }
-#peakView .peak-hero-fill.zone-yellow { --peak-ringc:#d99a4a; }
-#peakView .peak-hero-fill.zone-red    { --peak-ringc:var(--pk-red); }
+/* ---- hero ring → GOLD fill across ALL zones (no cyan ever), light Fraunces score ---- */
+/* force the ring colour var to gold on the base element so it can never fall
+   back to the old cyan #6EE7B7, regardless of which zone class JS applies */
+#peakView .peak-hero-fill{ --peak-ringc:var(--pk-gold); stroke:var(--pk-gold) !important;
+  stroke-width:5; filter:drop-shadow(0 0 5px var(--pk-gold)) drop-shadow(0 0 16px rgba(199,154,78,0.6)); }
+#peakView .peak-hero-fill.zone-gold   { --peak-ringc:#e0b25e; stroke:#e0b25e !important; }
+#peakView .peak-hero-fill.zone-green  { --peak-ringc:var(--pk-gold); stroke:var(--pk-gold) !important; }
+#peakView .peak-hero-fill.zone-yellow { --peak-ringc:#d99a4a; stroke:#d99a4a !important; }
+#peakView .peak-hero-fill.zone-red    { --peak-ringc:var(--pk-red); stroke:var(--pk-red) !important; }
+#peakView .peak-hero-glow{ background:radial-gradient(closest-side, var(--pk-gold), transparent 72%) !important; }
 #peakView .peak-hero-svg{ transform:none; }   /* arc already oriented; no -90deg spin */
-#peakView .peak-hero-fill{ stroke-width:5; filter:drop-shadow(0 0 5px var(--peak-ringc)) drop-shadow(0 0 14px var(--peak-ringc)); }
 #peakView .peak-hero-track{ stroke:rgba(231,210,160,0.08); stroke-width:5; }
 #peakView .peak-hero-score{ font-family:var(--pk-serif); font-style:normal; font-weight:300; font-size:66px; color:var(--pk-text); letter-spacing:-.02em; text-shadow:0 0 26px rgba(199,154,78,0.25); }
-#peakView .peak-hero-tone{ font-family:var(--font-mono); font-style:normal; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--pk-gold-soft); }
+#peakView .peak-hero-tone{ font-family:var(--font-mono); font-style:normal; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--pk-gold-soft) !important; }
 #peakView .peak-hero-label{ color:var(--pk-faint); letter-spacing:.2em; }
 #peakView .peak-why-link{ color:var(--pk-gold-soft); }
 
