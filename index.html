@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2449,56 +2449,68 @@ img, video, canvas, svg { max-width: 100%; }
   z-index: 50;
   display: flex;
   justify-content: center;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(10,10,11,0) 0%, rgba(10,10,11,0.78) 38%, rgba(10,10,11,0.94) 100%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* transparent — the pill floats; only a faint fade so content scrolls under */
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(8,6,4,0) 0%, rgba(8,6,4,0.32) 70%, rgba(8,6,4,0.55) 100%);
   pointer-events: none;
 }
+/* ---- frosted-glass PILL (icons only, fully rounded) — like menu.png ---- */
 .tabbar-inner {
   pointer-events: auto;
   display: flex;
   width: 100%;
-  max-width: 460px;
-  gap: 6px;
-  padding: 6px;
-  background: rgba(20, 20, 22, 0.72);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 12px 36px rgba(0,0,0,0.55);
+  max-width: 420px;
+  gap: 4px;
+  padding: 7px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 0 0 1px rgba(255,255,255,0.03),
+    0 18px 44px -20px rgba(0,0,0,0.8);
+  backdrop-filter: blur(30px) saturate(1.4);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
 }
 .tab {
   flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 13px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--text-2);
+  gap: 0;
+  padding: 12px 0;
+  border-radius: 999px;
+  /* icons only — collapse the text labels (the SVG keeps its explicit size) */
+  font-size: 0;
+  line-height: 0;
+  color: rgba(255,255,255,0.55);
   text-decoration: none;
   background: transparent;
   border: 1px solid transparent;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.tab:hover { color: var(--text-1); }
+.tab:hover { color: rgba(255,255,255,0.85); }
+/* active → soft recessed dark lozenge + bright white icon */
 .tab[aria-current="page"] {
-  color: var(--text-1);
-  background: rgba(255,255,255,0.06);
+  color: #ffffff;
+  background: rgba(255,255,255,0.10);
   border-color: rgba(255,255,255,0.10);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 .tab-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 .tab-icon svg { width: 100%; height: 100%; display: block; }
+/* JARVIS orb = a raster image (converted from jarvis.png). It can't inherit
+   currentColor, so dim it when the tab is inactive and brighten when active. */
+.jv-orb-icon { width: 22px; height: 22px; display: block; object-fit: contain; opacity: 0.5; transition: opacity 0.2s ease; }
+.tab:hover .jv-orb-icon { opacity: 0.82; }
+.tab[aria-current="page"] .jv-orb-icon { opacity: 1; filter: drop-shadow(0 0 6px rgba(150,130,255,0.55)); }
 .po-day-pill {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 6px 12px;
@@ -10030,7 +10042,7 @@ window.canonicalJson = function(obj) {
       Health
     </button>
     <button class="tab tab-main" id="tabDash" aria-current="page" onclick="switchTab('dash')">
-      <span class="tab-icon tab-icon-main"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg></span>
+      <span class="tab-icon tab-icon-main"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2.7 2.4 10.1V20a1.4 1.4 0 0 0 1.4 1.4h5V14.6a.8.8 0 0 1 .8-.8h4.8a.8.8 0 0 1 .8.8v6.8h5a1.4 1.4 0 0 0 1.4-1.4v-9.9z"/></svg></span>
       Main
     </button>
     <button class="tab" id="tabGym" onclick="switchTab('gym')">
@@ -10042,7 +10054,7 @@ window.canonicalJson = function(obj) {
       Finance
     </button>
     <button class="tab" id="tabJarvis" onclick="switchTab('jarvis')">
-      <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></svg></span>
+      <span class="tab-icon"><img class="jv-orb-icon" alt="JARVIS" src="data:image/png;base64,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"></span>
       JARVIS
     </button>
   </div>
