@@ -7108,17 +7108,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #dashView #jvInsightCard, #dashView .wotd-card, #dashView .gs-insight-card,
 #dashView .gs-reflections-wrap, #dashView .gs-journal-wrap, #dashView .gs-eod-wrap{
   background:
-    radial-gradient(120% 130% at 78% 14%, rgba(220,160,80,0.34) 0%, rgba(60,38,18,0.30) 45%, rgba(14,10,6,0.5) 82%),
-    linear-gradient(120deg, #241a0f, #0d0905) !important;
-  border:1px solid rgba(231,210,160,0.16) !important;
-  box-shadow:inset 0 1px 0 rgba(231,210,160,0.14), 0 18px 44px -28px #000 !important;
-  border-radius:22px !important; position:relative; overflow:hidden;
+    radial-gradient(120% 130% at 75% 18%, rgba(220,160,80,0.50) 0%, rgba(60,38,18,0.42) 45%, rgba(14,10,6,0.92) 82%),
+    linear-gradient(120deg, #2a1d10, #0d0905) !important;
+  border:1px solid rgba(231,210,160,0.14) !important;
+  box-shadow:inset 0 1px 0 rgba(231,210,160,0.14), 0 22px 50px -30px #000 !important;
+  border-radius:24px !important; position:relative; overflow:hidden;
   backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
 }
+/* dark bottom scrim (Peak parity) */
+#dashView #jvInsightCard::before, #dashView .wotd-card::before, #dashView .gs-insight-card::before,
+#dashView .gs-reflections-wrap::before, #dashView .gs-journal-wrap::before, #dashView .gs-eod-wrap::before{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(0deg, rgba(8,6,4,0.85) 0%, transparent 55%); }
 #dashView #jvInsightCard::after, #dashView .wotd-card::after, #dashView .gs-insight-card::after,
 #dashView .gs-reflections-wrap::after, #dashView .gs-journal-wrap::after, #dashView .gs-eod-wrap::after{
-  content:''; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.5;
-  background:radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.14) 41%, transparent 46%); }
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.55;
+  background:
+    radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.16) 41%, transparent 46%),
+    radial-gradient(120% 80% at 120% -10%, transparent 40%, rgba(231,210,160,0.10) 43%, transparent 48%); }
 #dashView .wotd-card > *, #dashView .gs-insight-card > *, #dashView .gs-reflections-wrap > *,
 #dashView .gs-journal-wrap > *, #dashView .gs-eod-wrap > *, #dashView #jvInsightCard > *{ position:relative; z-index:1; }
 
@@ -7193,14 +7200,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius:22px !important;
   backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2);
 }
-/* INSIGHT card → gold hero (Today's Call) */
+/* INSIGHT card → gold hero (Today's Call) — full Peak parity */
 #healthView .oura-todays-call{
+  position:relative; overflow:hidden;
   background:
-    radial-gradient(120% 130% at 78% 14%, rgba(220,160,80,0.34) 0%, rgba(60,38,18,0.30) 45%, rgba(14,10,6,0.5) 80%),
-    linear-gradient(120deg,#241a0f,#0d0905) !important;
-  border:1px solid rgba(231,210,160,0.16) !important; border-left:3px solid var(--pk-gold) !important;
-  border-radius:22px !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+    radial-gradient(120% 130% at 75% 18%, rgba(220,160,80,0.50) 0%, rgba(60,38,18,0.42) 45%, rgba(14,10,6,0.92) 82%),
+    linear-gradient(120deg,#2a1d10,#0d0905) !important;
+  border:1px solid rgba(231,210,160,0.14) !important; border-left:3px solid var(--pk-gold) !important;
+  box-shadow:inset 0 1px 0 rgba(231,210,160,0.14), 0 22px 50px -30px #000 !important;
+  border-radius:24px !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
 }
+#healthView .oura-todays-call::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(0deg, rgba(8,6,4,0.85) 0%, transparent 55%); }
+#healthView .oura-todays-call::after{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.55;
+  background:radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.16) 41%, transparent 46%), radial-gradient(120% 80% at 120% -10%, transparent 40%, rgba(231,210,160,0.10) 43%, transparent 48%); }
+#healthView .oura-todays-call > *{ position:relative; z-index:1; }
 /* score/zone greens → gold (keep yellow/red semantic) */
 #healthView .oura-score-num.zone-green, #healthView .oura-hero-fill.zone-green{ color:var(--pk-gold) !important; stroke:var(--pk-gold) !important; }
 #healthView .oura-hero-fill{ stroke:var(--pk-gold) !important; stroke-width:4.5 !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.5)) !important; }
@@ -7254,11 +7268,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius:22px !important;
   backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2);
 }
-/* INSIGHT sub-cards → warm gold tint */
+/* INSIGHT sub-cards → gold hero, full Peak parity */
 #gymView .po-rx-card, #gymView .po-tw{
-  background:radial-gradient(120% 130% at 82% 12%, rgba(220,160,80,0.16) 0%, rgba(40,26,12,0.10) 55%, transparent 85%), rgba(255,255,255,0.02) !important;
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 130% at 75% 18%, rgba(220,160,80,0.50) 0%, rgba(60,38,18,0.42) 45%, rgba(14,10,6,0.92) 82%),
+    linear-gradient(120deg,#2a1d10,#0d0905) !important;
   border:1px solid rgba(231,210,160,0.14) !important;
+  box-shadow:inset 0 1px 0 rgba(231,210,160,0.14), 0 22px 50px -30px #000 !important;
+  border-radius:24px !important;
 }
+#gymView .po-rx-card::before, #gymView .po-tw::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(0deg, rgba(8,6,4,0.85) 0%, transparent 55%); }
+#gymView .po-rx-card::after, #gymView .po-tw::after{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.55;
+  background:radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.16) 41%, transparent 46%), radial-gradient(120% 80% at 120% -10%, transparent 40%, rgba(231,210,160,0.10) 43%, transparent 48%); }
+#gymView .po-rx-card > *, #gymView .po-tw > *{ position:relative; z-index:1; }
 /* big numbers / title → Fraunces */
 #gymView .po-title, #gymView .wt-weight-num, #gymView .po-stat-val, #gymView .po-tw-summary-num{ font-family:var(--pk-serif); font-weight:400 !important; }
 /* green accents (those NOT covered by --good var) → gold */
