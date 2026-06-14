@@ -6914,10 +6914,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border:1px solid rgba(231,210,160,0.10);
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);
   backdrop-filter:blur(20px) saturate(1.15); -webkit-backdrop-filter:blur(20px) saturate(1.15);
-  padding:9px 16px;
+  padding:5px 11px; gap:6px;   /* smaller static stat chips */
 }
-#peakView .peak-chip-label{ color:var(--pk-dim); letter-spacing:0.14em; }
-#peakView .peak-chip-val{ font-family:var(--pk-serif); font-weight:400; font-size:16px; color:var(--pk-text); }
+#peakView .peak-metrics-strip{ gap:7px; margin-bottom:16px; }
+#peakView .peak-chip-label{ color:var(--pk-dim); letter-spacing:0.12em; font-size:8px; }
+#peakView .peak-chip-val{ font-family:var(--pk-serif); font-weight:400; font-size:13px; color:var(--pk-text); }
 
 /* ---- hero ring → GOLD fill across ALL zones (no cyan ever), light Fraunces score ---- */
 /* force the ring colour var to gold on the base element so it can never fall
