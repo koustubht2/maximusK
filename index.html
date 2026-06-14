@@ -7098,7 +7098,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @keyframes pkBlurIn{ from{opacity:0; filter:blur(12px)} to{opacity:1; filter:blur(0)} }
 /* triggered by JS adding .pk-animate on every Peak tab open (so it replays,
    not just once during the auth/splash on first load) */
-#peakView.pk-animate .peak-card{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#peakView.pk-animate .peak-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 #peakView.pk-animate .peak-card:nth-of-type(2){ animation-delay:.10s; }
 #peakView.pk-animate .peak-card:nth-of-type(3){ animation-delay:.20s; }
 #peakView.pk-animate .peak-card:nth-of-type(4){ animation-delay:.30s; }
@@ -7231,7 +7231,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ---- entrance animation (re-uses Peak's, triggered by .pk-animate on this view) ---- */
 #dashView.pk-animate .gs-section, #dashView.pk-animate .wotd-card, #dashView.pk-animate #jvInsightCard,
 #dashView.pk-animate .gs-banner, #dashView.pk-animate .gs-rings-wrap, #dashView.pk-animate .gs-focus-card{
-  animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both;
+  animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both;
 }
 @media (prefers-reduced-motion: reduce){ #dashView.pk-animate *{ animation:none !important; } }
 </style>
@@ -7301,7 +7301,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .stack-progress-fill{ background:linear-gradient(90deg, var(--pk-gold), var(--pk-gold-soft)) !important; }
 #healthView .water-bar-fill{ background:linear-gradient(90deg, #b9863f, var(--pk-gold)) !important; box-shadow:0 0 18px rgba(199,154,78,0.18) !important; }
 #healthView .water-zone-name{ color:var(--pk-gold-soft) !important; }
-#healthView.pk-animate .oura-scores, #healthView.pk-animate .oura-metrics, #healthView.pk-animate .stack-card, #healthView.pk-animate .wc-card, #healthView.pk-animate .oura-todays-call{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#healthView.pk-animate .oura-scores, #healthView.pk-animate .oura-metrics, #healthView.pk-animate .stack-card, #healthView.pk-animate .wc-card, #healthView.pk-animate .oura-todays-call{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #healthView.pk-animate *{ animation:none !important; } }
 </style>
 
@@ -7343,7 +7343,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #gymView .wt-dot{ fill:var(--pk-gold) !important; }
 #gymView .wt-comp-bar.muscle{ background:var(--pk-gold) !important; }
 #gymView .po-rx-tag.up{ background:rgba(199,154,78,0.14) !important; color:var(--pk-gold-soft) !important; }
-#gymView.pk-animate .wt-card, #gymView.pk-animate .card, #gymView.pk-animate .po-tw{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#gymView.pk-animate .wt-card, #gymView.pk-animate .card, #gymView.pk-animate .po-tw{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #gymView.pk-animate *{ animation:none !important; } }
 </style>
 
@@ -7379,7 +7379,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #profileView .prof-save-btn{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.25) !important; color:var(--pk-gold-soft) !important; }
 #profileView .prof-save-btn:hover{ background:rgba(199,154,78,0.2) !important; }
 #profileView .prof-save-msg{ color:var(--pk-gold-soft) !important; }
-#profileView.pk-animate .prof-card{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#profileView.pk-animate .prof-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #profileView.pk-animate *{ animation:none !important; } }
 
 /* ============================================================================
@@ -12799,6 +12799,30 @@ function updateDayBar() {
 
 // One-time count-up of the day-ring % (on tab open / unlock), like Peak's hero.
 // updateDayBar() (per-minute) sets the final value; this just animates to it once.
+// Cascade the blur-in entrance like Peak (0.10s per card), in true visual DOM
+// order. The other tabs animate SCATTERED classes (not sequential siblings), so
+// CSS nth-of-type can't stagger them correctly — we stamp delays in JS instead.
+window._STAGGER_SEL = {
+  dashView:    '.gs-section, .wotd-card, #jvInsightCard, .gs-banner, .gs-rings-wrap, .gs-focus-card',
+  healthView:  '.oura-scores, .oura-metrics, .stack-card, .wc-card, .oura-todays-call',
+  gymView:     '.wt-card, .card, .po-tw',
+  profileView: '.prof-card',
+  jarvisView:  '.peak-card'
+};
+window._staggerCards = function(viewId){
+  var sel = window._STAGGER_SEL[viewId]; if (!sel) return;
+  var view = document.getElementById(viewId); if (!view) return;
+  // honour reduced-motion (the CSS already disables animation there)
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var els = Array.prototype.slice.call(view.querySelectorAll(sel))
+    .filter(function(el){ return el.offsetParent !== null; });   // visible only
+  // sort by on-screen position so the cascade follows reading order
+  els.sort(function(a,b){ return a.getBoundingClientRect().top - b.getBoundingClientRect().top; });
+  els.forEach(function(el, i){
+    el.style.animationDelay = (Math.min(i, 8) * 0.10) + 's';      // cap so late cards don't lag too long
+  });
+};
+
 window._animateDayRingCount = function(){
   var pctEl = document.getElementById('dayRingPercent');
   if (!pctEl) return;
@@ -17432,13 +17456,34 @@ function switchTab(tab) {
   Object.values(views).forEach(v => v.classList.remove('active'));
   Object.values(tabs).forEach(t => t.removeAttribute('aria-current'));
 
+  // Before leaving the current tab, remember its scroll position.
+  if (typeof window._saveTabScroll === 'function') window._saveTabScroll();
+
   // Show selected view, activate tab
   if (views[tab]) views[tab].classList.add('active');
   if (tabs[tab]) tabs[tab].setAttribute('aria-current', 'page');
   localStorage.setItem('activeTab', tab);
-  window.scrollTo(0, 0);
-  // Replay the Aston entrance animation on the opened view (re-add .pk-animate)
-  if (views[tab]) { var _v=views[tab]; _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate'); }
+
+  // Restore this tab's last scroll position (per-tab memory). If there's a saved
+  // non-top position we land there and SKIP the entrance animation (it would
+  // otherwise replay mid-scroll); a fresh/top open still gets the blur-in cascade.
+  var _savedY = (typeof window._getTabScroll === 'function') ? window._getTabScroll(tab) : 0;
+  window.scrollTo(0, _savedY || 0);
+  window._curTab = tab;
+
+  if (views[tab]) {
+    var _v=views[tab];
+    if (_savedY && _savedY > 4) {
+      // restoring mid-scroll — show cards settled, no entrance animation
+      _v.classList.remove('pk-animate');
+      // re-assert the restore after layout settles (images/canvases can shift it)
+      requestAnimationFrame(function(){ window.scrollTo(0, _savedY); });
+    } else {
+      _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate');
+      // cascade the cards (0.10s stagger) in visual order, like Peak
+      if (typeof window._staggerCards === 'function') window._staggerCards(_v.id);
+    }
+  }
   // count-up the day-ring % when the main tab opens (like Peak's hero count-up)
   if (tab === 'dash' && typeof window._animateDayRingCount === 'function') setTimeout(window._animateDayRingCount, 60);
   // count-up the Oura readiness number when the Health tab opens
@@ -17460,10 +17505,48 @@ function switchTab(tab) {
   }
 }
 
-// Restore last active tab
+/* ============================================================================
+   PER-TAB SCROLL MEMORY — remember where you were in each tab (scroll position)
+   and restore it when you return, even after closing/reopening the app.
+   Persisted to localStorage as tabScroll_<tab>. Sub-tabs (Finance sections,
+   Goals sub-tabs) already persist their own state independently.
+   ============================================================================ */
+(function(){
+  var PREFIX = 'tabScroll_';
+  window._curTab = window._curTab || localStorage.getItem('activeTab') || 'dash';
+
+  window._saveTabScroll = function(){
+    var t = window._curTab; if (!t) return;
+    try { localStorage.setItem(PREFIX + t, String(Math.round(window.scrollY || window.pageYOffset || 0))); } catch(e){}
+  };
+  window._getTabScroll = function(tab){
+    var v = parseInt(localStorage.getItem(PREFIX + tab), 10);
+    return isNaN(v) ? 0 : v;
+  };
+
+  // Continuously remember the current tab's scroll (debounced) so it's saved
+  // even if the app is closed/backgrounded without switching tabs first.
+  var _t;
+  window.addEventListener('scroll', function(){
+    clearTimeout(_t);
+    _t = setTimeout(window._saveTabScroll, 120);
+  }, { passive: true });
+  // also flush on background / unload (mobile app-close)
+  window.addEventListener('pagehide', window._saveTabScroll);
+  document.addEventListener('visibilitychange', function(){ if (document.hidden) window._saveTabScroll(); });
+})();
+
+// Restore last active tab (and its scroll, via switchTab's restore logic)
 (function() {
   const saved = localStorage.getItem('activeTab');
-  if (saved && saved !== 'dash') switchTab(saved);
+  if (saved && saved !== 'dash') {
+    switchTab(saved);
+  } else {
+    // dash is the default-active view; restore its scroll too
+    window._curTab = 'dash';
+    var y = window._getTabScroll ? window._getTabScroll('dash') : 0;
+    if (y > 4) requestAnimationFrame(function(){ window.scrollTo(0, y); });
+  }
 })();
 </script>
 
@@ -26443,7 +26526,9 @@ function switchTab(tab) {
     // active (the animation was finishing hidden behind the lock screen otherwise)
     setTimeout(function(){
       var av = document.querySelector('.view-container.active');
-      if (av) { av.classList.remove('pk-animate'); void av.offsetWidth; av.classList.add('pk-animate'); }
+      if (av) { av.classList.remove('pk-animate'); void av.offsetWidth; av.classList.add('pk-animate');
+        if (typeof window._staggerCards === 'function') window._staggerCards(av.id);
+      }
       // if Dashboard is the active view on unlock, count-up its day-ring %
       if (av && av.id === 'dashView' && typeof window._animateDayRingCount === 'function') window._animateDayRingCount();
     }, 560);
