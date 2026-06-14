@@ -139,9 +139,10 @@ const CONFIG = {
 body {
   margin: 0;
   padding: 0;
-  /* Universal warm Aston backdrop — directly on body so it reliably paints
-     behind all content on every tab (a z-index:-1 ::before hid behind the
-     body's own opaque colour). Fixed so it doesn't scroll. */
+  /* THE warm Aston backdrop (the static base "existing bg") lives here on the
+     body background so it ALWAYS shows full-viewport. The drifting light BEAM is
+     a separate, subtle, animated overlay on body::before that sits ON TOP of this
+     (see below) — that's what makes the bg feel dynamic without going dark. */
   background:
     radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
     radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
@@ -3590,7 +3591,7 @@ img, video, canvas, svg { max-width: 100%; }
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  background: var(--bg);
+  background: #080604;
   color: var(--text-secondary);
   font-family: var(--font);
   font-size: 15px; line-height: 1.5;
@@ -3599,24 +3600,34 @@ html, body {
 }
 body { min-height: 100vh; position: relative; overflow-x: hidden; }
 
+/* UNIVERSAL warm Aston backdrop — fixed full-viewport, behind all content, and
+   DRIFTING (slow animation) so it feels alive + creates the soft diagonal light
+   beam between the warm radials. This is the last body::before = wins cascade. */
 body::before {
-  content: ''; position: fixed; inset: 0;
-  /* was a salmon/amber wash (rgba(224,118,88)) that tinted the top-right amber;
-     retuned to warm GOLD to match the Peak backdrop */
+  content: ''; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  /* TWO diagonal light BEAMS (god-rays, like beam1.png / beam2.png) + a soft
+     warm flare — all on a TRANSPARENT base (no dark fill, or it would cover the
+     warm body bg → all black). Slowly drifts so the backdrop feels alive. */
   background:
-    radial-gradient(60% 50% at 82% 14%, rgba(214,160,78,0.16) 0%, transparent 60%),
-    radial-gradient(50% 40% at 18% 90%, rgba(150,66,36,0.06) 0%, transparent 60%);
-  filter: blur(40px);
-  pointer-events: none; z-index: 0;
-  animation: drift 36s ease-in-out infinite alternate;
+    /* beam 1 — the bright primary ray streaking down from top-right */
+    linear-gradient(118deg, transparent 30%, rgba(255,226,172,0.13) 41%, rgba(255,236,194,0.30) 48%, rgba(255,226,172,0.13) 55%, transparent 66%),
+    /* beam 2 — a softer, wider secondary ray crossing lower-left */
+    linear-gradient(102deg, transparent 36%, rgba(220,168,86,0.09) 48%, rgba(244,214,156,0.20) 56%, rgba(220,168,86,0.08) 64%, transparent 76%),
+    /* warm flare anchoring the beams' source, top-right */
+    radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%);
+  animation: drift 38s ease-in-out infinite alternate;
 }
 body::after {
-  content: ''; position: fixed; inset: 0;
+  content: ''; position: fixed; inset: 0; z-index: -1;
   background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
   background-size: 3px 3px;
-  pointer-events: none; z-index: 1;
+  pointer-events: none;
 }
-@keyframes drift { 0% { transform: translate(0, 0); } 100% { transform: translate(-2%, 2%); } }
+@keyframes drift {
+  0%   { transform: translate(0, 0) scale(1.06) rotate(0deg); }
+  50%  { transform: translate(-1.8%, 1.6%) scale(1.10) rotate(-1.2deg); }
+  100% { transform: translate(1.6%, -1.4%) scale(1.06) rotate(1deg); }
+}
 
 main {
   position: relative; z-index: 2;
@@ -4025,9 +4036,9 @@ main {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  /* Universal warm Aston backdrop on html/body — always FULL-VIEWPORT, so it
-     spans edge-to-edge on every tab (the per-view bg only filled the 720px
-     column, leaving the sides dark). This is the LAST html,body rule = wins. */
+  /* THE warm Aston backdrop (the "existing bg") — on the body background so it
+     reliably shows full-viewport. The drifting beam is a separate ::before
+     overlay ON TOP of this. */
   background:
     radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
     radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
