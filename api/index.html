@@ -139,16 +139,10 @@ const CONFIG = {
 body {
   margin: 0;
   padding: 0;
-  /* THE warm Aston backdrop (the static base "existing bg") lives here on the
-     body background so it ALWAYS shows full-viewport. The drifting light BEAM is
-     a separate, subtle, animated overlay on body::before that sits ON TOP of this
-     (see below) — that's what makes the bg feel dynamic without going dark. */
-  background:
-    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
-    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
-    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
-    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
-  background-color: #080604;
+  /* SOLID dark base only. The warm Aston backdrop + drifting beams ALL live
+     together on body::before (one inseparable layer) so Safari/Mac can't split
+     them. Do NOT put the warm gradient here. */
+  background: #080604;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -3605,20 +3599,29 @@ body { min-height: 100vh; position: relative; overflow-x: hidden; }
    beam between the warm radials. This is the last body::before = wins cascade. */
 body::before {
   content: ''; position: fixed; inset: -20%; z-index: 0; pointer-events: none;
-  /* TWO diagonal light BEAMS (god-rays, like beam1.png / beam2.png) + a soft
-     warm flare — all on a TRANSPARENT base (no dark fill, or it would cover the
-     warm body bg → all black). Slowly drifts so the backdrop feels alive. */
+  /* EVERYTHING on ONE layer — warm Aston backdrop + TWO diagonal light BEAMS
+     (god-rays, like beam1.png / beam2.png) together so no browser can split them.
+     (Safari propagates a body-background to the viewport canvas differently from
+     Chrome/Edge, which used to cover the beams on Mac — putting the warm bg HERE,
+     not on body, fixes that.) Slowly drifts so the backdrop feels alive. */
   background:
     /* beam 1 — the bright primary ray streaking down from top-right */
     linear-gradient(118deg, transparent 34%, rgba(255,224,168,0.07) 44%, rgba(255,232,184,0.16) 49%, rgba(255,224,168,0.07) 54%, transparent 64%),
     /* beam 2 — a softer, wider secondary ray crossing lower-left */
     linear-gradient(102deg, transparent 40%, rgba(214,160,78,0.05) 50%, rgba(240,210,150,0.10) 56%, rgba(214,160,78,0.04) 62%, transparent 72%),
     /* warm flare anchoring the beams' source, top-right */
-    radial-gradient(34% 26% at 84% 8%, rgba(255,214,150,0.30) 0%, rgba(214,160,78,0.14) 42%, transparent 72%);
+    radial-gradient(34% 26% at 84% 8%, rgba(255,214,150,0.30) 0%, rgba(214,160,78,0.14) 42%, transparent 72%),
+    /* the warm Aston base gradient (was on body) — now on the SAME layer as beams */
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%),
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
   animation: drift 38s ease-in-out infinite alternate;
 }
 body::after {
-  content: ''; position: fixed; inset: 0; z-index: -1;
+  /* grain — must sit ABOVE the opaque backdrop layer (body::before z-index:0)
+     but below content (main z-index:2), else the backdrop hides it. */
+  content: ''; position: fixed; inset: 0; z-index: 1;
   background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
   background-size: 3px 3px;
   pointer-events: none;
@@ -4036,15 +4039,9 @@ main {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  /* THE warm Aston backdrop (the "existing bg") — on the body background so it
-     reliably shows full-viewport. The drifting beam is a separate ::before
-     overlay ON TOP of this. */
-  background:
-    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
-    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
-    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
-    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
-  background-color: #080604;
+  /* SOLID dark base only — warm backdrop + beams live together on body::before
+     (one layer) so Safari/Mac can't split them. Do NOT put gradient here. */
+  background: #080604;
   color: var(--text-1);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
