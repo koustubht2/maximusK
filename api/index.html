@@ -3597,13 +3597,13 @@ body { min-height: 100vh; position: relative; overflow-x: hidden; }
 /* UNIVERSAL warm Aston backdrop — fixed full-viewport, behind all content, and
    DRIFTING (slow animation) so it feels alive + creates the soft diagonal light
    beam between the warm radials. This is the last body::before = wins cascade. */
-body::before {
-  content: ''; position: fixed; inset: -20%; z-index: 0; pointer-events: none;
-  /* EVERYTHING on ONE layer — warm Aston backdrop + TWO diagonal light BEAMS
-     (god-rays, like beam1.png / beam2.png) together so no browser can split them.
-     (Safari propagates a body-background to the viewport canvas differently from
-     Chrome/Edge, which used to cover the beams on Mac — putting the warm bg HERE,
-     not on body, fixes that.) Slowly drifts so the backdrop feels alive. */
+#appBackdrop {
+  position: fixed; inset: -20%; z-index: 0; pointer-events: none;
+  /* EVERYTHING on ONE real fixed element — warm Aston backdrop + TWO diagonal
+     light BEAMS (god-rays, like beam1.png / beam2.png) together. Uses a real
+     <div> (not body::before) because Safari/Mac fails to render fixed pseudo-
+     elements with body overflow-x:hidden → beams invisible + no scroll-parallax
+     on Mac. A real fixed div renders reliably everywhere. */
   background:
     /* beam 1 — the bright primary ray streaking down from top-right */
     linear-gradient(118deg, transparent 34%, rgba(255,224,168,0.07) 44%, rgba(255,232,184,0.16) 49%, rgba(255,224,168,0.07) 54%, transparent 64%),
@@ -7356,6 +7356,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </script>
 </head>
 <body>
+
+<!-- Universal warm Aston backdrop + drifting beams. A REAL fixed element (not a
+     body::before pseudo) because Safari/WebKit on Mac fails to render fixed
+     pseudo-elements reliably when body has overflow-x:hidden — that's why the
+     beam showed on Windows but not Mac. -->
+<div id="appBackdrop" aria-hidden="true"></div>
 
 <!-- ========== FACE ID LOCK SCREEN ========== -->
 <div id="faceIdLock" class="fid-lock">
