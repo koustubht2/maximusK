@@ -1166,20 +1166,37 @@ body::after {
 .peak-coach-body.peak-coach-typing::after { content:'▍'; color:#6EE7B7; margin-left:1px; animation:peakCaretBlink 1s steps(1) infinite; }
 @keyframes peakCaretBlink { 50% { opacity:0; } }
 /* JARVIS section grid backdrop — covers the whole tab, fades toward the edges */
-/* JARVIS keeps its OWN dark backdrop (NOT the global warm body::before). An
-   opaque dark background on the view itself blocks the global warm gradient. */
+/* The TOP of the tab (avatar + header) keeps its OWN dark blue backdrop + blue
+   grid (untouched). The warm gold backdrop only applies from the Morning Brief
+   down, via the .jv-gold-zone wrapper. */
 #jarvisView { position:relative;
   background:radial-gradient(ellipse 90% 70% at 50% 0%, #0a0f1a 0%, #05060a 55%, #04050a 100%);
   min-height:100vh;
 }
-#jarvisView::before {
+/* blue grid — bounded to the TOP zone (.jv-blue-zone), so it ends right before
+   the Morning Brief / gold zone instead of spanning the whole view. */
+#jarvisView .jv-blue-zone{ position:relative; }
+#jarvisView .jv-blue-zone::before {
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background-image:
     linear-gradient(rgba(0,130,255,0.14) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,130,255,0.14) 1px, transparent 1px);
   background-size: 40px 40px;
-  -webkit-mask-image: radial-gradient(70% 60% at 50% 38%, #000 45%, transparent 90%);
-          mask-image: radial-gradient(70% 60% at 50% 38%, #000 45%, transparent 90%);
+  -webkit-mask-image: radial-gradient(72% 78% at 50% 44%, #000 42%, transparent 92%);
+          mask-image: radial-gradient(72% 78% at 50% 44%, #000 42%, transparent 92%);
+}
+#jarvisView .jv-blue-zone > *{ position:relative; z-index:1; }
+/* Warm Aston GOLD backdrop — ONLY behind the content from the Morning Brief
+   down, so the glass cards below sample gold (matching Peak) while everything
+   above the Morning Brief keeps the dark blue look. */
+#jarvisView .jv-gold-zone{
+  position:relative;
+  border-radius:24px;
+  background:
+    radial-gradient(75% 30% at 80% 4%, rgba(214,160,78,0.40) 0%, transparent 55%),
+    radial-gradient(70% 26% at 18% 18%, rgba(150,66,36,0.30) 0%, transparent 55%),
+    radial-gradient(90% 35% at 60% 92%, rgba(120,80,40,0.28) 0%, transparent 55%),
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
 }
 #jarvisView > div { position:relative; z-index:1; }
 .peak-coach-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
@@ -7347,6 +7364,127 @@ input[type="date"]::-webkit-calendar-picker-indicator {
    render isn't disturbed). switchTab already adds .pk-animate to the view. */
 #jarvisView.pk-animate .peak-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #jarvisView.pk-animate *{ animation:none !important; } }
+
+/* ============================================================================
+   JARVIS — Aston gold restyle of EVERYTHING BELOW THE AVATAR (visual only).
+   The avatar (#jvAvatarWrap/canvas), the JARVIS header, and the tab's own dark
+   blue/cyan grid backdrop (#jarvisView / #jarvisView::before) are LEFT ALONE.
+   Scoped to #jarvisView, recolors emerald #6EE7B7 → gold, glass cards → Peak
+   glass, the two text-insight cards (Brief + Debrief) → gold hero containers.
+   ============================================================================ */
+#jarvisView{
+  --pk-gold:#c79a4e; --pk-gold-soft:#e6c98a; --pk-red:#c4533a;
+  --pk-text:#efe7d8; --pk-dim:#9b9081; --pk-faint:rgba(239,231,216,0.32);
+  --pk-serif:'Fraunces', Georgia, serif;
+}
+/* ---- glass cards (chat, nudges, patterns shells) → WARM GOLD glass. Strong
+        enough to clearly read against JARVIS's dark-blue backdrop (the earlier
+        0.12 wash was invisible). A warm gold gradient over a dark warm base. ---- */
+#jarvisView .peak-card{
+  /* PURE Peak metric-card glass — now that the JARVIS backdrop is gold, the
+     transparent glass samples it and reads gold naturally (identical to Peak). */
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important;
+  border-radius:22px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 0 1px rgba(255,255,255,0.02), 0 18px 44px -28px #000 !important;
+  backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2);
+}
+#jarvisView .peak-card:hover{
+  border-color:rgba(231,210,160,0.22) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.14), 0 22px 50px -26px #000, 0 0 50px -30px var(--pk-gold) !important;
+}
+/* ---- section labels → mono gold-dim ---- */
+#jarvisView .peak-section-label{
+  font-family:var(--font-mono); color:var(--pk-dim) !important;
+  letter-spacing:0.16em; text-transform:uppercase; font-size:9.5px;
+}
+/* ---- refresh / speak icon buttons green → gold ---- */
+#jarvisView #peakBriefRefreshBtn, #jarvisView #peakBriefSpeakBtn,
+#jarvisView #jvDebriefSpeak, #jarvisView #jvDebriefRefresh,
+#jarvisView #jvPatternsRefresh{ color:var(--pk-gold-soft) !important; }
+
+/* ===== INSIGHT TEXT CARDS → GOLD HERO CONTAINERS (Brief + Debrief) =====
+   These are SHORT TEXT cards, so we use a LIGHT scrim (not the tall-media 0.85
+   one, which darkened them back to looking 'old'). The two are differentiated:
+   Morning Brief = warm sunrise gold; Weekly Debrief = deeper reflective ember. */
+#jarvisView #peakMorningBriefCard, #jarvisView #jvDebriefCard{
+  position:relative; overflow:hidden; border-radius:24px !important;
+  border:1px solid rgba(231,210,160,0.16) !important;
+  box-shadow:inset 0 1px 0 rgba(231,210,160,0.16), 0 22px 50px -30px #000 !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+}
+/* Morning Brief — brighter sunrise gold from top-right */
+#jarvisView #peakMorningBriefCard{
+  background:
+    radial-gradient(130% 120% at 80% 8%, rgba(240,186,96,0.60) 0%, rgba(150,96,40,0.34) 42%, rgba(20,14,8,0.86) 84%),
+    linear-gradient(125deg, #33240f, #120c06) !important;
+}
+/* Weekly Debrief — deeper, more reflective ember */
+#jarvisView #jvDebriefCard{
+  background:
+    radial-gradient(130% 120% at 22% 10%, rgba(214,150,78,0.46) 0%, rgba(120,60,34,0.34) 44%, rgba(16,11,7,0.88) 84%),
+    linear-gradient(125deg, #2a1a10, #100a06) !important;
+}
+/* light scrim only — keeps text crisp without darkening the whole card */
+#jarvisView #peakMorningBriefCard::before, #jarvisView #jvDebriefCard::before{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(0deg, rgba(10,7,4,0.45) 0%, transparent 42%);
+}
+/* faint drifting arc lines (the Aston silhouette detail) */
+#jarvisView #peakMorningBriefCard::after, #jarvisView #jvDebriefCard::after{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.6;
+  background:
+    radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.18) 41%, transparent 46%),
+    radial-gradient(120% 80% at 120% -10%, transparent 40%, rgba(231,210,160,0.12) 43%, transparent 48%);
+}
+#jarvisView #peakMorningBriefCard > *, #jarvisView #jvDebriefCard > *{ position:relative; z-index:1; }
+/* premium inner: cream serif body, refined spacing */
+#jarvisView #peakMorningBriefText, #jarvisView #jvDebriefText{
+  color:#f3ebda !important; font-family:var(--pk-serif); font-weight:300;
+  font-size:14.5px !important; line-height:1.75 !important; letter-spacing:.005em;
+}
+/* the section label sits over the gold — give it a gold-soft tint + tighter look */
+#jarvisView #peakMorningBriefCard .peak-section-label,
+#jarvisView #jvDebriefCard .peak-section-label{ color:var(--pk-gold-soft) !important; }
+
+/* ===== Markets strip → warm gold glass + gold label ===== */
+#jarvisView #peakMarketsStrip{
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important; border-radius:18px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), 0 14px 36px -28px #000 !important;
+  backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2);
+}
+#jarvisView #peakMarketsStrip span:first-child{ color:var(--pk-gold-soft) !important; }
+
+/* ===== Smart alarm card → warm gold tint ===== */
+#jarvisView #peakAlarmCard{
+  background:rgba(199,154,78,0.06) !important;
+  border:1px solid rgba(231,210,160,0.20) !important; border-radius:18px !important;
+}
+/* (Smart-alarm inner label/text keep their inline purple — inline styles can't
+   be overridden without JS; the card shell is gold-tinted, which is what shows.) */
+
+/* ===== Chat — bubbles, chips, input, send, mic → gold ===== */
+#jarvisView .peak-coach-msg.user-msg{
+  background:rgba(199,154,78,0.12) !important; border:1px solid rgba(231,210,160,0.22) !important;
+}
+#jarvisView .peak-coach-msg.coach-msg{
+  background:rgba(255,255,255,0.04) !important; border:1px solid rgba(255,255,255,0.07) !important;
+}
+#jarvisView .peak-coach-tag{ color:var(--pk-gold-soft) !important; }
+#jarvisView .peak-coach-speak-btn:hover{ color:var(--pk-gold-soft) !important; }
+#jarvisView .peak-coach-body.peak-coach-typing::after{ color:var(--pk-gold) !important; }
+#jarvisView .peak-coach-chip:hover{ border-color:rgba(231,210,160,0.35) !important; color:var(--pk-gold-soft) !important; }
+#jarvisView .peak-coach-input:focus{ border-color:rgba(231,210,160,0.35) !important; }
+#jarvisView .peak-coach-send{
+  background:rgba(199,154,78,0.12) !important; border:1px solid rgba(231,210,160,0.22) !important; color:var(--pk-gold-soft) !important;
+}
+#jarvisView .peak-coach-send:hover{ background:rgba(199,154,78,0.2) !important; }
+#jarvisView #peakMicBtn{
+  border-color:rgba(231,210,160,0.25) !important; background:rgba(199,154,78,0.08) !important; color:var(--pk-gold-soft) !important;
+}
+/* ===== Nudge + patterns list inner text accents ===== */
+#jarvisView #jvPatternsList, #jarvisView #jvNudgeList{ color:var(--pk-text); }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -9644,6 +9782,8 @@ window.canonicalJson = function(obj) {
 <!-- ========== JARVIS VIEW (omniscient assistant) ========== -->
 <div id="jarvisView" class="view-container">
   <div style="max-width:680px;margin:0 auto;padding:0 4px 120px;">
+    <!-- blue zone: header + avatar + voice buttons (dark blue grid ends here) -->
+    <div class="jv-blue-zone">
     <div style="text-align:center;padding:14px 0 0;">
       <div style="font-family:var(--font-mono);font-size:20px;letter-spacing:0.18em;color:#6EE7B7;font-weight:700;">JARVIS</div>
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-tertiary);margin-top:4px;">Omniscient · sees all your data</div>
@@ -9663,6 +9803,12 @@ window.canonicalJson = function(obj) {
     <span id="peakVoiceHint" style="display:none"></span>
     <span id="peakPiperStatus" style="display:none"></span>
     <span id="peakPiperLog" style="display:none"></span>
+    </div><!-- /.jv-blue-zone -->
+
+    <!-- ===== Warm GOLD zone: everything from the Morning Brief down sits on the
+         Aston gold backdrop so the glass cards match Peak. Avatar/header above
+         keep the dark blue look. ===== -->
+    <div class="jv-gold-zone">
 
     <!-- Morning Brief (moved here from Peak) -->
     <div class="peak-card" id="peakMorningBriefCard" style="display:none;margin-top:6px;">
@@ -9755,6 +9901,7 @@ window.canonicalJson = function(obj) {
       </div>
       <div id="jvDebriefText" style="font-size:13px;line-height:1.7;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Tap ↻ for your full-life weekly debrief, sir.</div>
     </div>
+    </div><!-- /.jv-gold-zone -->
   </div>
 </div>
 
