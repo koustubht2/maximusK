@@ -7206,6 +7206,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .oura-hero-fill{ stroke:var(--pk-gold) !important; stroke-width:4.5 !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.5)) !important; }
 #healthView .oura-hero-track{ stroke-width:4.5 !important; }
 #healthView .oura-hero-fill.zone-gold{ stroke:#e0b25e !important; }
+/* hero number → light Fraunces + gold (override the inline green) */
+#healthView .oura-hero-num{ font-family:var(--pk-serif) !important; font-weight:300 !important; color:var(--pk-text) !important; text-shadow:0 0 24px rgba(199,154,78,0.25); }
+#healthView .oura-hero-unit{ color:var(--pk-faint) !important; letter-spacing:.2em; }
+#healthView .oura-hero-label{ color:var(--pk-gold-soft) !important; }
 /* gold comet sweeping the oura hero ring — IDENTICAL params to Peak's hero comet */
 #healthView .oura-hero-svg{ transform:none !important; }   /* arc pre-oriented; no -90deg */
 #healthView .oura-hero-wrap{ position:relative; }
@@ -15623,7 +15627,7 @@ setInterval(updateDayBar, 60 * 1000);
 
     // 1. Hero readiness ring — starts empty, animates in after paint
     const ringZone = readScore != null ? scoreClass(readScore) : 'zone-green';
-    const ringColor = ringZone === 'zone-gold' ? '#F5C842' : ringZone === 'zone-green' ? '#6EE7B7' : ringZone === 'zone-yellow' ? '#F2C063' : '#FF8A8A';
+    const ringColor = ringZone === 'zone-gold' ? '#e0b25e' : ringZone === 'zone-green' ? '#c79a4e' : ringZone === 'zone-yellow' ? '#d99a4a' : '#c4533a';
     const circumference = 2 * Math.PI * 80;
     const dashTarget = readScore != null ? circumference * (1 - readScore / 100) : circumference;
     html += '<div class="oura-hero-wrap">'
@@ -17138,6 +17142,13 @@ function switchTab(tab) {
   if (views[tab]) { var _v=views[tab]; _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate'); }
   // count-up the day-ring % when the main tab opens (like Peak's hero count-up)
   if (tab === 'dash' && typeof window._animateDayRingCount === 'function') setTimeout(window._animateDayRingCount, 60);
+  // count-up the Oura readiness number when the Health tab opens
+  if (tab === 'health') setTimeout(function(){
+    var n=document.getElementById('ouraHeroNum'); if(!n) return;
+    var target=parseInt((n.textContent||'').trim(),10); if(isNaN(target)) return;
+    var dur=900, s=performance.now();
+    (function t(now){ var k=Math.min((now-s)/dur,1), e=1-Math.pow(1-k,3); n.textContent=Math.round(e*target); if(k<1) requestAnimationFrame(t); })(performance.now());
+  }, 80);
   // Re-render Peak canvases every time the tab opens (they need offsetWidth > 0)
   if (tab === 'peak' && typeof renderPeak === 'function') {
     setTimeout(renderPeak, 0);
