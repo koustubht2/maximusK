@@ -17452,12 +17452,14 @@ function switchTab(tab) {
     profile: document.getElementById('topbarProfileBtn')
   };
 
+  // Remember the OUTGOING tab's scroll position FIRST — must happen BEFORE we
+  // hide the views below, because display:none collapses the page height and the
+  // browser clamps scrollY to 0 (which is why saves were landing as 0).
+  if (typeof window._saveTabScroll === 'function') window._saveTabScroll();
+
   // Hide all views, deactivate all tabs
   Object.values(views).forEach(v => v.classList.remove('active'));
   Object.values(tabs).forEach(t => t.removeAttribute('aria-current'));
-
-  // Before leaving the current tab, remember its scroll position.
-  if (typeof window._saveTabScroll === 'function') window._saveTabScroll();
 
   // Show selected view, activate tab
   if (views[tab]) views[tab].classList.add('active');
@@ -17467,18 +17469,21 @@ function switchTab(tab) {
   // Restore this tab's last scroll position (per-tab memory). If there's a saved
   // non-top position we land there and SKIP the entrance animation (it would
   // otherwise replay mid-scroll); a fresh/top open still gets the blur-in cascade.
-  var _savedY = (typeof window._getTabScroll === 'function') ? window._getTabScroll(tab) : 0;
-  window.scrollTo(0, _savedY || 0);
+  // NOTE: several tabs re-render AFTER this (renderPeak, count-ups, async data),
+  // changing page height — so a single scrollTo gets clobbered. _restoreScroll
+  // re-asserts the target over a short window until it sticks.
   window._curTab = tab;
+  var _savedY = (typeof window._getTabScroll === 'function') ? window._getTabScroll(tab) : 0;
 
   if (views[tab]) {
     var _v=views[tab];
     if (_savedY && _savedY > 4) {
       // restoring mid-scroll — show cards settled, no entrance animation
       _v.classList.remove('pk-animate');
-      // re-assert the restore after layout settles (images/canvases can shift it)
-      requestAnimationFrame(function(){ window.scrollTo(0, _savedY); });
+      if (typeof window._restoreScroll === 'function') window._restoreScroll(_savedY);
+      else window.scrollTo(0, _savedY);
     } else {
+      window.scrollTo(0, 0);
       _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate');
       // cascade the cards (0.10s stagger) in visual order, like Peak
       if (typeof window._staggerCards === 'function') window._staggerCards(_v.id);
@@ -17514,14 +17519,41 @@ function switchTab(tab) {
 (function(){
   var PREFIX = 'tabScroll_';
   window._curTab = window._curTab || localStorage.getItem('activeTab') || 'dash';
+  window._scrollSuppressUntil = 0;   // ignore save events while we're restoring
+
+  function curY(){ return window.scrollY || window.pageYOffset || (document.scrollingElement ? document.scrollingElement.scrollTop : 0) || 0; }
+  function setY(y){
+    window.scrollTo(0, y);
+    if (document.scrollingElement) document.scrollingElement.scrollTop = y;  // belt-and-suspenders
+  }
 
   window._saveTabScroll = function(){
+    if (Date.now() < window._scrollSuppressUntil) return;   // don't save during a restore
     var t = window._curTab; if (!t) return;
-    try { localStorage.setItem(PREFIX + t, String(Math.round(window.scrollY || window.pageYOffset || 0))); } catch(e){}
+    var y = Math.round(curY());
+    try { localStorage.setItem(PREFIX + t, String(y)); } catch(e){}
   };
   window._getTabScroll = function(tab){
     var v = parseInt(localStorage.getItem(PREFIX + tab), 10);
     return isNaN(v) ? 0 : v;
+  };
+
+  // Re-assert a target scroll over a short window — late re-renders (renderPeak,
+  // count-ups, async data) change page height and would otherwise clobber it.
+  window._restoreScroll = function(targetY){
+    window._scrollSuppressUntil = Date.now() + 800;   // pause saving while we settle
+    if (window._scrollDebug) console.log('[restore] called target=', targetY, 'docHeight=', document.body.scrollHeight, 'winH=', window.innerHeight, 'maxScroll=', (document.body.scrollHeight - window.innerHeight));
+    var tries = 0;
+    function go(){
+      setY(targetY);
+      tries++;
+      if (window._scrollDebug && (tries===1 || tries===12)) console.log('[restore] try', tries, 'set to', targetY, '-> actual', curY(), 'maxScroll', (document.body.scrollHeight - window.innerHeight));
+      if (tries < 12) requestAnimationFrame(go);       // ~12 frames (~200ms)
+    }
+    go();
+    // a few delayed re-asserts for slow async renders, then re-enable saving
+    [60, 150, 300, 500].forEach(function(ms){ setTimeout(function(){ setY(targetY); if (window._scrollDebug) console.log('[restore]', ms+'ms ->', curY()); }, ms); });
+    setTimeout(function(){ window._scrollSuppressUntil = 0; if (window._scrollDebug) console.log('[restore] DONE final', curY()); }, 820);
   };
 
   // Continuously remember the current tab's scroll (debounced) so it's saved
@@ -17533,6 +17565,7 @@ function switchTab(tab) {
   }, { passive: true });
   // also flush on background / unload (mobile app-close)
   window.addEventListener('pagehide', window._saveTabScroll);
+  window.addEventListener('beforeunload', window._saveTabScroll);
   document.addEventListener('visibilitychange', function(){ if (document.hidden) window._saveTabScroll(); });
 })();
 
@@ -17540,12 +17573,16 @@ function switchTab(tab) {
 (function() {
   const saved = localStorage.getItem('activeTab');
   if (saved && saved !== 'dash') {
-    switchTab(saved);
+    switchTab(saved);   // switchTab handles the scroll restore for non-dash tabs
   } else {
     // dash is the default-active view; restore its scroll too
     window._curTab = 'dash';
     var y = window._getTabScroll ? window._getTabScroll('dash') : 0;
-    if (y > 4) requestAnimationFrame(function(){ window.scrollTo(0, y); });
+    if (y > 4 && typeof window._restoreScroll === 'function') {
+      // wait for first paint/layout, then re-assert over a window
+      window.addEventListener('load', function(){ window._restoreScroll(y); });
+      window._restoreScroll(y);
+    }
   }
 })();
 </script>
