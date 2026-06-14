@@ -139,7 +139,15 @@ const CONFIG = {
 body {
   margin: 0;
   padding: 0;
-  background-color: #050506;
+  /* Universal warm Aston backdrop — directly on body so it reliably paints
+     behind all content on every tab (a z-index:-1 ::before hid behind the
+     body's own opaque colour). Fixed so it doesn't scroll. */
+  background:
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
+  background-color: #080604;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -166,13 +174,7 @@ body::before, body::after {
   100% { transform: translate(0, 0) scale(1); }
 }
 
-body::before {
-  background: 
-    radial-gradient(circle at 82% 14%, rgba(224, 118, 88, 0.16) 0%, transparent 40%),
-    radial-gradient(circle at 18% 90%, rgba(180, 180, 200, 0.06) 0%, transparent 40%);
-  filter: blur(40px);
-  animation: drift 36s ease-in-out infinite alternate;
-}
+/* (warm backdrop now lives directly on `body` background; ::before left unused) */
 
 /* Film grain */
 body::after {
@@ -1163,7 +1165,12 @@ body::after {
 .peak-coach-body.peak-coach-typing::after { content:'▍'; color:#6EE7B7; margin-left:1px; animation:peakCaretBlink 1s steps(1) infinite; }
 @keyframes peakCaretBlink { 50% { opacity:0; } }
 /* JARVIS section grid backdrop — covers the whole tab, fades toward the edges */
-#jarvisView { position:relative; }
+/* JARVIS keeps its OWN dark backdrop (NOT the global warm body::before). An
+   opaque dark background on the view itself blocks the global warm gradient. */
+#jarvisView { position:relative;
+  background:radial-gradient(ellipse 90% 70% at 50% 0%, #0a0f1a 0%, #05060a 55%, #04050a 100%);
+  min-height:100vh;
+}
 #jarvisView::before {
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background-image:
@@ -2391,7 +2398,8 @@ body::after {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #14141a 0%, #0a0a0b 60%);
+  /* background removed — the universal warm Aston backdrop on body::before now
+     provides it globally. (This old opaque dark gradient was covering it.) */
   color: var(--text-1);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -3593,9 +3601,11 @@ body { min-height: 100vh; position: relative; overflow-x: hidden; }
 
 body::before {
   content: ''; position: fixed; inset: 0;
+  /* was a salmon/amber wash (rgba(224,118,88)) that tinted the top-right amber;
+     retuned to warm GOLD to match the Peak backdrop */
   background:
-    radial-gradient(60% 50% at 82% 14%, rgba(224, 118, 88, 0.16) 0%, transparent 60%),
-    radial-gradient(50% 40% at 18% 90%, rgba(180, 180, 200, 0.06) 0%, transparent 60%);
+    radial-gradient(60% 50% at 82% 14%, rgba(214,160,78,0.16) 0%, transparent 60%),
+    radial-gradient(50% 40% at 18% 90%, rgba(150,66,36,0.06) 0%, transparent 60%);
   filter: blur(40px);
   pointer-events: none; z-index: 0;
   animation: drift 36s ease-in-out infinite alternate;
@@ -4015,7 +4025,15 @@ main {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #14141a 0%, #0a0a0b 60%);
+  /* Universal warm Aston backdrop on html/body — always FULL-VIEWPORT, so it
+     spans edge-to-edge on every tab (the per-view bg only filled the 720px
+     column, leaving the sides dark). This is the LAST html,body rule = wins. */
+  background:
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
+  background-color: #080604;
   color: var(--text-1);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -6884,12 +6902,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --pk-text:#efe7d8; --pk-dim:#9b9081; --pk-faint:rgba(239,231,216,0.32);
   --pk-serif:'Fraunces', Georgia, serif;
   position:relative;
-  min-height:100vh;
-  background:
-    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
-    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
-    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
-    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
+  /* warm backdrop now comes from html/body (full-viewport) — same as all tabs */
 }
 
 /* ---- cards → warm-edged glass, 22px, hairline top sheen ---- */
@@ -7048,6 +7061,219 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (prefers-reduced-motion: reduce){
   #peakView.pk-animate .peak-card, #peakView.pk-animate .peak-chip{ animation:none; }
 }
+</style>
+
+<!-- ============================================================
+     DASHBOARD TAB — ASTON REDESIGN (scoped to #dashView; visual-only).
+     Warm gold backdrop, glass cards, gold accent, Fraunces serif. Insight
+     cards (#jvInsightCard) get the gold hero-container; day-ring → gold.
+     ============================================================ -->
+<style>
+#dashView{
+  --pk-gold:#c79a4e; --pk-gold-soft:#e6c98a; --pk-red:#c4533a;
+  --pk-text:#efe7d8; --pk-dim:#9b9081; --pk-faint:rgba(239,231,216,0.32);
+  --pk-serif:'Fraunces', Georgia, serif;
+  position:relative;
+}
+/* warm backdrop now lives on html/body (full-viewport, edge-to-edge) — views
+   stay transparent so it shows through everywhere. */
+
+/* reusable hero-container mixin values applied per-selector below */
+
+/* ---- HEADER: title → Fraunces, MAXXING → gold-molten, .exe → gold ---- */
+#dashView .dash-hero{ background:rgba(255,255,255,0.03); border:1px solid rgba(231,210,160,0.10); border-radius:22px; }
+#dashView .dash-title{ font-family:var(--pk-serif); font-weight:400; letter-spacing:-.01em; }
+#dashView .dtm-molten{
+  -webkit-text-stroke:1px var(--pk-gold) !important;
+  color:transparent;
+  text-shadow:0 0 14px rgba(199,154,78,0.7), 0 0 35px rgba(214,160,78,0.35) !important;
+  background:linear-gradient(180deg, var(--pk-gold-soft), var(--pk-gold)); -webkit-background-clip:text; background-clip:text;
+}
+#dashView .dash-title-exe{ color:var(--pk-gold-soft) !important; }
+#dashView .dash-hero-tag{ color:var(--pk-dim); }
+
+/* ---- glass tokens shared by the regular (non-insight) cards ---- */
+#dashView .gs-banner, #dashView .gs-focus-card, #dashView .gs-rings-wrap, #dashView .gs-section,
+#dashView .gp-thesis-card, #dashView .gp-commitments-wrap, #dashView .gp-braindump-card,
+#dashView .gp-plan-day-card, #dashView .gw-cal-wrap{
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 38px -28px #000 !important;
+  border-radius:22px !important;
+  backdrop-filter:blur(24px) saturate(1.15); -webkit-backdrop-filter:blur(24px) saturate(1.15);
+}
+
+/* ============ INSIGHT CARDS → GOLD HERO CONTAINER ============ */
+/* WOTD, cycling insight, JARVIS insight, reflections, journal, end-of-day */
+#dashView #jvInsightCard, #dashView .wotd-card, #dashView .gs-insight-card,
+#dashView .gs-reflections-wrap, #dashView .gs-journal-wrap, #dashView .gs-eod-wrap{
+  background:
+    radial-gradient(120% 130% at 78% 14%, rgba(220,160,80,0.34) 0%, rgba(60,38,18,0.30) 45%, rgba(14,10,6,0.5) 82%),
+    linear-gradient(120deg, #241a0f, #0d0905) !important;
+  border:1px solid rgba(231,210,160,0.16) !important;
+  box-shadow:inset 0 1px 0 rgba(231,210,160,0.14), 0 18px 44px -28px #000 !important;
+  border-radius:22px !important; position:relative; overflow:hidden;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+}
+#dashView #jvInsightCard::after, #dashView .wotd-card::after, #dashView .gs-insight-card::after,
+#dashView .gs-reflections-wrap::after, #dashView .gs-journal-wrap::after, #dashView .gs-eod-wrap::after{
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.5;
+  background:radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.14) 41%, transparent 46%); }
+#dashView .wotd-card > *, #dashView .gs-insight-card > *, #dashView .gs-reflections-wrap > *,
+#dashView .gs-journal-wrap > *, #dashView .gs-eod-wrap > *, #dashView #jvInsightCard > *{ position:relative; z-index:1; }
+
+/* insight-card accents → gold + Fraunces */
+#dashView #jvInsightCard svg{ stroke:var(--pk-gold-soft) !important; }
+#dashView #jvInsightCard span{ color:var(--pk-gold-soft) !important; }
+#dashView #jvInsightText{ color:rgba(239,231,216,0.82) !important; }
+#dashView .wotd-card::before{ background:linear-gradient(90deg, transparent, rgba(231,210,160,0.45), transparent) !important; }
+#dashView .wotd-eyebrow{ color:var(--pk-gold-soft) !important; }
+#dashView .wotd-word{ font-family:var(--pk-serif); font-weight:400; }
+#dashView .wotd-pos{ color:var(--pk-gold-soft) !important; background:rgba(199,154,78,0.14) !important; }
+#dashView .wotd-speak-btn{ background:rgba(199,154,78,0.14) !important; border-color:rgba(199,154,78,0.28) !important; color:var(--pk-gold-soft) !important; }
+#dashView .wotd-dot.active{ background:var(--pk-gold-soft) !important; }
+#dashView .gs-insight-label{ color:var(--pk-gold-soft) !important; }
+#dashView .gs-insight-dot.active{ background:var(--pk-gold) !important; }
+#dashView .gs-journal-saved{ color:var(--pk-gold-soft) !important; }
+#dashView .gs-journal-ta:focus{ border-color:rgba(199,154,78,0.35) !important; }
+#dashView .gs-journal-save-btn{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.25) !important; color:var(--pk-gold-soft) !important; }
+#dashView .gs-reflect-insight-val{ color:var(--pk-gold-soft) !important; border-left-color:rgba(199,154,78,0.3) !important; }
+#dashView .gs-reflections-title, #dashView .gs-journal-title{ font-family:var(--pk-serif); font-weight:400; }
+
+/* ---- day-ring (main score) → gold + Fraunces ---- */
+#dashView .day-ring-fill{ stroke:var(--pk-gold) !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.6)) !important; }
+#dashView .day-ring-track{ stroke:rgba(231,210,160,0.08); }
+#dashView .day-ring-percent{ font-family:var(--pk-serif); font-weight:300; }
+#dashView .day-ring-phase, #dashView .day-ring-clock, #dashView .day-ring-range{ color:var(--pk-dim); }
+
+/* ---- focus card eyebrow/dot (brand green → gold; keep its pulse) ---- */
+#dashView .gs-focus-card{ border-color:rgba(231,210,160,0.18) !important; }
+#dashView .gs-focus-eyebrow{ color:var(--pk-gold-soft) !important; }
+#dashView .gs-focus-eyebrow::before{ background:var(--pk-gold) !important; box-shadow:0 0 8px var(--pk-gold) !important; }
+#dashView .gs-focus-title{ font-family:var(--pk-serif); font-weight:400; }
+
+/* ---- section titles → Fraunces; keep semantic badge colours (sacred=orange, etc.) ---- */
+#dashView .gs-section-title{ font-family:var(--pk-serif); font-weight:400; font-size:17px; }
+
+/* ---- goals sub-tabs + ticker → gold accents ---- */
+#dashView .goals-tab.active{ color:var(--pk-gold-soft); }
+#dashView .goal-ticker-label{ color:var(--pk-gold-soft); }
+#dashView .goal-ticker-led-dot{ background:var(--pk-gold) !important; box-shadow:0 0 8px var(--pk-gold); }
+
+/* ---- entrance animation (re-uses Peak's, triggered by .pk-animate on this view) ---- */
+#dashView.pk-animate .gs-section, #dashView.pk-animate .wotd-card, #dashView.pk-animate #jvInsightCard,
+#dashView.pk-animate .gs-banner, #dashView.pk-animate .gs-rings-wrap, #dashView.pk-animate .gs-focus-card{
+  animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both;
+}
+@media (prefers-reduced-motion: reduce){ #dashView.pk-animate *{ animation:none !important; } }
+</style>
+
+<!-- ============================================================
+     HEALTH TAB — ASTON REDESIGN (scoped to #healthView; visual-only).
+     Glass cards, gold accents, Fraunces. Today's-call (insight) → gold hero.
+     ============================================================ -->
+<style>
+#healthView{ --pk-gold:#c79a4e; --pk-gold-soft:#e6c98a; --pk-dim:#9b9081; --pk-faint:rgba(239,231,216,0.32); --pk-serif:'Fraunces', Georgia, serif; }
+/* glass cards (regular data) */
+#healthView .oura-scores, #healthView .oura-metrics, #healthView .oura-sleep-breakdown,
+#healthView .oura-week-cal, #healthView .oura-trend-wrap, #healthView .stack-card,
+#healthView .wc-card{
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 38px -28px #000 !important;
+  border-radius:22px !important;
+  backdrop-filter:blur(24px) saturate(1.15); -webkit-backdrop-filter:blur(24px) saturate(1.15);
+}
+/* INSIGHT card → gold hero (Today's Call) */
+#healthView .oura-todays-call{
+  background:
+    radial-gradient(120% 130% at 78% 14%, rgba(220,160,80,0.34) 0%, rgba(60,38,18,0.30) 45%, rgba(14,10,6,0.5) 80%),
+    linear-gradient(120deg,#241a0f,#0d0905) !important;
+  border:1px solid rgba(231,210,160,0.16) !important; border-left:3px solid var(--pk-gold) !important;
+  border-radius:22px !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+}
+/* score/zone greens → gold (keep yellow/red semantic) */
+#healthView .oura-score-num.zone-green, #healthView .oura-hero-fill.zone-green{ color:var(--pk-gold) !important; stroke:var(--pk-gold) !important; }
+#healthView .oura-hero-fill{ stroke:var(--pk-gold) !important; }
+#healthView .oura-hero-fill.zone-gold{ stroke:#e0b25e !important; }
+#healthView .oura-zone-dot.zone-green{ background:var(--pk-gold) !important; box-shadow:0 0 7px rgba(199,154,78,0.6) !important; }
+#healthView .oura-call-badge.zone-green{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.35) !important; color:var(--pk-gold-soft) !important; }
+#healthView .oura-todays-call.zone-green{ border-left-color:var(--pk-gold) !important; }
+#healthView .oura-header-ring{ border-color:rgba(199,154,78,0.4) !important; }
+#healthView .oura-header-ring-dot, #healthView .oura-status{ color:var(--pk-gold-soft) !important; }
+#healthView .oura-header-ring-dot{ background:var(--pk-gold) !important; }
+#healthView .oura-connect-btn{ background:rgba(199,154,78,0.06) !important; border-color:rgba(199,154,78,0.18) !important; color:var(--pk-gold-soft) !important; }
+#healthView .oura-trend-tab.active{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.3) !important; color:var(--pk-gold-soft) !important; }
+#healthView .oura-trend-line{ stroke:var(--pk-gold) !important; } #healthView .oura-trend-fill{ fill:rgba(199,154,78,0.08) !important; }
+/* big score numbers → Fraunces */
+#healthView .oura-score-num, #healthView .oura-hero .day-ring-percent, #healthView .water-row{ font-family:var(--pk-serif); font-weight:300; }
+#healthView .wc-title{ font-family:var(--pk-serif); font-weight:400; }
+/* stack + water green accents → gold */
+#healthView .stack-ticker-dot{ background:var(--pk-gold) !important; }
+#healthView .stack-progress-fill{ background:linear-gradient(90deg, var(--pk-gold), var(--pk-gold-soft)) !important; }
+#healthView .water-bar-fill{ background:linear-gradient(90deg, #b9863f, var(--pk-gold)) !important; box-shadow:0 0 18px rgba(199,154,78,0.18) !important; }
+#healthView .water-zone-name{ color:var(--pk-gold-soft) !important; }
+#healthView.pk-animate .oura-scores, #healthView.pk-animate .oura-metrics, #healthView.pk-animate .stack-card, #healthView.pk-animate .wc-card, #healthView.pk-animate .oura-todays-call{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce){ #healthView.pk-animate *{ animation:none !important; } }
+</style>
+
+<!-- ============================================================
+     GYM TAB — ASTON REDESIGN (scoped to #gymView; visual-only).
+     Remap --good var to gold (catches most green), glass cards, Fraunces.
+     Insight cards (Next session / Stats / Trend / Today's workout) → warm.
+     ============================================================ -->
+<style>
+#gymView{ --good:#c79a4e; --pk-gold:#c79a4e; --pk-gold-soft:#e6c98a; --pk-serif:'Fraunces', Georgia, serif; }
+/* glass cards */
+#gymView .wt-card, #gymView .card, #gymView .wt-progress-link{
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 38px -28px #000 !important;
+  border-radius:22px !important;
+  backdrop-filter:blur(24px) saturate(1.15); -webkit-backdrop-filter:blur(24px) saturate(1.15);
+}
+/* INSIGHT sub-cards → warm gold tint */
+#gymView .po-rx-card, #gymView .po-tw{
+  background:radial-gradient(120% 130% at 82% 12%, rgba(220,160,80,0.16) 0%, rgba(40,26,12,0.10) 55%, transparent 85%), rgba(255,255,255,0.02) !important;
+  border:1px solid rgba(231,210,160,0.14) !important;
+}
+/* big numbers / title → Fraunces */
+#gymView .po-title, #gymView .wt-weight-num, #gymView .po-stat-val, #gymView .po-tw-summary-num{ font-family:var(--pk-serif); font-weight:400 !important; }
+/* green accents (those NOT covered by --good var) → gold */
+#gymView .po-day-split{ color:var(--pk-gold) !important; }
+#gymView .wt-line, #gymView .wt-dot{ stroke:var(--pk-gold) !important; }
+#gymView .wt-dot{ fill:var(--pk-gold) !important; }
+#gymView .wt-comp-bar.muscle{ background:var(--pk-gold) !important; }
+#gymView .po-rx-tag.up{ background:rgba(199,154,78,0.14) !important; color:var(--pk-gold-soft) !important; }
+#gymView.pk-animate .wt-card, #gymView.pk-animate .card, #gymView.pk-animate .po-tw{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce){ #gymView.pk-animate *{ animation:none !important; } }
+</style>
+
+<!-- ============================================================
+     PROFILE TAB — ASTON REDESIGN (scoped to #profileView; visual-only).
+     Glass cards, gold accents, Fraunces values. Stats grid = data (metric look).
+     ============================================================ -->
+<style>
+#profileView{ --pk-gold:#c79a4e; --pk-gold-soft:#e6c98a; --pk-dim:#9b9081; --pk-serif:'Fraunces', Georgia, serif; }
+#profileView .prof-card{
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 38px -28px #000 !important;
+  border-radius:22px !important;
+  backdrop-filter:blur(24px) saturate(1.15); -webkit-backdrop-filter:blur(24px) saturate(1.15);
+}
+/* avatar + section + buttons green → gold */
+#profileView .prof-avatar{ background:rgba(199,154,78,0.10) !important; border-color:rgba(199,154,78,0.25) !important; color:var(--pk-gold-soft) !important; font-family:var(--pk-serif); }
+#profileView .prof-header-name{ font-family:var(--pk-serif); font-weight:400; }
+#profileView .prof-section-label{ color:var(--pk-dim) !important; }
+#profileView .prof-seg-btn.active{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.3) !important; color:var(--pk-gold-soft) !important; }
+#profileView .prof-macro-preview{ background:rgba(199,154,78,0.05) !important; }
+#profileView .prof-stat-val, #profileView .prof-macro-val{ font-family:var(--pk-serif); font-weight:400; }
+#profileView .prof-save-btn{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.25) !important; color:var(--pk-gold-soft) !important; }
+#profileView .prof-save-btn:hover{ background:rgba(199,154,78,0.2) !important; }
+#profileView .prof-save-msg{ color:var(--pk-gold-soft) !important; }
+#profileView.pk-animate .prof-card{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce){ #profileView.pk-animate *{ animation:none !important; } }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16864,6 +17090,8 @@ function switchTab(tab) {
   if (tabs[tab]) tabs[tab].setAttribute('aria-current', 'page');
   localStorage.setItem('activeTab', tab);
   window.scrollTo(0, 0);
+  // Replay the Aston entrance animation on the opened view (re-add .pk-animate)
+  if (views[tab]) { var _v=views[tab]; _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate'); }
   // Re-render Peak canvases every time the tab opens (they need offsetWidth > 0)
   if (tab === 'peak' && typeof renderPeak === 'function') {
     setTimeout(renderPeak, 0);
@@ -25846,13 +26074,11 @@ function switchTab(tab) {
   function unlock() {
     lock.classList.add('fid-unlocking');
     setTimeout(() => lock.classList.add('fid-gone'), 520);
-    // once the lock clears, replay the Peak entrance animation if Peak is active
-    // (it was finishing hidden behind the lock screen otherwise)
+    // once the lock clears, replay the entrance animation on whichever view is
+    // active (the animation was finishing hidden behind the lock screen otherwise)
     setTimeout(function(){
-      var pv = document.getElementById('peakView');
-      if (pv && pv.classList.contains('active')) {
-        pv.classList.remove('pk-animate'); void pv.offsetWidth; pv.classList.add('pk-animate');
-      }
+      var av = document.querySelector('.view-container.active');
+      if (av) { av.classList.remove('pk-animate'); void av.offsetWidth; av.classList.add('pk-animate'); }
     }, 560);
   }
   function setIcon(state) {
