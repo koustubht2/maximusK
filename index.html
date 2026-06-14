@@ -6947,7 +6947,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <button class="topbar-sync" id="topbarSync" aria-label="Sync now" title="Sync now" type="button">
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
   </button>
-  <span id="buildStamp" title="Build version" style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.28);margin-left:4px;align-self:center">b41</span>
 </header>
 
 <div class="past-view-banner hidden" id="pastViewBanner">
@@ -7060,15 +7059,7 @@ window.canonicalJson = function(obj) {
     doneTimer = setTimeout(() => { setState(''); checkDirty(); }, 2000);
   }
 
-  // Single tap = normal sync. Double tap = on-device diagnostic (alert with
-  // push status/size) — useful on phones that have no dev console.
-  var _lastTap = 0;
-  btn.addEventListener('click', function() {
-    var now = (window.performance && performance.now) ? performance.now() : (+new Date());
-    if (now - _lastTap < 450) { _lastTap = 0; if (typeof window._syncDiag === 'function') window._syncDiag(); return; }
-    _lastTap = now;
-    doSync();
-  });
+  btn.addEventListener('click', doSync);
   // Poll dirty state every second to keep the highlight accurate
   setInterval(checkDirty, 1000);
 })();
@@ -12359,66 +12350,6 @@ setInterval(updateDayBar, 60 * 1000);
     clearTimeout(sTimer);
     sTimer = setTimeout(pushNow, 100);
   }
-
-  // On-device diagnostic (phones have no console). Does a LIVE push and reports
-  // the real HTTP status, blob size and today's meal count via alert(). Trigger
-  // by double-tapping the topbar sync button.
-  window._syncDiag = async function() {
-    function tdk(){ var d=new Date(); if(d.getHours()<6) d.setDate(d.getDate()-1);
-      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-    var vkey = 'goals_vitality_' + tdk();
-    var localArr = []; try { localArr = JSON.parse(localStorage.getItem(vkey)) || []; } catch(e){}
-    var s = collect();
-    var body = JSON.stringify({ key: A_KEY, data: s, updated_at: new Date().toISOString() });
-    var sizeKB = Math.round(body.length / 1024);
-    // thumbnail audit: for each meal flagged hasThumb, is its synced/legacy key present?
-    var thumbInfo = localArr.filter(function(m){return m.hasThumb||m.thumb;}).map(function(m){
-      var syn = localStorage.getItem('goals_vit_thumb_'+m.id);
-      var leg = localStorage.getItem('po_vit_thumb_'+m.id);
-      return m.name+'('+m.id+')→'+(m.thumb?'embedded':syn?'synced('+Math.round(syn.length/1024)+'KB)':leg?'LEGACY-LOCAL':'MISSING');
-    });
-    // EVERY localStorage key that mentions a meal id OR looks photo-ish — find where the image really lives
-    var photoKeys = [];
-    for (var pi=0; pi<localStorage.length; pi++){
-      var pk = localStorage.key(pi); if(!pk) continue;
-      var hit = pk.indexOf('thumb')>=0 || pk.indexOf('photo')>=0 || pk.indexOf('snap')>=0 || pk.indexOf('img')>=0;
-      if(!hit){ localArr.forEach(function(m){ if(m.id && pk.indexOf(m.id)>=0) hit=true; }); }
-      if(hit){ var v=localStorage.getItem(pk)||''; photoKeys.push(pk+'('+Math.round(v.length/1024)+'KB)'); }
-    }
-    var allThumbKeys = [];
-    for (var ti=0; ti<localStorage.length; ti++){ var tkk=localStorage.key(ti); if(tkk&&tkk.indexOf('goals_vit_thumb_')===0) allThumbKeys.push(tkk.slice(16)); }
-    // does the raw meal array text itself contain base64 image data?
-    var rawHasB64 = (localStorage.getItem(vkey)||'').indexOf('data:image')>=0;
-    var lines = ['DIAG v4 (thumb-sync)',
-                 'MIGRATED: ' + localStorage.getItem('po_vit_thumb_migrated'),
-                 'meals: ' + localArr.map(function(m){return m.name+'['+m.id+' t:'+(m.thumb?'Y':'n')+' h:'+(m.hasThumb?'Y':'n')+']';}).join(', '),
-                 'THUMBS: ' + (thumbInfo.length?thumbInfo.join(' | '):'none flagged'),
-                 'meal-array has data:image? ' + rawHasB64,
-                 'photo-ish keys: ' + (photoKeys.length?photoKeys.join(', '):'NONE'),
-                 'synced thumb ids: ' + (allThumbKeys.length?allThumbKeys.join(','):'NONE'),
-                 'PUSH blob: ' + sizeKB + ' KB',
-                 'sReady: ' + sReady];
-    // Is the photo key actually in the blob we're about to push?
-    var inBlob = !!(s && s.keys && s.keys['goals_vit_thumb_axkg41n']);
-    var inDel  = !!(s && s.del && s.del['goals_vit_thumb_axkg41n']);
-    lines.push('photo in PUSH keys? ' + inBlob + '  | in PUSH del? ' + inDel);
-    try {
-      var r = await sRawPush(s, false);
-      lines.push('PUSH status: ' + r.status + ' ' + r.statusText);
-      if (!r.ok) { try { lines.push('ERR: ' + (await r.text()).slice(0,200)); } catch(e){} }
-      else { sLastJson = window.canonicalJson(s); sLastKeysJson = window.canonicalJson(collectKeys()); }
-      // Read the cloud RIGHT BACK to see if our push persisted or got clobbered
-      await new Promise(function(res){ setTimeout(res, 1200); });
-      var vr = await fetch(S_URL + '/rest/v1/app_state?select=data,updated_at&key=eq.' + A_KEY,
-        { headers: { apikey: S_KEY, Authorization: 'Bearer ' + S_KEY } });
-      var vrows = await vr.json();
-      var vkeys = vrows && vrows[0] && vrows[0].data && vrows[0].data.keys || {};
-      lines.push('CLOUD after 1.2s — photo? ' + (vkeys['goals_vit_thumb_axkg41n'] ? 'YES' : 'NO'));
-      lines.push('CLOUD updated_at: ' + (vrows && vrows[0] && vrows[0].updated_at));
-    } catch(e) { lines.push('PUSH threw: ' + (e && e.message)); }
-    try { alert(lines.join('\n')); } catch(e) { console.log(lines.join('\n')); }
-    return lines.join('\n');
-  };
 
   // Synchronous best-effort flush for page-hide/unload (no time to pull-merge).
   // Safe because pushes are now per-key timestamped, so even this can't wipe
