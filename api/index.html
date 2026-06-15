@@ -149,16 +149,11 @@ const CONFIG = {
 body {
   margin: 0;
   padding: 0;
-  /* THE warm Aston backdrop (the static base "existing bg") lives here on the
-     body background so it ALWAYS shows full-viewport. The drifting light BEAM is
-     a separate, subtle, animated overlay on body::before that sits ON TOP of this
-     (see below) — that's what makes the bg feel dynamic without going dark. */
-  background:
-    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
-    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
-    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
-    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
-  background-color: #080604;
+  /* SOLID dark only. The warm Aston gradient + beams BOTH live on #beamLayer now.
+     Reason: background-attachment:fixed here painted into a separate composited
+     layer on Mac that sat ON TOP of the z-index:-1 beam layer, hiding the beams
+     (worked on Windows, not Mac). Solid body bg removes that fixed layer. */
+  background: #080604;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -3642,20 +3637,23 @@ body { min-height: 100vh; position: relative; overflow-x: hidden; }
 /* UNIVERSAL warm Aston backdrop — fixed full-viewport, behind all content, and
    DRIFTING (slow animation) so it feels alive + creates the soft diagonal light
    beam between the warm radials. This is the last body::before = wins cascade. */
-/* APPROACH 1: beams on a REAL fixed <div> (#beamLayer) instead of body::before,
-   because Mac doesn't reliably paint a fixed pseudo-element. z-index:-1 keeps it
-   behind the cards; body's warm gradient is untouched. */
+/* APPROACH 2: warm gradient + beams TOGETHER on a real fixed <div> (#beamLayer).
+   body is now solid dark, so there's no fixed-attachment layer on Mac to hide
+   this behind. z-index:-1 keeps it behind the cards. One inseparable backdrop. */
 #beamLayer {
   position: fixed; inset: -20%; z-index: -1; pointer-events: none;
-  /* TWO diagonal light BEAMS (god-rays, like beam1.png / beam2.png) + a soft
-     warm flare — all on a TRANSPARENT base so the warm body bg shows through. */
   background:
     /* beam 1 — the bright primary ray streaking down from top-right */
     linear-gradient(118deg, transparent 30%, rgba(255,226,172,0.13) 41%, rgba(255,236,194,0.30) 48%, rgba(255,226,172,0.13) 55%, transparent 66%),
     /* beam 2 — a softer, wider secondary ray crossing lower-left */
     linear-gradient(102deg, transparent 36%, rgba(220,168,86,0.09) 48%, rgba(244,214,156,0.20) 56%, rgba(220,168,86,0.08) 64%, transparent 76%),
     /* warm flare anchoring the beams' source, top-right */
-    radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%);
+    radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%),
+    /* warm Aston base gradient (moved off body) */
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%),
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
   animation: drift 38s ease-in-out infinite alternate;
 }
 body::after {
@@ -4077,15 +4075,9 @@ main {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  /* THE warm Aston backdrop (the "existing bg") — on the body background so it
-     reliably shows full-viewport. The drifting beam is a separate ::before
-     overlay ON TOP of this. */
-  background:
-    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
-    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
-    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
-    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
-  background-color: #080604;
+  /* SOLID dark only — warm gradient + beams live together on #beamLayer. Do NOT
+     put a fixed-attachment gradient here; on Mac it paints over the beam layer. */
+  background: #080604;
   color: var(--text-1);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
