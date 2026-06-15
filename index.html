@@ -5426,6 +5426,17 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
   pointer-events: none;
 }
+/* ---- entrance animation: blur-in cascade (matches the other tabs). Applies to
+        the visible section's cards on tab-open AND on sub-tab switch. ---- */
+#financeView.pk-animate .card,
+#financeView.pk-animate .sg-card,
+#financeView.pk-animate .sp-card,
+#financeView.pk-animate .nw-summary-card,
+#financeView.pk-animate .ord-card,
+#financeView.pk-animate .wish-card{
+  animation: pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both;
+}
+@media (prefers-reduced-motion: reduce){ #financeView.pk-animate *{ animation: none !important; } }
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -12807,7 +12818,9 @@ window._STAGGER_SEL = {
   healthView:  '.oura-scores, .oura-metrics, .stack-card, .wc-card, .oura-todays-call',
   gymView:     '.wt-card, .card, .po-tw',
   profileView: '.prof-card',
-  jarvisView:  '.peak-card'
+  jarvisView:  '.peak-card',
+  // finance: only the VISIBLE section's cards animate (helper filters hidden ones)
+  financeView: '.section:not([hidden]) .card, .section:not([hidden]) .sg-card, .section:not([hidden]) .sp-card, .section:not([hidden]) .nw-summary-card, .section:not([hidden]) .ord-card, .section:not([hidden]) .wish-card'
 };
 window._staggerCards = function(viewId){
   var sel = window._STAGGER_SEL[viewId]; if (!sel) return;
@@ -17542,18 +17555,16 @@ function switchTab(tab) {
   // count-ups, async data) change page height and would otherwise clobber it.
   window._restoreScroll = function(targetY){
     window._scrollSuppressUntil = Date.now() + 800;   // pause saving while we settle
-    if (window._scrollDebug) console.log('[restore] called target=', targetY, 'docHeight=', document.body.scrollHeight, 'winH=', window.innerHeight, 'maxScroll=', (document.body.scrollHeight - window.innerHeight));
     var tries = 0;
     function go(){
       setY(targetY);
       tries++;
-      if (window._scrollDebug && (tries===1 || tries===12)) console.log('[restore] try', tries, 'set to', targetY, '-> actual', curY(), 'maxScroll', (document.body.scrollHeight - window.innerHeight));
       if (tries < 12) requestAnimationFrame(go);       // ~12 frames (~200ms)
     }
     go();
     // a few delayed re-asserts for slow async renders, then re-enable saving
-    [60, 150, 300, 500].forEach(function(ms){ setTimeout(function(){ setY(targetY); if (window._scrollDebug) console.log('[restore]', ms+'ms ->', curY()); }, ms); });
-    setTimeout(function(){ window._scrollSuppressUntil = 0; if (window._scrollDebug) console.log('[restore] DONE final', curY()); }, 820);
+    [60, 150, 300, 500].forEach(function(ms){ setTimeout(function(){ setY(targetY); }, ms); });
+    setTimeout(function(){ window._scrollSuppressUntil = 0; }, 820);
   };
 
   // Continuously remember the current tab's scroll (debounced) so it's saved
@@ -17633,6 +17644,12 @@ function switchTab(tab) {
     });
     storeSet(TAB_KEY, name);
     window.scrollTo({ top: 0, behavior: 'instant' });
+    // Re-fire the blur-in cascade for the newly-shown section's cards.
+    var fv = document.getElementById('financeView');
+    if (fv) {
+      fv.classList.remove('pk-animate'); void fv.offsetWidth; fv.classList.add('pk-animate');
+      if (typeof window._staggerCards === 'function') window._staggerCards('financeView');
+    }
   }
   tabs.forEach(b => b.addEventListener('click', () => setActiveTab(b.dataset.tab)));
   const savedTab = storeGet(TAB_KEY);
