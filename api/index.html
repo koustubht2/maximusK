@@ -3646,19 +3646,29 @@ body { background: transparent; min-height: 100vh; position: relative; overflow-
    this behind. z-index:-1 keeps it behind the cards. One inseparable backdrop. */
 #beamLayer {
   position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  /* warm backdrop only — full viewport, unmasked. The diagonal beams are a
+     separate masked layer (::before) so they can sit top-right without the warm
+     bg also fading. */
   background:
-    /* ⚠ DIAGNOSTIC TEST BEAM — bright red, unmistakable. If this shows on Mac,
-       the beams were just too faint (fix = higher alpha). If it does NOT show on
-       Mac, it's a true render bug with linear-gradients on this layer. REMOVE. */
-    linear-gradient(118deg, transparent 38%, rgba(255,0,0,0.9) 48%, transparent 58%),
-    /* warm corner glow (top-right) — the soft lit flare, no diagonal shafts */
     radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%),
-    /* warm Aston base gradient */
     radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
     radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
     radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%),
     linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
   animation: drift 38s ease-in-out infinite alternate;
+}
+/* TWO diagonal beam shafts (beam1 + beam2), brightness raised so Mac's
+   color-managed display actually renders them. Masked to the TOP so the shafts
+   live up near the top-right and fade out before they cross the cards. */
+#beamLayer::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    /* beam 1 — bright primary shaft */
+    linear-gradient(123deg, transparent 40%, rgba(255,232,180,0.42) 47%, rgba(255,240,205,0.66) 50%, rgba(255,232,180,0.42) 53%, transparent 60%),
+    /* beam 2 — softer secondary shaft beside it */
+    linear-gradient(110deg, transparent 44%, rgba(230,180,100,0.28) 53%, rgba(248,222,165,0.46) 57%, rgba(230,180,100,0.24) 61%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 20%, transparent 50%);
+          mask-image: linear-gradient(to bottom, #000 0%, #000 20%, transparent 50%);
 }
 body::after {
   content: ''; position: fixed; inset: 0; z-index: -1;
