@@ -3647,13 +3647,9 @@ body { background: transparent; min-height: 100vh; position: relative; overflow-
 #beamLayer {
   position: fixed; inset: -20%; z-index: -1; pointer-events: none;
   background:
-    /* beam 1 — the bright primary ray streaking down from top-right */
-    linear-gradient(118deg, transparent 30%, rgba(255,226,172,0.13) 41%, rgba(255,236,194,0.30) 48%, rgba(255,226,172,0.13) 55%, transparent 66%),
-    /* beam 2 — a softer, wider secondary ray crossing lower-left */
-    linear-gradient(102deg, transparent 36%, rgba(220,168,86,0.09) 48%, rgba(244,214,156,0.20) 56%, rgba(220,168,86,0.08) 64%, transparent 76%),
-    /* warm flare anchoring the beams' source, top-right */
+    /* warm corner glow (top-right) — the soft lit flare, no diagonal shafts */
     radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%),
-    /* warm Aston base gradient (moved off body) */
+    /* warm Aston base gradient */
     radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
     radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
     radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%),
