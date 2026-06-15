@@ -146,16 +146,19 @@ const CONFIG = {
   --font-serif: 'Instrument Serif', Georgia, serif;
 }
 
-html { background: #080604; }   /* solid dark base on HTML (see note below) */
 body {
   margin: 0;
   padding: 0;
-  /* TRANSPARENT body. A z-index:-1 fixed child (#beamLayer) paints ABOVE the
-     <html> background but BEHIND the <body> background — so on Mac a solid body
-     bg HID the beams (you saw black). Making body transparent lets #beamLayer
-     show; <html> holds the dark base so nothing is ever see-through to white.
-     (No background-attachment:fixed anywhere — that's what broke Mac before.) */
-  background: transparent;
+  /* THE warm Aston backdrop (the static base "existing bg") lives here on the
+     body background so it ALWAYS shows full-viewport. The drifting light BEAM is
+     a separate, subtle, animated overlay on body::before that sits ON TOP of this
+     (see below) — that's what makes the bg feel dynamic without going dark. */
+  background:
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
+  background-color: #080604;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -3627,57 +3630,31 @@ img, video, canvas, svg { max-width: 100%; }
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  /* dark base on HTML only; body stays transparent so #beamLayer (z-index:-1)
-     shows on Mac. */
+  background: #080604;
   color: var(--text-secondary);
   font-family: var(--font);
   font-size: 15px; line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-html { background: #080604; }
-body { background: transparent; min-height: 100vh; position: relative; overflow-x: hidden; }
+body { min-height: 100vh; position: relative; overflow-x: hidden; }
 
 /* UNIVERSAL warm Aston backdrop — fixed full-viewport, behind all content, and
    DRIFTING (slow animation) so it feels alive + creates the soft diagonal light
    beam between the warm radials. This is the last body::before = wins cascade. */
-/* APPROACH 2: warm gradient + beams TOGETHER on a real fixed <div> (#beamLayer).
-   body is now solid dark, so there's no fixed-attachment layer on Mac to hide
-   this behind. z-index:-1 keeps it behind the cards. One inseparable backdrop. */
-#beamLayer {
-  position: fixed; inset: -20%; z-index: -1; pointer-events: none;
-  /* warm backdrop only — full viewport, unmasked. The diagonal beams are a
-     separate masked layer (::before) so they can sit top-right without the warm
-     bg also fading. */
+body::before {
+  content: ''; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  /* TWO diagonal light BEAMS (god-rays, like beam1.png / beam2.png) + a soft
+     warm flare — all on a TRANSPARENT base (no dark fill, or it would cover the
+     warm body bg → all black). Slowly drifts so the backdrop feels alive. */
   background:
-    radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%),
-    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
-    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
-    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%),
-    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
+    /* beam 1 — the bright primary ray streaking down from top-right */
+    linear-gradient(118deg, transparent 30%, rgba(255,226,172,0.13) 41%, rgba(255,236,194,0.30) 48%, rgba(255,226,172,0.13) 55%, transparent 66%),
+    /* beam 2 — a softer, wider secondary ray crossing lower-left */
+    linear-gradient(102deg, transparent 36%, rgba(220,168,86,0.09) 48%, rgba(244,214,156,0.20) 56%, rgba(220,168,86,0.08) 64%, transparent 76%),
+    /* warm flare anchoring the beams' source, top-right */
+    radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%);
   animation: drift 38s ease-in-out infinite alternate;
-}
-/* ONE wide, soft, CURVED light beam (the volumetric spotlight shaft in
-   beam1.1.png) sweeping diagonally down the top-right. Built from a large ROTATED
-   elliptical radial-gradient — radials render reliably on Mac (the warm glow does),
-   unlike the thin faint linear shafts. Sits in the empty space above-right of the
-   centred 720px card column; the corner mask keeps it off the cards. */
-#beamLayer::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  /* a tall narrow ellipse, rotated ~30°, anchored off the top-right → reads as a
-     broad curved beam angling down the right side */
-  background:
-    radial-gradient(38% 70% at 78% 4%,
-      rgba(255,243,214,0.50) 0%,
-      rgba(255,232,184,0.30) 26%,
-      rgba(235,196,130,0.14) 48%,
-      transparent 72%);
-  transform: rotate(28deg);
-  transform-origin: 82% 0%;
-  /* keep the beam in the TOP-RIGHT only — fade out toward centre/left/bottom so
-     it never crosses the cards. */
-  -webkit-mask-image: radial-gradient(75% 75% at 100% 0%, #000 0%, #000 34%, transparent 66%);
-          mask-image: radial-gradient(75% 75% at 100% 0%, #000 0%, #000 34%, transparent 66%);
 }
 body::after {
   content: ''; position: fixed; inset: 0; z-index: -1;
@@ -4098,15 +4075,20 @@ main {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  /* dark base on HTML only; body transparent so #beamLayer shows on Mac. Do NOT
-     put a fixed-attachment gradient here; on Mac it paints over the beam layer. */
+  /* THE warm Aston backdrop (the "existing bg") — on the body background so it
+     reliably shows full-viewport. The drifting beam is a separate ::before
+     overlay ON TOP of this. */
+  background:
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%) fixed,
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%) fixed,
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%) fixed,
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed;
+  background-color: #080604;
   color: var(--text-1);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
-html { background: #080604; }
-body { background: transparent; }
 .wc-shell { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
 
 /* ----- Top day pill + header ----- */
@@ -7564,11 +7546,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </script>
 </head>
 <body>
-
-<!-- Diagonal light beams (beam1 + beam2) as a REAL fixed element — Mac (Chrome
-     + Safari) fails to paint a fixed body::before reliably; a real div is more
-     dependable. Behind the cards (z-index:-1), above the body's warm gradient. -->
-<div id="beamLayer" aria-hidden="true"></div>
 
 <!-- ========== FACE ID LOCK SCREEN ========== -->
 <div id="faceIdLock" class="fid-lock">
