@@ -1,10 +1,20 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
 <title>Koustubh.exe</title>
+
+<!-- ===== Favicons / app icons (Aston gold wing mark) ===== -->
+<!-- HD scalable favicon for browser tabs (coloured wings, transparent bg) -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<!-- PNG fallback for browsers without SVG-favicon support -->
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<!-- iOS home-screen icon (iOS composites transparency on black) -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<!-- Android / PWA install -->
+<link rel="manifest" href="/site.webmanifest">
 
 
 <script>
@@ -136,13 +146,32 @@ const CONFIG = {
   --font-serif: 'Instrument Serif', Georgia, serif;
 }
 
-body {
+html body {
   margin: 0;
   padding: 0;
-  /* SOLID dark base only. The warm Aston backdrop + drifting beams ALL live
-     together on body::before (one inseparable layer) so Safari/Mac can't split
-     them. Do NOT put the warm gradient here. */
-  background: #080604;
+  /* `html body` (specificity 0,0,2) so this WINS over the several `html,body`
+     (0,0,1) rules later in the file — otherwise their solid-dark background
+     would override these gradients regardless of source order. */
+  /* THE warm Aston backdrop + TWO diagonal light BEAMS — ALL on the body
+     background, SCROLLING (no background-attachment:fixed, no fixed ::before).
+     background-attachment:fixed and fixed pseudo-elements render INCONSISTENTLY
+     across Mac vs Windows (Mac Chrome/Safari drop them) — that's why the beams
+     showed on Windows but not Mac. A normal scrolling background is identical
+     everywhere. Sized to the viewport and pinned to the top so the beams read. */
+  background:
+    /* beam 1 — bright primary diagonal ray from top-right */
+    linear-gradient(118deg, transparent 30%, rgba(255,226,172,0.13) 41%, rgba(255,236,194,0.30) 48%, rgba(255,226,172,0.13) 55%, transparent 66%),
+    /* beam 2 — softer secondary ray crossing the other way */
+    linear-gradient(102deg, transparent 36%, rgba(220,168,86,0.09) 48%, rgba(244,214,156,0.20) 56%, rgba(220,168,86,0.08) 64%, transparent 76%),
+    /* warm flare anchoring the beams' source, top-right */
+    radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%),
+    /* warm Aston base gradient */
+    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
+    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
+    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%),
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
+  background-repeat: no-repeat;
+  background-color: #080604;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -1160,20 +1189,37 @@ body::after {
 .peak-coach-body.peak-coach-typing::after { content:'▍'; color:#6EE7B7; margin-left:1px; animation:peakCaretBlink 1s steps(1) infinite; }
 @keyframes peakCaretBlink { 50% { opacity:0; } }
 /* JARVIS section grid backdrop — covers the whole tab, fades toward the edges */
-/* JARVIS keeps its OWN dark backdrop (NOT the global warm body::before). An
-   opaque dark background on the view itself blocks the global warm gradient. */
+/* The TOP of the tab (avatar + header) keeps its OWN dark blue backdrop + blue
+   grid (untouched). The warm gold backdrop only applies from the Morning Brief
+   down, via the .jv-gold-zone wrapper. */
 #jarvisView { position:relative;
   background:radial-gradient(ellipse 90% 70% at 50% 0%, #0a0f1a 0%, #05060a 55%, #04050a 100%);
   min-height:100vh;
 }
-#jarvisView::before {
+/* blue grid — bounded to the TOP zone (.jv-blue-zone), so it ends right before
+   the Morning Brief / gold zone instead of spanning the whole view. */
+#jarvisView .jv-blue-zone{ position:relative; }
+#jarvisView .jv-blue-zone::before {
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background-image:
     linear-gradient(rgba(0,130,255,0.14) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,130,255,0.14) 1px, transparent 1px);
   background-size: 40px 40px;
-  -webkit-mask-image: radial-gradient(70% 60% at 50% 38%, #000 45%, transparent 90%);
-          mask-image: radial-gradient(70% 60% at 50% 38%, #000 45%, transparent 90%);
+  -webkit-mask-image: radial-gradient(72% 78% at 50% 44%, #000 42%, transparent 92%);
+          mask-image: radial-gradient(72% 78% at 50% 44%, #000 42%, transparent 92%);
+}
+#jarvisView .jv-blue-zone > *{ position:relative; z-index:1; }
+/* Warm Aston GOLD backdrop — ONLY behind the content from the Morning Brief
+   down, so the glass cards below sample gold (matching Peak) while everything
+   above the Morning Brief keeps the dark blue look. */
+#jarvisView .jv-gold-zone{
+  position:relative;
+  border-radius:24px;
+  background:
+    radial-gradient(75% 30% at 80% 4%, rgba(214,160,78,0.40) 0%, transparent 55%),
+    radial-gradient(70% 26% at 18% 18%, rgba(150,66,36,0.30) 0%, transparent 55%),
+    radial-gradient(90% 35% at 60% 92%, rgba(120,80,40,0.28) 0%, transparent 55%),
+    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
 }
 #jarvisView > div { position:relative; z-index:1; }
 .peak-coach-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
@@ -2426,56 +2472,68 @@ img, video, canvas, svg { max-width: 100%; }
   z-index: 50;
   display: flex;
   justify-content: center;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(10,10,11,0) 0%, rgba(10,10,11,0.78) 38%, rgba(10,10,11,0.94) 100%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* transparent — the pill floats; only a faint fade so content scrolls under */
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(8,6,4,0) 0%, rgba(8,6,4,0.32) 70%, rgba(8,6,4,0.55) 100%);
   pointer-events: none;
 }
+/* ---- frosted-glass PILL (icons only, fully rounded) — like menu.png ---- */
 .tabbar-inner {
   pointer-events: auto;
   display: flex;
   width: 100%;
-  max-width: 460px;
-  gap: 6px;
-  padding: 6px;
-  background: rgba(20, 20, 22, 0.72);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 12px 36px rgba(0,0,0,0.55);
+  max-width: 420px;
+  gap: 4px;
+  padding: 7px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 0 0 1px rgba(255,255,255,0.03),
+    0 18px 44px -20px rgba(0,0,0,0.8);
+  backdrop-filter: blur(30px) saturate(1.4);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
 }
 .tab {
   flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 13px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--text-2);
+  gap: 0;
+  padding: 12px 0;
+  border-radius: 999px;
+  /* icons only — collapse the text labels (the SVG keeps its explicit size) */
+  font-size: 0;
+  line-height: 0;
+  color: rgba(255,255,255,0.55);
   text-decoration: none;
   background: transparent;
   border: 1px solid transparent;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.tab:hover { color: var(--text-1); }
+.tab:hover { color: rgba(255,255,255,0.85); }
+/* active → soft recessed dark lozenge + bright white icon */
 .tab[aria-current="page"] {
-  color: var(--text-1);
-  background: rgba(255,255,255,0.06);
+  color: #ffffff;
+  background: rgba(255,255,255,0.10);
   border-color: rgba(255,255,255,0.10);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 .tab-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 .tab-icon svg { width: 100%; height: 100%; display: block; }
+/* JARVIS orb = a raster image (converted from jarvis.png). It can't inherit
+   currentColor, so dim it when the tab is inactive and brighten when active. */
+.jv-orb-icon { width: 22px; height: 22px; display: block; object-fit: contain; opacity: 0.5; transition: opacity 0.2s ease; }
+.tab:hover .jv-orb-icon { opacity: 0.82; }
+.tab[aria-current="page"] .jv-orb-icon { opacity: 1; filter: drop-shadow(0 0 6px rgba(150,130,255,0.55)); }
 .po-day-pill {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 6px 12px;
@@ -3009,8 +3067,8 @@ img, video, canvas, svg { max-width: 100%; }
   /* Progress photos grid — match the available width */
   .wt-photo-grid { gap: 8px; }
 
-  /* Bottom tab bar — slightly smaller pills so both labels always fit */
-  .tab { padding: 11px 10px; font-size: 13px; }
+  /* Bottom tab bar — icons only (labels hidden via font-size:0; do NOT reset it) */
+  .tab { padding: 11px 0; }
   .tabbar { padding-left: 12px; padding-right: 12px; }
 }
 
@@ -3594,42 +3652,13 @@ html, body {
 }
 body { min-height: 100vh; position: relative; overflow-x: hidden; }
 
-/* UNIVERSAL warm Aston backdrop — fixed full-viewport, behind all content, and
-   DRIFTING (slow animation) so it feels alive + creates the soft diagonal light
-   beam between the warm radials. This is the last body::before = wins cascade. */
-#appBackdrop {
-  position: fixed; inset: -20%; z-index: 0; pointer-events: none;
-  /* EVERYTHING on ONE real fixed element — warm Aston backdrop + TWO diagonal
-     light BEAMS (god-rays, like beam1.png / beam2.png) together. Uses a real
-     <div> (not body::before) because Safari/Mac fails to render fixed pseudo-
-     elements with body overflow-x:hidden → beams invisible + no scroll-parallax
-     on Mac. A real fixed div renders reliably everywhere. */
-  background:
-    /* beam 1 — the bright primary ray streaking down from top-right */
-    linear-gradient(118deg, transparent 34%, rgba(255,224,168,0.07) 44%, rgba(255,232,184,0.16) 49%, rgba(255,224,168,0.07) 54%, transparent 64%),
-    /* beam 2 — a softer, wider secondary ray crossing lower-left */
-    linear-gradient(102deg, transparent 40%, rgba(214,160,78,0.05) 50%, rgba(240,210,150,0.10) 56%, rgba(214,160,78,0.04) 62%, transparent 72%),
-    /* warm flare anchoring the beams' source, top-right */
-    radial-gradient(34% 26% at 84% 8%, rgba(255,214,150,0.30) 0%, rgba(214,160,78,0.14) 42%, transparent 72%),
-    /* the warm Aston base gradient (was on body) — now on the SAME layer as beams */
-    radial-gradient(75% 45% at 80% 16%, rgba(214,160,78,0.40) 0%, transparent 55%),
-    radial-gradient(70% 40% at 18% 32%, rgba(150,66,36,0.30) 0%, transparent 55%),
-    radial-gradient(90% 55% at 60% 88%, rgba(120,80,40,0.28) 0%, transparent 55%),
-    linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%);
-  animation: drift 38s ease-in-out infinite alternate;
-}
+/* (The warm backdrop + beams now live on the `body` scrolling background above —
+   NOT on a fixed body::before, which rendered inconsistently Mac vs Windows.)
+   body::after = film grain, absolutely positioned so it scrolls with the page. */
 body::after {
-  /* grain — must sit ABOVE the opaque backdrop layer (body::before z-index:0)
-     but below content (main z-index:2), else the backdrop hides it. */
-  content: ''; position: fixed; inset: 0; z-index: 1;
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
   background-size: 3px 3px;
-  pointer-events: none;
-}
-@keyframes drift {
-  0%   { transform: translate(0, 0) scale(1.06) rotate(0deg); }
-  50%  { transform: translate(-1.8%, 1.6%) scale(1.10) rotate(-1.2deg); }
-  100% { transform: translate(1.6%, -1.4%) scale(1.06) rotate(1deg); }
 }
 
 main {
@@ -4039,8 +4068,9 @@ main {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  /* SOLID dark base only — warm backdrop + beams live together on body::before
-     (one layer) so Safari/Mac can't split them. Do NOT put gradient here. */
+  /* SOLID dark only — the warm backdrop + beams live on the `body` rule above
+     (scrolling background). Do NOT put a fixed gradient here; it renders
+     inconsistently Mac vs Windows and would override the working body rule. */
   background: #080604;
   color: var(--text-1);
   font-family: var(--font);
@@ -5384,6 +5414,17 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
   pointer-events: none;
 }
+/* ---- entrance animation: blur-in cascade (matches the other tabs). Applies to
+        the visible section's cards on tab-open AND on sub-tab switch. ---- */
+#financeView.pk-animate .card,
+#financeView.pk-animate .sg-card,
+#financeView.pk-animate .sp-card,
+#financeView.pk-animate .nw-summary-card,
+#financeView.pk-animate .ord-card,
+#financeView.pk-animate .wish-card{
+  animation: pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both;
+}
+@media (prefers-reduced-motion: reduce){ #financeView.pk-animate *{ animation: none !important; } }
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -7056,7 +7097,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @keyframes pkBlurIn{ from{opacity:0; filter:blur(12px)} to{opacity:1; filter:blur(0)} }
 /* triggered by JS adding .pk-animate on every Peak tab open (so it replays,
    not just once during the auth/splash on first load) */
-#peakView.pk-animate .peak-card{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#peakView.pk-animate .peak-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 #peakView.pk-animate .peak-card:nth-of-type(2){ animation-delay:.10s; }
 #peakView.pk-animate .peak-card:nth-of-type(3){ animation-delay:.20s; }
 #peakView.pk-animate .peak-card:nth-of-type(4){ animation-delay:.30s; }
@@ -7189,7 +7230,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ---- entrance animation (re-uses Peak's, triggered by .pk-animate on this view) ---- */
 #dashView.pk-animate .gs-section, #dashView.pk-animate .wotd-card, #dashView.pk-animate #jvInsightCard,
 #dashView.pk-animate .gs-banner, #dashView.pk-animate .gs-rings-wrap, #dashView.pk-animate .gs-focus-card{
-  animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both;
+  animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both;
 }
 @media (prefers-reduced-motion: reduce){ #dashView.pk-animate *{ animation:none !important; } }
 </style>
@@ -7259,7 +7300,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .stack-progress-fill{ background:linear-gradient(90deg, var(--pk-gold), var(--pk-gold-soft)) !important; }
 #healthView .water-bar-fill{ background:linear-gradient(90deg, #b9863f, var(--pk-gold)) !important; box-shadow:0 0 18px rgba(199,154,78,0.18) !important; }
 #healthView .water-zone-name{ color:var(--pk-gold-soft) !important; }
-#healthView.pk-animate .oura-scores, #healthView.pk-animate .oura-metrics, #healthView.pk-animate .stack-card, #healthView.pk-animate .wc-card, #healthView.pk-animate .oura-todays-call{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#healthView.pk-animate .oura-scores, #healthView.pk-animate .oura-metrics, #healthView.pk-animate .stack-card, #healthView.pk-animate .wc-card, #healthView.pk-animate .oura-todays-call{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #healthView.pk-animate *{ animation:none !important; } }
 </style>
 
@@ -7301,7 +7342,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #gymView .wt-dot{ fill:var(--pk-gold) !important; }
 #gymView .wt-comp-bar.muscle{ background:var(--pk-gold) !important; }
 #gymView .po-rx-tag.up{ background:rgba(199,154,78,0.14) !important; color:var(--pk-gold-soft) !important; }
-#gymView.pk-animate .wt-card, #gymView.pk-animate .card, #gymView.pk-animate .po-tw{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#gymView.pk-animate .wt-card, #gymView.pk-animate .card, #gymView.pk-animate .po-tw{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #gymView.pk-animate *{ animation:none !important; } }
 </style>
 
@@ -7337,13 +7378,150 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #profileView .prof-save-btn{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.25) !important; color:var(--pk-gold-soft) !important; }
 #profileView .prof-save-btn:hover{ background:rgba(199,154,78,0.2) !important; }
 #profileView .prof-save-msg{ color:var(--pk-gold-soft) !important; }
-#profileView.pk-animate .prof-card{ animation:pkSlideUp 1.26s cubic-bezier(.16,1,.3,1) both; }
+#profileView.pk-animate .prof-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #profileView.pk-animate *{ animation:none !important; } }
+
+/* ============================================================================
+   LIFE ARC LOGO — the Aston-style tapered "wing" mark from peak-mockup.html,
+   reused as the app brand. .la-logo = wings + wordmark stacked & centred.
+   ============================================================================ */
+.la-logo{ display:flex; flex-direction:column; align-items:center; gap:0; }
+.la-logo svg{ display:block; }
+.la-logo .la-word{
+  font-family:var(--font-mono, 'JetBrains Mono', monospace);
+  font-size:10px; letter-spacing:0.42em; text-transform:uppercase;
+  color:rgba(239,231,216,0.55); margin-top:11px; padding-left:0.42em;
+}
+.la-logo .la-word b{ color:#e6c98a; font-weight:500; }
+/* inline (horizontal) variant — wings beside a small wordmark, for headers */
+.la-logo.la-inline{ flex-direction:row; gap:12px; align-items:center; }
+.la-logo.la-inline .la-word{ margin-top:0; font-size:11px; letter-spacing:0.34em; }
 
 /* JARVIS tab — blur-in entrance on its cards too (avatar excluded so the 3D
    render isn't disturbed). switchTab already adds .pk-animate to the view. */
 #jarvisView.pk-animate .peak-card{ animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ #jarvisView.pk-animate *{ animation:none !important; } }
+
+/* ============================================================================
+   JARVIS — Aston gold restyle of EVERYTHING BELOW THE AVATAR (visual only).
+   The avatar (#jvAvatarWrap/canvas), the JARVIS header, and the tab's own dark
+   blue/cyan grid backdrop (#jarvisView / #jarvisView::before) are LEFT ALONE.
+   Scoped to #jarvisView, recolors emerald #6EE7B7 → gold, glass cards → Peak
+   glass, the two text-insight cards (Brief + Debrief) → gold hero containers.
+   ============================================================================ */
+#jarvisView{
+  --pk-gold:#c79a4e; --pk-gold-soft:#e6c98a; --pk-red:#c4533a;
+  --pk-text:#efe7d8; --pk-dim:#9b9081; --pk-faint:rgba(239,231,216,0.32);
+  --pk-serif:'Fraunces', Georgia, serif;
+}
+/* ---- glass cards (chat, nudges, patterns shells) → WARM GOLD glass. Strong
+        enough to clearly read against JARVIS's dark-blue backdrop (the earlier
+        0.12 wash was invisible). A warm gold gradient over a dark warm base. ---- */
+#jarvisView .peak-card{
+  /* PURE Peak metric-card glass — now that the JARVIS backdrop is gold, the
+     transparent glass samples it and reads gold naturally (identical to Peak). */
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important;
+  border-radius:22px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 0 1px rgba(255,255,255,0.02), 0 18px 44px -28px #000 !important;
+  backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2);
+}
+#jarvisView .peak-card:hover{
+  border-color:rgba(231,210,160,0.22) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.14), 0 22px 50px -26px #000, 0 0 50px -30px var(--pk-gold) !important;
+}
+/* ---- section labels → mono gold-dim ---- */
+#jarvisView .peak-section-label{
+  font-family:var(--font-mono); color:var(--pk-dim) !important;
+  letter-spacing:0.16em; text-transform:uppercase; font-size:9.5px;
+}
+/* ---- refresh / speak icon buttons green → gold ---- */
+#jarvisView #peakBriefRefreshBtn, #jarvisView #peakBriefSpeakBtn,
+#jarvisView #jvDebriefSpeak, #jarvisView #jvDebriefRefresh,
+#jarvisView #jvPatternsRefresh{ color:var(--pk-gold-soft) !important; }
+
+/* ===== INSIGHT TEXT CARDS → GOLD HERO CONTAINERS (Brief + Debrief) =====
+   These are SHORT TEXT cards, so we use a LIGHT scrim (not the tall-media 0.85
+   one, which darkened them back to looking 'old'). The two are differentiated:
+   Morning Brief = warm sunrise gold; Weekly Debrief = deeper reflective ember. */
+#jarvisView #peakMorningBriefCard, #jarvisView #jvDebriefCard{
+  position:relative; overflow:hidden; border-radius:24px !important;
+  border:1px solid rgba(231,210,160,0.16) !important;
+  box-shadow:inset 0 1px 0 rgba(231,210,160,0.16), 0 22px 50px -30px #000 !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+}
+/* Morning Brief — brighter sunrise gold from top-right */
+#jarvisView #peakMorningBriefCard{
+  background:
+    radial-gradient(130% 120% at 80% 8%, rgba(240,186,96,0.60) 0%, rgba(150,96,40,0.34) 42%, rgba(20,14,8,0.86) 84%),
+    linear-gradient(125deg, #33240f, #120c06) !important;
+}
+/* Weekly Debrief — deeper, more reflective ember */
+#jarvisView #jvDebriefCard{
+  background:
+    radial-gradient(130% 120% at 22% 10%, rgba(214,150,78,0.46) 0%, rgba(120,60,34,0.34) 44%, rgba(16,11,7,0.88) 84%),
+    linear-gradient(125deg, #2a1a10, #100a06) !important;
+}
+/* light scrim only — keeps text crisp without darkening the whole card */
+#jarvisView #peakMorningBriefCard::before, #jarvisView #jvDebriefCard::before{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(0deg, rgba(10,7,4,0.45) 0%, transparent 42%);
+}
+/* faint drifting arc lines (the Aston silhouette detail) */
+#jarvisView #peakMorningBriefCard::after, #jarvisView #jvDebriefCard::after{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.6;
+  background:
+    radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.18) 41%, transparent 46%),
+    radial-gradient(120% 80% at 120% -10%, transparent 40%, rgba(231,210,160,0.12) 43%, transparent 48%);
+}
+#jarvisView #peakMorningBriefCard > *, #jarvisView #jvDebriefCard > *{ position:relative; z-index:1; }
+/* premium inner: cream serif body, refined spacing */
+#jarvisView #peakMorningBriefText, #jarvisView #jvDebriefText{
+  color:#f3ebda !important; font-family:var(--pk-serif); font-weight:300;
+  font-size:14.5px !important; line-height:1.75 !important; letter-spacing:.005em;
+}
+/* the section label sits over the gold — give it a gold-soft tint + tighter look */
+#jarvisView #peakMorningBriefCard .peak-section-label,
+#jarvisView #jvDebriefCard .peak-section-label{ color:var(--pk-gold-soft) !important; }
+
+/* ===== Markets strip → warm gold glass + gold label ===== */
+#jarvisView #peakMarketsStrip{
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(231,210,160,0.10) !important; border-radius:18px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), 0 14px 36px -28px #000 !important;
+  backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2);
+}
+#jarvisView #peakMarketsStrip span:first-child{ color:var(--pk-gold-soft) !important; }
+
+/* ===== Smart alarm card → warm gold tint ===== */
+#jarvisView #peakAlarmCard{
+  background:rgba(199,154,78,0.06) !important;
+  border:1px solid rgba(231,210,160,0.20) !important; border-radius:18px !important;
+}
+/* (Smart-alarm inner label/text keep their inline purple — inline styles can't
+   be overridden without JS; the card shell is gold-tinted, which is what shows.) */
+
+/* ===== Chat — bubbles, chips, input, send, mic → gold ===== */
+#jarvisView .peak-coach-msg.user-msg{
+  background:rgba(199,154,78,0.12) !important; border:1px solid rgba(231,210,160,0.22) !important;
+}
+#jarvisView .peak-coach-msg.coach-msg{
+  background:rgba(255,255,255,0.04) !important; border:1px solid rgba(255,255,255,0.07) !important;
+}
+#jarvisView .peak-coach-tag{ color:var(--pk-gold-soft) !important; }
+#jarvisView .peak-coach-speak-btn:hover{ color:var(--pk-gold-soft) !important; }
+#jarvisView .peak-coach-body.peak-coach-typing::after{ color:var(--pk-gold) !important; }
+#jarvisView .peak-coach-chip:hover{ border-color:rgba(231,210,160,0.35) !important; color:var(--pk-gold-soft) !important; }
+#jarvisView .peak-coach-input:focus{ border-color:rgba(231,210,160,0.35) !important; }
+#jarvisView .peak-coach-send{
+  background:rgba(199,154,78,0.12) !important; border:1px solid rgba(231,210,160,0.22) !important; color:var(--pk-gold-soft) !important;
+}
+#jarvisView .peak-coach-send:hover{ background:rgba(199,154,78,0.2) !important; }
+#jarvisView #peakMicBtn{
+  border-color:rgba(231,210,160,0.25) !important; background:rgba(199,154,78,0.08) !important; color:var(--pk-gold-soft) !important;
+}
+/* ===== Nudge + patterns list inner text accents ===== */
+#jarvisView #jvPatternsList, #jarvisView #jvNudgeList{ color:var(--pk-text); }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -7357,15 +7535,41 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </head>
 <body>
 
-<!-- Universal warm Aston backdrop + drifting beams. A REAL fixed element (not a
-     body::before pseudo) because Safari/WebKit on Mac fails to render fixed
-     pseudo-elements reliably when body has overflow-x:hidden — that's why the
-     beam showed on Windows but not Mac. -->
-<div id="appBackdrop" aria-hidden="true"></div>
-
 <!-- ========== FACE ID LOCK SCREEN ========== -->
 <div id="faceIdLock" class="fid-lock">
   <div class="fid-inner">
+    <!-- Aston-style wing logo -->
+    <div class="la-logo" style="margin-bottom:18px;">
+      <svg width="132" height="38" viewBox="0 0 120 34" fill="none" aria-label="Life Arc">
+        <defs>
+          <linearGradient id="laWingL" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="laWingR" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#laWingL)" stroke-linecap="round">
+          <path d="M2 7 Q40 9 57 16"  stroke-width="2.6"/>
+          <path d="M6 12 Q40 13 57 18" stroke-width="2.1"/>
+          <path d="M11 17 Q42 17 57 20" stroke-width="1.6"/>
+          <path d="M18 22 Q44 21 57 22" stroke-width="1.2"/>
+          <path d="M27 27 Q46 25 57 24" stroke-width="0.8"/>
+        </g>
+        <g stroke="url(#laWingR)" stroke-linecap="round">
+          <path d="M118 7 Q80 9 63 16"  stroke-width="2.6"/>
+          <path d="M114 12 Q80 13 63 18" stroke-width="2.1"/>
+          <path d="M109 17 Q78 17 63 20" stroke-width="1.6"/>
+          <path d="M102 22 Q76 21 63 22" stroke-width="1.2"/>
+          <path d="M93 27 Q74 25 63 24" stroke-width="0.8"/>
+        </g>
+      </svg>
+      <div class="la-word">Life <b>Arc</b></div>
+    </div>
     <div class="fid-app-name">Koustubh.exe</div>
     <div class="fid-title">Life Arc <span style="-webkit-text-fill-color:transparent;-webkit-text-stroke:1.5px #FF5500;text-shadow:0 0 14px rgba(255,85,0,0.7)">MAXXING</span></div>
     <div class="fid-icon-wrap" id="fidIconWrap">
@@ -7791,6 +7995,37 @@ window.canonicalJson = function(obj) {
 <div id="dashView" class="view-container active">
 
   <div class="dash-hero">
+    <!-- Aston-style wing logo -->
+    <div class="la-logo" style="margin-bottom:14px;align-items:flex-start;">
+      <svg width="116" height="33" viewBox="0 0 120 34" fill="none" aria-label="Life Arc">
+        <defs>
+          <linearGradient id="laWingLd" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="laWingRd" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+            <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#c79a4e" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#laWingLd)" stroke-linecap="round">
+          <path d="M2 7 Q40 9 57 16"  stroke-width="2.6"/>
+          <path d="M6 12 Q40 13 57 18" stroke-width="2.1"/>
+          <path d="M11 17 Q42 17 57 20" stroke-width="1.6"/>
+          <path d="M18 22 Q44 21 57 22" stroke-width="1.2"/>
+          <path d="M27 27 Q46 25 57 24" stroke-width="0.8"/>
+        </g>
+        <g stroke="url(#laWingRd)" stroke-linecap="round">
+          <path d="M118 7 Q80 9 63 16"  stroke-width="2.6"/>
+          <path d="M114 12 Q80 13 63 18" stroke-width="2.1"/>
+          <path d="M109 17 Q78 17 63 20" stroke-width="1.6"/>
+          <path d="M102 22 Q76 21 63 22" stroke-width="1.2"/>
+          <path d="M93 27 Q74 25 63 24" stroke-width="0.8"/>
+        </g>
+      </svg>
+    </div>
     <h1 class="dash-title">Life Arc <span class="dash-title-maxxing dtm-molten">MAXXING</span></h1>
     <div class="dash-hero-tag">Koustubh<span class="dash-title-exe">.exe</span></div>
   </div>
@@ -9647,6 +9882,8 @@ window.canonicalJson = function(obj) {
 <!-- ========== JARVIS VIEW (omniscient assistant) ========== -->
 <div id="jarvisView" class="view-container">
   <div style="max-width:680px;margin:0 auto;padding:0 4px 120px;">
+    <!-- blue zone: header + avatar + voice buttons (dark blue grid ends here) -->
+    <div class="jv-blue-zone">
     <div style="text-align:center;padding:14px 0 0;">
       <div style="font-family:var(--font-mono);font-size:20px;letter-spacing:0.18em;color:#6EE7B7;font-weight:700;">JARVIS</div>
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-tertiary);margin-top:4px;">Omniscient · sees all your data</div>
@@ -9666,6 +9903,12 @@ window.canonicalJson = function(obj) {
     <span id="peakVoiceHint" style="display:none"></span>
     <span id="peakPiperStatus" style="display:none"></span>
     <span id="peakPiperLog" style="display:none"></span>
+    </div><!-- /.jv-blue-zone -->
+
+    <!-- ===== Warm GOLD zone: everything from the Morning Brief down sits on the
+         Aston gold backdrop so the glass cards match Peak. Avatar/header above
+         keep the dark blue look. ===== -->
+    <div class="jv-gold-zone">
 
     <!-- Morning Brief (moved here from Peak) -->
     <div class="peak-card" id="peakMorningBriefCard" style="display:none;margin-top:6px;">
@@ -9758,6 +10001,7 @@ window.canonicalJson = function(obj) {
       </div>
       <div id="jvDebriefText" style="font-size:13px;line-height:1.7;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Tap ↻ for your full-life weekly debrief, sir.</div>
     </div>
+    </div><!-- /.jv-gold-zone -->
   </div>
 </div>
 
@@ -9886,7 +10130,7 @@ window.canonicalJson = function(obj) {
       Health
     </button>
     <button class="tab tab-main" id="tabDash" aria-current="page" onclick="switchTab('dash')">
-      <span class="tab-icon tab-icon-main"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg></span>
+      <span class="tab-icon tab-icon-main"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2.7 2.4 10.1V20a1.4 1.4 0 0 0 1.4 1.4h5V14.6a.8.8 0 0 1 .8-.8h4.8a.8.8 0 0 1 .8.8v6.8h5a1.4 1.4 0 0 0 1.4-1.4v-9.9z"/></svg></span>
       Main
     </button>
     <button class="tab" id="tabGym" onclick="switchTab('gym')">
@@ -9898,7 +10142,7 @@ window.canonicalJson = function(obj) {
       Finance
     </button>
     <button class="tab" id="tabJarvis" onclick="switchTab('jarvis')">
-      <span class="tab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></svg></span>
+      <span class="tab-icon"><img class="jv-orb-icon" alt="JARVIS" src="data:image/png;base64,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"></span>
       JARVIS
     </button>
   </div>
@@ -12554,6 +12798,32 @@ function updateDayBar() {
 
 // One-time count-up of the day-ring % (on tab open / unlock), like Peak's hero.
 // updateDayBar() (per-minute) sets the final value; this just animates to it once.
+// Cascade the blur-in entrance like Peak (0.10s per card), in true visual DOM
+// order. The other tabs animate SCATTERED classes (not sequential siblings), so
+// CSS nth-of-type can't stagger them correctly — we stamp delays in JS instead.
+window._STAGGER_SEL = {
+  dashView:    '.gs-section, .wotd-card, #jvInsightCard, .gs-banner, .gs-rings-wrap, .gs-focus-card',
+  healthView:  '.oura-scores, .oura-metrics, .stack-card, .wc-card, .oura-todays-call',
+  gymView:     '.wt-card, .card, .po-tw',
+  profileView: '.prof-card',
+  jarvisView:  '.peak-card',
+  // finance: only the VISIBLE section's cards animate (helper filters hidden ones)
+  financeView: '.section:not([hidden]) .card, .section:not([hidden]) .sg-card, .section:not([hidden]) .sp-card, .section:not([hidden]) .nw-summary-card, .section:not([hidden]) .ord-card, .section:not([hidden]) .wish-card'
+};
+window._staggerCards = function(viewId){
+  var sel = window._STAGGER_SEL[viewId]; if (!sel) return;
+  var view = document.getElementById(viewId); if (!view) return;
+  // honour reduced-motion (the CSS already disables animation there)
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var els = Array.prototype.slice.call(view.querySelectorAll(sel))
+    .filter(function(el){ return el.offsetParent !== null; });   // visible only
+  // sort by on-screen position so the cascade follows reading order
+  els.sort(function(a,b){ return a.getBoundingClientRect().top - b.getBoundingClientRect().top; });
+  els.forEach(function(el, i){
+    el.style.animationDelay = (Math.min(i, 8) * 0.10) + 's';      // cap so late cards don't lag too long
+  });
+};
+
 window._animateDayRingCount = function(){
   var pctEl = document.getElementById('dayRingPercent');
   if (!pctEl) return;
@@ -17183,6 +17453,11 @@ function switchTab(tab) {
     profile: document.getElementById('topbarProfileBtn')
   };
 
+  // Remember the OUTGOING tab's scroll position FIRST — must happen BEFORE we
+  // hide the views below, because display:none collapses the page height and the
+  // browser clamps scrollY to 0 (which is why saves were landing as 0).
+  if (typeof window._saveTabScroll === 'function') window._saveTabScroll();
+
   // Hide all views, deactivate all tabs
   Object.values(views).forEach(v => v.classList.remove('active'));
   Object.values(tabs).forEach(t => t.removeAttribute('aria-current'));
@@ -17191,9 +17466,30 @@ function switchTab(tab) {
   if (views[tab]) views[tab].classList.add('active');
   if (tabs[tab]) tabs[tab].setAttribute('aria-current', 'page');
   localStorage.setItem('activeTab', tab);
-  window.scrollTo(0, 0);
-  // Replay the Aston entrance animation on the opened view (re-add .pk-animate)
-  if (views[tab]) { var _v=views[tab]; _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate'); }
+
+  // Restore this tab's last scroll position (per-tab memory). If there's a saved
+  // non-top position we land there and SKIP the entrance animation (it would
+  // otherwise replay mid-scroll); a fresh/top open still gets the blur-in cascade.
+  // NOTE: several tabs re-render AFTER this (renderPeak, count-ups, async data),
+  // changing page height — so a single scrollTo gets clobbered. _restoreScroll
+  // re-asserts the target over a short window until it sticks.
+  window._curTab = tab;
+  var _savedY = (typeof window._getTabScroll === 'function') ? window._getTabScroll(tab) : 0;
+
+  if (views[tab]) {
+    var _v=views[tab];
+    if (_savedY && _savedY > 4) {
+      // restoring mid-scroll — show cards settled, no entrance animation
+      _v.classList.remove('pk-animate');
+      if (typeof window._restoreScroll === 'function') window._restoreScroll(_savedY);
+      else window.scrollTo(0, _savedY);
+    } else {
+      window.scrollTo(0, 0);
+      _v.classList.remove('pk-animate'); void _v.offsetWidth; _v.classList.add('pk-animate');
+      // cascade the cards (0.10s stagger) in visual order, like Peak
+      if (typeof window._staggerCards === 'function') window._staggerCards(_v.id);
+    }
+  }
   // count-up the day-ring % when the main tab opens (like Peak's hero count-up)
   if (tab === 'dash' && typeof window._animateDayRingCount === 'function') setTimeout(window._animateDayRingCount, 60);
   // count-up the Oura readiness number when the Health tab opens
@@ -17215,10 +17511,78 @@ function switchTab(tab) {
   }
 }
 
-// Restore last active tab
+/* ============================================================================
+   PER-TAB SCROLL MEMORY — remember where you were in each tab (scroll position)
+   and restore it when you return, even after closing/reopening the app.
+   Persisted to localStorage as tabScroll_<tab>. Sub-tabs (Finance sections,
+   Goals sub-tabs) already persist their own state independently.
+   ============================================================================ */
+(function(){
+  var PREFIX = 'tabScroll_';
+  window._curTab = window._curTab || localStorage.getItem('activeTab') || 'dash';
+  window._scrollSuppressUntil = 0;   // ignore save events while we're restoring
+
+  function curY(){ return window.scrollY || window.pageYOffset || (document.scrollingElement ? document.scrollingElement.scrollTop : 0) || 0; }
+  function setY(y){
+    window.scrollTo(0, y);
+    if (document.scrollingElement) document.scrollingElement.scrollTop = y;  // belt-and-suspenders
+  }
+
+  window._saveTabScroll = function(){
+    if (Date.now() < window._scrollSuppressUntil) return;   // don't save during a restore
+    var t = window._curTab; if (!t) return;
+    var y = Math.round(curY());
+    try { localStorage.setItem(PREFIX + t, String(y)); } catch(e){}
+  };
+  window._getTabScroll = function(tab){
+    var v = parseInt(localStorage.getItem(PREFIX + tab), 10);
+    return isNaN(v) ? 0 : v;
+  };
+
+  // Re-assert a target scroll over a short window — late re-renders (renderPeak,
+  // count-ups, async data) change page height and would otherwise clobber it.
+  window._restoreScroll = function(targetY){
+    window._scrollSuppressUntil = Date.now() + 800;   // pause saving while we settle
+    var tries = 0;
+    function go(){
+      setY(targetY);
+      tries++;
+      if (tries < 12) requestAnimationFrame(go);       // ~12 frames (~200ms)
+    }
+    go();
+    // a few delayed re-asserts for slow async renders, then re-enable saving
+    [60, 150, 300, 500].forEach(function(ms){ setTimeout(function(){ setY(targetY); }, ms); });
+    setTimeout(function(){ window._scrollSuppressUntil = 0; }, 820);
+  };
+
+  // Continuously remember the current tab's scroll (debounced) so it's saved
+  // even if the app is closed/backgrounded without switching tabs first.
+  var _t;
+  window.addEventListener('scroll', function(){
+    clearTimeout(_t);
+    _t = setTimeout(window._saveTabScroll, 120);
+  }, { passive: true });
+  // also flush on background / unload (mobile app-close)
+  window.addEventListener('pagehide', window._saveTabScroll);
+  window.addEventListener('beforeunload', window._saveTabScroll);
+  document.addEventListener('visibilitychange', function(){ if (document.hidden) window._saveTabScroll(); });
+})();
+
+// Restore last active tab (and its scroll, via switchTab's restore logic)
 (function() {
   const saved = localStorage.getItem('activeTab');
-  if (saved && saved !== 'dash') switchTab(saved);
+  if (saved && saved !== 'dash') {
+    switchTab(saved);   // switchTab handles the scroll restore for non-dash tabs
+  } else {
+    // dash is the default-active view; restore its scroll too
+    window._curTab = 'dash';
+    var y = window._getTabScroll ? window._getTabScroll('dash') : 0;
+    if (y > 4 && typeof window._restoreScroll === 'function') {
+      // wait for first paint/layout, then re-assert over a window
+      window.addEventListener('load', function(){ window._restoreScroll(y); });
+      window._restoreScroll(y);
+    }
+  }
 })();
 </script>
 
@@ -17268,6 +17632,12 @@ function switchTab(tab) {
     });
     storeSet(TAB_KEY, name);
     window.scrollTo({ top: 0, behavior: 'instant' });
+    // Re-fire the blur-in cascade for the newly-shown section's cards.
+    var fv = document.getElementById('financeView');
+    if (fv) {
+      fv.classList.remove('pk-animate'); void fv.offsetWidth; fv.classList.add('pk-animate');
+      if (typeof window._staggerCards === 'function') window._staggerCards('financeView');
+    }
   }
   tabs.forEach(b => b.addEventListener('click', () => setActiveTab(b.dataset.tab)));
   const savedTab = storeGet(TAB_KEY);
@@ -22413,7 +22783,16 @@ function switchTab(tab) {
       barEl.style.width = cs + '%';
       barEl.className = 'peak-mg-bar-fill ' + (cs >= 70 ? 'green' : cs >= 40 ? 'yellow' : 'red');
     }
-    var lbl = cs >= 70 ? 'Optimal zone' : cs >= 40 ? 'Sub-optimal' : logs.length ? 'Over limit' : 'None logged';
+    // A low score has TWO opposite causes (the score peaks at 55% of limit):
+    // too MUCH caffeine (genuinely over), or too LITTLE (worn off). Distinguish
+    // by actual active mg vs limit — don't call a near-empty cup "Over limit".
+    var lbl;
+    if (!logs.length)                 lbl = 'None logged';
+    else if (activeMg >= limit)       lbl = 'Over limit';        // genuinely at/over ceiling
+    else if (cs >= 70)                lbl = 'Optimal zone';
+    else if (cs >= 40)                lbl = 'Sub-optimal';
+    else if (activeMg < 0.55 * limit) lbl = 'Wearing off';       // low score + low mg = clearing out
+    else                              lbl = 'Over limit';        // low score + high mg = too much
     setText('peakCoffeeScoreLbl', lbl);
   }
 
@@ -26189,7 +26568,9 @@ function switchTab(tab) {
     // active (the animation was finishing hidden behind the lock screen otherwise)
     setTimeout(function(){
       var av = document.querySelector('.view-container.active');
-      if (av) { av.classList.remove('pk-animate'); void av.offsetWidth; av.classList.add('pk-animate'); }
+      if (av) { av.classList.remove('pk-animate'); void av.offsetWidth; av.classList.add('pk-animate');
+        if (typeof window._staggerCards === 'function') window._staggerCards(av.id);
+      }
       // if Dashboard is the active view on unlock, count-up its day-ring %
       if (av && av.id === 'dashView' && typeof window._animateDayRingCount === 'function') window._animateDayRingCount();
     }, 560);
