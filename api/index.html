@@ -146,14 +146,16 @@ const CONFIG = {
   --font-serif: 'Instrument Serif', Georgia, serif;
 }
 
+html { background: #080604; }   /* solid dark base on HTML (see note below) */
 body {
   margin: 0;
   padding: 0;
-  /* SOLID dark only. The warm Aston gradient + beams BOTH live on #beamLayer now.
-     Reason: background-attachment:fixed here painted into a separate composited
-     layer on Mac that sat ON TOP of the z-index:-1 beam layer, hiding the beams
-     (worked on Windows, not Mac). Solid body bg removes that fixed layer. */
-  background: #080604;
+  /* TRANSPARENT body. A z-index:-1 fixed child (#beamLayer) paints ABOVE the
+     <html> background but BEHIND the <body> background — so on Mac a solid body
+     bg HID the beams (you saw black). Making body transparent lets #beamLayer
+     show; <html> holds the dark base so nothing is ever see-through to white.
+     (No background-attachment:fixed anywhere — that's what broke Mac before.) */
+  background: transparent;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -3625,14 +3627,16 @@ img, video, canvas, svg { max-width: 100%; }
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  background: #080604;
+  /* dark base on HTML only; body stays transparent so #beamLayer (z-index:-1)
+     shows on Mac. */
   color: var(--text-secondary);
   font-family: var(--font);
   font-size: 15px; line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-body { min-height: 100vh; position: relative; overflow-x: hidden; }
+html { background: #080604; }
+body { background: transparent; min-height: 100vh; position: relative; overflow-x: hidden; }
 
 /* UNIVERSAL warm Aston backdrop — fixed full-viewport, behind all content, and
    DRIFTING (slow animation) so it feels alive + creates the soft diagonal light
@@ -4075,14 +4079,15 @@ main {
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  /* SOLID dark only — warm gradient + beams live together on #beamLayer. Do NOT
+  /* dark base on HTML only; body transparent so #beamLayer shows on Mac. Do NOT
      put a fixed-attachment gradient here; on Mac it paints over the beam layer. */
-  background: #080604;
   color: var(--text-1);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
+html { background: #080604; }
+body { background: transparent; }
 .wc-shell { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
 
 /* ----- Top day pill + header ----- */
