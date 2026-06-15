@@ -3647,6 +3647,10 @@ body { background: transparent; min-height: 100vh; position: relative; overflow-
 #beamLayer {
   position: fixed; inset: -20%; z-index: -1; pointer-events: none;
   background:
+    /* ⚠ DIAGNOSTIC TEST BEAM — bright red, unmistakable. If this shows on Mac,
+       the beams were just too faint (fix = higher alpha). If it does NOT show on
+       Mac, it's a true render bug with linear-gradients on this layer. REMOVE. */
+    linear-gradient(118deg, transparent 38%, rgba(255,0,0,0.9) 48%, transparent 58%),
     /* warm corner glow (top-right) — the soft lit flare, no diagonal shafts */
     radial-gradient(40% 30% at 84% 6%, rgba(255,216,154,0.40) 0%, rgba(214,160,78,0.18) 42%, transparent 72%),
     /* warm Aston base gradient */
