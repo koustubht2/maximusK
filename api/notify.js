@@ -391,7 +391,7 @@ async function handleCron() {
 }
 
 // ─── Vercel handler ───────────────────────────────────────────────────────────
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const cronHeader = req.headers['x-vercel-cron'];
   const auth       = req.headers['authorization'];
   if (!cronHeader && auth !== `Bearer ${process.env.CRON_SECRET}`) {
