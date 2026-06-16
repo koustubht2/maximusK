@@ -1305,6 +1305,29 @@ body::after {
 .vit-quality-warn.street { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.3); color:rgba(251,191,36,0.9); }
 /* Modal photo preview */
 .vit-snap-preview { width:100%; max-height:160px; object-fit:cover; border-radius:10px; margin-bottom:10px; display:none; border:1px solid rgba(255,255,255,0.08); }
+/* ---- Cozy meal-analysis loader (Aston gold) — shown while Gemini analyses ---- */
+#vitMealLoader { display:none; margin-bottom:12px; }
+.cz { --tone:#c79a4e; --tone-soft:rgba(199,154,78,0.30); --tone-ink:#1c1304;
+  display:flex; gap:14px; border:1px solid var(--tone-soft); background:rgba(255,255,255,0.02);
+  border-radius:14px; padding:14px; transition:border-color .5s cubic-bezier(.16,1,.3,1); }
+.cz .cz-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.cz .cz-title { font-family:var(--font-serif, Georgia), serif; font-style:italic; font-size:16px; color:var(--tone); }
+.cz .cz-bar { height:4px; border-radius:999px; background:rgba(255,255,255,0.16); overflow:hidden; }
+.cz .cz-bar span { display:block; height:100%; width:40%; border-radius:999px; background:linear-gradient(90deg,transparent,var(--tone),transparent); animation:czSlide 1.4s cubic-bezier(.16,1,.3,1) infinite; }
+.cz .cz-fact { display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-height:3.6em; }
+.cz .cz-tag { font:700 9.5px/1 var(--font-mono, ui-monospace), monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--tone-ink); background:var(--tone); border-radius:999px; padding:3px 10px; width:fit-content; animation:czTagPop .5s cubic-bezier(.34,1.56,.64,1); }
+.cz .cz-text { margin:0; font-weight:500; font-size:14px; line-height:1.4; color:#f3ebda; animation:czPop .55s cubic-bezier(.34,1.56,.64,1); }
+.cz .cz-hl { color:var(--tone); font-weight:700; }
+.cz .cz-dots { display:flex; gap:6px; }
+.cz .cz-dots i { width:6px; height:6px; border-radius:50%; background:var(--tone); opacity:.4; animation:czDot 1.2s ease-in-out infinite; }
+.cz .cz-dots i:nth-child(2){ animation-delay:.2s } .cz .cz-dots i:nth-child(3){ animation-delay:.4s }
+.cz .cz-shimmer { width:56px; height:56px; border-radius:10px; flex-shrink:0; background:linear-gradient(100deg,rgba(255,255,255,0.04) 30%,var(--tone-soft) 50%,rgba(255,255,255,0.04) 70%); background-size:200% 100%; animation:czShimmer 1.3s linear infinite; }
+@keyframes czTagPop{ 0%{ opacity:0; transform:scale(.6) rotate(-6deg) } 100%{ opacity:1; transform:scale(1) rotate(0) } }
+@keyframes czPop{ 0%{ opacity:0; transform:scale(.8) translateY(8px) } 60%{ opacity:1; transform:scale(1.04) } 100%{ transform:scale(1) translateY(0) } }
+@keyframes czDot{ 0%,100%{ opacity:.35; transform:scale(1) } 50%{ opacity:1; transform:scale(1.5) } }
+@keyframes czSlide{ from{ transform:translateX(-120%) } to{ transform:translateX(320%) } }
+@keyframes czShimmer{ from{ background-position:200% 0 } to{ background-position:-200% 0 } }
+@media (prefers-reduced-motion:reduce){ .cz, .cz *{ animation:none !important } .cz .cz-bar span{ width:100%; opacity:.5 } }
 .vit-food-del { background:transparent; border:none; color:rgba(255,138,138,0.4); cursor:pointer; font-size:18px; padding:2px 6px; line-height:1; transition:color 0.15s; }
 .vit-food-del:hover { color:#FF8A8A; }
 .vit-stats-bar { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(255,255,255,0.05); margin-top:14px; padding-top:14px; gap:4px; }
@@ -9805,6 +9828,8 @@ window.canonicalJson = function(obj) {
       <input id="vitSnapFileInput" type="file" accept="image/*" capture="environment" style="display:none">
       <!-- snap preview thumbnail -->
       <img id="vitSnapThumb" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.08)">
+      <!-- cozy loader shown while Gemini analyses the snapped meal -->
+      <div id="vitMealLoader"></div>
       <!-- AI target note -->
       <div id="vitTargetBadge" style="display:none;font-size:11px;color:rgba(110,231,183,0.7);font-family:var(--font-mono);background:rgba(110,231,183,0.07);border:1px solid rgba(110,231,183,0.15);border-radius:8px;padding:6px 10px;margin-bottom:10px;"></div>
       <div class="vit-log-actions">
@@ -24923,10 +24948,63 @@ function switchTab(tab) {
   var _pendingSnapThumb    = null;
   var _pendingSnapQuality  = 'balanced';
 
+  // ---- Cozy meal-analysis loader (Aston gold) ----
+  var _mealLoaderTimer = null;
+  function _startMealLoader() {
+    var host = document.getElementById('vitMealLoader');
+    if (!host) return;
+    var tags = ['Fuel fact', 'Did you know', 'Macro tip'];
+    var items = [
+      { text: 'Protein first keeps you full and steady — aim for ~30g this meal.', hl: 'Protein first' },
+      { text: 'A plate with some color usually has better micronutrient balance.', hl: 'some color' },
+      { text: "Eating slower gives your gut ~20 min to signal you're full.", hl: '~20 min' },
+      { text: 'Pairing carbs with protein blunts the post-meal energy dip.', hl: 'blunts' }
+    ];
+    // dynamic line: how much protein logged so far today (read live from the log)
+    try {
+      if (typeof loadVit === 'function') {
+        var _today = loadVit(null) || [];
+        var pg = Math.round(_today.reduce(function(s,f){ return s + (f.protein||0)*(f.qty||1); }, 0));
+        if (pg > 0) items.unshift({ text: pg + 'g of protein logged so far today — keep stacking it up.', hl: pg + 'g' });
+      }
+    } catch (e) {}
+
+    function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function hl(it){ if(!it.hl) return esc(it.text); var k=it.text.indexOf(it.hl); return k<0?esc(it.text):esc(it.text.slice(0,k))+'<span class="cz-hl">'+esc(it.hl)+'</span>'+esc(it.text.slice(k+it.hl.length)); }
+    var i=0, ti=0;
+    function draw(){
+      var it=items[i%items.length], tg=tags[ti%tags.length];
+      host.innerHTML =
+        '<article class="cz">'+
+          '<div class="cz-shimmer"></div>'+
+          '<div class="cz-body">'+
+            '<div class="cz-title">Analysing your meal…</div>'+
+            '<div class="cz-bar"><span></span></div>'+
+            '<div class="cz-fact">'+
+              '<span class="cz-tag" key="'+i+'-'+ti+'">'+esc(tg)+'</span>'+
+              '<p class="cz-text" key="'+i+'">'+hl(it)+'</p>'+
+              '<div class="cz-dots"><i></i><i></i><i></i></div>'+
+            '</div>'+
+          '</div>'+
+        '</article>';
+    }
+    host.style.display = 'block';
+    draw();
+    clearInterval(_mealLoaderTimer);
+    _mealLoaderTimer = setInterval(function(){ if(items.length>1) i++; if(tags.length>1) ti++; draw(); }, 3000);
+  }
+  function _stopMealLoader() {
+    clearInterval(_mealLoaderTimer); _mealLoaderTimer = null;
+    var host = document.getElementById('vitMealLoader');
+    if (host) { host.style.display = 'none'; host.innerHTML = ''; }
+  }
+  window._stopMealLoader = _stopMealLoader;  // safety: callable if modal opens elsewhere
+
   async function _handleSnapFile(file) {
     if (!file) return;
     var resp = document.getElementById('vitCoachResponse');
-    if (resp) { resp.textContent = 'Analysing your meal…'; resp.className = 'vit-ai-response loading'; }
+    if (resp) { resp.className = 'vit-ai-response'; resp.textContent = ''; }
+    _startMealLoader();
 
     var reader = new FileReader();
     reader.onload = async function(e) {
@@ -24953,6 +25031,7 @@ function switchTab(tab) {
           _resizeToThumb(dataUrl, function(thumbDataUrl) {
             _pendingSnapThumb = thumbDataUrl;
             _pendingSnapQuality = quality;
+            _stopMealLoader();   // analysis done → hide cozy loader, open the filled modal
             openVitModal();
             setTimeout(function() {
               // Show photo preview in modal
@@ -24990,12 +25069,15 @@ function switchTab(tab) {
           });
           if (resp) { resp.textContent = 'Photo analysed — review the estimated macros below.'; resp.className = 'vit-ai-response'; }
         } else {
+          _stopMealLoader();
           if (resp) { resp.textContent = 'Could not read the photo — try better lighting or add manually.'; resp.className = 'vit-ai-response'; }
         }
       } catch(err) {
+        _stopMealLoader();
         if (resp) { resp.textContent = 'Photo analysis failed — add manually above.'; resp.className = 'vit-ai-response'; }
       }
     };
+    reader.onerror = function(){ _stopMealLoader(); if (resp) { resp.textContent = 'Could not read that file — add manually above.'; resp.className = 'vit-ai-response'; } };
     reader.readAsDataURL(file);
   }
 
