@@ -16,6 +16,39 @@
 <!-- Android / PWA install -->
 <link rel="manifest" href="/site.webmanifest">
 
+<!-- OneSignal Web Push SDK -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "de1a006b-6a1f-442f-b8e4-f7df6d04763d",
+      safari_web_id: "web.onesignal.auto.50aab334-fdef-4f2b-a12a-95c1e616813d",
+      notifyButton: { enable: false },
+      promptOptions: {
+        slidedown: {
+          prompts: [{
+            type: "push",
+            autoPrompt: false,
+            text: {
+              actionMessage: "JARVIS needs permission to brief you daily — workouts, macros, caffeine, and your evening review. No spam.",
+              acceptButton: "Allow JARVIS",
+              cancelButton: "Not now",
+            },
+            delay: { pageViews: 1, timeDelay: 8 },
+          }]
+        }
+      }
+    });
+    // Expose so the app can trigger the prompt from a button/onboarding flow
+    window._jarvisRequestNotify = async function() {
+      const permission = await OneSignal.Notifications.permission;
+      if (!permission) await OneSignal.Slidedown.promptPush();
+    };
+    // Auto-prompt once after 8s on first visit (handled by delay config above)
+  });
+</script>
+
 
 <script>
 const WATER_CONFIG = {
