@@ -27157,6 +27157,11 @@ function switchTab(tab) {
     var head = 'CURRENT TIME: '+dkey(now)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     var ctx = head + '\n\n=== SNAPSHOT (all life domains) ===\n' + summaries.join('\n');
     if (details.length) ctx += '\n\n=== RELEVANT DETAIL ===\n' + details.join('\n\n');
+    // Append cached longitudinal history if available (written async by snapshot engine)
+    try {
+      var longCtx = sessionStorage.getItem('_jv_longitudinal_ctx');
+      if (longCtx) ctx += '\n\n' + longCtx;
+    } catch(e){}
     return ctx;
   };
 
@@ -27641,6 +27646,266 @@ function switchTab(tab) {
   if (_jvVisible() && typeof window.renderJarvisTab === 'function') {
     setTimeout(window.renderJarvisTab, 0);
   }
+})();
+</script>
+
+<!-- ===== JARVIS Daily Snapshot Engine =====
+  Captures a full-day data bundle and writes it to Supabase daily_snapshots.
+  Fires automatically at midnight + on page close. Also exposes:
+    window._writeDailySnapshot()  — manual trigger
+    window._getSnapshotHistory(n) — returns last n rows for longitudinal memory
+  ===== -->
+<script>
+(function(){
+  var SNAP_URL = 'https://kfxydjusmwbtpugsceov.supabase.co';
+  var SNAP_KEY = 'sb_publishable_-F4uXN4YIqkX773EsiPLmQ_sO-L6CQ5';
+
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+  function lsRaw(k){ return localStorage.getItem(k); }
+
+  function buildSnapshot(){
+    var today = todayStr();
+    var snap = { date: today, user_id: 'koustubh' };
+
+    // ── Health / Oura ─────────────────────────────────────────────────────
+    try {
+      var oura = ls('oura_cache_v2');
+      if(oura){
+        var readArr = (oura.readiness && oura.readiness.data) || [];
+        var todayRead = readArr.find(function(r){ return r.day === today; }) || readArr[readArr.length-1];
+        if(todayRead){
+          snap.readiness_score = todayRead.score || null;
+          snap.hrv_avg = todayRead.contributors && todayRead.contributors.hrv_balance ? todayRead.contributors.hrv_balance : null;
+        }
+        var sleepArr = (oura.sleep && oura.sleep.data) || [];
+        var todaySleep = sleepArr.find(function(s){ return s.day === today; }) || sleepArr[sleepArr.length-1];
+        if(todaySleep){
+          snap.sleep_score = todaySleep.score || null;
+          snap.sleep_h = todaySleep.total_sleep_duration ? Math.round(todaySleep.total_sleep_duration/360)/10 : null;
+          snap.rhr = todaySleep.lowest_heart_rate || null;
+        }
+      }
+    } catch(e){}
+
+    // ── Caffeine ──────────────────────────────────────────────────────────
+    try {
+      var caffLogs = ls('goals_caffeine_'+today) || [];
+      if(caffLogs.length){
+        // compute active mg at now using same half-life as the app (t½ = 5.5h)
+        var nowMs = Date.now();
+        var activeMg = caffLogs.reduce(function(sum, log){
+          var t = log.ts || 0;
+          var elapsed = (nowMs - t) / 3600000;
+          return sum + (log.mg || 0) * Math.pow(0.5, elapsed / 5.5);
+        }, 0);
+        snap.caffeine_mg = Math.round(activeMg);
+        // get readiness for limit calc (already snapped above)
+        var lim = 400; // sensible default
+        try {
+          var p = (ls('po_water_v1') && ls('po_water_v1').profile) || {};
+          lim = Math.round(Math.min((p.weightKg||75)*5.7, 500));
+        } catch(e){}
+        snap.caffeine_limit_mg = lim;
+        snap.coffee_score = Math.round(Math.max(0, Math.min(100, 100 - Math.abs(activeMg/lim - 0.55)*120)));
+      }
+    } catch(e){}
+
+    // ── Nutrition ─────────────────────────────────────────────────────────
+    try {
+      var meals = ls('goals_vitality_'+today) || [];
+      if(meals.length){
+        var totals = meals.reduce(function(acc, m){
+          acc.p += (m.protein||0); acc.c += (m.carbs||0); acc.f += (m.fat||0); acc.k += (m.calories||0);
+          return acc;
+        }, { p:0, c:0, f:0, k:0 });
+        snap.protein_g  = Math.round(totals.p);
+        snap.carbs_g    = Math.round(totals.c);
+        snap.fat_g      = Math.round(totals.f);
+        snap.calories   = Math.round(totals.k);
+        snap.meals_logged = meals.length;
+        // protein target from profile
+        try { var pr=(ls('po_water_v1')&&ls('po_water_v1').profile)||{}; snap.protein_target_g=Math.round((pr.weightKg||75)*2); } catch(e){}
+      }
+    } catch(e){}
+
+    // ── Gym ───────────────────────────────────────────────────────────────
+    try {
+      var workoutDone = ls('po_coach_workout_done') || {};
+      snap.workout_logged = !!workoutDone[today];
+      var doneKeys = Object.keys(workoutDone).sort().reverse();
+      if(doneKeys.length){
+        var lastDay = doneKeys[0];
+        var msPerDay = 86400000;
+        snap.days_since_gym = snap.workout_logged ? 0 : Math.floor((Date.now() - new Date(lastDay+'T12:00:00').getTime()) / msPerDay);
+        // streak: count consecutive days backwards
+        var streak = 0; var d = new Date();
+        while(true){
+          var dk = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+          if(workoutDone[dk]){ streak++; d.setDate(d.getDate()-1); } else break;
+        }
+        snap.gym_streak = streak;
+      }
+    } catch(e){}
+
+    // ── Goals / Tasks ─────────────────────────────────────────────────────
+    try {
+      var dailyKey = 'goals_daily_'+today;
+      var tasks = ls(dailyKey) || [];
+      snap.tasks_total     = tasks.length;
+      snap.tasks_completed = tasks.filter(function(t){ return t.checked; }).length;
+      snap.tasks_remaining = tasks.filter(function(t){ return !t.checked && !t.skipped; }).length;
+    } catch(e){}
+    try {
+      var journalKey = 'goals_journal_'+today;
+      var journal = ls(journalKey);
+      snap.journal_written = !!(journal && (journal.text || journal.content || (typeof journal==='string' && journal.length>5)));
+    } catch(e){}
+    try {
+      // supplement stack: check if any stack items logged today
+      var stackLog = ls('goals_stack_'+today) || ls('po_stack_'+today);
+      snap.stack_logged = !!(stackLog && (Array.isArray(stackLog) ? stackLog.length > 0 : true));
+    } catch(e){}
+
+    // ── Finance ───────────────────────────────────────────────────────────
+    try {
+      // Net worth: read from nw history
+      var NW_KEY = 'goals_nw_history_v1';
+      var nwHist = ls(NW_KEY) || [];
+      if(nwHist.length){
+        snap.net_worth = nwHist[nwHist.length-1].v || null;
+        // delta vs yesterday's snapshot
+        var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+        var yStr = yesterday.getFullYear()+'-'+String(yesterday.getMonth()+1).padStart(2,'0')+'-'+String(yesterday.getDate()).padStart(2,'0');
+        var ySnap = null;
+        try {
+          // try to find yesterday in supabase cache (we'll just use the delta from nwHist)
+          var yEntry = nwHist.filter(function(h){ var d=new Date(h.t); return d.toISOString().slice(0,10)===yStr; });
+          if(yEntry.length) ySnap = yEntry[yEntry.length-1].v;
+        } catch(e){}
+        if(ySnap != null) snap.net_worth_delta = snap.net_worth - ySnap;
+      }
+    } catch(e){}
+    try {
+      var expenses = ls('expenses') || [];
+      var now2 = new Date();
+      var todayExps = expenses.filter(function(e){ return new Date(e.ts).toISOString().slice(0,10)===today; });
+      snap.daily_spend = todayExps.reduce(function(s,e){ return s+(Number(e.amount)||0); }, 0);
+      // 30-day average
+      var thirtyAgo = new Date(now2); thirtyAgo.setDate(thirtyAgo.getDate()-30);
+      var pastExps = expenses.filter(function(e){ var d=new Date(e.ts); return d>=thirtyAgo && d<now2; });
+      if(pastExps.length){
+        var dayTotals = {};
+        pastExps.forEach(function(e){ var dk=new Date(e.ts).toISOString().slice(0,10); dayTotals[dk]=(dayTotals[dk]||0)+(Number(e.amount)||0); });
+        var vals = Object.values(dayTotals);
+        snap.daily_spend_avg = vals.length ? Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length) : null;
+      }
+      // Income / savings rate
+      var incomes = ls('incomes') || [];
+      var monthlyIncome = incomes.reduce(function(sum,e){
+        var v = Number(e.amount)||0;
+        if(e.period==='monthly') return sum+v;
+        if(e.period==='weekly') return sum+v*4.33;
+        if(e.period==='yearly') return sum+v/12;
+        return sum;
+      },0);
+      var subs = ls('subs') || [];
+      var subsMonthly = subs.reduce(function(s,it){
+        var v=Number(it.amount)||0;
+        if(it.period==='monthly') return s+v;
+        if(it.period==='yearly') return s+v/12;
+        return s;
+      },0);
+      var nowY=now2.getFullYear(), nowM=now2.getMonth();
+      var monthExps = expenses.filter(function(e){ var d=new Date(e.ts); return d.getFullYear()===nowY&&d.getMonth()===nowM; });
+      snap.monthly_expenses = Math.round(monthExps.reduce(function(s,e){return s+(Number(e.amount)||0);},0) + subsMonthly);
+      snap.monthly_income   = Math.round(monthlyIncome);
+      if(monthlyIncome > 0) snap.savings_rate_pct = Math.round((1 - snap.monthly_expenses/monthlyIncome)*100);
+    } catch(e){}
+
+    return snap;
+  }
+
+  // Write snapshot to Supabase (upsert on date)
+  async function writeSnapshot(){
+    try {
+      var snap = buildSnapshot();
+      snap.updated_at = new Date().toISOString();
+      await fetch(SNAP_URL+'/rest/v1/daily_snapshots?on_conflict=date', {
+        method: 'POST',
+        headers: {
+          'apikey': SNAP_KEY,
+          'Authorization': 'Bearer '+SNAP_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(snap)
+      });
+    } catch(e){}
+  }
+
+  // Expose for manual trigger + testing
+  window._writeDailySnapshot = writeSnapshot;
+
+  // Fetch last N snapshots for longitudinal memory
+  window._getSnapshotHistory = async function(n){
+    n = n || 30;
+    try {
+      var res = await fetch(SNAP_URL+'/rest/v1/daily_snapshots?order=date.desc&limit='+n+'&user_id=eq.koustubh', {
+        headers: { 'apikey': SNAP_KEY, 'Authorization': 'Bearer '+SNAP_KEY }
+      });
+      return await res.json();
+    } catch(e){ return []; }
+  };
+
+  // Build a longitudinal insight string for JARVIS context
+  window._getJarvisLongitudinalContext = async function(){
+    try {
+      var rows = await window._getSnapshotHistory(30);
+      if(!rows || !rows.length) return '';
+      var lines = ['=== 30-day performance history (newest first) ==='];
+      rows.slice(0,30).forEach(function(r){
+        var parts = [r.date];
+        if(r.sleep_h!=null)        parts.push('sleep '+r.sleep_h+'h');
+        if(r.readiness_score!=null) parts.push('readiness '+r.readiness_score);
+        if(r.coffee_score!=null)    parts.push('focus '+r.coffee_score);
+        if(r.protein_g!=null)       parts.push('protein '+r.protein_g+'g');
+        if(r.workout_logged!=null)  parts.push(r.workout_logged?'trained':'rest day');
+        if(r.net_worth!=null)       parts.push('NW '+r.net_worth.toFixed(0));
+        if(r.savings_rate_pct!=null)parts.push('savings '+r.savings_rate_pct+'%');
+        if(r.journal_written)       parts.push('journaled');
+        lines.push(parts.join(' | '));
+      });
+      return lines.join('\n');
+    } catch(e){ return ''; }
+  };
+
+  // Auto-write snapshot at midnight
+  function scheduleNextMidnight(){
+    var now = new Date();
+    var next = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 1, 0);
+    var ms = next - now;
+    setTimeout(function(){ writeSnapshot(); scheduleNextMidnight(); }, ms);
+  }
+  scheduleNextMidnight();
+
+  // Pre-fetch longitudinal history into sessionStorage so getJarvisContext can use it synchronously
+  (async function(){
+    try {
+      var ctx = await window._getJarvisLongitudinalContext();
+      if(ctx) sessionStorage.setItem('_jv_longitudinal_ctx', ctx);
+    } catch(e){}
+  })();
+
+  // Also write on page close / hide
+  window.addEventListener('pagehide', writeSnapshot);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='hidden') writeSnapshot();
+  });
+
+  // Write once on load (captures data from any previous session)
+  setTimeout(writeSnapshot, 5000);
+
 })();
 </script>
 
