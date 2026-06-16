@@ -27823,6 +27823,14 @@ function switchTab(tab) {
       if(monthlyIncome > 0) snap.savings_rate_pct = Math.round((1 - snap.monthly_expenses/monthlyIncome)*100);
     } catch(e){}
 
+    // ── Adaptive wake/sleep hours ─────────────────────────────────────────
+    try {
+      var avgWake = parseFloat(localStorage.getItem('la_avg_wake_h'));
+      var avgSleep = parseFloat(localStorage.getItem('la_avg_sleep_h'));
+      if(!isNaN(avgWake))  snap.avg_wake_h  = parseFloat(avgWake.toFixed(2));
+      if(!isNaN(avgSleep)) snap.avg_sleep_h = parseFloat(avgSleep.toFixed(2));
+    } catch(e){}
+
     return snap;
   }
 
@@ -27879,6 +27887,40 @@ function switchTab(tab) {
       return lines.join('\n');
     } catch(e){ return ''; }
   };
+
+  // ── Tier 2 adaptive wake/sleep tracking ──────────────────────────────────
+  // Records the hour of every app open. After 7+ opens we compute avg wake
+  // and avg last-open time. Written into daily_snapshots so notify.js can
+  // dynamically shift notification windows to match the user's real rhythm.
+  (function trackOpenTime(){
+    try {
+      var OPENS_KEY = 'la_app_opens_v1';
+      var opens = ls(OPENS_KEY) || [];
+      var now = new Date();
+      var hourDecimal = now.getHours() + now.getMinutes() / 60;
+      var entry = { t: Date.now(), h: hourDecimal };
+      opens.push(entry);
+      // Keep last 14 days only
+      var cutoff = Date.now() - 14 * 86400000;
+      opens = opens.filter(function(o){ return o.t > cutoff; });
+      localStorage.setItem(OPENS_KEY, JSON.stringify(opens));
+
+      // Compute avg wake hour (opens between 4am–11am = morning opens)
+      var morningOpens = opens.filter(function(o){ return o.h >= 4 && o.h <= 11; });
+      if(morningOpens.length >= 3){
+        var avgWake = morningOpens.reduce(function(s,o){ return s+o.h; },0) / morningOpens.length;
+        localStorage.setItem('la_avg_wake_h', avgWake.toFixed(2));
+      }
+      // Compute avg sleep-prep hour (opens between 8pm–1am)
+      var eveningOpens = opens.filter(function(o){ return o.h >= 20 || o.h <= 1; });
+      if(eveningOpens.length >= 3){
+        var avgEvening = eveningOpens.map(function(o){ return o.h < 4 ? o.h + 24 : o.h; });
+        var avgSleep = avgEvening.reduce(function(s,h){ return s+h; },0) / avgEvening.length;
+        if(avgSleep >= 24) avgSleep -= 24;
+        localStorage.setItem('la_avg_sleep_h', avgSleep.toFixed(2));
+      }
+    } catch(e){}
+  })();
 
   // Auto-write snapshot at midnight
   function scheduleNextMidnight(){
