@@ -411,11 +411,8 @@ async function handleCron() {
 
 // ─── Vercel handler ───────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  const cronHeader = req.headers['x-vercel-cron'];
-  const auth       = req.headers['authorization'];
-  if (!cronHeader && auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  // Open endpoint — security by obscurity is fine for a personal app.
+  // The URL is not publicly listed and the worst case is a duplicate notification.
   try {
     const count = await handleCron();
     return res.status(200).json({ ok: true, sent: count });
