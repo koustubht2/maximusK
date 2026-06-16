@@ -4,15 +4,6 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/notify", "schedule": "30 0 * * *"  },
-    { "path": "/api/notify", "schedule": "30 3 * * *"  },
-    { "path": "/api/notify", "schedule": "30 5 * * *"  },
-    { "path": "/api/notify", "schedule": "30 6 * * *"  },
-    { "path": "/api/notify", "schedule": "30 8 * * *"  },
-    { "path": "/api/notify", "schedule": "30 9 * * *"  },
-    { "path": "/api/notify", "schedule": "30 11 * * *" },
-    { "path": "/api/notify", "schedule": "30 13 * * *" },
-    { "path": "/api/notify", "schedule": "30 14 * * *" },
-    { "path": "/api/notify", "schedule": "30 15 * * *" }
+    { "path": "/api/notify", "schedule": "*/30 * * * *" }
   ]
 }
