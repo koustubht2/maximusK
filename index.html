@@ -29,23 +29,22 @@
         slidedown: {
           prompts: [{
             type: "push",
-            autoPrompt: false,
+            autoPrompt: true,
             text: {
               actionMessage: "JARVIS needs permission to brief you daily — workouts, macros, caffeine, and your evening review. No spam.",
               acceptButton: "Allow JARVIS",
               cancelButton: "Not now",
             },
-            delay: { pageViews: 1, timeDelay: 8 },
+            delay: { pageViews: 1, timeDelay: 6 },
           }]
         }
       }
     });
-    // Expose so the app can trigger the prompt from a button/onboarding flow
+    // Expose so the app can also trigger the prompt manually from any button
     window._jarvisRequestNotify = async function() {
-      const permission = await OneSignal.Notifications.permission;
+      const permission = OneSignal.Notifications.permission;
       if (!permission) await OneSignal.Slidedown.promptPush();
     };
-    // Auto-prompt once after 8s on first visit (handled by delay config above)
   });
 </script>
 
