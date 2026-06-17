@@ -2515,7 +2515,7 @@ img, video, canvas, svg { max-width: 100%; }
   display: flex;
   justify-content: center;
   /* transparent — the pill floats; only a faint fade so content scrolls under */
-  padding: 6px 16px env(safe-area-inset-bottom);
+  padding: 6px 16px 0;
   background: linear-gradient(180deg, rgba(8,6,4,0) 0%, rgba(8,6,4,0.32) 70%, rgba(8,6,4,0.55) 100%);
   pointer-events: none;
 }
@@ -2527,6 +2527,7 @@ img, video, canvas, svg { max-width: 100%; }
   max-width: 380px;
   gap: 0px;
   padding: 6px;
+  margin-bottom: env(safe-area-inset-bottom);
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.14);
   border-radius: 999px;
