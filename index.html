@@ -2537,6 +2537,12 @@ img, video, canvas, svg { max-width: 100%; }
     0 18px 44px -20px rgba(0,0,0,0.8);
   backdrop-filter: blur(30px) saturate(1.4);
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  transform: scale(1);
+  transform-origin: center bottom;
+  transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.tabbar--compact .tabbar-inner {
+  transform: scale(0.82);
 }
 .tab {
   flex: 1 1 0;
@@ -17500,6 +17506,36 @@ Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, els
 <!-- Tab Switching -->
 
 <script>
+// ── Tab bar scroll-shrink ─────────────────────────────────────────────────────
+(function () {
+  const tabbar = document.getElementById('mainTabbar');
+  let lastY = 0, ticking = false, scrolled = false;
+
+  function onScroll(e) {
+    const el = e.target.scrollingElement || e.target;
+    const y = el.scrollTop !== undefined ? el.scrollTop : window.scrollY;
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const goingDown = y > lastY + 2;
+        const goingUp   = y < lastY - 2;
+        if (goingDown && !scrolled) {
+          scrolled = true;
+          tabbar.classList.add('tabbar--compact');
+        } else if (goingUp && scrolled) {
+          scrolled = false;
+          tabbar.classList.remove('tabbar--compact');
+        }
+        lastY = y;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }
+
+  // Each tab pane scrolls independently — listen on their containers too
+  document.addEventListener('scroll', onScroll, { passive: true, capture: true });
+})();
+
 function switchTab(tab) {
   const views = {
     health: document.getElementById('healthView'),
