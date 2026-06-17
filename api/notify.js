@@ -10,7 +10,9 @@ const SUPABASE_URL      = process.env.SUPABASE_URL;
 const SUPABASE_KEY      = process.env.SUPABASE_KEY;
 const APP_URL           = 'https://maximusk.vercel.app';
 
-const DEFAULT_WAKE_H = 7.0; // fallback until adaptive data builds up
+// No hardcoded default — if no Oura data and no adaptive history, morning
+// notifications simply don't fire that day rather than firing at a wrong time.
+const NO_WAKE_SENTINEL = null;
 
 // ─── Push helper ──────────────────────────────────────────────────────────────
 async function sendPush({ title, body, url = '/', buttons = [] }) {
@@ -64,14 +66,18 @@ async function getRecentSnapshots(n = 14) {
   } catch { return []; }
 }
 
-// ─── Adaptive wake hour ────────────────────────────────────────────────────────
-// Averages avg_wake_h from last 7 snapshots. Falls back to DEFAULT_WAKE_H.
-function getAdaptiveWake(recent) {
+// ─── Wake hour resolution ──────────────────────────────────────────────────────
+// Priority: 1) today's Oura actual_wake_h  2) avg_wake_h from recent history
+// Returns null if neither is available — morning slots will be skipped that day.
+function resolveWakeH(snap, recent) {
+  // Today's Oura bedtime_end is the most accurate signal
+  if (snap?.actual_wake_h != null) return snap.actual_wake_h;
+  // Fall back to rolling average from past snapshots
   const values = recent
     .filter(r => r.avg_wake_h != null)
     .map(r => r.avg_wake_h)
     .slice(0, 7);
-  if (values.length < 3) return DEFAULT_WAKE_H;
+  if (values.length < 3) return null;
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
@@ -133,18 +139,18 @@ async function handleCron() {
     getRecentSnapshots(14),
   ]);
 
-  // Adaptive wake — only affects morning slots (pre-12pm)
-  const wakeH       = getAdaptiveWake(recent);
-  const wakeFloor   = Math.floor(wakeH);
-  const adaptive    = recent.filter(r => r.avg_wake_h != null).length >= 3;
+  // Wake hour: Oura actual → rolling avg → null (skip morning slots)
+  const wakeH     = resolveWakeH(snap, recent);
+  const wakeFloor = wakeH != null ? Math.floor(wakeH) : null;
+  const source    = snap?.actual_wake_h != null ? 'oura' : wakeH != null ? 'adaptive' : 'none';
 
-  // Morning adaptive slots (all before 12pm)
-  const T_BRIEF     = wakeFloor;          // e.g. 7am
-  const T_STACK     = wakeFloor + 1;      // wake + 1h
-  const T_GYM       = wakeFloor + 2;      // wake + 2h
-  const T_MEAL      = wakeFloor + 3;      // wake + 3h
+  // Morning adaptive slots (all before 12pm) — only defined when wake is known
+  const T_BRIEF = wakeFloor;          // wake hour
+  const T_STACK = wakeFloor != null ? wakeFloor + 1 : null;
+  const T_GYM   = wakeFloor != null ? wakeFloor + 2 : null;
+  const T_MEAL  = wakeFloor != null ? wakeFloor + 3 : null;
 
-  console.log(`JARVIS: localH=${localH}, wake=${wakeH.toFixed(1)} (${adaptive ? 'adaptive' : 'default'})`);
+  console.log(`JARVIS: localH=${localH}, wake=${wakeH != null ? wakeH.toFixed(1) : 'unknown'} (${source})`);
 
   const fired = [];
   const push  = async (opts) => { fired.push(await sendPush(opts)); };
@@ -154,7 +160,7 @@ async function handleCron() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   // Morning Brief + sleep debt
-  if (localH === T_BRIEF) {
+  if (T_BRIEF != null && localH === T_BRIEF) {
     await push({
       title: 'Good morning.',
       body: snap?.readiness_score
@@ -176,7 +182,7 @@ async function handleCron() {
   }
 
   // Stack + caffeine timing coach
-  if (localH === T_STACK) {
+  if (T_STACK != null && localH === T_STACK) {
     if (snap && !snap.stack_logged) {
       await push({
         title: 'Morning stack not logged.',
@@ -185,7 +191,7 @@ async function handleCron() {
         buttons: [{ label: 'Log Stack', url: '/?tab=main' }],
       });
     }
-    if (!snap?.caffeine_mg) {
+    if (!snap?.caffeine_mg && wakeFloor != null) {
       const goodTime = wakeFloor + 1.5;
       await push({
         title: 'Caffeine timing.',
@@ -205,7 +211,7 @@ async function handleCron() {
   }
 
   // Gym streak at risk
-  if (localH === T_GYM) {
+  if (T_GYM != null && localH === T_GYM) {
     if (snap && !snap.workout_logged && (snap.days_since_gym ?? 0) >= 2) {
       await push({
         title: 'Gym streak at risk.',
@@ -217,7 +223,7 @@ async function handleCron() {
   }
 
   // First meal nudge
-  if (localH === T_MEAL) {
+  if (T_MEAL != null && localH === T_MEAL) {
     if (snap && (snap.meals_logged ?? 0) === 0) {
       await push({
         title: 'No meals logged yet.',
@@ -232,17 +238,17 @@ async function handleCron() {
   // AFTERNOON + EVENING — fixed clock times (IST)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // 12:00pm — JARVIS midday pulse
+  // 12:00pm — JARVIS midday pulse (fallback if Gemini unavailable)
   if (localH === 12) {
     const pulse = await buildJarvisPulse(snap, recent, 'midday');
-    if (pulse) {
-      await push({
-        title: 'JARVIS — midday',
-        body: pulse,
-        url: '/?tab=jarvis',
-        buttons: [{ label: 'Open JARVIS', url: '/?tab=jarvis' }],
-      });
-    }
+    await push({
+      title: 'JARVIS — midday',
+      body: pulse || (snap
+        ? `${snap.tasks_remaining ?? '?'} tasks remaining. Protein at ${snap.protein_g ?? 0}g of ${snap.protein_target_g ?? 150}g. Halfway through the day.`
+        : 'Midday check-in. Open Life Arc to review your progress.'),
+      url: '/?tab=jarvis',
+      buttons: [{ label: 'Open JARVIS', url: '/?tab=jarvis' }],
+    });
   }
 
   // 14:00 — Afternoon caffeine gate
@@ -311,14 +317,14 @@ async function handleCron() {
   // 19:00 — JARVIS evening pulse + dinner macro
   if (localH === 19) {
     const pulse = await buildJarvisPulse(snap, recent, 'evening');
-    if (pulse) {
-      await push({
-        title: 'JARVIS — evening',
-        body: pulse,
-        url: '/?tab=jarvis',
-        buttons: [{ label: 'Open JARVIS', url: '/?tab=jarvis' }, { label: 'Log Journal', url: '/?tab=main' }],
-      });
-    }
+    await push({
+      title: 'JARVIS — evening',
+      body: pulse || (snap
+        ? `${snap.workout_logged ? 'Workout done.' : 'No workout logged.'} Protein: ${snap.protein_g ?? 0}g of ${snap.protein_target_g ?? 150}g. Journal ${snap.journal_written ? 'written' : 'not written'}.`
+        : 'Evening check-in. How did today go?'),
+      url: '/?tab=jarvis',
+      buttons: [{ label: 'Open JARVIS', url: '/?tab=jarvis' }, { label: 'Log Journal', url: '/?tab=main' }],
+    });
     const protein = snap?.protein_g ?? null;
     const target  = snap?.protein_target_g ?? 150;
     if (protein !== null && protein < target * 0.5) {
@@ -327,15 +333,6 @@ async function handleCron() {
         body: `${protein}g logged — ${target - protein}g short. Make dinner count.`,
         url: '/?tab=health',
         buttons: [{ label: 'Snap Dinner', url: '/?tab=health' }],
-      });
-    }
-    // Sunday weekly goal review
-    if (dayOfWeek === 0) {
-      await push({
-        title: 'Weekly goal review.',
-        body: 'Sunday check-in: which goals moved this week? 5 minutes sets your week.',
-        url: '/?tab=main',
-        buttons: [{ label: 'Review Goals', url: '/?tab=main' }, { label: 'Open JARVIS', url: '/?tab=jarvis' }],
       });
     }
   }
@@ -396,7 +393,55 @@ async function handleCron() {
     });
   }
 
-  // 22:00 — Sleep nudge
+  // 22:00 — Goal deadline creep
+  if (localH === 22) {
+    if (snap && (snap.tasks_remaining ?? 0) > 0) {
+      await push({
+        title: 'Goals still open.',
+        body: `${snap.tasks_remaining} task${snap.tasks_remaining > 1 ? 's' : ''} unfinished today. Move or close them before midnight so tomorrow starts clean.`,
+        url: '/?tab=main',
+        buttons: [{ label: 'View Goals', url: '/?tab=main' }],
+      });
+    }
+  }
+
+  // Any hour — personal record alerts (checked every run, fires at most once per day)
+  // Sleep PR: best sleep score in last 30 days
+  if (snap?.sleep_score != null && recent.length > 1) {
+    const prevBest = Math.max(...recent.slice(1).map(r => r.sleep_score ?? 0));
+    if (snap.sleep_score > prevBest && prevBest > 0) {
+      await push({
+        title: 'Best sleep in 30 days.',
+        body: `Sleep score ${snap.sleep_score} — your highest this month. JARVIS logged it.`,
+        url: '/?tab=health',
+        buttons: [{ label: 'View Health', url: '/?tab=health' }],
+      });
+    }
+  }
+  // Readiness PR: best readiness score in last 30 days
+  if (snap?.readiness_score != null && recent.length > 1) {
+    const prevBestR = Math.max(...recent.slice(1).map(r => r.readiness_score ?? 0));
+    if (snap.readiness_score > prevBestR && prevBestR > 0) {
+      await push({
+        title: 'Peak readiness today.',
+        body: `Readiness score ${snap.readiness_score} — new 30-day high. Use it.`,
+        url: '/?tab=jarvis',
+        buttons: [{ label: 'Open JARVIS', url: '/?tab=jarvis' }],
+      });
+    }
+  }
+
+  // Sunday 20:00 — Weekly goal review (dedicated slot, not bundled with evening pulse)
+  if (localH === 20 && dayOfWeek === 0) {
+    await push({
+      title: 'Weekly goal review.',
+      body: 'Sunday wind-down: which goals moved this week, which ones didn\'t? 5 minutes sets your pace for next week.',
+      url: '/?tab=main',
+      buttons: [{ label: 'Review Goals', url: '/?tab=main' }, { label: 'Open JARVIS', url: '/?tab=jarvis' }],
+    });
+  }
+
+  // 22:30 — Sleep nudge
   if (localH === 22) {
     await push({
       title: 'Time to sleep.',
