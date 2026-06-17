@@ -2523,10 +2523,10 @@ img, video, canvas, svg { max-width: 100%; }
 .tabbar-inner {
   pointer-events: auto;
   display: flex;
-  width: 100%;
-  max-width: 420px;
-  gap: 4px;
-  padding: 7px;
+  width: auto;
+  max-width: 340px;
+  gap: 0px;
+  padding: 5px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.14);
   border-radius: 999px;
@@ -2538,16 +2538,16 @@ img, video, canvas, svg { max-width: 100%; }
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
 }
 .tab {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0;
-  padding: 12px 0;
   border-radius: 999px;
   /* icons only — collapse the text labels (the SVG keeps its explicit size) */
   font-size: 0;
   line-height: 0;
+  padding: 8px 10px;
   color: rgba(255,255,255,0.55);
   text-decoration: none;
   background: transparent;
@@ -3109,9 +3109,9 @@ img, video, canvas, svg { max-width: 100%; }
   /* Progress photos grid — match the available width */
   .wt-photo-grid { gap: 8px; }
 
-  /* Bottom tab bar — icons only (labels hidden via font-size:0; do NOT reset it) */
-  .tab { padding: 11px 0; }
-  .tabbar { padding-left: 12px; padding-right: 12px; }
+  /* Bottom tab bar — compact floating dock */
+  .tab { padding: 8px 10px; }
+  .tabbar { padding-left: 16px; padding-right: 16px; }
 }
 
 /* Anything narrower than ~360px (iPhone SE / mini) gets a final pass */
