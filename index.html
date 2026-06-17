@@ -2523,8 +2523,8 @@ img, video, canvas, svg { max-width: 100%; }
 .tabbar-inner {
   pointer-events: auto;
   display: flex;
-  width: auto;
-  max-width: 380px;
+  width: 100%;
+  max-width: 420px;
   gap: 0px;
   padding: 6px;
   margin-bottom: calc(env(safe-area-inset-bottom) * 0.3 + 4px);
@@ -2539,7 +2539,7 @@ img, video, canvas, svg { max-width: 100%; }
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
 }
 .tab {
-  flex: 0 0 auto;
+  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
