@@ -17507,7 +17507,7 @@ Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, els
 
 <script>
 // ── Tab bar scroll-shrink ─────────────────────────────────────────────────────
-(function () {
+window._tabbarScrollReset = (function () {
   const tabbar = document.getElementById('mainTabbar');
   let lastY = 0, ticking = false, scrolled = false;
 
@@ -17532,11 +17532,18 @@ Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, els
     }
   }
 
-  // Each tab pane scrolls independently — listen on their containers too
   document.addEventListener('scroll', onScroll, { passive: true, capture: true });
+
+  // Returns a reset fn — call when switching tabs so pill always restores to full size
+  return function () {
+    scrolled = false;
+    lastY = 0;
+    tabbar.classList.remove('tabbar--compact');
+  };
 })();
 
 function switchTab(tab) {
+  if (window._tabbarScrollReset) window._tabbarScrollReset();
   const views = {
     health: document.getElementById('healthView'),
     dash: document.getElementById('dashView'),
