@@ -2508,28 +2508,28 @@ img, video, canvas, svg { max-width: 100%; }
 /* ---------- Bottom tab bar (shared with dashboard) ---------- */
 .tabbar {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 0; right: 0; bottom: 0;
   z-index: 50;
   display: flex;
   justify-content: center;
-  /* transparent — the pill floats; only a faint fade so content scrolls under */
-  padding: 6px 10px 0;
-  background: linear-gradient(180deg, rgba(8,6,4,0) 0%, rgba(8,6,4,0.32) 70%, rgba(8,6,4,0.55) 100%);
+  align-items: flex-end;
+  /* 13px left/right side gaps; top padding creates the fade-out zone */
+  padding: 48px 13px 0;
+  background: linear-gradient(180deg, rgba(8,6,4,0) 0%, rgba(8,6,4,0.38) 65%, rgba(8,6,4,0.58) 100%);
   pointer-events: none;
 }
-/* ---- frosted-glass PILL (icons only, fully rounded) — like menu.png ---- */
+/* ---- frosted-glass PILL (icons only, fully rounded) ---- */
 .tabbar-inner {
   pointer-events: auto;
   display: flex;
   width: 100%;
-  max-width: 420px;
-  gap: 0px;
-  padding: 6px;
-  margin-bottom: calc(env(safe-area-inset-bottom) * 0.3 + 8px);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.14);
+  max-width: 440px;
+  gap: 0;
+  padding: 6px 4px;
+  /* Full safe-area clearance + 13px gap above home indicator — matches side gaps */
+  margin-bottom: calc(env(safe-area-inset-bottom) + 13px);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: 999px;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.22),
@@ -2545,10 +2545,9 @@ img, video, canvas, svg { max-width: 100%; }
   justify-content: center;
   gap: 0;
   border-radius: 999px;
-  /* icons only — collapse the text labels (the SVG keeps its explicit size) */
   font-size: 0;
   line-height: 0;
-  padding: 11px 14px;
+  padding: 11px 0;
   color: rgba(255,255,255,0.55);
   text-decoration: none;
   background: transparent;
@@ -2572,8 +2571,6 @@ img, video, canvas, svg { max-width: 100%; }
   justify-content: center;
 }
 .tab-icon svg { width: 100%; height: 100%; display: block; }
-/* JARVIS orb = a raster image (converted from jarvis.png). It can't inherit
-   currentColor, so dim it when the tab is inactive and brighten when active. */
 .jv-orb-icon { width: 22px; height: 22px; display: block; object-fit: contain; opacity: 0.5; transition: opacity 0.2s ease; }
 .tab:hover .jv-orb-icon { opacity: 0.82; }
 .tab[aria-current="page"] .jv-orb-icon { opacity: 1; filter: drop-shadow(0 0 6px rgba(150,130,255,0.55)); }
@@ -3111,8 +3108,8 @@ img, video, canvas, svg { max-width: 100%; }
   .wt-photo-grid { gap: 8px; }
 
   /* Bottom tab bar — compact floating dock */
-  .tab { padding: 11px 14px; }
-  .tabbar { padding-left: 16px; padding-right: 16px; }
+  .tab { padding: 11px 0; }
+  .tabbar { padding-left: 13px; padding-right: 13px; }
 }
 
 /* Anything narrower than ~360px (iPhone SE / mini) gets a final pass */
