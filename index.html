@@ -27858,11 +27858,22 @@ function switchTab(tab) {
   // Fetch last N snapshots for longitudinal memory
   window._getSnapshotHistory = async function(n){
     n = n || 30;
+    // Cache in localStorage for 1 hour — avoids hammering Supabase on every call
+    var HIST_KEY = 'la_snap_hist_v1';
+    var HIST_TS  = 'la_snap_hist_ts';
     try {
+      var cached = localStorage.getItem(HIST_KEY);
+      var ts     = parseInt(localStorage.getItem(HIST_TS) || '0');
+      if(cached && Date.now() - ts < 3600000){
+        return JSON.parse(cached);
+      }
       var res = await fetch(SNAP_URL+'/rest/v1/daily_snapshots?order=date.desc&limit='+n+'&user_id=eq.koustubh', {
         headers: { 'apikey': SNAP_KEY, 'Authorization': 'Bearer '+SNAP_KEY }
       });
-      return await res.json();
+      var rows = await res.json();
+      localStorage.setItem(HIST_KEY, JSON.stringify(rows));
+      localStorage.setItem(HIST_TS, String(Date.now()));
+      return rows;
     } catch(e){ return []; }
   };
 
@@ -27931,22 +27942,77 @@ function switchTab(tab) {
   }
   scheduleNextMidnight();
 
-  // Pre-fetch longitudinal history into sessionStorage so getJarvisContext can use it synchronously
+  // Pre-fetch longitudinal history ONCE PER DAY into localStorage
+  // (sessionStorage resets per tab — localStorage persists and avoids repeat fetches)
   (async function(){
     try {
+      var LONG_CTX_KEY = 'la_long_ctx_v1';
+      var LONG_CTX_DAY = 'la_long_ctx_day';
+      var today = todayStr();
+      var cached = localStorage.getItem(LONG_CTX_KEY);
+      var cachedDay = localStorage.getItem(LONG_CTX_DAY);
+      // Only re-fetch if we don't have today's context yet
+      if(cached && cachedDay === today){
+        sessionStorage.setItem('_jv_longitudinal_ctx', cached);
+        return;
+      }
       var ctx = await window._getJarvisLongitudinalContext();
-      if(ctx) sessionStorage.setItem('_jv_longitudinal_ctx', ctx);
+      if(ctx){
+        localStorage.setItem(LONG_CTX_KEY, ctx);
+        localStorage.setItem(LONG_CTX_DAY, today);
+        sessionStorage.setItem('_jv_longitudinal_ctx', ctx);
+      }
     } catch(e){}
   })();
 
-  // Also write on page close / hide
-  window.addEventListener('pagehide', writeSnapshot);
+  // Write snapshot on page close — throttled to max once per hour
+  var _lastSnapWrite = 0;
+  function throttledWrite(){
+    var now = Date.now();
+    if(now - _lastSnapWrite < 3600000) return;
+    _lastSnapWrite = now;
+    writeSnapshot();
+  }
+  window.addEventListener('pagehide', throttledWrite);
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState==='hidden') writeSnapshot();
+    if(document.visibilityState === 'hidden') throttledWrite();
   });
 
-  // Write once on load (captures data from any previous session)
-  setTimeout(writeSnapshot, 5000);
+  // Write once on load
+  setTimeout(throttledWrite, 5000);
+
+  // Trigger a fresh snapshot write when meaningful data changes
+  // (meals, caffeine, workouts, tasks, journal) — debounced 10s so rapid
+  // successive changes don't each fire a Supabase write.
+  var _snapDebounce = null;
+  var _SNAP_TRIGGER_KEYS = ['goals_vitality_', 'goals_caffeine_', 'po_coach_workout_done', 'goals_daily_', 'goals_journal_', 'goals_stack_', 'po_stack_'];
+  var _origSet = localStorage.setItem.bind(localStorage);
+  var _snapSetItem = function(k, v){
+    _origSet(k, v);
+    var shouldTrigger = _SNAP_TRIGGER_KEYS.some(function(prefix){ return k.indexOf(prefix) === 0; });
+    if(shouldTrigger){
+      clearTimeout(_snapDebounce);
+      _snapDebounce = setTimeout(function(){
+        // Always write on meaningful data change — bypass hourly throttle
+        _lastSnapWrite = 0;
+        throttledWrite();
+      }, 10000); // 10s debounce
+    }
+  };
+  // Only patch if not already patched by the sync engine
+  if(localStorage.setItem === _origSet){
+    localStorage.setItem = _snapSetItem;
+  } else {
+    // Sync engine already patched setItem — listen via storage event instead
+    window.addEventListener('storage', function(e){
+      if(!e.key) return;
+      var shouldTrigger = _SNAP_TRIGGER_KEYS.some(function(prefix){ return e.key.indexOf(prefix) === 0; });
+      if(shouldTrigger){
+        clearTimeout(_snapDebounce);
+        _snapDebounce = setTimeout(function(){ _lastSnapWrite = 0; throttledWrite(); }, 10000);
+      }
+    });
+  }
 
 })();
 </script>
