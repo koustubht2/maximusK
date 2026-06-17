@@ -570,6 +570,154 @@ body::after {
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
+/* ── Streak Wall ────────────────────────────────────────────────────────── */
+.streak-wall-card {
+  margin: 0 0 18px;
+  padding: 14px 16px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+.streak-wall-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.streak-wall-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #C9A84C;
+}
+.streak-wall-sub {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.3);
+}
+.streak-wall-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.streak-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.streak-row-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  width: 52px;
+  flex-shrink: 0;
+}
+.streak-dots {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  overflow: hidden;
+}
+.streak-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.07);
+  transition: opacity 0.2s;
+}
+.streak-dot.hit   { background: #6ee7b7; }
+.streak-dot.miss  { background: rgba(255,255,255,0.07); }
+.streak-dot.na    { background: rgba(255,255,255,0.03); }
+.streak-dot.today { outline: 1px solid rgba(255,255,255,0.4); outline-offset: 1px; }
+
+/* ── One Thing card ─────────────────────────────────────────────────────── */
+.one-thing-card {
+  margin: 0 0 18px;
+  padding: 14px 16px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: pkBlurIn 0.7s cubic-bezier(.16,1,.3,1) both;
+}
+.one-thing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.one-thing-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #C9A84C;
+}
+.one-thing-domain {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.one-thing-body {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.88);
+  min-height: 42px;
+}
+.one-thing-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.one-thing-speak,
+.one-thing-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.one-thing-speak:hover,
+.one-thing-refresh:hover { color: rgba(255,255,255,0.88); background: rgba(255,255,255,0.09); }
+.one-thing-speak.speaking { color: #6ee7b7; border-color: rgba(110,231,183,0.3); }
+.one-thing-refresh.loading svg { animation: otSpin 0.8s linear infinite; }
+@keyframes otSpin { to { transform: rotate(360deg); } }
+
+.day-ring-domains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+}
+.las-dot {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.28);
+  transition: color 0.4s ease;
+}
+.las-dot.done  { color: #6ee7b7; }
+.las-dot.miss  { color: rgba(255,255,255,0.22); }
+.las-dot.na    { color: rgba(255,255,255,0.16); }
 @media (max-width: 480px) {
   .day-ring-left { width: 144px; height: 144px; }
   .day-ring-percent { font-size: 32px; }
@@ -8065,6 +8213,23 @@ window.canonicalJson = function(obj) {
 <!-- ========== DASHBOARD VIEW (Main Tab) ========== -->
 <div id="dashView" class="view-container active">
 
+  <!-- ── JARVIS ONE THING ─────────────────────────────────────────────── -->
+  <div class="one-thing-card" id="oneThingCard">
+    <div class="one-thing-header">
+      <span class="one-thing-label">ONE THING</span>
+      <span class="one-thing-domain" id="oneThingDomain">—</span>
+    </div>
+    <div class="one-thing-body" id="oneThingText">Loading...</div>
+    <div class="one-thing-footer">
+      <button class="one-thing-speak" id="oneThingSpeak" title="Read aloud">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      </button>
+      <button class="one-thing-refresh" id="oneThingRefresh" title="Refresh">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+    </div>
+  </div>
+
   <div class="dash-hero">
     <!-- Aston-style wing logo -->
     <div class="la-logo" style="margin-bottom:14px;align-items:flex-start;">
@@ -8142,10 +8307,26 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
     <div class="day-ring-right">
-      <div class="day-ring-status" id="dayRingStatus">Loading...</div>
+      <div class="day-ring-status" id="dayRingStatus">Life Arc Score</div>
       <div class="day-ring-remaining" id="dayRingRemaining">--</div>
-      <div class="day-ring-range">8:00 AM – 12:00 AM</div>
+      <div class="day-ring-domains" id="dayRingDomains">
+        <span id="lasDomSleep"  class="las-dot">· Sleep</span>
+        <span id="lasDomMove"   class="las-dot">· Move</span>
+        <span id="lasDomStack"  class="las-dot">· Stack</span>
+        <span id="lasDomGoals"  class="las-dot">· Goals</span>
+        <span id="lasDomJournal" class="las-dot">· Journal</span>
+        <span id="lasDomFinance" class="las-dot">· Finance</span>
+      </div>
     </div>
+  </div>
+
+  <!-- ===== STREAK WALL ===== -->
+  <div class="streak-wall-card" id="streakWallCard">
+    <div class="streak-wall-header">
+      <span class="streak-wall-title">STREAK WALL</span>
+      <span class="streak-wall-sub" id="streakWallSub">90 days</span>
+    </div>
+    <div class="streak-wall-rows" id="streakWallRows"></div>
   </div>
 
   <!-- ===== GOALS SUB-TABS ===== -->
@@ -12812,62 +12993,418 @@ function interpolateColor(p) {
   return `rgb(${r},${g},${b})`;
 }
 
-function updateDayBar() {
-  const now = new Date();
-  const hours = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
-  
-  const ringFill = document.getElementById('dayRingFill');
-  const pctEl = document.getElementById('dayRingPercent');
-  const phaseEl = document.getElementById('dayRingPhase');
-  const statusEl = document.getElementById('dayRingStatus');
-  const remEl = document.getElementById('dayRingRemaining');
-  const clockEl = document.getElementById('dayRingClock');
-  
-  // Update Live Clock
-  let h12 = now.getHours() % 12;
-  if(h12 === 0) h12 = 12;
-  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
-  const m = String(now.getMinutes()).padStart(2, '0');
-  clockEl.textContent = `${h12}:${m} ${ampm}`;
-  
-  const circ = 2 * Math.PI * 52;
-  ringFill.style.strokeDasharray = circ;
-  
-  if (hours < WAKE_HOUR) {
-    ringFill.style.stroke = '#4D4B47';
-    ringFill.style.strokeDashoffset = circ;
-    pctEl.textContent = '—';
-    phaseEl.textContent = 'SLEEPING';
-    statusEl.textContent = '😴 Still sleeping';
-    const totalMins = Math.floor((WAKE_HOUR - hours) * 60);
-    const rmH = Math.floor(totalMins / 60);
-    const rmM = totalMins % 60;
-    remEl.textContent = `${rmH}h ${rmM}m until wake-up`;
-  } else if (hours >= SLEEP_HOUR) {
-    ringFill.style.stroke = '#E25D7A';
-    ringFill.style.strokeDashoffset = 0;
-    pctEl.textContent = '100%';
-    phaseEl.textContent = 'PAST BEDTIME';
-    statusEl.textContent = '⚠️ Past bedtime';
-    remEl.textContent = 'Sleep!';
-  } else {
-    const percent = ((hours - WAKE_HOUR) / (SLEEP_HOUR - WAKE_HOUR)) * 100;
-    ringFill.style.stroke = interpolateColor(percent);
-    ringFill.style.strokeDashoffset = circ * (1 - percent/100);
-    pctEl.textContent = Math.round(percent) + '%';
-    
-    if (percent < 25) { phaseEl.textContent = 'MORNING'; statusEl.textContent = '☀️ Morning — fresh start'; }
-    else if (percent < 50) { phaseEl.textContent = 'MIDDAY'; statusEl.textContent = '⚡ Midday — keep moving'; }
-    else if (percent < 75) { phaseEl.textContent = 'AFTERNOON'; statusEl.textContent = '🔥 Afternoon — push it'; }
-    else if (percent < 90) { phaseEl.textContent = 'EVENING'; statusEl.textContent = '⏳ Evening — wrap up'; }
-    else { phaseEl.textContent = 'BEDTIME'; statusEl.textContent = '🌙 Bedtime soon'; }
-    
-    const totalMins = Math.floor((SLEEP_HOUR - hours) * 60);
-    const rmH = Math.floor(totalMins / 60);
-    const rmM = totalMins % 60;
-    remEl.textContent = `${rmH}h ${rmM}m awake time left`;
-  }
+function computeLifeArcScore() {
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  function ls(k) { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } }
+
+  const domains = {};
+
+  // ── Sleep (25pts) — Oura readiness ──────────────────────────────────────────
+  try {
+    const oura = ls('oura_cache_v2');
+    const readArr = (oura && oura.readiness && oura.readiness.data) || [];
+    const todayRead = readArr.find(r => r.day === todayStr) || readArr[readArr.length - 1];
+    if (todayRead && todayRead.score != null) {
+      domains.sleep = { pts: Math.round((todayRead.score / 100) * 25), max: 25, done: todayRead.score >= 70 };
+    } else {
+      domains.sleep = { pts: 0, max: 25, done: false, na: true };
+    }
+  } catch(e) { domains.sleep = { pts: 0, max: 25, done: false, na: true }; }
+
+  // ── Movement (20pts) — workout done (12) + streak momentum (8) ──────────────
+  try {
+    const workoutDone = ls('po_coach_workout_done') || {};
+    const doneToday = !!workoutDone[todayStr];
+    const doneKeys = Object.keys(workoutDone).sort().reverse();
+    let streak = 0;
+    const d = new Date();
+    while (true) {
+      const dk = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (workoutDone[dk]) { streak++; d.setDate(d.getDate()-1); } else break;
+    }
+    const streakPts = Math.min(8, Math.round((Math.min(streak, 30) / 30) * 8));
+    domains.move = { pts: (doneToday ? 12 : 0) + streakPts, max: 20, done: doneToday };
+  } catch(e) { domains.move = { pts: 0, max: 20, done: false }; }
+
+  // ── Stack (20pts) — supplement logged today ──────────────────────────────────
+  try {
+    const stackLog = ls('goals_stack_' + todayStr) || ls('po_stack_' + todayStr);
+    const done = !!(stackLog && (Array.isArray(stackLog) ? stackLog.length > 0 : true));
+    domains.stack = { pts: done ? 20 : 0, max: 20, done };
+  } catch(e) { domains.stack = { pts: 0, max: 20, done: false }; }
+
+  // ── Goals (15pts) — task completion rate ─────────────────────────────────────
+  try {
+    const tasks = ls('goals_daily_' + todayStr) || [];
+    if (tasks.length > 0) {
+      const completed = tasks.filter(t => t.checked).length;
+      domains.goals = { pts: Math.round((completed / tasks.length) * 15), max: 15, done: completed === tasks.length };
+    } else {
+      domains.goals = { pts: 0, max: 15, done: false, na: true };
+    }
+  } catch(e) { domains.goals = { pts: 0, max: 15, done: false, na: true }; }
+
+  // ── Journal (10pts) — written today ──────────────────────────────────────────
+  try {
+    const journal = ls('goals_journal_' + todayStr);
+    const done = !!(journal && (journal.text || journal.content || (typeof journal === 'string' && journal.length > 5)));
+    domains.journal = { pts: done ? 10 : 0, max: 10, done };
+  } catch(e) { domains.journal = { pts: 0, max: 10, done: false }; }
+
+  // ── Finance (10pts) — monthly expenses ≤ income pace ────────────────────────
+  try {
+    const expenses  = ls('expenses') || [];
+    const incomes   = ls('incomes') || [];
+    const subs      = ls('subs') || [];
+    const nowY = today.getFullYear(), nowM = today.getMonth();
+    const monthlyIncome = incomes.reduce((s, e) => {
+      const v = Number(e.amount) || 0;
+      if (e.period === 'monthly') return s + v;
+      if (e.period === 'weekly')  return s + v * 4.33;
+      if (e.period === 'yearly')  return s + v / 12;
+      return s;
+    }, 0);
+    const subsMonthly = subs.reduce((s, it) => {
+      const v = Number(it.amount) || 0;
+      if (it.period === 'monthly') return s + v;
+      if (it.period === 'yearly')  return s + v / 12;
+      return s;
+    }, 0);
+    const monthExps = expenses.filter(e => { const d = new Date(e.ts); return d.getFullYear() === nowY && d.getMonth() === nowM; });
+    const totalMonthExps = monthExps.reduce((s, e) => s + (Number(e.amount) || 0), 0) + subsMonthly;
+    if (monthlyIncome > 0) {
+      // Pro-rate income by day of month for a fair mid-month comparison
+      const daysInMonth = new Date(nowY, nowM + 1, 0).getDate();
+      const dayOfMonth  = today.getDate();
+      const pacedIncome = monthlyIncome * (dayOfMonth / daysInMonth);
+      const ratio = totalMonthExps / pacedIncome; // <1 = under pace = good
+      const pts = ratio <= 1 ? 10 : ratio <= 1.2 ? 5 : 0;
+      domains.finance = { pts, max: 10, done: pts === 10 };
+    } else {
+      domains.finance = { pts: 0, max: 10, done: false, na: true };
+    }
+  } catch(e) { domains.finance = { pts: 0, max: 10, done: false, na: true }; }
+
+  const total = Object.values(domains).reduce((s, d) => s + d.pts, 0);
+  return { total, domains };
 }
+
+function updateDayBar() {
+  const ringFill = document.getElementById('dayRingFill');
+  const pctEl    = document.getElementById('dayRingPercent');
+  const phaseEl  = document.getElementById('dayRingPhase');
+  const remEl    = document.getElementById('dayRingRemaining');
+  const clockEl  = document.getElementById('dayRingClock');
+
+  // Live clock (kept)
+  const now = new Date();
+  let h12 = now.getHours() % 12; if (h12 === 0) h12 = 12;
+  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+  clockEl.textContent = `${h12}:${String(now.getMinutes()).padStart(2,'0')} ${ampm}`;
+
+  const { total, domains } = computeLifeArcScore();
+  const circ = 2 * Math.PI * 52;
+  ringFill.style.strokeDasharray  = circ;
+  ringFill.style.strokeDashoffset = circ * (1 - total / 100);
+
+  // Colour: red → amber → green → gold
+  let stroke;
+  if      (total < 40) stroke = '#E25D7A';
+  else if (total < 70) stroke = '#F5A623';
+  else if (total < 90) stroke = '#6ee7b7';
+  else                 stroke = '#C9A84C';
+  ringFill.style.stroke = stroke;
+
+  pctEl.textContent = total;
+  phaseEl.textContent = 'LIFE ARC';
+
+  // Tier label
+  let tier;
+  if      (total < 40) tier = 'Hard day';
+  else if (total < 70) tier = 'Building';
+  else if (total < 90) tier = 'Strong day';
+  else                 tier = 'Peak form';
+  remEl.textContent = tier;
+
+  // Domain dots
+  const map = {
+    lasDomSleep:   domains.sleep,
+    lasDomMove:    domains.move,
+    lasDomStack:   domains.stack,
+    lasDomGoals:   domains.goals,
+    lasDomJournal: domains.journal,
+    lasDomFinance: domains.finance,
+  };
+  Object.entries(map).forEach(([id, d]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('done', 'miss', 'na');
+    el.classList.add(d.na ? 'na' : d.done ? 'done' : 'miss');
+    el.title = `${d.pts}/${d.max}pts`;
+  });
+}
+
+// ── JARVIS ONE THING ENGINE ───────────────────────────────────────────────────
+(function () {
+  const CACHE_KEY = 'la_one_thing_v1';
+  const DOMAIN_LABELS = { sleep: 'SLEEP', move: 'MOVEMENT', stack: 'STACK', goals: 'GOALS', journal: 'JOURNAL', finance: 'FINANCE' };
+
+  function topGap() {
+    const { domains } = computeLifeArcScore();
+    // Gap = pts remaining, weighted by how actionable it is right now
+    const hour = new Date().getHours();
+    const gaps = Object.entries(domains)
+      .filter(([, d]) => !d.done && !d.na)
+      .map(([key, d]) => {
+        let gap = d.max - d.pts;
+        // Boost urgency by time of day
+        if (key === 'stack'   && hour < 11)  gap += 8;
+        if (key === 'move'    && hour > 11 && hour < 20) gap += 6;
+        if (key === 'journal' && hour > 20)  gap += 8;
+        if (key === 'goals'   && hour > 18)  gap += 5;
+        return { key, gap, d };
+      })
+      .sort((a, b) => b.gap - a.gap);
+    return gaps[0] || null;
+  }
+
+  function buildPrompt(key, d) {
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    function ls(k) { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } }
+    const hour = today.getHours();
+
+    let context = '';
+    if (key === 'sleep') {
+      const oura = ls('oura_cache_v2');
+      const readArr = (oura && oura.readiness && oura.readiness.data) || [];
+      const r = readArr[readArr.length - 1];
+      context = r ? `Readiness score today: ${r.score}/100.` : 'No Oura data today.';
+    } else if (key === 'move') {
+      const workoutDone = ls('po_coach_workout_done') || {};
+      const doneKeys = Object.keys(workoutDone).sort().reverse();
+      const daysSince = doneKeys.length ? Math.floor((Date.now() - new Date(doneKeys[0]+'T12:00:00').getTime()) / 86400000) : '?';
+      context = `No workout logged today. Last trained ${daysSince} day(s) ago. Current time: ${hour}:00.`;
+    } else if (key === 'stack') {
+      context = `Supplement stack not logged today. Time: ${hour}:00.`;
+    } else if (key === 'goals') {
+      const tasks = ls('goals_daily_' + todayStr) || [];
+      const done = tasks.filter(t => t.checked).length;
+      context = `${done} of ${tasks.length} tasks completed. ${tasks.length - done} remaining.`;
+    } else if (key === 'journal') {
+      context = `Journal not written today. Time: ${hour}:00.`;
+    } else if (key === 'finance') {
+      context = `Monthly expenses are running above income pace.`;
+    }
+
+    return `You are JARVIS — direct, calm, trusted advisor inside Life Arc. No emojis, no fluff, no "Great job!". Use specific numbers where available.
+
+The user's single most actionable gap right now is: ${DOMAIN_LABELS[key]}.
+Context: ${context}
+Life Arc score pts still available in this domain: ${d.max - d.pts}/${d.max}.
+
+Write ONE sentence (max 18 words). Tell the user the single most important thing to do right now. Be specific and direct.
+
+Reply with ONLY the sentence, nothing else.`;
+  }
+
+  async function fetchGemini(prompt) {
+    try {
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const json = await res.json();
+      return json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    } catch(e) { return null; }
+  }
+
+  async function refresh(force) {
+    const btn = document.getElementById('oneThingRefresh');
+    if (btn) btn.classList.add('loading');
+
+    const top = topGap();
+    if (!top) {
+      // All domains done — celebrate
+      document.getElementById('oneThingText').textContent = 'All domains on track. Strong day.';
+      document.getElementById('oneThingDomain').textContent = 'COMPLETE';
+      if (btn) btn.classList.remove('loading');
+      return;
+    }
+
+    const cacheKey = `${CACHE_KEY}_${top.key}_${new Date().toISOString().slice(0,10)}`;
+    const cached = !force && localStorage.getItem(cacheKey);
+
+    let text = cached;
+    if (!text) {
+      const prompt = buildPrompt(top.key, top.d);
+      text = await fetchGemini(prompt);
+      if (text) localStorage.setItem(cacheKey, text);
+    }
+
+    if (!text) {
+      // Fallback template if Gemini unavailable
+      const fallbacks = {
+        sleep:   'Review your sleep trend in the Health tab.',
+        move:    'A workout today keeps your streak alive.',
+        stack:   'Log your supplement stack — takes 10 seconds.',
+        goals:   'Open your task list and close one item.',
+        journal: 'Write two sentences in your journal before midnight.',
+        finance: 'Check your monthly spend against your income pace.',
+      };
+      text = fallbacks[top.key];
+    }
+
+    document.getElementById('oneThingText').textContent = text;
+    document.getElementById('oneThingDomain').textContent = DOMAIN_LABELS[top.key];
+    if (btn) btn.classList.remove('loading');
+  }
+
+  // Expose for external triggers (called when data changes)
+  window._refreshOneThing = () => refresh(false);
+
+  // Wire buttons
+  document.addEventListener('DOMContentLoaded', function () {
+    const speakBtn   = document.getElementById('oneThingSpeak');
+    const refreshBtn = document.getElementById('oneThingRefresh');
+
+    if (speakBtn) {
+      speakBtn.addEventListener('click', function () {
+        const text = document.getElementById('oneThingText').textContent;
+        if (!text || text === 'Loading...') return;
+        speakBtn.classList.add('speaking');
+        if (window._jarvisSpeak) {
+          window._jarvisSpeak(text, () => speakBtn.classList.remove('speaking'));
+        } else {
+          const utt = new SpeechSynthesisUtterance(text);
+          utt.onend = () => speakBtn.classList.remove('speaking');
+          speechSynthesis.speak(utt);
+        }
+      });
+    }
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => refresh(true));
+    }
+
+    // Initial load
+    refresh(false);
+  });
+
+  // Re-evaluate whenever the dash tab is opened
+  window._oneThingOnTabSwitch = () => refresh(false);
+})();
+
+// ── STREAK WALL ───────────────────────────────────────────────────────────────
+(function () {
+  const DAYS = 90;
+
+  function dateStr(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function ls(k) { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } }
+
+  // Build last N date strings newest→oldest
+  function buildDateRange(n) {
+    const dates = [];
+    const d = new Date();
+    for (let i = 0; i < n; i++) {
+      dates.push(dateStr(d));
+      d.setDate(d.getDate() - 1);
+    }
+    return dates; // [today, yesterday, ...]
+  }
+
+  function getDomainHit(domain, day) {
+    switch (domain) {
+      case 'sleep': {
+        const oura = ls('oura_cache_v2');
+        const arr = (oura && oura.sleep && oura.sleep.data) || [];
+        const r = arr.find(s => s.day === day);
+        if (!r) return null;
+        const h = r.total_sleep_duration ? r.total_sleep_duration / 3600 : null;
+        return h != null ? h >= 7 : null;
+      }
+      case 'gym': {
+        const done = ls('po_coach_workout_done') || {};
+        return done[day] != null ? !!done[day] : null;
+      }
+      case 'stack': {
+        const s = ls('goals_stack_' + day) || ls('po_stack_' + day);
+        if (s == null) return null;
+        return Array.isArray(s) ? s.length > 0 : !!s;
+      }
+      case 'journal': {
+        const j = ls('goals_journal_' + day);
+        if (j == null) return null;
+        return !!(j && (j.text || j.content || (typeof j === 'string' && j.length > 5)));
+      }
+      case 'finance': {
+        // Check expenses exist for that day — if no expense data at all, null
+        const exps = ls('expenses') || [];
+        const dayExps = exps.filter(e => new Date(e.ts).toISOString().slice(0,10) === day);
+        if (!exps.length) return null;
+        // Hit = expenses logged (we can't easily check budget per-day without income so just: was data present)
+        const incomes = ls('incomes') || [];
+        const monthlyIncome = incomes.reduce((s, e) => {
+          const v = Number(e.amount) || 0;
+          return e.period === 'monthly' ? s+v : e.period === 'weekly' ? s+v*4.33 : e.period === 'yearly' ? s+v/12 : s;
+        }, 0);
+        if (!monthlyIncome) return null;
+        const dailyBudget = monthlyIncome / 30;
+        const spent = dayExps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        return spent <= dailyBudget * 1.1; // within 10% of daily budget = hit
+      }
+      default: return null;
+    }
+  }
+
+  const DOMAINS = [
+    { key: 'sleep',   label: 'Sleep',   color: '#6ee7b7' },
+    { key: 'gym',     label: 'Gym',     color: '#86efac' },
+    { key: 'stack',   label: 'Stack',   color: '#C9A84C' },
+    { key: 'journal', label: 'Journal', color: '#a78bfa' },
+    { key: 'finance', label: 'Finance', color: '#60a5fa' },
+  ];
+
+  function render() {
+    const container = document.getElementById('streakWallRows');
+    if (!container) return;
+    const dates = buildDateRange(DAYS);  // newest first
+    const todayStr = dates[0];
+
+    container.innerHTML = DOMAINS.map(({ key, label, color }) => {
+      // dots rendered oldest→newest (left=past, right=today)
+      const dotsHtml = [...dates].reverse().map((day, i) => {
+        const hit = getDomainHit(key, day);
+        const isToday = day === todayStr;
+        const cls = hit === null ? 'na' : hit ? 'hit' : 'miss';
+        const style = hit ? `background:${color};opacity:${0.5 + 0.5 * (i / DAYS)}` : '';
+        return `<div class="streak-dot ${cls}${isToday ? ' today' : ''}" style="${style}" title="${day}"></div>`;
+      }).join('');
+
+      // Current streak count
+      let streak = 0;
+      for (const day of dates) {
+        const hit = getDomainHit(key, day);
+        if (hit === true) streak++;
+        else if (hit === false) break;
+        // null = no data, skip counting
+      }
+
+      return `<div class="streak-row">
+        <div class="streak-row-label">${label}${streak > 1 ? ` <span style="color:${color};font-size:9px">${streak}</span>` : ''}</div>
+        <div class="streak-dots">${dotsHtml}</div>
+      </div>`;
+    }).join('');
+  }
+
+  window._renderStreakWall = render;
+
+  document.addEventListener('DOMContentLoaded', render);
+})();
 
 // One-time count-up of the day-ring % (on tab open / unlock), like Peak's hero.
 // updateDayBar() (per-minute) sets the final value; this just animates to it once.
@@ -12875,7 +13412,7 @@ function updateDayBar() {
 // order. The other tabs animate SCATTERED classes (not sequential siblings), so
 // CSS nth-of-type can't stagger them correctly — we stamp delays in JS instead.
 window._STAGGER_SEL = {
-  dashView:    '.gs-section, .wotd-card, #jvInsightCard, .gs-banner, .gs-rings-wrap, .gs-focus-card',
+  dashView:    '.one-thing-card, .gs-section, .wotd-card, #jvInsightCard, .gs-banner, .gs-rings-wrap, .gs-focus-card',
   healthView:  '.oura-scores, .oura-metrics, .stack-card, .wc-card, .oura-todays-call',
   gymView:     '.wt-card, .card, .po-tw',
   profileView: '.prof-card',
@@ -17602,6 +18139,9 @@ function switchTab(tab) {
   }
   // count-up the day-ring % when the main tab opens (like Peak's hero count-up)
   if (tab === 'dash' && typeof window._animateDayRingCount === 'function') setTimeout(window._animateDayRingCount, 60);
+  // re-evaluate One Thing + Streak Wall when switching to dash
+  if (tab === 'dash' && typeof window._refreshOneThing === 'function') setTimeout(window._refreshOneThing, 100);
+  if (tab === 'dash' && typeof window._renderStreakWall === 'function') setTimeout(window._renderStreakWall, 120);
   // count-up the Oura readiness number when the Health tab opens
   if (tab === 'health') setTimeout(function(){
     var n=document.getElementById('ouraHeroNum'); if(!n) return;
