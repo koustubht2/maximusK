@@ -27725,6 +27725,11 @@ function switchTab(tab) {
           snap.sleep_score = todaySleep.score || null;
           snap.sleep_h = todaySleep.total_sleep_duration ? Math.round(todaySleep.total_sleep_duration/360)/10 : null;
           snap.rhr = todaySleep.lowest_heart_rate || null;
+          // Oura bedtime_end = actual wake-up time (ISO string)
+          if(todaySleep.bedtime_end){
+            var wakeDate = new Date(todaySleep.bedtime_end);
+            snap.actual_wake_h = parseFloat((wakeDate.getHours() + wakeDate.getMinutes()/60).toFixed(2));
+          }
         }
       }
     } catch(e){}
