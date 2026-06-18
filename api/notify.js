@@ -141,7 +141,7 @@ async function handleCron() {
 
   // Wake hour: Oura actual → rolling avg → null (skip morning slots)
   const wakeH     = resolveWakeH(snap, recent);
-  const wakeFloor = wakeH != null ? Math.floor(wakeH) : null;
+  const wakeFloor = wakeH != null ? Math.round(wakeH) : null;
   const source    = snap?.actual_wake_h != null ? 'oura' : wakeH != null ? 'adaptive' : 'none';
 
   // Morning adaptive slots (all before 12pm) — only defined when wake is known
@@ -298,8 +298,8 @@ async function handleCron() {
       await push({
         title: over ? 'Spend running high.' : 'Daily spend pulse.',
         body: over
-          ? `CHF ${snap.daily_spend.toFixed(0)} today — ${Math.round((snap.daily_spend / avg - 1) * 100)}% above your daily average.`
-          : `Today: CHF ${snap.daily_spend.toFixed(0)}. Tracking near average.`,
+          ? `₹${snap.daily_spend.toFixed(0)} today — ${Math.round((snap.daily_spend / avg - 1) * 100)}% above your daily average.`
+          : `Today: ₹${snap.daily_spend.toFixed(0)}. Tracking near average.`,
         url: '/?tab=finance',
         buttons: [{ label: 'View Finance', url: '/?tab=finance' }],
       });
@@ -393,41 +393,29 @@ async function handleCron() {
     });
   }
 
-  // 22:00 — Goal deadline creep
-  if (localH === 22) {
-    if (snap && (snap.tasks_remaining ?? 0) > 0) {
-      await push({
-        title: 'Goals still open.',
-        body: `${snap.tasks_remaining} task${snap.tasks_remaining > 1 ? 's' : ''} unfinished today. Move or close them before midnight so tomorrow starts clean.`,
-        url: '/?tab=main',
-        buttons: [{ label: 'View Goals', url: '/?tab=main' }],
-      });
+  // 9:00 — Personal record alerts (fixed slot so they fire at most once per day)
+  if (localH === 9) {
+    if (snap?.sleep_score != null && recent.length > 1) {
+      const prevBest = Math.max(...recent.slice(1).map(r => r.sleep_score ?? 0));
+      if (snap.sleep_score > prevBest && prevBest > 0) {
+        await push({
+          title: 'Best sleep in 30 days.',
+          body: `Sleep score ${snap.sleep_score} — your highest this month. JARVIS logged it.`,
+          url: '/?tab=health',
+          buttons: [{ label: 'View Health', url: '/?tab=health' }],
+        });
+      }
     }
-  }
-
-  // Any hour — personal record alerts (checked every run, fires at most once per day)
-  // Sleep PR: best sleep score in last 30 days
-  if (snap?.sleep_score != null && recent.length > 1) {
-    const prevBest = Math.max(...recent.slice(1).map(r => r.sleep_score ?? 0));
-    if (snap.sleep_score > prevBest && prevBest > 0) {
-      await push({
-        title: 'Best sleep in 30 days.',
-        body: `Sleep score ${snap.sleep_score} — your highest this month. JARVIS logged it.`,
-        url: '/?tab=health',
-        buttons: [{ label: 'View Health', url: '/?tab=health' }],
-      });
-    }
-  }
-  // Readiness PR: best readiness score in last 30 days
-  if (snap?.readiness_score != null && recent.length > 1) {
-    const prevBestR = Math.max(...recent.slice(1).map(r => r.readiness_score ?? 0));
-    if (snap.readiness_score > prevBestR && prevBestR > 0) {
-      await push({
-        title: 'Peak readiness today.',
-        body: `Readiness score ${snap.readiness_score} — new 30-day high. Use it.`,
-        url: '/?tab=jarvis',
-        buttons: [{ label: 'Open JARVIS', url: '/?tab=jarvis' }],
-      });
+    if (snap?.readiness_score != null && recent.length > 1) {
+      const prevBestR = Math.max(...recent.slice(1).map(r => r.readiness_score ?? 0));
+      if (snap.readiness_score > prevBestR && prevBestR > 0) {
+        await push({
+          title: 'Peak readiness today.',
+          body: `Readiness score ${snap.readiness_score} — new 30-day high. Use it.`,
+          url: '/?tab=jarvis',
+          buttons: [{ label: 'Open JARVIS', url: '/?tab=jarvis' }],
+        });
+      }
     }
   }
 
@@ -441,8 +429,16 @@ async function handleCron() {
     });
   }
 
-  // 22:30 — Sleep nudge
+  // 22:00 — Goal deadline creep + sleep nudge (merged into one block)
   if (localH === 22) {
+    if (snap && (snap.tasks_remaining ?? 0) > 0) {
+      await push({
+        title: 'Goals still open.',
+        body: `${snap.tasks_remaining} task${snap.tasks_remaining > 1 ? 's' : ''} unfinished today. Move or close them before midnight so tomorrow starts clean.`,
+        url: '/?tab=main',
+        buttons: [{ label: 'View Goals', url: '/?tab=main' }],
+      });
+    }
     await push({
       title: 'Time to sleep.',
       body: 'JARVIS recommends lights out now. A consistent sleep time is the single biggest lever on tomorrow\'s readiness.',
