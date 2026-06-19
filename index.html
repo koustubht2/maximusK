@@ -19238,7 +19238,17 @@ function switchTab(tab) {
       sub: ['Debt Repayment', 'Savings & Investments'] },
   ];
 
-  // ── Spending helper functions — declared before renderAllNetWorth() ──
+  // ── Helper functions — declared before renderAllNetWorth() ──
+  function monthlyEquivalent(item) {
+    const a = Number(item.amount) || 0;
+    if (item.period === 'yearly') return a / 12;
+    if (item.period === 'weekly') return a * 4.345;
+    return a;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
   function spToDisplay(e) {
     const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
     if ((e.entered_currency || 'CHF') === 'INR') return Number(e.entered_amount) || 0;
@@ -19309,15 +19319,6 @@ function switchTab(tab) {
   const subAmount = document.getElementById('subAmount');
   const subPeriod = document.getElementById('subPeriod');
 
-  function monthlyEquivalent(item) {
-    const a = Number(item.amount) || 0;
-    if (item.period === 'yearly') return a / 12;
-    if (item.period === 'weekly') return a * 4.345;
-    return a;
-  }
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
   function formatRenewal(iso) {
     if (!iso) return '';
     const isoSafe = (typeof iso === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(iso)) ? iso + 'T00:00' : iso;
