@@ -19238,6 +19238,49 @@ function switchTab(tab) {
       sub: ['Debt Repayment', 'Savings & Investments'] },
   ];
 
+  // ── Spending helper functions — declared before renderAllNetWorth() ──
+  function spToDisplay(e) {
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    if ((e.entered_currency || 'CHF') === 'INR') return Number(e.entered_amount) || 0;
+    return (Number(e.amount) || 0) * inrRate;
+  }
+  function spExpForMonth(y, m) {
+    return (storeGet('expenses') || []).filter(e => {
+      const d = new Date(e.ts); return d.getFullYear() === y && d.getMonth() === m;
+    });
+  }
+  function spIncForMonth(y, m) {
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return (storeGet('incomes') || []).reduce((sum, e) => {
+      const val = (e.entered_currency || 'CHF') === 'INR'
+        ? (Number(e.entered_amount) || 0)
+        : (Number(e.amount) || 0) * inrRate;
+      const p = e.period || 'one-off';
+      if (p === 'monthly') return sum + val;
+      if (p === 'weekly')  return sum + val * 4.33;
+      if (p === 'yearly')  return sum + val / 12;
+      const d = new Date(e.ts);
+      return (d.getFullYear() === y && d.getMonth() === m) ? sum + val : sum;
+    }, 0);
+  }
+  function spSubsForMonth() {
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return (storeGet('subs') || []).reduce((sum, it) => sum + monthlyEquivalent(it) * inrRate, 0);
+  }
+  function spOrdersForMonth(y, m) {
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return (storeGet('incoming_orders') || []).reduce((sum, o) => {
+      if (!o.deductedAt) return sum;
+      const d = new Date(o.deductedAt);
+      if (d.getFullYear() !== y || d.getMonth() !== m) return sum;
+      return sum + (Number(o.amount) || 0) * inrRate;
+    }, 0);
+  }
+  function spFmt(inrAmt) {
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    return fmtMoney(inrAmt / inrRate);
+  }
+
   renderAllNetWorth();
 
   // Net worth chart window selector
@@ -19463,60 +19506,6 @@ function switchTab(tab) {
   }
 
   // ── SPENDING INSIGHTS ──────────────────────────────────────
-
-  function spToDisplay(e) {
-    // Mirror the pie chart: use entered_amount if entered in INR, otherwise use fmtMoney(amount)
-    // For aggregation we need a raw number in the display currency
-    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
-    if ((e.entered_currency || 'CHF') === 'INR') return Number(e.entered_amount) || 0;
-    return (Number(e.amount) || 0) * inrRate;
-  }
-
-  function spExpForMonth(y, m) {
-    return (storeGet('expenses') || []).filter(e => {
-      const d = new Date(e.ts); return d.getFullYear() === y && d.getMonth() === m;
-    });
-  }
-
-  function spIncForMonth(y, m) {
-    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
-    return (storeGet('incomes') || []).reduce((sum, e) => {
-      const val = (e.entered_currency || 'CHF') === 'INR'
-        ? (Number(e.entered_amount) || 0)
-        : (Number(e.amount) || 0) * inrRate;
-      const p = e.period || 'one-off';
-      if (p === 'monthly') return sum + val;
-      if (p === 'weekly')  return sum + val * 4.33;
-      if (p === 'yearly')  return sum + val / 12;
-      const d = new Date(e.ts);
-      return (d.getFullYear() === y && d.getMonth() === m) ? sum + val : sum;
-    }, 0);
-  }
-
-  function spSubsForMonth() {
-    // Subs are recurring — count their monthly equivalent every month
-    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
-    return (storeGet('subs') || []).reduce((sum, it) => {
-      return sum + monthlyEquivalent(it) * inrRate;
-    }, 0);
-  }
-
-  function spOrdersForMonth(y, m) {
-    // Orders: only those actually deducted in this month
-    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
-    return (storeGet('incoming_orders') || []).reduce((sum, o) => {
-      if (!o.deductedAt) return sum;
-      const d = new Date(o.deductedAt);
-      if (d.getFullYear() !== y || d.getMonth() !== m) return sum;
-      return sum + (Number(o.amount) || 0) * inrRate;
-    }, 0);
-  }
-
-  function spFmt(inrAmt) {
-    // Format raw INR amount using the same fmtMoney path
-    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
-    return fmtMoney(inrAmt / inrRate);
-  }
 
   // ── MONTHLY FINANCE SUMMARY ────────────────────────────────────
   // Opening balance:
