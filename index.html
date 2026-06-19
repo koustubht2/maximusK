@@ -19386,11 +19386,11 @@ function switchTab(tab) {
       }
     }
 
-    // 2. Render Expenses
+    // 2. Render Expenses — filtered to selected month
     const expensesListEl = document.getElementById('expensesList');
     if (expensesListEl) {
       expensesListEl.innerHTML = '';
-      const expItems = storeGet('expenses') || [];
+      const expItems = spExpForMonth(spY, spM);
       if (expItems.length === 0) {
         expensesListEl.innerHTML = '<div class="empty-state" style="margin-top:0">No expenses logged.</div>';
       } else {
@@ -20109,12 +20109,11 @@ function switchTab(tab) {
     const totalEl = document.getElementById('expPieTotalAmt');
     if (!card || !svg || !legend || !totalEl) return;
 
-    const exps = storeGet('expenses') || [];
+    const exps = spExpForMonth(spY, spM);
     if (!exps.length) { card.style.display = 'none'; return; }
     card.style.display = '';
 
     // Aggregate amounts in INR by category key (uncategorised → 'other')
-    // Convert each expense to INR: amount is stored in CHF, so multiply by INR rate.
     const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
     const totals = {};
     let grandTotal = 0;
