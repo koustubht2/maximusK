@@ -5350,21 +5350,6 @@ main {
 }
 .fin-ms-closing-label { font-size: 13px; font-weight: 700; color: var(--text-1); }
 .fin-ms-closing-val   { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-1); }
-.fin-ms-inc-override {
-  display: flex; align-items: center; gap: 8px; margin-top: 10px;
-  padding: 8px 10px; background: rgba(110,231,183,0.06);
-  border: 1px solid rgba(110,231,183,0.14); border-radius: 10px;
-}
-.fin-ms-inc-override input {
-  flex: 1; background: transparent; border: none; outline: none;
-  color: var(--text-1); font-size: 13px; font-family: inherit;
-  font-variant-numeric: tabular-nums;
-}
-.fin-ms-inc-override button {
-  background: rgba(110,231,183,0.15); border: 1px solid rgba(110,231,183,0.25);
-  color: #6ee7b7; font-size: 11px; font-weight: 700; font-family: inherit;
-  padding: 3px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap;
-}
 .fin-ms-past-banner {
   font-size: 11px; color: var(--text-3); text-align: center;
   padding: 6px 0 2px; letter-spacing: 0.04em;
@@ -9164,6 +9149,14 @@ window.canonicalJson = function(obj) {
   </button>
 
 </nav>
+
+<!-- ===== GLOBAL FINANCE MONTH NAVIGATOR ===== -->
+<div class="sp-month-nav" id="finGlobalMonthNav" style="padding:10px 0 4px;">
+  <button class="sp-month-btn" id="spMonthPrev">‹</button>
+  <span class="sp-month-label" id="spMonthLabel"></span>
+  <button class="sp-month-btn" id="spMonthNext">›</button>
+</div>
+
 <div class="shell">
 
 
@@ -9281,6 +9274,9 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
+    <!-- Monthly Finance Summary -->
+    <div id="finMonthSummary"></div>
+
     <!-- Savings Maxxing -->
     <div class="sg-card" id="sgCard"></div>
 
@@ -9397,7 +9393,6 @@ window.canonicalJson = function(obj) {
   </p>
   <div id="assetsList"></div>
 
-  <div class="fin-blocked-notice" id="finIncomeBlockedNotice">Past month — income logging locked. Use the override in the Monthly Summary below.</div>
   <div class="card ord-add-card" style="margin-bottom:24px;">
     <div class="ord-add-eyebrow">+ ADD INCOME / ASSET</div>
     <div class="ord-add-grid">
@@ -9465,16 +9460,8 @@ window.canonicalJson = function(obj) {
 
   <div id="expensesList" style="margin-top:20px;max-height:340px;overflow-y:auto;padding-right:4px;"></div>
 
-  <!-- ===== MONTHLY FINANCE SUMMARY ===== -->
-  <div id="finMonthSummary" style="margin-top:28px;"></div>
-
   <!-- ===== SPENDING INSIGHTS (below history) ===== -->
-  <div id="spendingInsightsSection" style="margin-top:0;">
-    <div class="sp-month-nav">
-      <button class="sp-month-btn" id="spMonthPrev">‹</button>
-      <span class="sp-month-label" id="spMonthLabel"></span>
-      <button class="sp-month-btn" id="spMonthNext">›</button>
-    </div>
+  <div id="spendingInsightsSection" style="margin-top:28px;">
     <div class="sp-top-row">
       <div class="sp-card">
         <div class="sp-card-label">Total Expenses</div>
@@ -19554,71 +19541,34 @@ function switchTab(tab) {
     return (best.v || 0) * inrRate;
   }
 
-  // Get saved income override for a specific month (in INR)
-  function finIncomeOverride(y, m) {
-    const overrides = storeGet('fin:income_overrides') || [];
-    const found = overrides.find(o => o.y === y && o.m === m);
-    return found ? found.amount_inr : null;
-  }
-
-  function finSaveIncomeOverride(y, m, amount_inr) {
-    const overrides = storeGet('fin:income_overrides') || [];
-    const idx = overrides.findIndex(o => o.y === y && o.m === m);
-    if (idx >= 0) overrides[idx].amount_inr = amount_inr;
-    else overrides.push({ y, m, amount_inr });
-    storeSet('fin:income_overrides', overrides);
-  }
-
   function renderFinMonthSummary() {
     const el = document.getElementById('finMonthSummary');
     if (!el) return;
-    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
     const todayY = new Date().getFullYear(), todayM = new Date().getMonth();
     const isPast = !(spY === todayY && spM === todayM);
 
     // Block/unblock add forms
-    const incBlockedNotice = document.getElementById('finIncomeBlockedNotice');
     const expBlockedNotice = document.getElementById('finExpBlockedNotice');
-    const incAddCard = incBlockedNotice ? incBlockedNotice.nextElementSibling : null;
     const expAddCard = expBlockedNotice ? expBlockedNotice.nextElementSibling : null;
-    if (incBlockedNotice) incBlockedNotice.style.display = isPast ? '' : 'none';
-    if (incAddCard)       incAddCard.classList.toggle('fin-add-blocked', isPast);
     if (expBlockedNotice) expBlockedNotice.style.display = isPast ? '' : 'none';
     if (expAddCard)       expAddCard.classList.toggle('fin-add-blocked', isPast);
 
-    const opening = finOpeningBalanceINR(spY, spM);
-
-    // Income: use override if set, otherwise compute from recurring entries
-    const override = finIncomeOverride(spY, spM);
-    const computedInc = spIncForMonth(spY, spM);
-    const income = override !== null ? override : computedInc;
-
-    // Expenses (one-off, timestamped)
-    const exps = spExpForMonth(spY, spM);
+    const opening  = finOpeningBalanceINR(spY, spM);
+    const income   = spIncForMonth(spY, spM);
+    const exps     = spExpForMonth(spY, spM);
     const expTotal = exps.reduce((s, e) => s + spToDisplay(e), 0);
-
-    // Subs (always monthly equivalent)
     const subsTotal = spSubsForMonth();
-
-    const totalOut = expTotal + subsTotal;
-    const closing  = opening + income - totalOut;
+    const totalOut  = expTotal + subsTotal;
+    const closing   = opening + income - totalOut;
     const netChange = closing - opening;
 
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const SHORT  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
     const row = (label, valStr, cls = '') =>
       `<div class="fin-ms-row"><span class="fin-ms-label">${label}</span><span class="fin-ms-val ${cls}">${valStr}</span></div>`;
 
-    const overrideVal = override !== null ? override.toLocaleString('en-IN', {maximumFractionDigits:0}) : '';
-    const computedIncStr = spFmt(computedInc);
-    const incOverrideTip = isPast
-      ? `<div style="font-size:10px;color:var(--text-3);margin-top:4px;">Recurring estimate: ${computedIncStr}. Set actual income for this month:</div>`
-      : `<div style="font-size:10px;color:var(--text-3);margin-top:4px;">Override computed income (${computedIncStr}) with actual:</div>`;
-
     el.innerHTML = `
       <div class="fin-ms-card">
-        <div class="fin-ms-title">${MONTHS[spM]} ${spY}${isPast ? ' · read-only' : ''}</div>
+        <div class="fin-ms-title">${MONTHS[spM]} ${spY}${isPast ? ' · past month' : ''}</div>
         ${row('Opening Balance', spFmt(opening), 'dim')}
         ${row('+ Income', spFmt(income), 'positive')}
         ${row('− Expenses', '−' + spFmt(expTotal), 'negative')}
@@ -19632,30 +19582,9 @@ function switchTab(tab) {
           <span class="fin-ms-label" style="font-size:11px;">Net change</span>
           <span class="fin-ms-val ${netChange >= 0 ? 'positive' : 'negative'}" style="font-size:11px;">${netChange >= 0 ? '+' : ''}${spFmt(netChange)}</span>
         </div>
-        ${incOverrideTip}
-        <div class="fin-ms-inc-override">
-          <span style="font-size:11px;color:var(--text-3);white-space:nowrap;">₹ Income</span>
-          <input id="finIncOverrideInput" type="number" step="1" placeholder="${Math.round(computedInc).toLocaleString('en-IN')}" value="${overrideVal}">
-          <button id="finIncOverrideSave">Set</button>
-          ${override !== null ? `<button id="finIncOverrideClear" style="background:rgba(255,100,100,0.12);border-color:rgba(255,100,100,0.25);color:#ff8a8a;">✕</button>` : ''}
-        </div>
-        ${isPast ? `<div class="fin-ms-past-banner">Past month — expenses and income edits are locked above.</div>` : ''}
+        ${isPast ? `<div class="fin-ms-past-banner">Past month — expenses are locked.</div>` : ''}
       </div>
     `;
-
-    document.getElementById('finIncOverrideSave')?.addEventListener('click', () => {
-      const v = parseFloat(document.getElementById('finIncOverrideInput').value);
-      if (isNaN(v) || v < 0) return;
-      finSaveIncomeOverride(spY, spM, v);
-      renderFinMonthSummary();
-      renderSpendingInsights();
-    });
-    document.getElementById('finIncOverrideClear')?.addEventListener('click', () => {
-      const overrides = storeGet('fin:income_overrides') || [];
-      storeSet('fin:income_overrides', overrides.filter(o => !(o.y === spY && o.m === spM)));
-      renderFinMonthSummary();
-      renderSpendingInsights();
-    });
   }
 
   function renderSpendingInsights() {
@@ -20257,11 +20186,6 @@ function switchTab(tab) {
 
   function setupAssetsLiabilities() {
     document.getElementById('addAssetBtn')?.addEventListener('click', async () => {
-      const todayYY = new Date().getFullYear(), todayMM = new Date().getMonth();
-      if (!(spY === todayYY && spM === todayMM)) {
-        alert('Adding income to a past month is not allowed. Use the income override in Monthly Summary.');
-        return;
-      }
       const name = document.getElementById('addAssetName').value.trim();
       const aRaw = parseFloat(document.getElementById('addAssetAmt').value);
       const ccy = document.getElementById('addAssetCcy').value;
