@@ -19093,7 +19093,11 @@ function switchTab(tab) {
     const canvasWrap = document.getElementById('nwChartCanvasWrap');
     if (!canvasWrap) return;
 
-    // Wire scrub only once per render cycle — replace wrap clone to drop stale listeners
+    // Always update the live data on the element so doScrub reads current window
+    canvasWrap._nwPoints = points;
+    canvasWrap._nwView   = view;
+
+    // Wire event listeners only once — doScrub reads from canvasWrap._nwPoints live
     if (!canvasWrap._nwScrubWired) {
       canvasWrap._nwScrubWired = true;
 
@@ -19113,17 +19117,20 @@ function switchTab(tab) {
       const doScrub = (clientX) => {
         const currentSvg = document.getElementById('nwChartSvg');
         if (!currentSvg) return;
+        // Read live data — updated every render
+        const pts  = canvasWrap._nwPoints;
+        const vw   = canvasWrap._nwView;
+        if (!pts || !pts.length) return;
         const rect = currentSvg.getBoundingClientRect();
         const wrapRect = canvasWrap.getBoundingClientRect();
-        // Find nearest point
         const svgX = ((clientX - rect.left) / rect.width) * W;
         let nearest = 0, minDist = Infinity;
-        points.forEach((p, i) => {
+        pts.forEach((p, i) => {
           const d = Math.abs(p.x - svgX);
           if (d < minDist) { minDist = d; nearest = i; }
         });
-        const pt   = points[nearest];
-        const snap = view[nearest];
+        const pt   = pts[nearest];
+        const snap = vw[nearest];
         const xPct = (pt.x / W) * 100;
         const yPct = ((rect.top - wrapRect.top) + (pt.y / H) * rect.height) / wrapRect.height * 100;
 
@@ -19133,7 +19140,7 @@ function switchTab(tab) {
         if (scrubVal)   scrubVal.textContent  = fmtMoney(snap.v);
         if (scrubDate)  scrubDate.textContent = fmtScrubDate(snap.t);
 
-        const prevSnap = nearest > 0 ? view[nearest - 1] : null;
+        const prevSnap = nearest > 0 ? vw[nearest - 1] : null;
         if (scrubDelta) {
           if (prevSnap && Math.abs(snap.v - prevSnap.v) >= 0.005) {
             const delta = snap.v - prevSnap.v;
