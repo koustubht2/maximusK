@@ -18135,6 +18135,9 @@ function switchTab(tab) {
   if (tab === 'jarvis' && typeof window.renderJarvisTab === 'function') {
     setTimeout(window.renderJarvisTab, 0);
   }
+  if (tab === 'finance' && typeof window._financeTabOpen === 'function') {
+    setTimeout(window._financeTabOpen, 0);
+  }
 }
 
 /* ============================================================================
@@ -21323,13 +21326,26 @@ function switchTab(tab) {
   }
 
   setupAssetsLiabilities();
+
+  // Reset to current month and re-render whenever the finance tab is opened
+  window._financeTabOpen = function() {
+    spY = new Date().getFullYear();
+    spM = new Date().getMonth();
+    renderAssetsLiabilities();
+    renderSpendingInsights();
+  };
+
   document.getElementById('spMonthPrev')?.addEventListener('click', () => {
-    spM--; if (spM < 0) { spM = 11; spY--; } renderSpendingInsights();
+    spM--; if (spM < 0) { spM = 11; spY--; }
+    renderAssetsLiabilities();
+    renderSpendingInsights();
   });
   document.getElementById('spMonthNext')?.addEventListener('click', () => {
     const ty = new Date().getFullYear(), tm = new Date().getMonth();
     if (spY === ty && spM === tm) return;
-    spM++; if (spM > 11) { spM = 0; spY++; } renderSpendingInsights();
+    spM++; if (spM > 11) { spM = 0; spY++; }
+    renderAssetsLiabilities();
+    renderSpendingInsights();
   });
   safeRenderTicker();
   setInterval(safeRenderTicker, 1500);
