@@ -19547,6 +19547,26 @@ function switchTab(tab) {
     return (best.v || 0) * inrRate;
   }
 
+  function finClosingBalanceINR(y, m) {
+    const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
+    const todayY = new Date().getFullYear(), todayM = new Date().getMonth();
+    if (y === todayY && m === todayM) {
+      // Current month: live NW value
+      return nwGrandCHF() * inrRate;
+    }
+    // Past month: snapshot nearest to the last moment of that month
+    const hist = storeGet(NW_HISTORY_KEY) || [];
+    if (!hist.length) return null;
+    const endOfMonth = new Date(y, m + 1, 1).getTime() - 1;
+    let best = null, bestDist = Infinity;
+    for (const pt of hist) {
+      const dist = Math.abs(pt.t - endOfMonth);
+      if (dist < bestDist) { bestDist = dist; best = pt; }
+    }
+    if (!best) return null;
+    return (best.v || 0) * inrRate;
+  }
+
   function renderFinMonthSummary() {
     const el = document.getElementById('finMonthSummary');
     if (!el) return;
@@ -19564,17 +19584,17 @@ function switchTab(tab) {
     const exps      = spExpForMonth(spY, spM);
     const expTotal  = exps.reduce((s, e) => s + spToDisplay(e), 0);
     const subsTotal = spSubsForMonth();
-    const totalOut  = expTotal + subsTotal;
+    const closing   = finClosingBalanceINR(spY, spM);
     const hasOpening = opening !== null;
-    const closing   = hasOpening ? opening + income - totalOut : null;
-    const netChange = hasOpening ? (closing - opening) : null;
+    const hasClosing = closing !== null;
+    const netChange = (hasOpening && hasClosing) ? (closing - opening) : null;
 
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const row = (label, valStr, cls = '') =>
       `<div class="fin-ms-row"><span class="fin-ms-label">${label}</span><span class="fin-ms-val ${cls}">${valStr}</span></div>`;
 
     const openingStr = hasOpening ? spFmt(opening) : '—';
-    const closingStr = closing !== null ? spFmt(closing) : '—';
+    const closingStr = hasClosing ? spFmt(closing) : '—';
     const netStr     = netChange !== null
       ? `${netChange >= 0 ? '+' : ''}${spFmt(netChange)}`
       : '—';
@@ -21354,6 +21374,12 @@ function switchTab(tab) {
     spM = new Date().getMonth();
     renderAssetsLiabilities();
     renderSpendingInsights();
+  };
+
+  // Expose so startup can run sub deductions without the Finance tab being open
+  window._processAutoDeductSubs = function() {
+    const changed = processAutoDeductSubs();
+    if (changed) renderAllNetWorth();
   };
 
   document.getElementById('spMonthPrev')?.addEventListener('click', () => {
@@ -28735,6 +28761,17 @@ function switchTab(tab) {
   }
 
 })();
+</script>
+
+<!-- Run subscription auto-deductions on every app startup (once per day gate is inside processAutoDeductSubs) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof window._processAutoDeductSubs === 'function') {
+      window._processAutoDeductSubs();
+    }
+  }, 500);
+});
 </script>
 
 <!-- Gold comet generators for the hero/score rings (Peak open-arc + dash circle) -->
