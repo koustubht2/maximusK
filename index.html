@@ -19010,13 +19010,11 @@ function switchTab(tab) {
     } else if (selWindow === '7D') {
       cutoff = Date.now() - 7 * 86400000;
     } else if (selWindow === '1M') {
-      // Calendar month: 1st of current month
-      cutoff = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      cutoff = Date.now() - 30 * 86400000;
     } else if (selWindow === '3M') {
       cutoff = Date.now() - 90 * 86400000;
     } else if (selWindow === '1Y') {
-      // Calendar year: Jan 1st of current year
-      cutoff = new Date(now.getFullYear(), 0, 1).getTime();
+      cutoff = Date.now() - 365 * 86400000;
     } else {
       cutoff = 0; // ALL
     }
@@ -19265,15 +19263,12 @@ function switchTab(tab) {
   function spIncForMonth(y, m) {
     const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
     return (storeGet('incomes') || []).reduce((sum, e) => {
+      const d = new Date(e.ts);
+      if (d.getFullYear() !== y || d.getMonth() !== m) return sum;
       const val = (e.entered_currency || 'CHF') === 'INR'
         ? (Number(e.entered_amount) || 0)
         : (Number(e.amount) || 0) * inrRate;
-      const p = e.period || 'one-off';
-      if (p === 'monthly') return sum + val;
-      if (p === 'weekly')  return sum + val * 4.33;
-      if (p === 'yearly')  return sum + val / 12;
-      const d = new Date(e.ts);
-      return (d.getFullYear() === y && d.getMonth() === m) ? sum + val : sum;
+      return sum + val;
     }, 0);
   }
   function spSubsForMonth() {
@@ -19517,20 +19512,16 @@ function switchTab(tab) {
   //   • Past month    → NW_HISTORY snapshot nearest to last day of that month
   function finOpeningBalanceINR(y, m) {
     const inrRate = (exchangeRates && exchangeRates['INR']) ? exchangeRates['INR'] : 96;
-    const todayY = new Date().getFullYear(), todayM = new Date().getMonth();
-    if (y === todayY && m === todayM) {
-      return nwGrandCHF() * inrRate;
-    }
-    // For past months: find the NW snapshot closest to the end of that month
     const hist = storeGet(NW_HISTORY_KEY) || [];
-    if (!hist.length) return 0;
-    const endOfMonth = new Date(y, m + 1, 0, 23, 59, 59, 999).getTime();
-    // Find the last snapshot at or before end of that month
-    let best = null;
+    if (!hist.length) return null;
+    // Find the snapshot nearest to the first moment of this month
+    const startOfMonth = new Date(y, m, 1).getTime();
+    let best = null, bestDist = Infinity;
     for (const pt of hist) {
-      if (pt.t <= endOfMonth) best = pt;
+      const dist = Math.abs(pt.t - startOfMonth);
+      if (dist < bestDist) { bestDist = dist; best = pt; }
     }
-    if (!best) best = hist[0]; // fallback: earliest known
+    if (!best) return null;
     return (best.v || 0) * inrRate;
   }
 
@@ -19546,34 +19537,42 @@ function switchTab(tab) {
     if (expBlockedNotice) expBlockedNotice.style.display = isPast ? '' : 'none';
     if (expAddCard)       expAddCard.classList.toggle('fin-add-blocked', isPast);
 
-    const opening  = finOpeningBalanceINR(spY, spM);
-    const income   = spIncForMonth(spY, spM);
-    const exps     = spExpForMonth(spY, spM);
-    const expTotal = exps.reduce((s, e) => s + spToDisplay(e), 0);
+    const opening   = finOpeningBalanceINR(spY, spM);
+    const income    = spIncForMonth(spY, spM);
+    const exps      = spExpForMonth(spY, spM);
+    const expTotal  = exps.reduce((s, e) => s + spToDisplay(e), 0);
     const subsTotal = spSubsForMonth();
     const totalOut  = expTotal + subsTotal;
-    const closing   = opening + income - totalOut;
-    const netChange = closing - opening;
+    const hasOpening = opening !== null;
+    const closing   = hasOpening ? opening + income - totalOut : null;
+    const netChange = hasOpening ? (closing - opening) : null;
 
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const row = (label, valStr, cls = '') =>
       `<div class="fin-ms-row"><span class="fin-ms-label">${label}</span><span class="fin-ms-val ${cls}">${valStr}</span></div>`;
 
+    const openingStr = hasOpening ? spFmt(opening) : '—';
+    const closingStr = closing !== null ? spFmt(closing) : '—';
+    const netStr     = netChange !== null
+      ? `${netChange >= 0 ? '+' : ''}${spFmt(netChange)}`
+      : '—';
+    const netCls     = netChange !== null ? (netChange >= 0 ? 'positive' : 'negative') : 'dim';
+
     el.innerHTML = `
       <div class="fin-ms-card">
         <div class="fin-ms-title">${MONTHS[spM]} ${spY}${isPast ? ' · past month' : ''}</div>
-        ${row('Opening Balance', spFmt(opening), 'dim')}
-        ${row('+ Income', spFmt(income), 'positive')}
-        ${row('− Expenses', '−' + spFmt(expTotal), 'negative')}
-        ${row('− Subscriptions', '−' + spFmt(subsTotal), 'negative')}
+        ${row('Opening Balance', openingStr, 'dim')}
+        ${row('+ Income', income > 0 ? spFmt(income) : '—', 'positive')}
+        ${row('− Expenses', expTotal > 0 ? '−' + spFmt(expTotal) : '—', 'negative')}
+        ${row('− Subscriptions', subsTotal > 0 ? '−' + spFmt(subsTotal) : '—', 'negative')}
         <hr class="fin-ms-divider">
         <div class="fin-ms-closing-row">
           <span class="fin-ms-closing-label">Closing Balance</span>
-          <span class="fin-ms-closing-val">${spFmt(closing)}</span>
+          <span class="fin-ms-closing-val">${closingStr}</span>
         </div>
         <div class="fin-ms-row" style="padding-top:4px;">
           <span class="fin-ms-label" style="font-size:11px;">Net change</span>
-          <span class="fin-ms-val ${netChange >= 0 ? 'positive' : 'negative'}" style="font-size:11px;">${netChange >= 0 ? '+' : ''}${spFmt(netChange)}</span>
+          <span class="fin-ms-val ${netCls}" style="font-size:11px;">${netStr}</span>
         </div>
         ${isPast ? `<div class="fin-ms-past-banner">Past month — expenses are locked.</div>` : ''}
       </div>
