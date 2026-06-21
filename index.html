@@ -24439,6 +24439,9 @@ function switchTab(tab) {
     // 1. Try cached audio for today
     var cachedBlob = await _briefAudioGet(dateKey);
     if (cachedBlob) { _briefPlayBlob(cachedBlob); return; }
+    // 2. Show thinking state while TTS is generating
+    if (window._arcSetMood) window._arcSetMood('thinking');
+    if (window._jvAvatarSetMood) window._jvAvatarSetMood('thinking');
     // 2. Generate via Gemini TTS
     _briefTtsFlight = true;
     try {
@@ -24463,6 +24466,8 @@ function switchTab(tab) {
       _briefPlayBlob(blob);
     } catch(e) {
       // Gemini unavailable → fall back to Piper so the brief still speaks
+      if (window._arcSetMood) window._arcSetMood('idle');
+      if (window._jvAvatarSetMood) window._jvAvatarSetMood('idle');
       if (typeof _jarvisSpeak === 'function') _jarvisSpeak(plainText);
     } finally { _briefTtsFlight = false; }
   }
