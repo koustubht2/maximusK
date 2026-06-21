@@ -28840,9 +28840,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var uid = 'ck' + (el._cometUid = (el._cometUid || Math.random().toString(36).slice(2)));
 
     // Comet tail: pathLength=100, tail is 6 units, gap is 94.
-    // At score%, tail tip is at position s. Tail start at s-6.
-    // stroke-dashoffset starts at 6 (tip at 0), ends at -(s) so tip reaches s.
-    var tailEnd = -s;
+    // tip position = 6 - dashoffset. To land tip at s: dashoffset = 6 - s.
+    var tailEnd = 6 - s;
     var kfComet = uid+'C';
     var kfNuc   = uid+'N';
 
@@ -28878,6 +28877,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var c=document.createElementNS(NS,'circle');
       c.setAttribute('class','nuc');
       c.setAttribute('r',nucR);
+      c.setAttribute('fill','#ffffff');
       c.style.offsetPath="path('"+d+"')";
       c.style.animation = kfNuc+' 5s linear infinite';
       el.appendChild(c);
