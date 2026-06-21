@@ -28808,17 +28808,19 @@ document.addEventListener('DOMContentLoaded', function() {
     var kfComet = uid+'C';
     var kfNuc   = uid+'N';
 
-    // catch-up phase: dot parks at sweepPct-1, trail shrinks over 14% of cycle, then vanishes
-    var catchEnd = sweepPct - 1 + 14; // = 63% of 5s cycle
+    // catch-up phase: dot parks at sweepPct-1%, trail slides INTO dot over next 14% of cycle.
+    // Front tip stays pinned at s: requires O = D - s as D shrinks 15→0, so O goes tailEnd→(-s).
+    var catchEnd = sweepPct - 1 + 14; // 63% of 5s cycle
+    var tailEndFinal = -s;            // dashoffset when D=0, keeps front tip at s
 
     var styleEl = document.createElementNS(NS,'style');
     styleEl.textContent =
       '@keyframes '+kfComet+'{' +
         '0%{stroke-dashoffset:'+TAIL+';stroke-dasharray:'+TAIL+' 100}' +
         (sweepPct-1)+'%{stroke-dashoffset:'+tailEnd+';stroke-dasharray:'+TAIL+' 100;opacity:calc(1 - var(--i)*0.028)}' +
-        catchEnd+'%{stroke-dashoffset:'+tailEnd+';stroke-dasharray:0 100;opacity:calc(1 - var(--i)*0.028)}' +
-        (catchEnd+1)+'%{stroke-dashoffset:'+tailEnd+';stroke-dasharray:0 100;opacity:0}' +
-        '100%{stroke-dashoffset:'+tailEnd+';stroke-dasharray:0 100;opacity:0}' +
+        catchEnd+'%{stroke-dashoffset:'+tailEndFinal+';stroke-dasharray:0 100;opacity:calc(1 - var(--i)*0.028)}' +
+        (catchEnd+1)+'%{stroke-dashoffset:'+tailEndFinal+';stroke-dasharray:0 100;opacity:0}' +
+        '100%{stroke-dashoffset:'+tailEndFinal+';stroke-dasharray:0 100;opacity:0}' +
       '}' +
       '@keyframes '+kfNuc+'{' +
         '0%{offset-distance:0%;opacity:0}' +
