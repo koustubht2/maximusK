@@ -1196,10 +1196,10 @@ body::after {
 .peak-hero-svg { position:absolute; inset:0; width:100%; height:100%; display:block; overflow:visible; transform:rotate(-90deg); }
 .peak-hero-track { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:6; }
 .peak-hero-fill { fill:none; stroke:var(--peak-ringc,#6EE7B7); stroke-width:6; stroke-linecap:round; stroke-dasharray:565.49; stroke-dashoffset:565.49; transition:stroke-dashoffset 1s cubic-bezier(0.16,1,0.3,1); filter:drop-shadow(0 0 6px var(--peak-ringc,#6EE7B7)) drop-shadow(0 0 16px var(--peak-ringc,#6EE7B7)); }
-.peak-hero-fill.zone-gold { --peak-ringc:#F5C842; }
-.peak-hero-fill.zone-green { --peak-ringc:#6EE7B7; }
-.peak-hero-fill.zone-yellow { --peak-ringc:#F2C063; }
-.peak-hero-fill.zone-red { --peak-ringc:#FF8A8A; }
+.peak-hero-fill.zone-gold   { --peak-ringc:#F5C842; }
+.peak-hero-fill.zone-green  { --peak-ringc:#c79a4e; }
+.peak-hero-fill.zone-yellow { --peak-ringc:#8B6914; }
+.peak-hero-fill.zone-red    { --peak-ringc:#5C4208; }
 .peak-hero-glow { position:absolute; inset:18px; border-radius:50%; background:radial-gradient(closest-side, var(--peak-ringc,#6EE7B7), transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; }
 @keyframes peakGlowPulse { 0%,100%{opacity:.12} 50%{opacity:.26} }
 .peak-hero-center { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
@@ -7425,7 +7425,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ---- day-ring (main score) → gold + Fraunces. Thinner stroke to match Peak's
    ~2.5% proportion (Peak=5 on 200vb; dash viewBox=120 → ~3). ---- */
-#dashView .day-ring-fill{ stroke:var(--pk-gold) !important; stroke-width:3 !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.6)) !important; }
+#dashView .day-ring-fill{ stroke-width:3 !important; }
+#dashView .day-ring-fill.zone-gold   { stroke:#F5C842 !important; filter:drop-shadow(0 0 4px rgba(245,200,66,0.6)) !important; }
+#dashView .day-ring-fill.zone-green  { stroke:#c79a4e !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.6)) !important; }
+#dashView .day-ring-fill.zone-yellow { stroke:#8B6914 !important; filter:drop-shadow(0 0 4px rgba(139,105,20,0.6)) !important; }
+#dashView .day-ring-fill.zone-red    { stroke:#5C4208 !important; filter:drop-shadow(0 0 4px rgba(92,66,8,0.6)) !important; }
 #dashView .day-ring-track{ stroke:rgba(231,210,160,0.08) !important; stroke-width:3 !important; }
 #dashView .day-ring-percent{ font-family:var(--pk-serif); font-weight:300; }
 #dashView .day-ring-phase, #dashView .day-ring-clock, #dashView .day-ring-range{ color:var(--pk-dim); }
@@ -13101,13 +13105,10 @@ function updateDayBar() {
   ringFill.style.strokeDashoffset = circ * (1 - total / 100);
   if (window._pkRebuildComet) window._pkRebuildComet('dash', total);
 
-  // Colour: gold spectrum (dark bronze → deep amber → warm gold → bright gold)
-  let stroke;
-  if      (total < 40) stroke = '#5C4208';
-  else if (total < 70) stroke = '#8B6914';
-  else if (total < 90) stroke = '#c79a4e';
-  else                 stroke = '#F5C842';
-  ringFill.style.stroke = stroke;
+  // Colour: gold spectrum via zone class (CSS handles stroke + drop-shadow per zone)
+  const zone = total >= 90 ? 'zone-gold' : total >= 70 ? 'zone-green' : total >= 40 ? 'zone-yellow' : 'zone-red';
+  ringFill.className = 'day-ring-fill ' + zone;
+  ringFill.style.stroke = ''; // let CSS class drive it
 
   pctEl.textContent = total;
   phaseEl.textContent = 'LIFE ARC';
