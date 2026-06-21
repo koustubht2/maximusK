@@ -7213,12 +7213,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ---- hero ring → GOLD fill across ALL zones (no cyan ever), light Fraunces score ---- */
 /* force the ring colour var to gold on the base element so it can never fall
    back to the old cyan #6EE7B7, regardless of which zone class JS applies */
-#peakView .peak-hero-fill{ --peak-ringc:var(--pk-gold); stroke:var(--pk-gold) !important;
-  stroke-width:5; filter:drop-shadow(0 0 5px var(--pk-gold)) drop-shadow(0 0 16px rgba(199,154,78,0.6)); }
-#peakView .peak-hero-fill.zone-gold   { --peak-ringc:#F5C842; stroke:#F5C842 !important; }
-#peakView .peak-hero-fill.zone-green  { --peak-ringc:#c79a4e; stroke:#c79a4e !important; }
-#peakView .peak-hero-fill.zone-yellow { --peak-ringc:#8B6914; stroke:#8B6914 !important; }
-#peakView .peak-hero-fill.zone-red    { --peak-ringc:#5C4208; stroke:#5C4208 !important; }
+#peakView .peak-hero-fill{ stroke-width:5; }
+#peakView .peak-hero-fill.zone-gold   { --peak-ringc:#F5C842; stroke:#F5C842 !important; filter:drop-shadow(0 0 5px rgba(245,200,66,0.8)) drop-shadow(0 0 16px rgba(245,200,66,0.4)) !important; }
+#peakView .peak-hero-fill.zone-green  { --peak-ringc:#c79a4e; stroke:#c79a4e !important; filter:drop-shadow(0 0 5px rgba(199,154,78,0.8)) drop-shadow(0 0 16px rgba(199,154,78,0.4)) !important; }
+#peakView .peak-hero-fill.zone-yellow { --peak-ringc:#8B6914; stroke:#8B6914 !important; filter:drop-shadow(0 0 5px rgba(139,105,20,0.8)) drop-shadow(0 0 16px rgba(139,105,20,0.4)) !important; }
+#peakView .peak-hero-fill.zone-red    { --peak-ringc:#5C4208; stroke:#5C4208 !important; filter:drop-shadow(0 0 5px rgba(92,66,8,0.8))  drop-shadow(0 0 16px rgba(92,66,8,0.4))  !important; }
 #peakView .peak-hero-glow{ background:radial-gradient(closest-side, var(--pk-gold), transparent 72%) !important; }
 #peakView .peak-hero-svg{ transform:none; }   /* arc already oriented; no -90deg spin */
 #peakView .peak-hero-track{ stroke:rgba(231,210,160,0.08); stroke-width:5; }
