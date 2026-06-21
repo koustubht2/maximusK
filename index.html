@@ -1201,9 +1201,8 @@ body::after {
 .peak-hero-fill.zone-red    { --peak-ringc:#5C4208; }
 .peak-hero-glow { position:absolute; inset:18px; border-radius:50%; background:radial-gradient(closest-side, var(--peak-ringc,#5C4208), transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; }
 @keyframes peakGlowPulse { 0%,100%{opacity:.12} 50%{opacity:.26} }
-@keyframes ringGlowPulse { 0%,100%{opacity:.22} 50%{opacity:.42} }
-.day-ring-glow { position:absolute; inset:14px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.22; filter:blur(14px); animation:ringGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
-.oura-hero-glow { position:absolute; inset:20px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.22; filter:blur(12px); animation:ringGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
+.day-ring-glow { position:absolute; inset:18px; border-radius:50%; background:radial-gradient(closest-side,var(--pk-gold-soft,#c79a4e),transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
+.oura-hero-glow { position:absolute; inset:18px; border-radius:50%; background:radial-gradient(closest-side,var(--pk-gold-soft,#c79a4e),transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
 .peak-hero-center { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .peak-hero-score { font-family:var(--font-serif); font-style:italic; font-size:64px; line-height:1; color:var(--text-primary); }
 .peak-hero-tone { font-family:var(--font-serif); font-style:italic; font-size:18px; color:#6EE7B7; margin-top:2px; }
@@ -7437,6 +7436,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* comet sweeping the day-ring — IDENTICAL params to Peak's hero comet */
 #dashView .day-ring-svg{ transform:none !important; overflow:visible !important; position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; display:block !important; }
 #dashView .day-ring-left{ position:relative; }
+#dashView .day-ring-glow{ background:radial-gradient(closest-side,#c79a4e,transparent 72%) !important; }
 #dashView .dash-ring-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
 #dashView .dash-ring-comet path{ fill:none; stroke-linecap:butt; stroke-dasharray:15 100;
   stroke-width:calc(1.4px - var(--i) * 0.03px); opacity:calc(1 - var(--i) * 0.022); }
@@ -7510,6 +7510,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* gold comet sweeping the oura hero ring — IDENTICAL params to Peak's hero comet */
 #healthView .oura-hero-svg{ transform:none !important; position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; }   /* arc pre-oriented; matches comet SVG bounds */
 #healthView .oura-hero-wrap{ position:relative; width:200px; height:200px; max-width:70%; }
+#healthView .oura-hero-glow{ background:radial-gradient(closest-side,#c79a4e,transparent 72%) !important; }
 #healthView .oura-hero-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
 #healthView .oura-hero-comet path{ fill:none; stroke-linecap:butt; stroke-dasharray:15 100;
   stroke-width:calc(2.1px - var(--i) * 0.045px); opacity:calc(1 - var(--i) * 0.022); }
