@@ -1201,8 +1201,9 @@ body::after {
 .peak-hero-fill.zone-red    { --peak-ringc:#5C4208; }
 .peak-hero-glow { position:absolute; inset:18px; border-radius:50%; background:radial-gradient(closest-side, var(--peak-ringc,#5C4208), transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; }
 @keyframes peakGlowPulse { 0%,100%{opacity:.12} 50%{opacity:.26} }
-.day-ring-glow { position:absolute; inset:20px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
-.oura-hero-glow { position:absolute; inset:20px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
+@keyframes ringGlowPulse { 0%,100%{opacity:.22} 50%{opacity:.42} }
+.day-ring-glow { position:absolute; inset:14px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.22; filter:blur(14px); animation:ringGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
+.oura-hero-glow { position:absolute; inset:20px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.22; filter:blur(12px); animation:ringGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
 .peak-hero-center { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .peak-hero-score { font-family:var(--font-serif); font-style:italic; font-size:64px; line-height:1; color:var(--text-primary); }
 .peak-hero-tone { font-family:var(--font-serif); font-style:italic; font-size:18px; color:#6EE7B7; margin-top:2px; }
