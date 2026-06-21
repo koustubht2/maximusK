@@ -7432,7 +7432,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #dashView .day-ring-percent{ font-family:var(--pk-serif); font-weight:300; }
 #dashView .day-ring-phase, #dashView .day-ring-clock, #dashView .day-ring-range{ color:var(--pk-dim); }
 /* comet sweeping the day-ring — IDENTICAL params to Peak's hero comet */
-#dashView .day-ring-svg{ transform:none !important; }   /* arc pre-oriented; no -90deg */
+#dashView .day-ring-svg{ transform:none !important; overflow:visible !important; }   /* arc pre-oriented; no -90deg; overflow needed for drop-shadow to render outside viewport */
 #dashView .day-ring-left{ position:relative; }
 #dashView .dash-ring-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
 #dashView .dash-ring-comet path{ fill:none; stroke-linecap:butt; stroke-dasharray:15 100;
