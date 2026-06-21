@@ -7213,11 +7213,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ---- hero ring → GOLD fill across ALL zones (no cyan ever), light Fraunces score ---- */
 /* force the ring colour var to gold on the base element so it can never fall
    back to the old cyan #6EE7B7, regardless of which zone class JS applies */
-#peakView .peak-hero-fill{ stroke-width:5; filter:drop-shadow(0 0 5px rgba(199,154,78,0.5)) drop-shadow(0 0 16px rgba(199,154,78,0.25)); }
-#peakView .peak-hero-fill.zone-gold   { --peak-ringc:#F5C842; stroke:#F5C842 !important; filter:drop-shadow(0 0 6px rgba(245,200,66,0.9)) drop-shadow(0 0 18px rgba(245,200,66,0.5)) !important; }
-#peakView .peak-hero-fill.zone-green  { --peak-ringc:#c79a4e; stroke:#c79a4e !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.9)) drop-shadow(0 0 18px rgba(199,154,78,0.5)) !important; }
-#peakView .peak-hero-fill.zone-yellow { --peak-ringc:#8B6914; stroke:#8B6914 !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.6)) drop-shadow(0 0 18px rgba(139,105,20,0.4)) !important; }
-#peakView .peak-hero-fill.zone-red    { --peak-ringc:#5C4208; stroke:#5C4208 !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.4)) drop-shadow(0 0 18px rgba(92,66,8,0.3))   !important; }
+#peakView .peak-hero-fill{ stroke-width:5; }
+#peakView .peak-hero-fill.zone-gold   { --peak-ringc:#F5C842; stroke:#F5C842 !important; filter:drop-shadow(0 0 6px rgba(245,200,66,0.9)) drop-shadow(0 0 20px rgba(245,200,66,0.5)) !important; }
+#peakView .peak-hero-fill.zone-green  { --peak-ringc:#c79a4e; stroke:#c79a4e !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.9)) drop-shadow(0 0 20px rgba(199,154,78,0.5)) !important; }
+#peakView .peak-hero-fill.zone-yellow { --peak-ringc:#8B6914; stroke:#8B6914 !important; filter:drop-shadow(0 0 6px rgba(139,105,20,1.0)) drop-shadow(0 0 20px rgba(139,105,20,0.6)) !important; }
+#peakView .peak-hero-fill.zone-red    { --peak-ringc:#5C4208; stroke:#5C4208 !important; filter:drop-shadow(0 0 6px rgba(92,66,8,1.0))   drop-shadow(0 0 20px rgba(92,66,8,0.7))   !important; }
 #peakView .peak-hero-glow{ background:radial-gradient(closest-side, var(--pk-gold), transparent 72%) !important; }
 #peakView .peak-hero-svg{ transform:none; }   /* arc already oriented; no -90deg spin */
 #peakView .peak-hero-track{ stroke:rgba(231,210,160,0.08); stroke-width:5; }
@@ -7425,10 +7425,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ---- day-ring (main score) → gold + Fraunces. Thinner stroke to match Peak's
    ~2.5% proportion (Peak=5 on 200vb; dash viewBox=120 → ~3). ---- */
 #dashView .day-ring-fill{ stroke-width:3 !important; }
-#dashView .day-ring-fill.zone-gold   { stroke:#F5C842 !important; filter:drop-shadow(0 0 4px rgba(245,200,66,0.6)) !important; }
-#dashView .day-ring-fill.zone-green  { stroke:#c79a4e !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.6)) !important; }
-#dashView .day-ring-fill.zone-yellow { stroke:#8B6914 !important; filter:drop-shadow(0 0 4px rgba(139,105,20,0.6)) !important; }
-#dashView .day-ring-fill.zone-red    { stroke:#5C4208 !important; filter:drop-shadow(0 0 4px rgba(92,66,8,0.6)) !important; }
+#dashView .day-ring-fill.zone-gold   { stroke:#F5C842 !important; filter:drop-shadow(0 0 6px rgba(245,200,66,0.9)) drop-shadow(0 0 20px rgba(245,200,66,0.5)) !important; }
+#dashView .day-ring-fill.zone-green  { stroke:#c79a4e !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.9)) drop-shadow(0 0 20px rgba(199,154,78,0.5)) !important; }
+#dashView .day-ring-fill.zone-yellow { stroke:#8B6914 !important; filter:drop-shadow(0 0 6px rgba(139,105,20,1.0)) drop-shadow(0 0 20px rgba(139,105,20,0.6)) !important; }
+#dashView .day-ring-fill.zone-red    { stroke:#5C4208 !important; filter:drop-shadow(0 0 6px rgba(92,66,8,1.0))   drop-shadow(0 0 20px rgba(92,66,8,0.7))   !important; }
 #dashView .day-ring-track{ stroke:rgba(231,210,160,0.08) !important; stroke-width:3 !important; }
 #dashView .day-ring-percent{ font-family:var(--pk-serif); font-weight:300; }
 #dashView .day-ring-phase, #dashView .day-ring-clock, #dashView .day-ring-range{ color:var(--pk-dim); }
@@ -7494,13 +7494,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background:radial-gradient(140% 90% at -10% 120%, transparent 38%, rgba(231,210,160,0.16) 41%, transparent 46%), radial-gradient(120% 80% at 120% -10%, transparent 40%, rgba(231,210,160,0.10) 43%, transparent 48%); }
 #healthView .oura-todays-call > *{ position:relative; z-index:1; }
 /* score/zone greens → gold (keep yellow/red semantic) */
-#healthView .oura-score-num.zone-green, #healthView .oura-hero-fill.zone-green{ color:var(--pk-gold) !important; stroke:var(--pk-gold) !important; }
-#healthView .oura-hero-fill{ stroke:var(--pk-gold) !important; stroke-width:4.5 !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.5)) !important; }
+#healthView .oura-score-num.zone-green{ color:var(--pk-gold) !important; }
+#healthView .oura-hero-fill{ stroke-width:4.5 !important; }
 #healthView .oura-hero-track{ stroke-width:4.5 !important; }
-#healthView .oura-hero-fill.zone-gold{ stroke:#F5C842 !important; }
-#healthView .oura-hero-fill.zone-green{ stroke:#c79a4e !important; }
-#healthView .oura-hero-fill.zone-yellow{ stroke:#8B6914 !important; }
-#healthView .oura-hero-fill.zone-red{ stroke:#5C4208 !important; }
+#healthView .oura-hero-fill.zone-gold   { stroke:#F5C842 !important; filter:drop-shadow(0 0 6px rgba(245,200,66,0.9)) drop-shadow(0 0 20px rgba(245,200,66,0.5)) !important; }
+#healthView .oura-hero-fill.zone-green  { stroke:#c79a4e !important; filter:drop-shadow(0 0 6px rgba(199,154,78,0.9)) drop-shadow(0 0 20px rgba(199,154,78,0.5)) !important; }
+#healthView .oura-hero-fill.zone-yellow { stroke:#8B6914 !important; filter:drop-shadow(0 0 6px rgba(139,105,20,1.0)) drop-shadow(0 0 20px rgba(139,105,20,0.6)) !important; }
+#healthView .oura-hero-fill.zone-red    { stroke:#5C4208 !important; filter:drop-shadow(0 0 6px rgba(92,66,8,1.0))   drop-shadow(0 0 20px rgba(92,66,8,0.7))   !important; }
 /* hero number → light Fraunces + gold (override the inline green) */
 #healthView .oura-hero-num{ font-family:var(--pk-serif) !important; font-weight:300 !important; color:var(--pk-text) !important; text-shadow:0 0 24px rgba(199,154,78,0.25); }
 #healthView .oura-hero-unit{ color:var(--pk-faint) !important; letter-spacing:.2em; }
