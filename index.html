@@ -16739,7 +16739,7 @@ setInterval(updateDayBar, 60 * 1000);
     body.innerHTML = html;
 
     // build the gold comet sweep on the oura hero ring — score-capped to readScore
-    try { if (window._pkBuildComet) window._pkBuildComet(body.querySelector('.oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6', readScore != null ? readScore : 50); } catch(e){}
+    try { if (window._pkBuildComet) window._pkBuildComet(body.querySelector('.oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6', readScore != null ? readScore : 50, 4); } catch(e){}
 
     // Animate hero ring + count-up after paint
     if (readScore != null) {
@@ -28826,7 +28826,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Build a score-capped comet on `el` sweeping along path `d`.
   // score: 0-100. Comet sweeps from start → score% of path, holds, repeats every 5s.
-  function buildComet(el, d, layers, nucR, score){
+  function buildComet(el, d, layers, nucR, score, strokeW){
     if(!el) return;
     // Clear previous build
     while(el.firstChild) el.removeChild(el.firstChild);
@@ -28849,17 +28849,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var styleEl = document.createElementNS(NS,'style');
     styleEl.textContent =
       '@keyframes '+kfComet+'{' +
-        '0%{stroke-dashoffset:6}' +
-        sweepPct+'%{stroke-dashoffset:'+tailEnd+'}' +
-        '100%{stroke-dashoffset:'+tailEnd+'}' +
+        '0%{stroke-dashoffset:6;opacity:calc(1 - var(--i)*0.022)}' +
+        (sweepPct-1)+'%{stroke-dashoffset:'+tailEnd+';opacity:calc(1 - var(--i)*0.022)}' +
+        sweepPct+'%{stroke-dashoffset:'+tailEnd+';opacity:0}' +
+        '100%{stroke-dashoffset:'+tailEnd+';opacity:0}' +
       '}' +
       '@keyframes '+kfNuc+'{' +
         '0%{offset-distance:0%;opacity:0}' +
         '3%{opacity:1}' +
         (sweepPct-1)+'%{offset-distance:'+s+'%;opacity:1}' +
-        sweepPct+'%{offset-distance:'+s+'%;opacity:0.85}' +
-        (sweepPct+2)+'%{offset-distance:'+s+'%;opacity:0}' +
-        '100%{offset-distance:'+s+'%;opacity:0}' +
+        sweepPct+'%{offset-distance:'+s+'%;opacity:0.9}' +
+        '100%{offset-distance:'+s+'%;opacity:0.9}' +
       '}';
     el.appendChild(styleEl);
 
@@ -28869,6 +28869,7 @@ document.addEventListener('DOMContentLoaded', function() {
       p.setAttribute('d',d);
       p.setAttribute('stroke', i<heads.length?heads[i]:'#e6c98a');
       p.style.setProperty('--i', i);
+      p.style.strokeWidth = strokeW ? (strokeW - i * (strokeW / layers)).toFixed(2)+'px' : '';
       p.style.animation = kfComet+' 5s linear infinite';
       p.style.animationDelay = (i * -0.085)+'s';
       el.appendChild(p);
@@ -28900,7 +28901,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (ring === 'dash') {
       buildComet(document.querySelector('#dashView .dash-ring-comet'), 'M23.2 96.8 A52 52 0 1 1 96.8 96.8', 30, '1.7', score);
     } else if (ring === 'oura') {
-      buildComet(document.querySelector('#healthView .oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6', score);
+      buildComet(document.querySelector('#healthView .oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6', score, 4);
     }
   };
 })();
