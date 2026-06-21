@@ -523,7 +523,7 @@ body::after {
   padding: 22px 20px;
 }
 .day-ring-left {
-  width: 168px; height: 168px;
+  width: 200px; height: 200px;
   position: relative;
 }
 .day-ring-svg {
@@ -749,7 +749,7 @@ body::after {
 .las-dot.miss  { color: rgba(255,255,255,0.22); }
 .las-dot.na    { color: rgba(255,255,255,0.16); }
 @media (max-width: 480px) {
-  .day-ring-left { width: 144px; height: 144px; }
+  .day-ring-left { width: 200px; height: 200px; }
   .day-ring-percent { font-size: 32px; }
   .day-ring-status { font-size: 13px; }
 }
@@ -7166,6 +7166,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .sub-auto-toggle { width: 100%; justify-content: space-between; padding: 12px 14px; }
 }
 
+</style>
+
+<!-- ============================================================
+     MOBILE BACKDROP OVERRIDE — replaces the 3 large fixed radial blobs with
+     smaller corner-pinned glows so they don't converge into a center blob on
+     narrow viewports. Desktop (>600px) is completely unaffected.
+     ============================================================ -->
+<style>
+@media (max-width: 600px) {
+  html, body {
+    background:
+      radial-gradient(50% 25% at 100% 0%,   rgba(214,160,78,0.28) 0%, transparent 60%) fixed,
+      radial-gradient(40% 20% at 0%   60%,  rgba(150,66,36,0.18)  0%, transparent 60%) fixed,
+      radial-gradient(50% 20% at 100% 100%, rgba(120,80,40,0.20)  0%, transparent 60%) fixed,
+      linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed !important;
+    background-color: #080604 !important;
+  }
+}
 </style>
 
 <!-- ============================================================
