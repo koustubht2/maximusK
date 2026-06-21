@@ -13103,10 +13103,19 @@ function updateDayBar() {
   ringFill.style.strokeDashoffset = circ * (1 - total / 100);
   if (window._pkRebuildComet) window._pkRebuildComet('dash', total);
 
-  // Colour: gold spectrum via zone class (CSS handles stroke + drop-shadow per zone)
+  // Colour: gold spectrum via zone class; also apply glow directly to SVG container
+  // (filter on child <path> is clipped by SVG viewport; container-level filter is not)
   const zone = total >= 90 ? 'zone-gold' : total >= 70 ? 'zone-green' : total >= 40 ? 'zone-yellow' : 'zone-red';
   ringFill.className = 'day-ring-fill ' + zone;
   ringFill.style.stroke = ''; // let CSS class drive it
+  const _ringGlowMap = {
+    'zone-gold':   'drop-shadow(0 0 4px rgba(245,200,66,1.0)) drop-shadow(0 0 14px rgba(245,200,66,0.7))',
+    'zone-green':  'drop-shadow(0 0 4px rgba(199,154,78,1.0)) drop-shadow(0 0 14px rgba(199,154,78,0.7))',
+    'zone-yellow': 'drop-shadow(0 0 4px rgba(139,105,20,1.0)) drop-shadow(0 0 14px rgba(139,105,20,0.8))',
+    'zone-red':    'drop-shadow(0 0 4px rgba(92,66,8,1.0))    drop-shadow(0 0 14px rgba(92,66,8,0.9))',
+  };
+  const _ringSvg = document.querySelector('#dashView .day-ring-svg');
+  if (_ringSvg) _ringSvg.style.filter = _ringGlowMap[zone] || '';
 
   pctEl.textContent = total;
   phaseEl.textContent = 'LIFE ARC';
