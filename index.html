@@ -523,7 +523,7 @@ body::after {
   padding: 22px 20px;
 }
 .day-ring-left {
-  width: 200px; height: 200px;
+  width: 168px; height: 168px;
   position: relative;
 }
 .day-ring-svg {
@@ -553,26 +553,12 @@ body::after {
   justify-content: center;
   pointer-events: none;
 }
-.day-ring-glow {
-  position: absolute;
-  inset: 18px;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, #c79a4e, transparent 72%);
-  opacity: .16;
-  filter: blur(12px);
-  animation: peakGlowPulse 4s ease-in-out infinite;
-  pointer-events: none;
-}
 .day-ring-percent {
-  font-family: var(--font-serif);
-  font-weight: 300;
-  font-size: 64px;
+  font-size: 40px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
   line-height: 1;
-  text-shadow: 0 0 26px rgba(199,154,78,0.25);
-  position: relative;
-  z-index: 1;
 }
 .day-ring-phase {
   font-family: var(--font-mono);
@@ -763,8 +749,8 @@ body::after {
 .las-dot.miss  { color: rgba(255,255,255,0.22); }
 .las-dot.na    { color: rgba(255,255,255,0.16); }
 @media (max-width: 480px) {
-  .day-ring-left { width: 200px; height: 200px; }
-  .day-ring-percent { font-size: 54px; }
+  .day-ring-left { width: 144px; height: 144px; }
+  .day-ring-percent { font-size: 32px; }
   .day-ring-status { font-size: 13px; }
 }
 
@@ -5131,33 +5117,19 @@ main {
   transition: stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1), stroke 0.4s;
 }
 .oura-hero-fill.zone-gold   { stroke: #F5C842; filter: drop-shadow(0 0 8px rgba(245,200,66,0.5)); }
-.oura-hero-fill.zone-green  { stroke: #c79a4e; filter: drop-shadow(0 0 8px rgba(199,154,78,0.5)); }
-.oura-hero-fill.zone-yellow { stroke: #8B6914; filter: drop-shadow(0 0 8px rgba(139,105,20,0.5)); }
-.oura-hero-fill.zone-red    { stroke: #5C4208; filter: drop-shadow(0 0 8px rgba(92,66,8,0.5)); }
+.oura-hero-fill.zone-green  { stroke: #c79a4e; filter: drop-shadow(0 0 8px rgba(199,154,78,0.4)); }
+.oura-hero-fill.zone-yellow { stroke: #8B6914; filter: drop-shadow(0 0 8px rgba(139,105,20,0.4)); }
+.oura-hero-fill.zone-red    { stroke: #5C4208; filter: drop-shadow(0 0 8px rgba(92,66,8,0.4)); }
 .oura-hero-center {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   pointer-events: none;
 }
-.oura-hero-glow {
-  position: absolute;
-  inset: 18px;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, #c79a4e, transparent 72%);
-  opacity: .16;
-  filter: blur(12px);
-  animation: peakGlowPulse 4s ease-in-out infinite;
-  pointer-events: none;
-}
 .oura-hero-num {
-  font-family: var(--font-serif);
-  font-weight: 300;
-  font-size: 64px; letter-spacing: -0.02em;
+  font-size: 52px; font-weight: 700; letter-spacing: -0.04em;
   color: var(--text-primary); line-height: 1;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 26px rgba(199,154,78,0.25);
-  position: relative; z-index: 1;
 }
 .oura-hero-unit {
   font-size: 9px; font-weight: 700; letter-spacing: 0.20em;
@@ -7197,24 +7169,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </style>
 
 <!-- ============================================================
-     MOBILE BACKDROP OVERRIDE — replaces the 3 large fixed radial blobs with
-     smaller corner-pinned glows so they don't converge into a center blob on
-     narrow viewports. Desktop (>600px) is completely unaffected.
-     ============================================================ -->
-<style>
-@media (max-width: 600px) {
-  html, body {
-    background:
-      radial-gradient(50% 25% at 100% 0%,   rgba(214,160,78,0.28) 0%, transparent 60%) fixed,
-      radial-gradient(40% 20% at 0%   60%,  rgba(150,66,36,0.18)  0%, transparent 60%) fixed,
-      radial-gradient(50% 20% at 100% 100%, rgba(120,80,40,0.20)  0%, transparent 60%) fixed,
-      linear-gradient(165deg, #1c140c 0%, #0c0805 60%, #080604 100%) fixed !important;
-    background-color: #080604 !important;
-  }
-}
-</style>
-
-<!-- ============================================================
      PEAK TAB — ASTON REDESIGN (scoped to #peakView; visual-only override).
      Warm gradient backdrop, glass cards/tiles, Fraunces serif + mono labels,
      gold accent, tapered glowing hero ring. No HTML/JS changes — IDs intact.
@@ -7329,12 +7283,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* decorative comet sweeping the hero ring */
 #peakView .peak-hero-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0;
   filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
-#peakView .peak-hero-comet path{ fill:none; stroke-linecap:round;
-  stroke-dasharray:6 100;
+#peakView .peak-hero-comet path{ fill:none; stroke-linecap:butt;
+  stroke-dasharray:15 100;
   stroke-width:calc(2.4px - var(--i) * 0.05px);
   opacity:calc(1 - var(--i) * 0.022);
 }
 /* pkHeroComet / pkHeroNuc injected per-ring by buildComet() with score-capped endpoints */
+#peakView .peak-hero-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); }
 @media (prefers-reduced-motion: reduce){ #peakView .peak-hero-comet{ display:none; } }
 
 /* ---- inline energy ring + scores → gold + Fraunces ---- */
@@ -7478,7 +7433,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #dashView .day-ring-svg{ transform:none !important; }   /* arc pre-oriented; no -90deg */
 #dashView .day-ring-left{ position:relative; }
 #dashView .dash-ring-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
-#dashView .dash-ring-comet path{ fill:none; stroke-linecap:round; stroke-dasharray:6 100;
+#dashView .dash-ring-comet path{ fill:none; stroke-linecap:butt; stroke-dasharray:15 100;
   stroke-width:calc(1.4px - var(--i) * 0.03px); opacity:calc(1 - var(--i) * 0.022); }
 #dashView .dash-ring-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); }
 
@@ -7539,7 +7494,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .oura-score-num.zone-green, #healthView .oura-hero-fill.zone-green{ color:var(--pk-gold) !important; stroke:var(--pk-gold) !important; }
 #healthView .oura-hero-fill{ stroke:var(--pk-gold) !important; stroke-width:4.5 !important; filter:drop-shadow(0 0 4px rgba(199,154,78,0.5)) !important; }
 #healthView .oura-hero-track{ stroke-width:4.5 !important; }
-#healthView .oura-hero-fill.zone-gold{ stroke:#e0b25e !important; }
+#healthView .oura-hero-fill.zone-gold{ stroke:#F5C842 !important; }
+#healthView .oura-hero-fill.zone-green{ stroke:#c79a4e !important; }
+#healthView .oura-hero-fill.zone-yellow{ stroke:#8B6914 !important; }
+#healthView .oura-hero-fill.zone-red{ stroke:#5C4208 !important; }
 /* hero number → light Fraunces + gold (override the inline green) */
 #healthView .oura-hero-num{ font-family:var(--pk-serif) !important; font-weight:300 !important; color:var(--pk-text) !important; text-shadow:0 0 24px rgba(199,154,78,0.25); }
 #healthView .oura-hero-unit{ color:var(--pk-faint) !important; letter-spacing:.2em; }
@@ -7548,7 +7506,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .oura-hero-svg{ transform:none !important; }   /* arc pre-oriented; no -90deg */
 #healthView .oura-hero-wrap{ position:relative; }
 #healthView .oura-hero-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
-#healthView .oura-hero-comet path{ fill:none; stroke-linecap:round; stroke-dasharray:6 100;
+#healthView .oura-hero-comet path{ fill:none; stroke-linecap:butt; stroke-dasharray:15 100;
   stroke-width:calc(2.1px - var(--i) * 0.045px); opacity:calc(1 - var(--i) * 0.022); }
 #healthView .oura-hero-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); }
 #healthView .oura-zone-dot.zone-green{ background:var(--pk-gold) !important; box-shadow:0 0 7px rgba(199,154,78,0.6) !important; }
@@ -8342,7 +8300,6 @@ window.canonicalJson = function(obj) {
       <!-- decorative gold comet sweeping the gauge arc (Aston flourish) -->
       <svg class="dash-ring-comet" viewBox="0 0 120 120" aria-hidden="true"></svg>
       <div class="day-ring-inner">
-        <div class="day-ring-glow"></div>
         <div class="day-ring-percent" id="dayRingPercent">--</div>
         <div class="day-ring-phase" id="dayRingPhase">LOADING</div>
         <div class="day-ring-clock" id="dayRingClock">--:-- --</div>
@@ -9760,7 +9717,7 @@ window.canonicalJson = function(obj) {
       <div class="peak-hero-center">
         <div class="peak-hero-score" id="peakHeroScore">—</div>
         <div class="peak-hero-tone" id="peakHeroTone">—</div>
-        <div class="peak-hero-label" id="peakHeroLabel">Peak Score</div>
+        <div class="peak-hero-label" id="peakHeroLabel">Today overall</div>
       </div>
     </div>
     <button class="peak-why-link" id="peakWhyLink" type="button">Why this score?</button>
@@ -16490,9 +16447,9 @@ setInterval(updateDayBar, 60 * 1000);
   }
   function scoreDesc(s) {
     if (s == null) return 'No data';
-    if (s >= 90) return 'Peaking';
-    if (s >= 70) return 'High';
-    if (s >= 50) return 'Moderate';
+    if (s >= 90) return 'Peak';
+    if (s >= 70) return 'Good';
+    if (s >= 50) return 'Watch';
     return 'Low';
   }
   function zoneFromHrv(hrv, avgHrv) {
@@ -16610,7 +16567,7 @@ setInterval(updateDayBar, 60 * 1000);
 
     // 1. Hero readiness ring — starts empty, animates in after paint
     const ringZone = readScore != null ? scoreClass(readScore) : 'zone-green';
-    const ringColor = ringZone === 'zone-gold' ? '#F5C842' : ringZone === 'zone-green' ? '#c79a4e' : ringZone === 'zone-yellow' ? '#8B6914' : '#5C4208';
+    const ringColor = ringZone === 'zone-gold' ? '#e0b25e' : ringZone === 'zone-green' ? '#c79a4e' : ringZone === 'zone-yellow' ? '#d99a4a' : '#c4533a';
     const circumference = 2 * Math.PI * 80;
     const dashTarget = readScore != null ? circumference * (1 - readScore / 100) : circumference;
     html += '<div class="oura-hero-wrap">'
@@ -16621,7 +16578,6 @@ setInterval(updateDayBar, 60 * 1000);
       + '</svg>'
       + '<svg class="oura-hero-comet" viewBox="0 0 180 180" aria-hidden="true"></svg>'
       + '<div class="oura-hero-center">'
-      + '<div class="oura-hero-glow"></div>'
       + '<div class="oura-hero-num" id="ouraHeroNum" style="color:' + ringColor + '">—</div>'
       + '<div class="oura-hero-unit">Readiness</div>'
       + '<div class="oura-hero-label" style="color:' + (readScore != null ? ringColor : 'var(--text-3)') + '">' + (readScore != null ? scoreDesc(readScore) : (isToday ? 'Pending' : 'No data')) + '</div>'
@@ -16738,7 +16694,7 @@ setInterval(updateDayBar, 60 * 1000);
 
     body.innerHTML = html;
 
-    // build the gold comet sweep on the oura hero ring — score-capped to readScore
+    // build the gold comet sweep on the oura hero ring (full circle r=80, centre 90,90)
     try { if (window._pkBuildComet) window._pkBuildComet(body.querySelector('.oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6', readScore != null ? readScore : 50, 4); } catch(e){}
 
     // Animate hero ring + count-up after paint
@@ -23398,8 +23354,8 @@ function switchTab(tab) {
     // filter detailedSleep by day field, pick highest total_sleep_duration
     var wakeHour = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
     var _wakeTimeStr = null; // exact HH:MM from bedtime_end, set below
-    // check for manual override — date-specific so it expires each day
-    var _manualWake = localStorage.getItem('goals_peak_wake_override_' + today());
+    // check for manual override first
+    var _manualWake = localStorage.getItem('goals_peak_wake_override');
     if (_manualWake && /^\d{2}:\d{2}$/.test(_manualWake)) {
       var _wp = _manualWake.split(':');
       wakeHour = parseInt(_wp[0], 10) + parseInt(_wp[1], 10) / 60;
@@ -26569,7 +26525,7 @@ function switchTab(tab) {
     var wakeChip = document.getElementById('peakChipWakeWrap');
     if (wakeChip) {
       wakeChip.addEventListener('click', function() {
-        var current = localStorage.getItem('goals_peak_wake_override_' + today()) || fmtHour24(_wakeHour);
+        var current = localStorage.getItem('goals_peak_wake_override') || fmtHour24(_wakeHour);
         var val = window.prompt('Correct wake time (HH:MM):', current);
         if (!val) return;
         val = val.trim();
@@ -26578,7 +26534,7 @@ function switchTab(tab) {
         var h = parseInt(parts[0],10), m = parseInt(parts[1],10);
         if (h < 0 || h > 23 || m < 0 || m > 59) { alert('Invalid time'); return; }
         val = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-        localStorage.setItem('goals_peak_wake_override_' + today(), val);
+        localStorage.setItem('goals_peak_wake_override', val);
         _wakeHour = h + m / 60;
         setText('peakChipWake', val);
         _refreshEnergyChart(null);
@@ -28822,35 +28778,41 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 (function(){
   var NS='http://www.w3.org/2000/svg';
-  var heads=['#fffdf8','#fffaf2','#fdf7ee','#faf3e8','#f6efe3','#f6efe3'];
+  var TAIL = 15;
+
+  // colour ramp: i=0 front (bright white), i=layers-1 back (warm gold)
+  function cometColor(i, layers) {
+    var t = i / Math.max(1, layers - 1);
+    var r = Math.round(255 - t * 25);
+    var g = Math.round(255 - t * 75);
+    var b = Math.round(255 - t * 175);
+    return 'rgb('+r+','+g+','+b+')';
+  }
 
   // Build a score-capped comet on `el` sweeping along path `d`.
-  // score: 0-100. Comet sweeps from start → score% of path, holds, repeats every 5s.
+  // score: 0-100. Comet sweeps from start to score% of path, holds, repeats every 5s.
+  // strokeW: optional max stroke width for thick-track rings (e.g. Oura stroke-width:10)
   function buildComet(el, d, layers, nucR, score, strokeW){
     if(!el) return;
-    // Clear previous build
     while(el.firstChild) el.removeChild(el.firstChild);
 
     var s = (score == null ? 100 : Math.max(1, Math.min(100, score)));
-    // sweep takes 50% of cycle, hold takes 50%
-    var sweepPct = 50;   // % of 5s spent sweeping (= 2.5s)
-    var holdPct  = 50;   // % of 5s spent holding at mark
+    var sweepPct = 50;
 
-    // Unique keyframe id per element to avoid collisions on rebuild
     var uid = 'ck' + (el._cometUid = (el._cometUid || Math.random().toString(36).slice(2)));
 
-    // Comet tail: pathLength=100, tail is 6 units, gap is 94.
-    // tip position = 6 - dashoffset. To land tip at s: dashoffset = 6 - s.
-    var tailEnd = 6 - s;
+    // With pathLength=100 and stroke-dasharray=TAIL gap=100:
+    // front tip position = TAIL - dashoffset
+    // To land tip at exactly s: tailEnd = TAIL - s
+    var tailEnd = TAIL - s;
     var kfComet = uid+'C';
     var kfNuc   = uid+'N';
 
-    // Inject scoped keyframes into a <style> inside the SVG (SVG supports embedded style)
     var styleEl = document.createElementNS(NS,'style');
     styleEl.textContent =
       '@keyframes '+kfComet+'{' +
-        '0%{stroke-dashoffset:6;opacity:calc(1 - var(--i)*0.022)}' +
-        (sweepPct-1)+'%{stroke-dashoffset:'+tailEnd+';opacity:calc(1 - var(--i)*0.022)}' +
+        '0%{stroke-dashoffset:'+TAIL+'}' +
+        (sweepPct-1)+'%{stroke-dashoffset:'+tailEnd+';opacity:calc(1 - var(--i)*0.028)}' +
         sweepPct+'%{stroke-dashoffset:'+tailEnd+';opacity:0}' +
         '100%{stroke-dashoffset:'+tailEnd+';opacity:0}' +
       '}' +
@@ -28858,8 +28820,8 @@ document.addEventListener('DOMContentLoaded', function() {
         '0%{offset-distance:0%;opacity:0}' +
         '3%{opacity:1}' +
         (sweepPct-1)+'%{offset-distance:'+s+'%;opacity:1}' +
-        sweepPct+'%{offset-distance:'+s+'%;opacity:0.9}' +
-        '100%{offset-distance:'+s+'%;opacity:0.9}' +
+        sweepPct+'%{offset-distance:'+s+'%;opacity:0.95}' +
+        '100%{offset-distance:'+s+'%;opacity:0.95}' +
       '}';
     el.appendChild(styleEl);
 
@@ -28867,9 +28829,9 @@ document.addEventListener('DOMContentLoaded', function() {
       var p=document.createElementNS(NS,'path');
       p.setAttribute('pathLength','100');
       p.setAttribute('d',d);
-      p.setAttribute('stroke', i<heads.length?heads[i]:'#e6c98a');
+      p.setAttribute('stroke', cometColor(i, layers));
       p.style.setProperty('--i', i);
-      p.style.strokeWidth = strokeW ? (strokeW - i * (strokeW / layers)).toFixed(2)+'px' : '';
+      if(strokeW) p.style.strokeWidth = Math.max(0.3, strokeW * (1 - i/layers)).toFixed(2)+'px';
       p.style.animation = kfComet+' 5s linear infinite';
       p.style.animationDelay = (i * -0.085)+'s';
       el.appendChild(p);
@@ -28885,16 +28847,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Peak hero: open ~270deg arc r=90 — score injected after first render via window._pkRebuildComet
+  // Initial build with score=50 placeholder; real score injected after JS renders
   buildComet(document.querySelector('#peakView .peak-hero-comet'), 'M36.4 163.6 A90 90 0 1 1 163.6 163.6', 30, '2.6', 50);
-  // Dashboard day-ring: open ~270deg arc r=52
   buildComet(document.querySelector('#dashView .dash-ring-comet'), 'M23.2 96.8 A52 52 0 1 1 96.8 96.8', 30, '1.7', 50);
 
-  // expose so JS renderers can rebuild with real score
   window._pkBuildComet = buildComet;
 
-  // Convenience: rebuild a named ring comet with a real score
-  // ring: 'peak' | 'dash' | 'oura'
   window._pkRebuildComet = function(ring, score) {
     if (ring === 'peak') {
       buildComet(document.querySelector('#peakView .peak-hero-comet'), 'M36.4 163.6 A90 90 0 1 1 163.6 163.6', 30, '2.6', score);
