@@ -5105,7 +5105,7 @@ main {
 .oura-hero-svg {
   width: 100%; height: 100%;
   transform: rotate(-90deg);
-  filter: drop-shadow(0 0 20px rgba(110,231,183,0.12));
+  overflow: visible;
 }
 .oura-hero-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 10; }
 .oura-hero-fill {
@@ -5115,10 +5115,10 @@ main {
   stroke-dashoffset: 502.65;
   transition: stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1), stroke 0.4s;
 }
-.oura-hero-fill.zone-gold   { stroke: #F5C842; filter: drop-shadow(0 0 8px rgba(245,200,66,0.5)); }
-.oura-hero-fill.zone-green  { stroke: #c79a4e; filter: drop-shadow(0 0 8px rgba(199,154,78,0.4)); }
-.oura-hero-fill.zone-yellow { stroke: #8B6914; filter: drop-shadow(0 0 8px rgba(139,105,20,0.4)); }
-.oura-hero-fill.zone-red    { stroke: #5C4208; filter: drop-shadow(0 0 8px rgba(92,66,8,0.4)); }
+.oura-hero-fill.zone-gold   { stroke: #F5C842; }
+.oura-hero-fill.zone-green  { stroke: #c79a4e; }
+.oura-hero-fill.zone-yellow { stroke: #8B6914; }
+.oura-hero-fill.zone-red    { stroke: #5C4208; }
 .oura-hero-center {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
@@ -7496,10 +7496,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .oura-score-num.zone-green{ color:var(--pk-gold) !important; }
 #healthView .oura-hero-fill{ stroke-width:4.5 !important; }
 #healthView .oura-hero-track{ stroke-width:4.5 !important; }
-#healthView .oura-hero-fill.zone-gold   { stroke:#F5C842 !important; filter:drop-shadow(0 0 3px rgba(245,200,66,1.0)) drop-shadow(0 0 8px rgba(245,200,66,0.7)) !important; }
-#healthView .oura-hero-fill.zone-green  { stroke:#c79a4e !important; filter:drop-shadow(0 0 3px rgba(199,154,78,1.0)) drop-shadow(0 0 8px rgba(199,154,78,0.7)) !important; }
-#healthView .oura-hero-fill.zone-yellow { stroke:#8B6914 !important; filter:drop-shadow(0 0 3px rgba(139,105,20,1.0)) drop-shadow(0 0 8px rgba(139,105,20,0.8)) !important; }
-#healthView .oura-hero-fill.zone-red    { stroke:#5C4208 !important; filter:drop-shadow(0 0 3px rgba(92,66,8,1.0))   drop-shadow(0 0 8px rgba(92,66,8,0.9))   !important; }
+#healthView .oura-hero-fill.zone-gold   { stroke:#F5C842 !important; }
+#healthView .oura-hero-fill.zone-green  { stroke:#c79a4e !important; }
+#healthView .oura-hero-fill.zone-yellow { stroke:#8B6914 !important; }
+#healthView .oura-hero-fill.zone-red    { stroke:#5C4208 !important; }
 /* hero number → light Fraunces + gold (override the inline green) */
 #healthView .oura-hero-num{ font-family:var(--pk-serif) !important; font-weight:300 !important; color:var(--pk-text) !important; text-shadow:0 0 24px rgba(199,154,78,0.25); }
 #healthView .oura-hero-unit{ color:var(--pk-faint) !important; letter-spacing:.2em; }
@@ -16711,6 +16711,15 @@ setInterval(updateDayBar, 60 * 1000);
         requestAnimationFrame(() => {
           const fill = document.getElementById('ouraHeroFill');
           if (fill) fill.style.strokeDashoffset = dashTarget.toFixed(2);
+          // Apply glow on SVG container (path-level filter is clipped by SVG viewport)
+          const _ouraGlowMap = {
+            'zone-gold':   'drop-shadow(0 0 4px rgba(245,200,66,1.0)) drop-shadow(0 0 14px rgba(245,200,66,0.7))',
+            'zone-green':  'drop-shadow(0 0 4px rgba(199,154,78,1.0)) drop-shadow(0 0 14px rgba(199,154,78,0.7))',
+            'zone-yellow': 'drop-shadow(0 0 4px rgba(139,105,20,1.0)) drop-shadow(0 0 14px rgba(139,105,20,0.8))',
+            'zone-red':    'drop-shadow(0 0 4px rgba(92,66,8,1.0))    drop-shadow(0 0 14px rgba(92,66,8,0.9))',
+          };
+          const _ouraSvg = document.querySelector('#healthView .oura-hero-svg');
+          if (_ouraSvg) _ouraSvg.style.filter = _ouraGlowMap[ringZone] || '';
           // Count-up number
           const numEl = document.getElementById('ouraHeroNum');
           if (numEl) {
