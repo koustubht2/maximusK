@@ -23355,8 +23355,8 @@ function switchTab(tab) {
     // filter detailedSleep by day field, pick highest total_sleep_duration
     var wakeHour = (typeof WAKE_HOUR !== 'undefined' ? WAKE_HOUR : 7);
     var _wakeTimeStr = null; // exact HH:MM from bedtime_end, set below
-    // check for manual override first
-    var _manualWake = localStorage.getItem('goals_peak_wake_override');
+    // check for manual override — date-specific so it expires each day
+    var _manualWake = localStorage.getItem('goals_peak_wake_override_' + today());
     if (_manualWake && /^\d{2}:\d{2}$/.test(_manualWake)) {
       var _wp = _manualWake.split(':');
       wakeHour = parseInt(_wp[0], 10) + parseInt(_wp[1], 10) / 60;
@@ -26525,7 +26525,7 @@ function switchTab(tab) {
     var wakeChip = document.getElementById('peakChipWakeWrap');
     if (wakeChip) {
       wakeChip.addEventListener('click', function() {
-        var current = localStorage.getItem('goals_peak_wake_override') || fmtHour24(_wakeHour);
+        var current = localStorage.getItem('goals_peak_wake_override_' + today()) || fmtHour24(_wakeHour);
         var val = window.prompt('Correct wake time (HH:MM):', current);
         if (!val) return;
         val = val.trim();
@@ -26534,7 +26534,7 @@ function switchTab(tab) {
         var h = parseInt(parts[0],10), m = parseInt(parts[1],10);
         if (h < 0 || h > 23 || m < 0 || m > 59) { alert('Invalid time'); return; }
         val = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-        localStorage.setItem('goals_peak_wake_override', val);
+        localStorage.setItem('goals_peak_wake_override_' + today(), val);
         _wakeHour = h + m / 60;
         setText('peakChipWake', val);
         _refreshEnergyChart(null);
