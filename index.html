@@ -7503,8 +7503,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .oura-hero-unit{ color:var(--pk-faint) !important; letter-spacing:.2em; }
 #healthView .oura-hero-label{ color:var(--pk-gold-soft) !important; }
 /* gold comet sweeping the oura hero ring — IDENTICAL params to Peak's hero comet */
-#healthView .oura-hero-svg{ transform:none !important; }   /* arc pre-oriented; no -90deg */
-#healthView .oura-hero-wrap{ position:relative; }
+#healthView .oura-hero-svg{ transform:none !important; position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; }   /* arc pre-oriented; matches comet SVG bounds */
+#healthView .oura-hero-wrap{ position:relative; width:200px; height:200px; max-width:70%; }
 #healthView .oura-hero-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
 #healthView .oura-hero-comet path{ fill:none; stroke-linecap:butt; stroke-dasharray:15 100;
   stroke-width:calc(2.1px - var(--i) * 0.045px); opacity:calc(1 - var(--i) * 0.022); }
