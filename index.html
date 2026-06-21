@@ -28778,9 +28778,9 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 (function(){
   var NS='http://www.w3.org/2000/svg';
-  var TAIL = 15;
+  var TAIL = 15; // max trail length (back layer)
 
-  // colour ramp: i=0 front (bright white), i=layers-1 back (warm gold)
+  // colour ramp: i=0 front (bright white), i=layers-1 back (warm gold blending into arc)
   function cometColor(i, layers) {
     var t = i / Math.max(1, layers - 1);
     var r = Math.round(255 - t * 25);
@@ -28792,36 +28792,43 @@ document.addEventListener('DOMContentLoaded', function() {
   // Build a score-capped comet on `el` sweeping along path `d`.
   // score: 0-100. Comet sweeps from start to score% of path, holds, repeats every 5s.
   // strokeW: optional max stroke width for thick-track rings (e.g. Oura stroke-width:10)
+  //
+  // KEY DESIGN: no stagger delays. Each layer i has its own dash length D_i (tiny at front,
+  // full TAIL at back). All layers animate in PHASE — their leading tips are always at the
+  // same position. Short front dashes = bright point; long back dashes = fading wake behind.
+  // With pathLength=100 and stroke-dasharray=D gap=100:
+  //   leading tip position = D - dashoffset
+  //   to start tip at 0: dashoffset = D
+  //   to land tip at s: dashoffset = D - s
+  //   catch-up: as D shrinks to 0, dashoffset goes to -s, trailing edge advances to s.
   function buildComet(el, d, layers, nucR, score, strokeW){
     if(!el) return;
     while(el.firstChild) el.removeChild(el.firstChild);
 
     var s = (score == null ? 100 : Math.max(1, Math.min(100, score)));
     var sweepPct = 50;
+    var catchEnd = sweepPct - 1 + 14; // 63% of 5s: dot parks then trail slides in
 
     var uid = 'ck' + (el._cometUid = (el._cometUid || Math.random().toString(36).slice(2)));
+    var kfNuc = uid + 'N';
 
-    // With pathLength=100 and stroke-dasharray=TAIL gap=100:
-    // front tip position = TAIL - dashoffset
-    // To land tip at exactly s: tailEnd = TAIL - s
-    var tailEnd = TAIL - s;
-    var kfComet = uid+'C';
-    var kfNuc   = uid+'N';
-
-    // catch-up phase: dot parks at sweepPct-1%, trail slides INTO dot over next 14% of cycle.
-    // Front tip stays pinned at s: requires O = D - s as D shrinks 15→0, so O goes tailEnd→(-s).
-    var catchEnd = sweepPct - 1 + 14; // 63% of 5s cycle
-    var tailEndFinal = -s;            // dashoffset when D=0, keeps front tip at s
-
-    var styleEl = document.createElementNS(NS,'style');
-    styleEl.textContent =
-      '@keyframes '+kfComet+'{' +
-        '0%{stroke-dashoffset:'+TAIL+';stroke-dasharray:'+TAIL+' 100}' +
-        (sweepPct-1)+'%{stroke-dashoffset:'+tailEnd+';stroke-dasharray:'+TAIL+' 100;opacity:calc(1 - var(--i)*0.028)}' +
-        catchEnd+'%{stroke-dashoffset:'+tailEndFinal+';stroke-dasharray:0 100;opacity:calc(1 - var(--i)*0.028)}' +
-        (catchEnd+1)+'%{stroke-dashoffset:'+tailEndFinal+';stroke-dasharray:0 100;opacity:0}' +
-        '100%{stroke-dashoffset:'+tailEndFinal+';stroke-dasharray:0 100;opacity:0}' +
-      '}' +
+    // Build per-layer keyframes (each has its own D_i)
+    var css = '';
+    for(var li = 0; li < layers; li++){
+      var t = li / Math.max(1, layers - 1); // 0=front, 1=back
+      var D = Math.max(0.3, TAIL * t);
+      var parkOff  = (D - s).toFixed(2);   // tip lands at s
+      var finalOff = (-s).toFixed(2);      // tip stays at s, D→0 (trailing edge catches up)
+      css +=
+        '@keyframes '+uid+'L'+li+'{' +
+          '0%{stroke-dashoffset:'+D.toFixed(2)+';stroke-dasharray:'+D.toFixed(2)+' 100}' +
+          (sweepPct-1)+'%{stroke-dashoffset:'+parkOff+';stroke-dasharray:'+D.toFixed(2)+' 100}' +
+          catchEnd+'%{stroke-dashoffset:'+finalOff+';stroke-dasharray:0 100}' +
+          (catchEnd+1)+'%{stroke-dashoffset:'+finalOff+';stroke-dasharray:0 100;opacity:0}' +
+          '100%{stroke-dashoffset:'+finalOff+';stroke-dasharray:0 100;opacity:0}' +
+        '}';
+    }
+    css +=
       '@keyframes '+kfNuc+'{' +
         '0%{offset-distance:0%;opacity:0}' +
         '3%{opacity:1}' +
@@ -28829,25 +28836,32 @@ document.addEventListener('DOMContentLoaded', function() {
         sweepPct+'%{offset-distance:'+s+'%;opacity:0.95}' +
         '100%{offset-distance:'+s+'%;opacity:0.95}' +
       '}';
+    var styleEl = document.createElementNS(NS,'style');
+    styleEl.textContent = css;
     el.appendChild(styleEl);
 
-    for(var i=layers-1;i>=0;i--){
-      var p=document.createElementNS(NS,'path');
+    // Draw back-to-front so front (white) paints on top of back (gold)
+    for(var i = layers-1; i >= 0; i--){
+      var ti = i / Math.max(1, layers - 1);
+      var Di = Math.max(0.3, TAIL * ti);
+      var p = document.createElementNS(NS,'path');
       p.setAttribute('pathLength','100');
-      p.setAttribute('d',d);
+      p.setAttribute('d', d);
       p.setAttribute('stroke', cometColor(i, layers));
       p.style.setProperty('--i', i);
-      if(strokeW) p.style.strokeWidth = Math.max(0.3, strokeW * (1 - i/layers)).toFixed(2)+'px';
-      p.style.animation = kfComet+' 5s linear infinite';
-      p.style.animationDelay = (i * -0.085)+'s';
+      p.style.strokeDasharray  = Di.toFixed(2) + ' 100';
+      p.style.strokeDashoffset = Di.toFixed(2); // tip starts at 0
+      if(strokeW) p.style.strokeWidth = Math.max(0.3, strokeW * (1 - ti)).toFixed(2)+'px';
+      p.style.animation = uid+'L'+i+' 5s linear infinite';
+      p.style.animationFillMode = 'both';
       el.appendChild(p);
     }
     if(nucR){
-      var c=document.createElementNS(NS,'circle');
+      var c = document.createElementNS(NS,'circle');
       c.setAttribute('class','nuc');
-      c.setAttribute('r',nucR);
+      c.setAttribute('r', nucR);
       c.setAttribute('fill','#ffffff');
-      c.style.offsetPath="path('"+d+"')";
+      c.style.offsetPath = "path('"+d+"')";
       c.style.animation = kfNuc+' 5s linear infinite';
       el.appendChild(c);
     }
