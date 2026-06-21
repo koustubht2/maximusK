@@ -1201,6 +1201,8 @@ body::after {
 .peak-hero-fill.zone-red    { --peak-ringc:#5C4208; }
 .peak-hero-glow { position:absolute; inset:18px; border-radius:50%; background:radial-gradient(closest-side, var(--peak-ringc,#5C4208), transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; }
 @keyframes peakGlowPulse { 0%,100%{opacity:.12} 50%{opacity:.26} }
+.day-ring-glow { position:absolute; inset:20px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
+.oura-hero-glow { position:absolute; inset:20px; border-radius:50%; background:radial-gradient(closest-side,#5C4208,transparent 72%); opacity:.16; filter:blur(12px); animation:peakGlowPulse 4s ease-in-out infinite; pointer-events:none; z-index:0; }
 .peak-hero-center { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .peak-hero-score { font-family:var(--font-serif); font-style:italic; font-size:64px; line-height:1; color:var(--text-primary); }
 .peak-hero-tone { font-family:var(--font-serif); font-style:italic; font-size:18px; color:#6EE7B7; margin-top:2px; }
@@ -8293,6 +8295,7 @@ window.canonicalJson = function(obj) {
 
   <div class="day-ring-container">
     <div class="day-ring-left">
+      <div class="day-ring-glow" id="dayRingGlow"></div>
       <svg class="day-ring-svg" viewBox="0 0 120 120">
         <!-- open ~270deg gauge arc (gap at bottom), pathLength=326.73 (=2*PI*52)
              so the existing day-ring JS (uses circ=2*PI*52) works unchanged -->
@@ -9719,7 +9722,7 @@ window.canonicalJson = function(obj) {
       <div class="peak-hero-center">
         <div class="peak-hero-score" id="peakHeroScore">—</div>
         <div class="peak-hero-tone" id="peakHeroTone">—</div>
-        <div class="peak-hero-label" id="peakHeroLabel">Today overall</div>
+        <div class="peak-hero-label" id="peakHeroLabel">Peak Score</div>
       </div>
     </div>
     <button class="peak-why-link" id="peakWhyLink" type="button">Why this score?</button>
@@ -13116,6 +13119,9 @@ function updateDayBar() {
   };
   const _ringSvg = document.querySelector('#dashView .day-ring-svg');
   if (_ringSvg) _ringSvg.style.filter = _ringGlowMap[zone] || '';
+  const _ringColorMap = { 'zone-gold':'#F5C842','zone-green':'#c79a4e','zone-yellow':'#8B6914','zone-red':'#5C4208' };
+  const _dashGlowEl = document.getElementById('dayRingGlow');
+  if (_dashGlowEl) _dashGlowEl.style.background = 'radial-gradient(closest-side,' + (_ringColorMap[zone]||'#5C4208') + ',transparent 72%)';
 
   pctEl.textContent = total;
   phaseEl.textContent = 'LIFE ARC';
@@ -16457,7 +16463,7 @@ setInterval(updateDayBar, 60 * 1000);
     if (s == null) return 'No data';
     if (s >= 90) return 'Peak';
     if (s >= 70) return 'Good';
-    if (s >= 50) return 'Watch';
+    if (s >= 50) return 'Below Average';
     return 'Low';
   }
   function zoneFromHrv(hrv, avgHrv) {
@@ -16579,6 +16585,7 @@ setInterval(updateDayBar, 60 * 1000);
     const circumference = 2 * Math.PI * 80;
     const dashTarget = readScore != null ? circumference * (1 - readScore / 100) : circumference;
     html += '<div class="oura-hero-wrap">'
+      + '<div class="oura-hero-glow" id="ouraHeroGlow"></div>'
       + '<svg class="oura-hero-svg" viewBox="0 0 180 180" aria-hidden="true">'
       + '<path class="oura-hero-track" pathLength="' + circumference.toFixed(2) + '" d="M33.4 146.6 A80 80 0 1 1 146.6 146.6"/>'
       + '<path class="oura-hero-fill ' + ringZone + '" id="ouraHeroFill" pathLength="' + circumference.toFixed(2) + '" d="M33.4 146.6 A80 80 0 1 1 146.6 146.6"'
@@ -16720,6 +16727,9 @@ setInterval(updateDayBar, 60 * 1000);
           };
           const _ouraSvg = document.querySelector('#healthView .oura-hero-svg');
           if (_ouraSvg) _ouraSvg.style.filter = _ouraGlowMap[ringZone] || '';
+          const _ouraColorMap = { 'zone-gold':'#F5C842','zone-green':'#c79a4e','zone-yellow':'#8B6914','zone-red':'#5C4208' };
+          const _ouraGlowEl = document.getElementById('ouraHeroGlow');
+          if (_ouraGlowEl) _ouraGlowEl.style.background = 'radial-gradient(closest-side,' + (_ouraColorMap[ringZone]||'#5C4208') + ',transparent 72%)';
           // Count-up number
           const numEl = document.getElementById('ouraHeroNum');
           if (numEl) {
