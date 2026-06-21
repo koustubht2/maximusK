@@ -16567,7 +16567,7 @@ setInterval(updateDayBar, 60 * 1000);
 
     // 1. Hero readiness ring — starts empty, animates in after paint
     const ringZone = readScore != null ? scoreClass(readScore) : 'zone-green';
-    const ringColor = ringZone === 'zone-gold' ? '#e0b25e' : ringZone === 'zone-green' ? '#c79a4e' : ringZone === 'zone-yellow' ? '#d99a4a' : '#c4533a';
+    const ringColor = ringZone === 'zone-gold' ? '#F5C842' : ringZone === 'zone-green' ? '#c79a4e' : ringZone === 'zone-yellow' ? '#8B6914' : '#5C4208';
     const circumference = 2 * Math.PI * 80;
     const dashTarget = readScore != null ? circumference * (1 - readScore / 100) : circumference;
     html += '<div class="oura-hero-wrap">'
@@ -23470,7 +23470,7 @@ function switchTab(tab) {
     var _heroScore = Math.round(_nowScore);
     var _heroZone = _heroScore >= 80 ? 'zone-gold' : _heroScore >= 60 ? 'zone-green' : _heroScore >= 40 ? 'zone-yellow' : 'zone-red';
     var _heroTone = _heroScore >= 80 ? 'Prime' : _heroScore >= 67 ? 'Solid' : _heroScore >= 45 ? 'Moderate' : _heroScore >= 30 ? 'Low' : 'Depleted';
-    var _heroToneColor = _heroScore >= 45 ? '#6EE7B7' : _heroScore >= 30 ? '#F59E0B' : '#EF4444';
+    var _heroToneColor = _heroScore >= 80 ? '#F5C842' : _heroScore >= 60 ? '#c79a4e' : _heroScore >= 40 ? '#8B6914' : '#5C4208';
     var fill = document.getElementById('peakHeroFill');
     if (fill) {
       fill.className = 'peak-hero-fill ' + _heroZone;
@@ -25903,7 +25903,7 @@ function switchTab(tab) {
     }
     _heroZone2 = _heroScore2 >= 80 ? 'zone-gold' : _heroScore2 >= 60 ? 'zone-green' : _heroScore2 >= 40 ? 'zone-yellow' : 'zone-red';
     var _heroTone2 = _heroScore2 >= 80 ? 'Prime' : _heroScore2 >= 67 ? 'Solid' : _heroScore2 >= 45 ? 'Moderate' : _heroScore2 >= 30 ? 'Low' : 'Depleted';
-    var _heroToneColor2 = _heroScore2 >= 45 ? '#6EE7B7' : _heroScore2 >= 30 ? '#F59E0B' : '#EF4444';
+    var _heroToneColor2 = _heroScore2 >= 80 ? '#F5C842' : _heroScore2 >= 60 ? '#c79a4e' : _heroScore2 >= 40 ? '#8B6914' : '#5C4208';
     var fill2 = document.getElementById('peakHeroFill');
     if (fill2) {
       fill2.className = 'peak-hero-fill ' + _heroZone2;
