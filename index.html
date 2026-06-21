@@ -7331,14 +7331,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
 #peakView .peak-hero-comet path{ fill:none; stroke-linecap:round;
   stroke-dasharray:6 100;
-  animation:pkHeroComet 6.8s linear infinite;
-  animation-delay:calc(var(--i) * -0.085s);
   stroke-width:calc(2.4px - var(--i) * 0.05px);
   opacity:calc(1 - var(--i) * 0.022);
 }
-@keyframes pkHeroComet{ 0%{stroke-dashoffset:6} 55.9%{stroke-dashoffset:-106} 100%{stroke-dashoffset:-106} }
-#peakView .peak-hero-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); animation:pkHeroNuc 6.8s linear infinite; }
-@keyframes pkHeroNuc{ 0%{offset-distance:0%;opacity:0} 3%{opacity:1} 49%{offset-distance:100%;opacity:1} 53%{offset-distance:100%;opacity:0} 100%{offset-distance:100%;opacity:0} }
+/* pkHeroComet / pkHeroNuc injected per-ring by buildComet() with score-capped endpoints */
 @media (prefers-reduced-motion: reduce){ #peakView .peak-hero-comet{ display:none; } }
 
 /* ---- inline energy ring + scores → gold + Fraunces ---- */
@@ -7483,9 +7479,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #dashView .day-ring-left{ position:relative; }
 #dashView .dash-ring-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
 #dashView .dash-ring-comet path{ fill:none; stroke-linecap:round; stroke-dasharray:6 100;
-  animation:pkHeroComet 6.8s linear infinite; animation-delay:calc(var(--i) * -0.085s);
   stroke-width:calc(1.4px - var(--i) * 0.03px); opacity:calc(1 - var(--i) * 0.022); }
-#dashView .dash-ring-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); animation:pkHeroNuc 6.8s linear infinite; }
+#dashView .dash-ring-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); }
 
 /* ---- focus card eyebrow/dot (brand green → gold; keep its pulse) ---- */
 #dashView .gs-focus-card{ border-color:rgba(231,210,160,0.18) !important; }
@@ -7554,9 +7549,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #healthView .oura-hero-wrap{ position:relative; }
 #healthView .oura-hero-comet{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 4px var(--pk-gold-soft)); }
 #healthView .oura-hero-comet path{ fill:none; stroke-linecap:round; stroke-dasharray:6 100;
-  animation:pkHeroComet 6.8s linear infinite; animation-delay:calc(var(--i) * -0.085s);
   stroke-width:calc(2.1px - var(--i) * 0.045px); opacity:calc(1 - var(--i) * 0.022); }
-#healthView .oura-hero-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); animation:pkHeroNuc 6.8s linear infinite; }
+#healthView .oura-hero-comet .nuc{ fill:#fffef9; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px var(--pk-gold-soft)); }
 #healthView .oura-zone-dot.zone-green{ background:var(--pk-gold) !important; box-shadow:0 0 7px rgba(199,154,78,0.6) !important; }
 #healthView .oura-call-badge.zone-green{ background:rgba(199,154,78,0.12) !important; border-color:rgba(199,154,78,0.35) !important; color:var(--pk-gold-soft) !important; }
 #healthView .oura-todays-call.zone-green{ border-left-color:var(--pk-gold) !important; }
@@ -13148,6 +13142,7 @@ function updateDayBar() {
   const circ = 2 * Math.PI * 52;
   ringFill.style.strokeDasharray  = circ;
   ringFill.style.strokeDashoffset = circ * (1 - total / 100);
+  if (window._pkRebuildComet) window._pkRebuildComet('dash', total);
 
   // Colour: gold spectrum (dark bronze → deep amber → warm gold → bright gold)
   let stroke;
@@ -16743,8 +16738,8 @@ setInterval(updateDayBar, 60 * 1000);
 
     body.innerHTML = html;
 
-    // build the gold comet sweep on the oura hero ring (full circle r=80, centre 90,90)
-    try { if (window._pkBuildComet) window._pkBuildComet(body.querySelector('.oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6'); } catch(e){}
+    // build the gold comet sweep on the oura hero ring — score-capped to readScore
+    try { if (window._pkBuildComet) window._pkBuildComet(body.querySelector('.oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6', readScore != null ? readScore : 50); } catch(e){}
 
     // Animate hero ring + count-up after paint
     if (readScore != null) {
@@ -23531,6 +23526,7 @@ function switchTab(tab) {
       requestAnimationFrame(function(){
         requestAnimationFrame(function(){
           if (fill) fill.style.strokeDashoffset = dashTarget.toFixed(2);
+          if (window._pkRebuildComet) window._pkRebuildComet('peak', _heroScore);
           var numEl = document.getElementById('peakHeroScore');
           if (numEl) {
             var startTs = performance.now();
@@ -28827,24 +28823,86 @@ document.addEventListener('DOMContentLoaded', function() {
 (function(){
   var NS='http://www.w3.org/2000/svg';
   var heads=['#fffdf8','#fffaf2','#fdf7ee','#faf3e8','#f6efe3','#f6efe3'];
-  // build N tapered comet layers along path `d` into svg `el`; nucDot adds a dot
-  function buildComet(el, d, layers, nucR){
+
+  // Build a score-capped comet on `el` sweeping along path `d`.
+  // score: 0-100. Comet sweeps from start → score% of path, holds, repeats every 5s.
+  function buildComet(el, d, layers, nucR, score){
     if(!el) return;
+    // Clear previous build
+    while(el.firstChild) el.removeChild(el.firstChild);
+
+    var s = (score == null ? 100 : Math.max(1, Math.min(100, score)));
+    // sweep takes 50% of cycle, hold takes 50%
+    var sweepPct = 50;   // % of 5s spent sweeping (= 2.5s)
+    var holdPct  = 50;   // % of 5s spent holding at mark
+
+    // Unique keyframe id per element to avoid collisions on rebuild
+    var uid = 'ck' + (el._cometUid = (el._cometUid || Math.random().toString(36).slice(2)));
+
+    // Comet tail: pathLength=100, tail is 6 units, gap is 94.
+    // At score%, tail tip is at position s. Tail start at s-6.
+    // stroke-dashoffset starts at 6 (tip at 0), ends at -(s) so tip reaches s.
+    var tailEnd = -s;
+    var kfComet = uid+'C';
+    var kfNuc   = uid+'N';
+
+    // Inject scoped keyframes into a <style> inside the SVG (SVG supports embedded style)
+    var styleEl = document.createElementNS(NS,'style');
+    styleEl.textContent =
+      '@keyframes '+kfComet+'{' +
+        '0%{stroke-dashoffset:6}' +
+        sweepPct+'%{stroke-dashoffset:'+tailEnd+'}' +
+        '100%{stroke-dashoffset:'+tailEnd+'}' +
+      '}' +
+      '@keyframes '+kfNuc+'{' +
+        '0%{offset-distance:0%;opacity:0}' +
+        '3%{opacity:1}' +
+        (sweepPct-1)+'%{offset-distance:'+s+'%;opacity:1}' +
+        sweepPct+'%{offset-distance:'+s+'%;opacity:0.85}' +
+        (sweepPct+2)+'%{offset-distance:'+s+'%;opacity:0}' +
+        '100%{offset-distance:'+s+'%;opacity:0}' +
+      '}';
+    el.appendChild(styleEl);
+
     for(var i=layers-1;i>=0;i--){
       var p=document.createElementNS(NS,'path');
-      p.setAttribute('pathLength','100'); p.setAttribute('d',d);
+      p.setAttribute('pathLength','100');
+      p.setAttribute('d',d);
       p.setAttribute('stroke', i<heads.length?heads[i]:'#e6c98a');
       p.style.setProperty('--i', i);
+      p.style.animation = kfComet+' 5s linear infinite';
+      p.style.animationDelay = (i * -0.085)+'s';
       el.appendChild(p);
     }
-    if(nucR){ var c=document.createElementNS(NS,'circle'); c.setAttribute('class','nuc'); c.setAttribute('r',nucR); c.style.offsetPath="path('"+d+"')"; el.appendChild(c); }
+    if(nucR){
+      var c=document.createElementNS(NS,'circle');
+      c.setAttribute('class','nuc');
+      c.setAttribute('r',nucR);
+      c.style.offsetPath="path('"+d+"')";
+      c.style.animation = kfNuc+' 5s linear infinite';
+      el.appendChild(c);
+    }
   }
-  // Peak hero: open ~270deg arc r=90
-  buildComet(document.querySelector('#peakView .peak-hero-comet'), 'M36.4 163.6 A90 90 0 1 1 163.6 163.6', 30, '2.6');
-  // Dashboard day-ring: open ~270deg arc r=52, centre 60,60 (gap at bottom). 30 layers like Peak.
-  buildComet(document.querySelector('#dashView .dash-ring-comet'), 'M23.2 96.8 A52 52 0 1 1 96.8 96.8', 30, '1.7');
-  // expose so the health ring (re-rendered by JS) can build its comet after render
+
+  // Peak hero: open ~270deg arc r=90 — score injected after first render via window._pkRebuildComet
+  buildComet(document.querySelector('#peakView .peak-hero-comet'), 'M36.4 163.6 A90 90 0 1 1 163.6 163.6', 30, '2.6', 50);
+  // Dashboard day-ring: open ~270deg arc r=52
+  buildComet(document.querySelector('#dashView .dash-ring-comet'), 'M23.2 96.8 A52 52 0 1 1 96.8 96.8', 30, '1.7', 50);
+
+  // expose so JS renderers can rebuild with real score
   window._pkBuildComet = buildComet;
+
+  // Convenience: rebuild a named ring comet with a real score
+  // ring: 'peak' | 'dash' | 'oura'
+  window._pkRebuildComet = function(ring, score) {
+    if (ring === 'peak') {
+      buildComet(document.querySelector('#peakView .peak-hero-comet'), 'M36.4 163.6 A90 90 0 1 1 163.6 163.6', 30, '2.6', score);
+    } else if (ring === 'dash') {
+      buildComet(document.querySelector('#dashView .dash-ring-comet'), 'M23.2 96.8 A52 52 0 1 1 96.8 96.8', 30, '1.7', score);
+    } else if (ring === 'oura') {
+      buildComet(document.querySelector('#healthView .oura-hero-comet'), 'M33.4 146.6 A80 80 0 1 1 146.6 146.6', 30, '2.6', score);
+    }
+  };
 })();
 </script>
 </body>
