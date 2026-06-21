@@ -139,16 +139,16 @@ async function handleCron() {
     getRecentSnapshots(14),
   ]);
 
-  // Wake hour: Oura actual → rolling avg → null (skip morning slots)
+  // Wake hour: still resolved for use in caffeine timing message body
   const wakeH     = resolveWakeH(snap, recent);
   const wakeFloor = wakeH != null ? Math.round(wakeH) : null;
   const source    = snap?.actual_wake_h != null ? 'oura' : wakeH != null ? 'adaptive' : 'none';
 
-  // Morning adaptive slots (all before 12pm) — only defined when wake is known
-  const T_BRIEF = wakeFloor;          // wake hour
-  const T_STACK = wakeFloor != null ? wakeFloor + 1 : null;
-  const T_GYM   = wakeFloor != null ? wakeFloor + 2 : null;
-  const T_MEAL  = wakeFloor != null ? wakeFloor + 3 : null;
+  // Morning slots — fixed clock times (IST)
+  const T_BRIEF = 8;
+  const T_STACK = 9;
+  const T_GYM   = 10;
+  const T_MEAL  = 11;
 
   console.log(`JARVIS: localH=${localH}, wake=${wakeH != null ? wakeH.toFixed(1) : 'unknown'} (${source})`);
 
@@ -160,7 +160,7 @@ async function handleCron() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   // Morning Brief + sleep debt
-  if (T_BRIEF != null && localH === T_BRIEF) {
+  if (localH === T_BRIEF) {
     await push({
       title: 'Good morning.',
       body: snap?.readiness_score
@@ -182,7 +182,7 @@ async function handleCron() {
   }
 
   // Stack + caffeine timing coach
-  if (T_STACK != null && localH === T_STACK) {
+  if (localH === T_STACK) {
     if (snap && !snap.stack_logged) {
       await push({
         title: 'Morning stack not logged.',
@@ -191,8 +191,8 @@ async function handleCron() {
         buttons: [{ label: 'Log Stack', url: '/?tab=main' }],
       });
     }
-    if (!snap?.caffeine_mg && wakeFloor != null) {
-      const goodTime = wakeFloor + 1.5;
+    if (!snap?.caffeine_mg) {
+      const goodTime = wakeFloor != null ? wakeFloor + 1.5 : 9.5;
       await push({
         title: 'Caffeine timing.',
         body: `Cortisol peaks ~90min after waking. Your coffee hits harder after ${Math.floor(goodTime)}:${goodTime % 1 >= 0.5 ? '30' : '00'}am.`,
@@ -211,7 +211,7 @@ async function handleCron() {
   }
 
   // Gym streak at risk
-  if (T_GYM != null && localH === T_GYM) {
+  if (localH === T_GYM) {
     if (snap && !snap.workout_logged && (snap.days_since_gym ?? 0) >= 2) {
       await push({
         title: 'Gym streak at risk.',
@@ -223,7 +223,7 @@ async function handleCron() {
   }
 
   // First meal nudge
-  if (T_MEAL != null && localH === T_MEAL) {
+  if (localH === T_MEAL) {
     if (snap && (snap.meals_logged ?? 0) === 0) {
       await push({
         title: 'No meals logged yet.',
