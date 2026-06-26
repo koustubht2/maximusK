@@ -24656,10 +24656,10 @@ function switchTab(tab) {
 
     // JARVIS insight — correlate focus with readiness if oura data available
     var insightEl = document.getElementById('peakFocusInsight');
-    if (insightEl && sessions.length >= 7) {
+    if (insightEl) {
       var ouraHistory = window.ouraHistory || [];
       var insight = '';
-      if (ouraHistory.length >= 7) {
+      if (sessions.length >= 7 && ouraHistory.length >= 7) {
         // find avg focus duration on high-readiness days vs low
         var highDays = [], lowDays = [];
         ouraHistory.forEach(function(oh){
@@ -24681,10 +24681,10 @@ function switchTab(tab) {
           }
         }
       }
-      if (!insight && sessions.length >= 14) {
+      if (!insight && sessions.length >= 3) {
         // streak insight
         var streak = 0, best = 0, cur = 0;
-        var allDays = [...new Set(sessions.map(function(s){return s.date;}))].sort();
+        var allDays = sessions.map(function(s){return s.date;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
         for (var i=allDays.length-1; i>=0; i--) {
           var prev = new Date(allDays[i]); prev.setDate(prev.getDate()-1);
           if (i>0 && allDays[i-1]===prev.toISOString().slice(0,10)) cur++;
@@ -24692,12 +24692,30 @@ function switchTab(tab) {
         }
         streak = cur+1;
         if (streak >= 3) insight = 'You\'re on a '+streak+'-day focus streak, sir. Keep the momentum.';
-        else if (best >= 5) insight = 'Your best focus streak is '+best+' days. Current streak: '+streak+'.';
+        else if (best >= 3) insight = 'Your best focus streak is '+best+' days. Current streak: '+streak+'.';
+      }
+      if (!insight && sessions.length >= 1) {
+        // fallback: today's total vs weekly avg
+        var weekSec = 0, weekDays = 0;
+        for (var wi=1; wi<=7; wi++) {
+          var wd = new Date(); wd.setDate(wd.getDate()-wi);
+          var wds = wd.toISOString().slice(0,10);
+          var wdSec = sessions.filter(function(s){return s.date===wds;}).reduce(function(a,s){return a+s.dur;},0);
+          if (wdSec > 0) { weekSec += wdSec; weekDays++; }
+        }
+        if (weekDays >= 2) {
+          var avgSec = weekSec / weekDays;
+          var avgMin = Math.round(avgSec / 60);
+          insight = 'Your 7-day focus average is '+avgMin+' min/day, sir. Log a session to build the streak.';
+        } else {
+          insight = 'Track your deep work sessions here. Consistency compounds, sir.';
+        }
       }
       if (insight) { insightEl.textContent = insight; insightEl.style.display = ''; }
       else insightEl.style.display = 'none';
     }
   }
+  var _focusTimerInited = false;
   function _initFocusTimer(arr, wakeHour) {
     var btn = document.getElementById('peakFocusBtn');
     var zoneEl = document.getElementById('peakFocusZone');
@@ -24708,6 +24726,9 @@ function switchTab(tab) {
     var wins = (typeof findBestWindows === 'function') ? findBestWindows(arr, wakeHour) : [];
     var curWin = wins && wins[0];
     if (zoneEl && curWin) zoneEl.textContent = curWin.label + ' · ' + curWin.dur + 'min window';
+    // Guard: only attach the click listener once
+    if (_focusTimerInited) return;
+    _focusTimerInited = true;
     btn.addEventListener('click', function() {
       if (_focusActive) {
         // Stop early — save partial session if > 60s
