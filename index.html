@@ -10169,19 +10169,50 @@ window.canonicalJson = function(obj) {
         <div class="peak-section-label">Focus Session</div>
         <div id="peakFocusZone" style="font-family:var(--font-mono);font-size:10px;color:rgba(110,231,183,0.6);letter-spacing:0.08em"></div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin-top:10px">
-        <div id="peakFocusTimer" style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--text-primary);letter-spacing:0.04em;min-width:80px">—</div>
-        <div style="flex:1">
-          <div id="peakFocusBar" style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden"><div id="peakFocusBarFill" style="height:100%;width:0%;background:#6EE7B7;border-radius:2px;transition:width 1s linear"></div></div>
-          <div id="peakFocusMsg" style="font-size:11px;color:var(--text-tertiary);margin-top:5px;font-family:var(--font-mono)">Start when you're ready</div>
+
+      <!-- IDLE STATE -->
+      <div id="peakFocusIdleState" style="margin-top:10px">
+        <!-- Window context badge -->
+        <div id="peakFocusWindowBadge" style="display:none;margin-bottom:10px;padding:7px 11px;border-radius:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;line-height:1.4"></div>
+        <!-- Goals task pills -->
+        <div id="peakFocusTaskPills" style="display:none;margin-bottom:8px">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px">Pick from today's goals</div>
+          <div id="peakFocusTaskPillList" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:stretch;gap:4px">
-          <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
-            <span id="peakFocusPulse" style="display:none;width:7px;height:7px;border-radius:50%;background:#6EE7B7;animation:focusPulse 1.5s ease-in-out infinite;vertical-align:middle"></span>
-            <button id="peakFocusBtn" type="button" style="background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);border-radius:20px;color:#6EE7B7;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;padding:7px 14px;cursor:pointer;white-space:nowrap">START</button>
+        <!-- Task input + START -->
+        <div style="display:flex;align-items:center;gap:10px">
+          <input id="peakFocusTaskInput" type="text" placeholder="What will you work on?" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 11px;font-family:var(--font-mono);font-size:11px;color:var(--text-primary);outline:none;box-sizing:border-box" />
+          <button id="peakFocusBtn" type="button" style="background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);border-radius:20px;color:#6EE7B7;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;padding:9px 18px;cursor:pointer;white-space:nowrap;flex-shrink:0">START</button>
+        </div>
+        <div id="peakFocusMsg" style="font-size:11px;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:7px">Start when you're ready</div>
+      </div>
+
+      <!-- ACTIVE SESSION CARD -->
+      <div id="peakFocusActiveState" style="display:none;margin-top:10px;padding:14px;background:rgba(110,231,183,0.04);border:1px solid rgba(110,231,183,0.15);border-radius:14px">
+        <!-- Header row: pulse + task name -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span id="peakFocusPulse" style="width:8px;height:8px;border-radius:50%;background:#6EE7B7;animation:focusPulse 1.5s ease-in-out infinite;flex-shrink:0"></span>
+          <div id="peakFocusTaskName" style="font-family:var(--font-mono);font-size:11px;color:#6EE7B7;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">Deep work session</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);letter-spacing:0.08em">IN PROGRESS</div>
+        </div>
+        <!-- Elapsed + progress -->
+        <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:10px">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px">Elapsed</div>
+            <div id="peakFocusElapsed" style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--text-primary);letter-spacing:0.04em;line-height:1">00:00</div>
           </div>
-          <button id="peakFocusInterruptBtn" style="display:none;margin-top:6px;width:100%;padding:6px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;font-family:var(--font-mono);font-size:10px;color:#EF4444;cursor:pointer" onclick="window._focusMarkInterrupted()">&#9888; Mark as interrupted</button>
+          <div style="flex:1;padding-bottom:6px">
+            <div id="peakFocusBar" style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:4px"><div id="peakFocusBarFill" style="height:100%;width:0%;background:#6EE7B7;border-radius:2px;transition:width 1s linear"></div></div>
+            <div id="peakFocusTimer" style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)">— remaining</div>
+          </div>
         </div>
+        <!-- Pause + End buttons -->
+        <div style="display:flex;gap:8px">
+          <button id="peakFocusPauseBtn" type="button" style="flex:1;padding:8px;background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.25);border-radius:10px;font-family:var(--font-mono);font-size:11px;color:#F5C842;cursor:pointer;letter-spacing:0.04em">&#9646;&#9646; Pause</button>
+          <button id="peakFocusEndBtn" type="button" style="flex:1;padding:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;font-family:var(--font-mono);font-size:11px;color:#EF4444;cursor:pointer;letter-spacing:0.04em">&#9632; End Session</button>
+        </div>
+        <!-- Mark interrupted -->
+        <button id="peakFocusInterruptBtn" style="display:none;margin-top:6px;width:100%;padding:6px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);border-radius:10px;font-family:var(--font-mono);font-size:10px;color:#EF4444;cursor:pointer" onclick="window._focusMarkInterrupted()">&#9888; Mark as interrupted</button>
       </div>
       <!-- Focus tracking summary -->
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
@@ -10194,7 +10225,10 @@ window.canonicalJson = function(obj) {
           <div style="font-family:var(--font-mono);font-size:8px;color:var(--pk-dim)" id="peakFocusWeekLabel">7-day deep work</div>
           <div style="font-family:var(--font-mono);font-size:8px;color:var(--pk-dim)" id="peakFocusWeekTotal"></div>
         </div>
-        <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary);margin-top:2px">Best week: <span id="peakFocusBestWeek" style="color:rgba(110,231,183,0.7)">—</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:2px">
+          <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary)">Best week: <span id="peakFocusBestWeek" style="color:rgba(110,231,183,0.7)">—</span></div>
+          <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary)">Streak: <span id="peakFocusStreak" style="color:rgba(110,231,183,0.7)">—</span></div>
+        </div>
         <!-- Today's session log -->
         <div id="peakFocusTodayLog" style="margin-top:10px;display:none">
           <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--pk-dim);margin-bottom:6px">Today's sessions</div>
@@ -13373,15 +13407,23 @@ function computeLifeArcScore() {
     domains.stack = { pts: done ? 20 : 0, max: 20, done };
   } catch(e) { domains.stack = { pts: 0, max: 20, done: false }; }
 
-  // ── Goals (15pts) — task completion rate ─────────────────────────────────────
+  // ── Goals (15pts) — task completion (10pts) + deep work hours (5pts) ────────
   try {
     const tasks = ls('goals_daily_' + todayStr) || [];
+    let taskPts = 0;
     if (tasks.length > 0) {
       const completed = tasks.filter(t => t.checked).length;
-      domains.goals = { pts: Math.round((completed / tasks.length) * 15), max: 15, done: completed === tasks.length };
-    } else {
-      domains.goals = { pts: 0, max: 15, done: false, na: true };
+      taskPts = Math.round((completed / tasks.length) * 10);
     }
+    // focus depth: 1h=2pts, 2h=4pts, 3h+=5pts (target 3h deep work)
+    let focusPts = 0;
+    try {
+      const fSessions = JSON.parse(localStorage.getItem('po_focus_sessions') || '[]');
+      const fTodaySec = fSessions.filter(s => s.date === todayStr).reduce((a, s) => a + s.dur, 0);
+      focusPts = Math.min(5, Math.round((fTodaySec / (3 * 3600)) * 5));
+    } catch(e) {}
+    const total = taskPts + focusPts;
+    domains.goals = { pts: total, max: 15, done: total >= 13 };
   } catch(e) { domains.goals = { pts: 0, max: 15, done: false, na: true }; }
 
   // ── Journal (10pts) — written today ──────────────────────────────────────────
@@ -23363,8 +23405,9 @@ function switchTab(tab) {
     function winColor(s)  { return s >= 75 ? '#F5C842'   : s >= 60 ? '#6EE7B7'   : '#F2C063'; }
 
     var labelled = merged.map(function(r) {
+      var durHrs = r.endI - r.startI + 1;
       return { start: r.start, end: r.end, startI: r.startI, endI: r.endI,
-               avg: r.avg, peak: r.peak,
+               avg: r.avg, peak: r.peak, dur: durHrs * 60,
                label: winLabel(r.avg), zoneClass: winClass(r.avg), color: winColor(r.avg) };
     });
 
@@ -24287,6 +24330,7 @@ function switchTab(tab) {
     _renderHistoryChart(_nowScore);
     _renderWeeklyReport(oura);
     _renderWeightChart();
+    window.ouraReadinessToday = readiness || null;
     _initFocusTimer(arr, wakeHour);
     _renderMarkets();
     if (_peakDayOffset === 0) {
@@ -24576,10 +24620,11 @@ function switchTab(tab) {
     }
   }
   window._focusMarkInterrupted = _focusMarkInterrupted;
+  var _focusCurrentTask = '';
   function _focusSaveSession(startTs, endTs, durSec) {
     var sessions = _focusLoadSessions();
     var dateStr = new Date(startTs).toISOString().slice(0,10);
-    sessions.push({ date: dateStr, start: startTs, end: endTs, dur: Math.round(durSec), interrupted: false });
+    sessions.push({ date: dateStr, start: startTs, end: endTs, dur: Math.round(durSec), interrupted: false, task: _focusCurrentTask || '' });
     // keep last 90 days only
     var cutoff = Date.now() - 90*24*3600*1000;
     sessions = sessions.filter(function(s){ return s.start > cutoff; });
@@ -24629,11 +24674,27 @@ function switchTab(tab) {
     chartEl.innerHTML = days.map(function(day) {
       var h = Math.max(3, Math.round((day.sec/maxSec)*28));
       var col = day.isToday ? '#6EE7B7' : 'rgba(110,231,183,0.35)';
-      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end">'
+      var durMin = Math.round(day.sec / 60);
+      var tip = durMin ? (durMin >= 60 ? Math.floor(durMin/60)+'h '+(durMin%60)+'m' : durMin+'m') : '—';
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end" title="'+day.lbl+': '+tip+'">'
         + '<div style="width:100%;border-radius:2px 2px 0 0;background:'+col+';height:'+h+'px"></div>'
         + '<div style="font-family:var(--font-mono);font-size:7px;color:'+(day.isToday?'#6EE7B7':'rgba(255,255,255,0.25)')+'">'+day.lbl+'</div>'
         + '</div>';
     }).join('');
+
+    // Current streak (days with ≥1 session, must be consecutive ending today or yesterday)
+    var allSessionDays = sessions.map(function(s){return s.date;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
+    var streak = 0;
+    var checkDate = new Date();
+    // allow streak to still count if today has no session yet
+    if (allSessionDays.indexOf(todayStr) === -1) checkDate.setDate(checkDate.getDate()-1);
+    for (var si = allSessionDays.length - 1; si >= 0; si--) {
+      var expected = checkDate.toISOString().slice(0,10);
+      if (allSessionDays[si] === expected) { streak++; checkDate.setDate(checkDate.getDate()-1); }
+      else break;
+    }
+    var streakEl = document.getElementById('peakFocusStreak');
+    if (streakEl) streakEl.textContent = streak ? streak + (streak === 1 ? ' day' : ' days') : '—';
 
     // Today's session log
     var todaySessions = sessions.filter(function(s){ return s.date===todayStr; });
@@ -24641,15 +24702,25 @@ function switchTab(tab) {
     var logList = document.getElementById('peakFocusTodayLogList');
     if (logWrap && logList) {
       logWrap.style.display = todaySessions.length ? '' : 'none';
+      var fmt = function(dt){ var h=dt.getHours()%12||12, m=String(dt.getMinutes()).padStart(2,'0'), ap=dt.getHours()>=12?'pm':'am'; return h+':'+m+ap; };
       logList.innerHTML = todaySessions.map(function(s){
-        var sh = Math.floor(s.dur/3600), sm = Math.floor((s.dur%3600)/60);
-        var startTime = new Date(s.start); var endTime = new Date(s.end);
-        var fmt = function(dt){ var h=dt.getHours()%12||12, m=String(dt.getMinutes()).padStart(2,'0'), ap=dt.getHours()>=12?'pm':'am'; return h+':'+m+ap; };
-        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(110,231,183,0.05);border-radius:8px;">'
-          + '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-secondary)">'+fmt(startTime)+' – '+fmt(endTime)+'</div>'
-          + '<div style="display:flex;align-items:center;gap:4px"><div style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:#6EE7B7">'+(sh?sh+'h ':'')+sm+'m</div>'
-          + (s.interrupted ? '<span style="font-family:var(--font-mono);font-size:8px;color:#EF4444;background:rgba(239,68,68,0.12);padding:2px 5px;border-radius:4px;margin-left:4px">interrupted</span>' : '')
+        var sh = Math.floor(s.dur/3600), sm = Math.floor((s.dur%3600)/60), ss = s.dur % 60;
+        var durStr = sh ? sh+'h '+String(sm).padStart(2,'0')+'m' : sm+'m '+String(ss).padStart(2,'0')+'s';
+        var startTime = new Date(s.start), endTime = new Date(s.end);
+        var timeRange = fmt(startTime) + ' – ' + fmt(endTime);
+        var taskLabel = (s.task && s.task !== 'Deep work session') ? s.task : '';
+        var badge = s.interrupted
+          ? '<span style="font-family:var(--font-mono);font-size:8px;color:#EF4444;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.2);padding:2px 6px;border-radius:4px">interrupted</span>'
+          : '<span style="font-family:var(--font-mono);font-size:8px;color:#6EE7B7;background:rgba(110,231,183,0.08);border:1px solid rgba(110,231,183,0.2);padding:2px 6px;border-radius:4px">clean</span>';
+        return '<div style="padding:8px 10px;background:rgba(110,231,183,0.04);border:1px solid rgba(110,231,183,0.08);border-radius:10px;display:flex;flex-direction:column;gap:4px">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+          +   '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)">' + timeRange + '</div>'
+          +   '<div style="display:flex;align-items:center;gap:6px">'
+          +     '<div style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:#6EE7B7">' + durStr + '</div>'
+          +     badge
+          +   '</div>'
           + '</div>'
+          + (taskLabel ? '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + taskLabel + '</div>' : '')
           + '</div>';
       }).join('');
     }
@@ -24659,6 +24730,15 @@ function switchTab(tab) {
     if (insightEl) {
       var ouraHistory = window.ouraHistory || [];
       var insight = '';
+      // today's readiness score — from window.ouraReadinessToday if available
+      var todayReadiness = null;
+      if (window.ouraReadinessToday != null) {
+        todayReadiness = window.ouraReadinessToday;
+      } else if (ouraHistory.length) {
+        var todayOh = ouraHistory.filter(function(oh){ return oh.date === todayStr; })[0];
+        if (todayOh && todayOh.readiness_score != null) todayReadiness = todayOh.readiness_score;
+      }
+
       if (sessions.length >= 7 && ouraHistory.length >= 7) {
         // find avg focus duration on high-readiness days vs low
         var highDays = [], lowDays = [];
@@ -24675,9 +24755,10 @@ function switchTab(tab) {
           var avgLow  = lowDays.reduce(function(a,b){return a+b;},0)/lowDays.length;
           var diff = Math.round((avgHigh-avgLow)/60);
           if (Math.abs(diff) >= 10) {
+            var todayClause = todayReadiness != null ? ' — today is ' + todayReadiness + ', sir.' : ', sir.';
             insight = diff > 0
-              ? 'On high-readiness days (75+) you focus '+diff+'min longer on average, sir.'
-              : 'Interestingly, low-readiness days show '+Math.abs(diff)+'min more focus time — consider recovery today.';
+              ? 'Your best focus days correlate with readiness above 75 — you focus '+diff+'min longer'+todayClause
+              : 'Interestingly, low-readiness days show '+Math.abs(diff)+'min more focus time'+todayClause;
           }
         }
       }
@@ -24715,92 +24796,233 @@ function switchTab(tab) {
       else insightEl.style.display = 'none';
     }
   }
+  // Mark a Goals task done by title match (called on session end/complete)
+  function _focusMarkTaskDone(taskName) {
+    if (!taskName || taskName === 'Deep work session') return;
+    try {
+      var todayStr = (typeof gsDateKey === 'function') ? gsDateKey() : new Date().toISOString().slice(0,10);
+      var key = 'goals_daily_' + todayStr;
+      var daily = (typeof storeGet === 'function') ? (storeGet(key) || []) : (JSON.parse(localStorage.getItem(key)) || []);
+      var idx = -1;
+      // exact match first, then case-insensitive prefix
+      idx = daily.findIndex(function(t){ return t.title === taskName; });
+      if (idx === -1) idx = daily.findIndex(function(t){ return t.title.toLowerCase().startsWith(taskName.toLowerCase().slice(0,10)); });
+      if (idx === -1) return;
+      if (daily[idx].checked) return; // already done
+      daily[idx].checked = true;
+      if (typeof storeSet === 'function') storeSet(key, daily);
+      else localStorage.setItem(key, JSON.stringify(daily));
+      window.dispatchEvent(new CustomEvent('goals-changed'));
+    } catch(e) {}
+  }
+
   var _focusTimerInited = false;
+  var _focusPaused = false, _focusPausedAt = 0, _focusPausedTotal = 0;
+  var _focus80Warned = false;
+
+  function _focusShowIdle() {
+    var idle = document.getElementById('peakFocusIdleState');
+    var active = document.getElementById('peakFocusActiveState');
+    if (idle) idle.style.display = 'flex';
+    if (active) active.style.display = 'none';
+    var msg = document.getElementById('peakFocusMsg');
+    if (msg) msg.textContent = 'Start when you\'re ready';
+  }
+  function _focusShowActive(taskName) {
+    var idle = document.getElementById('peakFocusIdleState');
+    var active = document.getElementById('peakFocusActiveState');
+    if (idle) idle.style.display = 'none';
+    if (active) active.style.display = '';
+    var nameEl = document.getElementById('peakFocusTaskName');
+    if (nameEl) nameEl.textContent = taskName || 'Deep work session';
+  }
+
+  function _focusRenderIdleExtras(wins, wakeHour) {
+    // — window context badge —
+    var badge = document.getElementById('peakFocusWindowBadge');
+    if (badge) {
+      var nowH = new Date().getHours() + new Date().getMinutes() / 60;
+      var inWindow = wins && wins.find(function(w) {
+        var s = w.start, e = (w.end >= w.start) ? w.end : w.end + 24;
+        var n = (nowH >= w.start) ? nowH : nowH + 24;
+        return n >= s && n <= e + 1;
+      });
+      if (inWindow) {
+        badge.style.display = '';
+        badge.style.background = 'rgba(110,231,183,0.07)';
+        badge.style.border = '1px solid rgba(110,231,183,0.25)';
+        badge.style.color = '#6EE7B7';
+        badge.innerHTML = '&#9679; You\'re in your <strong>' + inWindow.label + '</strong> focus window right now &mdash; ' + inWindow.dur + ' min available';
+      } else if (wins && wins.length) {
+        var next = wins[0];
+        var startHour = next.start;
+        var h12 = startHour % 12 || 12, ap = startHour >= 12 ? 'pm' : 'am';
+        badge.style.display = '';
+        badge.style.background = 'rgba(255,255,255,0.03)';
+        badge.style.border = '1px solid rgba(255,255,255,0.07)';
+        badge.style.color = 'var(--text-tertiary)';
+        badge.innerHTML = 'Next peak window: <strong style="color:var(--text-secondary)">' + next.label + ' at ' + h12 + ap + '</strong>';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    // — goals task pills —
+    var pillsWrap = document.getElementById('peakFocusTaskPills');
+    var pillList  = document.getElementById('peakFocusTaskPillList');
+    var taskInput = document.getElementById('peakFocusTaskInput');
+    if (pillList) {
+      try {
+        var todayStr = (typeof gsDateKey === 'function') ? gsDateKey() : new Date().toISOString().slice(0,10);
+        var tasks = JSON.parse(localStorage.getItem('goals_daily_' + todayStr)) || [];
+        var pending = tasks.filter(function(t){ return !t.checked && !t.skipped; });
+        if (pending.length && pillsWrap) {
+          pillsWrap.style.display = '';
+          pillList.innerHTML = pending.slice(0, 8).map(function(t, i) {
+            return '<button type="button" data-fi="'+i+'" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:4px 10px;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis" title="'+t.title+'">'
+              + t.title + '</button>';
+          }).join('');
+          // pill click → populate input
+          pillList.querySelectorAll('button').forEach(function(pill, i) {
+            pill.addEventListener('click', function() {
+              if (taskInput) taskInput.value = pending[i].title;
+              pillList.querySelectorAll('button').forEach(function(p){ p.style.borderColor='rgba(255,255,255,0.1)'; p.style.color='var(--text-secondary)'; });
+              pill.style.borderColor = '#6EE7B7';
+              pill.style.color = '#6EE7B7';
+            });
+          });
+        } else if (pillsWrap) {
+          pillsWrap.style.display = 'none';
+        }
+      } catch(e) { if (pillsWrap) pillsWrap.style.display = 'none'; }
+    }
+  }
+
   function _initFocusTimer(arr, wakeHour) {
     var btn = document.getElementById('peakFocusBtn');
     var zoneEl = document.getElementById('peakFocusZone');
     if (!btn) return;
-    // Render summary immediately on init
     _focusRenderSummary();
-    // Show current window
     var wins = (typeof findBestWindows === 'function') ? findBestWindows(arr, wakeHour) : [];
+    window._peakFocusWins = wins;
     var curWin = wins && wins[0];
     if (zoneEl && curWin) zoneEl.textContent = curWin.label + ' · ' + curWin.dur + 'min window';
-    // Guard: only attach the click listener once
+    _focusRenderIdleExtras(wins, wakeHour);
     if (_focusTimerInited) return;
     _focusTimerInited = true;
+
+    // START button (idle state)
     btn.addEventListener('click', function() {
-      if (_focusActive) {
-        // Stop early — save partial session if > 60s
-        var elapsed = Math.round((Date.now() - _focusStartTs) / 1000);
-        if (elapsed >= 60) _focusSaveSession(_focusStartTs, Date.now(), elapsed);
-        _focusActive = false;
-        if (_focusRaf) cancelAnimationFrame(_focusRaf);
-        _focusRaf = null;
-        btn.textContent = 'START';
-        btn.style.background = 'rgba(110,231,183,0.1)';
-        var intBtn2 = document.getElementById('peakFocusInterruptBtn');
-        if (intBtn2) intBtn2.style.display = 'none';
-        var pulseEl2 = document.getElementById('peakFocusPulse');
-        if (pulseEl2) pulseEl2.style.display = 'none';
-        document.getElementById('peakFocusTimer').textContent = '—';
-        document.getElementById('peakFocusBarFill').style.width = '0%';
-        document.getElementById('peakFocusMsg').textContent = 'Start when you\'re ready';
-        if (window._arcSetMood) window._arcSetMood('idle');
-        _focusRenderSummary();
-      } else {
-        // Start
-        var durMin = (curWin && curWin.dur) ? Math.min(curWin.dur, 90) : 90;
-        _focusDur = durMin * 60;
-        _focusEnd = Date.now() + _focusDur * 1000;
-        _focusStartTs = Date.now();
-        _focusActive = true;
-        btn.textContent = 'STOP';
-        btn.style.background = 'rgba(239,68,68,0.1)';
-        btn.style.borderColor = 'rgba(239,68,68,0.3)';
-        btn.style.color = '#EF4444';
-        var intBtn = document.getElementById('peakFocusInterruptBtn');
-        if (intBtn) intBtn.style.display = '';
-        var pulseEl = document.getElementById('peakFocusPulse');
-        if (pulseEl) pulseEl.style.display = 'inline-block';
+      var taskInput = document.getElementById('peakFocusTaskInput');
+      var taskName = (taskInput && taskInput.value.trim()) || 'Deep work session';
+      _focusCurrentTask = taskName;
+      var durMin = (curWin && curWin.dur) ? Math.min(curWin.dur, 90) : 90;
+      _focusDur = durMin * 60;
+      _focusEnd = Date.now() + _focusDur * 1000;
+      _focusStartTs = Date.now();
+      _focusActive = true;
+      _focusPaused = false;
+      _focusPausedTotal = 0;
+      _focus80Warned = false;
+      _focusShowActive(taskName);
+      var timerEl = document.getElementById('peakFocusTimer');
+      if (timerEl) timerEl.textContent = durMin + ':00 remaining';
+      var fillEl = document.getElementById('peakFocusBarFill');
+      if (fillEl) fillEl.style.width = '0%';
+      if (window._arcSetMood) window._arcSetMood('responding');
+      // JARVIS line — mention window if currently in one
+      var nowH = new Date().getHours() + new Date().getMinutes() / 60;
+      var inWin = wins && wins.find(function(w) {
+        var e = (w.end >= w.start) ? w.end : w.end + 24;
+        var n = (nowH >= w.start) ? nowH : nowH + 24;
+        return n >= w.start && n <= e + 1;
+      });
+      var speakLine = inWin
+        ? 'Focus block initiated, sir. You are in your ' + inWin.label + ' window — ' + durMin + ' minutes on the clock.'
+        : 'Focus block initiated, ' + durMin + ' minutes, sir. Eliminating distractions.';
+      _jarvisSpeak(speakLine);
+      _tickFocus(durMin);
+    });
+
+    // PAUSE button
+    var pauseBtn = document.getElementById('peakFocusPauseBtn');
+    if (pauseBtn) pauseBtn.addEventListener('click', function() {
+      if (!_focusActive) return;
+      if (_focusPaused) {
+        // Resume
+        _focusEnd += (Date.now() - _focusPausedAt);
+        _focusPaused = false;
+        pauseBtn.textContent = '❚❚ Pause';
+        pauseBtn.style.color = '#F5C842';
         if (window._arcSetMood) window._arcSetMood('responding');
-        _jarvisSpeak('Focus block initiated, ' + durMin + ' minutes, sir. Eliminating distractions.');
-        document.getElementById('peakFocusMsg').textContent = 'In the zone — deep work mode';
-        _tickFocus(durMin);
+        _tickFocus(Math.round(_focusDur / 60));
+      } else {
+        // Pause
+        _focusPaused = true;
+        _focusPausedAt = Date.now();
+        _focusPausedTotal += 0;
+        if (_focusRaf) cancelAnimationFrame(_focusRaf);
+        pauseBtn.textContent = '▶ Resume';
+        pauseBtn.style.color = '#6EE7B7';
+        if (window._arcSetMood) window._arcSetMood('thinking');
       }
     });
-  }
-  function _tickFocus(totalMin) {
-    if (!_focusActive) return;
-    var rem = Math.max(0, (_focusEnd - Date.now()) / 1000);
-    var m = Math.floor(rem / 60), s = Math.floor(rem % 60);
-    var timerEl = document.getElementById('peakFocusTimer');
-    var fillEl = document.getElementById('peakFocusBarFill');
-    var msgEl = document.getElementById('peakFocusMsg');
-    if (timerEl) timerEl.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-    var pct = (1 - rem / _focusDur) * 100;
-    if (fillEl) fillEl.style.width = pct.toFixed(1) + '%';
-    if (rem <= 0) {
-      // Done — save full session
-      _focusSaveSession(_focusStartTs, Date.now(), _focusDur);
+
+    // END button
+    var endBtn = document.getElementById('peakFocusEndBtn');
+    if (endBtn) endBtn.addEventListener('click', function() {
+      if (!_focusActive) return;
+      var elapsed = Math.round((Date.now() - _focusStartTs) / 1000);
+      if (elapsed >= 5) { _focusSaveSession(_focusStartTs, Date.now(), elapsed); _focusMarkTaskDone(_focusCurrentTask); }
       _focusActive = false;
-      if (timerEl) timerEl.textContent = 'DONE';
-      if (msgEl) msgEl.textContent = 'Session complete. Well done, sir.';
-      document.getElementById('peakFocusBtn').textContent = 'START';
-      document.getElementById('peakFocusBtn').style.background = 'rgba(110,231,183,0.1)';
-      document.getElementById('peakFocusBtn').style.borderColor = 'rgba(110,231,183,0.3)';
-      document.getElementById('peakFocusBtn').style.color = '#6EE7B7';
-      var intBtn3 = document.getElementById('peakFocusInterruptBtn');
-      if (intBtn3) intBtn3.style.display = 'none';
-      var pulseEl3 = document.getElementById('peakFocusPulse');
-      if (pulseEl3) pulseEl3.style.display = 'none';
+      _focusPaused = false;
+      if (_focusRaf) cancelAnimationFrame(_focusRaf);
+      _focusRaf = null;
+      _focusShowIdle();
+      var pauseBtn2 = document.getElementById('peakFocusPauseBtn');
+      if (pauseBtn2) { pauseBtn2.textContent = '❚❚ Pause'; pauseBtn2.style.color = '#F5C842'; }
+      var fillEl = document.getElementById('peakFocusBarFill');
+      if (fillEl) fillEl.style.width = '0%';
+      if (window._arcSetMood) window._arcSetMood('idle');
+      _focusRenderSummary();
+    });
+
+    // Mark interrupted (onclick already wired in HTML)
+    window._focusMarkInterrupted = _focusMarkInterrupted;
+  }
+
+  function _tickFocus(totalMin) {
+    if (!_focusActive || _focusPaused) return;
+    var rem = Math.max(0, (_focusEnd - Date.now()) / 1000);
+    var elapsed = Math.round((Date.now() - _focusStartTs) / 1000);
+    var em = Math.floor(elapsed / 60), es = elapsed % 60;
+    var rm = Math.floor(rem / 60), rs = Math.floor(rem % 60);
+
+    var elapsedEl = document.getElementById('peakFocusElapsed');
+    if (elapsedEl) elapsedEl.textContent = String(em).padStart(2,'0') + ':' + String(es).padStart(2,'0');
+
+    var timerEl = document.getElementById('peakFocusTimer');
+    if (timerEl) timerEl.textContent = String(rm).padStart(2,'0') + ':' + String(rs).padStart(2,'0') + ' remaining';
+
+    var pct = (1 - rem / _focusDur) * 100;
+    var fillEl = document.getElementById('peakFocusBarFill');
+    if (fillEl) fillEl.style.width = pct.toFixed(1) + '%';
+
+    if (rem <= 0) {
+      _focusSaveSession(_focusStartTs, Date.now(), _focusDur);
+      _focusMarkTaskDone(_focusCurrentTask);
+      _focusActive = false;
+      _focusShowIdle();
+      var msg = document.getElementById('peakFocusMsg');
+      if (msg) msg.textContent = 'Session complete. Well done, sir.';
       if (window._arcSetMood) window._arcSetMood('idle');
       _jarvisSpeak('Focus block complete, sir. ' + totalMin + ' minutes of deep work logged.');
       _focusRenderSummary();
       return;
     }
     // 80% warning once
-    if (pct >= 80 && pct < 80 + (100 / _focusDur)) {
+    if (!_focus80Warned && pct >= 80) {
+      _focus80Warned = true;
       _jarvisSpeak('Heads up, sir — ' + Math.round(rem / 60) + ' minutes remaining in your focus block.');
     }
     _focusRaf = requestAnimationFrame(function(){ setTimeout(function(){ _tickFocus(totalMin); }, 1000); });
@@ -25157,6 +25379,7 @@ function switchTab(tab) {
         'Current time right now: ' + nowClock + ' (sir woke at ' + wakeClock + '). ' +
         (wxStr ? wxStr + '. ' : '') +
         'Biometrics: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + '. ' +
+        (function(){ try { var fs=JSON.parse(localStorage.getItem('po_focus_sessions')||'[]'); var td=new Date().toISOString().slice(0,10); var wk=0; for(var wi=0;wi<7;wi++){var wd=new Date();wd.setDate(wd.getDate()-wi);var wds=wd.toISOString().slice(0,10);wk+=fs.filter(function(s){return s.date===wds;}).reduce(function(a,s){return a+s.dur;},0);} var wh=Math.floor(wk/3600),wm=Math.floor((wk%3600)/60); return 'Deep work this week: '+wh+'h '+wm+'m against a 15h target. '; } catch(e){ return ''; } })() +
         'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
         (newsStr ? newsStr + '. ' : '') +
         (lifeCtx ? ('\nFULL LIFE SNAPSHOT (for line 5):\n' + lifeCtx + '\n') : '') +
@@ -25469,6 +25692,23 @@ function switchTab(tab) {
           nudge = _pending.length + ' tasks still open today, sir — ' + _pending.slice(0,2).map(function(t){return t.title;}).join(', ') + '…';
         }
       } catch(e){}
+    }
+
+    // Peak focus window nudge: upcoming window within 30 min, or opening in X min
+    if (!nudge && window._peakFocusWins && window._peakFocusWins.length) {
+      var nowFrac = h;
+      var soonWin = null, soonMins = 999;
+      window._peakFocusWins.forEach(function(w) {
+        var winStart = w.start;
+        var minsTo = ((winStart - nowFrac) * 60 + 1440) % 1440;
+        // not already inside the window, and starting within 30 min
+        var inWindow = (nowFrac >= w.start && nowFrac <= w.end + 1);
+        if (!inWindow && minsTo <= 30 && minsTo < soonMins) { soonMins = minsTo; soonWin = w; }
+      });
+      if (soonWin) {
+        var minsRounded = Math.round(soonMins);
+        nudge = 'Your ' + soonWin.label + ' focus window opens in ' + (minsRounded <= 2 ? 'about a minute' : minsRounded + ' minutes') + ', sir.';
+      }
     }
 
     // Finance nudge: a subscription renews within 3 days
