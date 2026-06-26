@@ -10212,7 +10212,7 @@ window.canonicalJson = function(obj) {
           <button id="peakFocusEndBtn" type="button" style="flex:1;padding:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;font-family:var(--font-mono);font-size:11px;color:#EF4444;cursor:pointer;letter-spacing:0.04em">&#9632; End Session</button>
         </div>
         <!-- Mark interrupted -->
-        <button id="peakFocusInterruptBtn" style="display:none;margin-top:6px;width:100%;padding:6px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);border-radius:10px;font-family:var(--font-mono);font-size:10px;color:#EF4444;cursor:pointer" onclick="window._focusMarkInterrupted()">&#9888; Mark as interrupted</button>
+        <button id="peakFocusInterruptBtn" style="margin-top:6px;width:100%;padding:6px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);border-radius:10px;font-family:var(--font-mono);font-size:10px;color:#EF4444;cursor:pointer" onclick="window._focusMarkInterrupted()">&#9888; Mark as interrupted</button>
       </div>
       <!-- Focus tracking summary -->
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
@@ -24823,8 +24823,10 @@ function switchTab(tab) {
   function _focusShowIdle() {
     var idle = document.getElementById('peakFocusIdleState');
     var active = document.getElementById('peakFocusActiveState');
-    if (idle) idle.style.display = 'flex';
+    if (idle) idle.style.display = '';
     if (active) active.style.display = 'none';
+    var taskInput = document.getElementById('peakFocusTaskInput');
+    if (taskInput) taskInput.value = '';
     var msg = document.getElementById('peakFocusMsg');
     if (msg) msg.textContent = 'Start when you\'re ready';
   }
