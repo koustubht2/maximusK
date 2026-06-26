@@ -9990,9 +9990,13 @@ window.canonicalJson = function(obj) {
       <div class="peak-diamond-wrap">
         <svg viewBox="0 0 40 40" width="34" height="34" fill="none"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" stroke="#6EE7B7" stroke-width="1.5" fill="rgba(110,231,183,0.06)"/><polygon points="20,8 30,15 30,25 20,32 10,25 10,15" stroke="#6EE7B7" stroke-width="0.8" fill="rgba(110,231,183,0.03)"/></svg>
       </div>
-      <div style="flex:1">
-        <div class="peak-page-title">Your peak today</div>
-        <div class="peak-page-date" id="peakPageDate">—</div>
+      <div style="flex:1;min-width:0">
+        <div class="peak-page-title" id="peakPageTitle">Your peak today</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:1px">
+          <button id="peakDayPrev" type="button" style="background:none;border:none;color:rgba(110,231,183,0.6);font-size:16px;cursor:pointer;padding:0 2px;line-height:1">&#8249;</button>
+          <div class="peak-page-date" id="peakPageDate">—</div>
+          <button id="peakDayNext" type="button" style="background:none;border:none;color:rgba(110,231,183,0.6);font-size:16px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.3" disabled>&#8250;</button>
+        </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button id="peakSunBtn" type="button" title="Log morning sunlight" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:20px;color:#FBBF24;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;padding:5px 11px;cursor:pointer;white-space:nowrap">☀ Sunlight</button>
@@ -10090,11 +10094,6 @@ window.canonicalJson = function(obj) {
           <div class="peak-energy-tabs" style="margin-bottom:0;">
             <button class="peak-etab active" id="peakTabCore" data-mode="core" type="button">LINE</button>
             <button class="peak-etab" id="peakTabStack" data-mode="stack" type="button">STACK</button>
-          </div>
-          <div class="peak-day-header" style="margin:0;justify-content:flex-end;">
-            <button class="peak-day-nav" id="peakDayPrev" type="button">&#8249;</button>
-            <div class="peak-section-label" style="margin:0" id="peakDayLabel">Your Day</div>
-            <button class="peak-day-nav" id="peakDayNext" type="button">&#8250;</button>
           </div>
         </div>
       </div>
@@ -24125,6 +24124,12 @@ function switchTab(tab) {
       var d = new Date();
       el.textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     }
+    var _ptitle = document.getElementById('peakPageTitle');
+    if (_ptitle) _ptitle.textContent = 'Your peak today';
+    var _nextBtn0 = document.getElementById('peakDayNext');
+    if (_nextBtn0) { _nextBtn0.disabled = true; _nextBtn0.style.opacity = '0.3'; }
+    var _prevBtn0 = document.getElementById('peakDayPrev');
+    if (_prevBtn0) { _prevBtn0.disabled = false; _prevBtn0.style.opacity = ''; }
     var todayR = null, todayS = null;
     if (oura.readiness) todayR = oura.readiness.find(function(r){ return r.day === tod; }) || null;
     if (oura.sleep)     todayS = oura.sleep.find(function(s){ return s.day === tod; }) || null;
@@ -24605,19 +24610,33 @@ function switchTab(tab) {
   var _focusActive = false, _focusEnd = 0, _focusDur = 0, _focusRaf = null;
   var _focusStartTs = 0;
   var FOCUS_KEY = 'po_focus_sessions';
+  var _focusWins = [], _focusWakeHour = 7;
 
   function _focusLoadSessions() {
     try { return JSON.parse(localStorage.getItem(FOCUS_KEY)) || []; } catch(e) { return []; }
   }
   function _focusMarkInterrupted() {
-    var sessions = _focusLoadSessions();
-    if (!sessions.length) return;
-    var last = sessions[sessions.length - 1];
-    if (last && last.date === new Date().toISOString().slice(0,10)) {
-      last.interrupted = true;
-      localStorage.setItem('po_focus_sessions', JSON.stringify(sessions));
-      _focusRenderSummary();
+    if (!_focusActive) return;
+    // Save the current running session immediately as interrupted
+    var elapsed = Math.round((Date.now() - _focusStartTs) / 1000);
+    if (elapsed >= 5) {
+      var sessions = _focusLoadSessions();
+      var dateStr = new Date(_focusStartTs).toISOString().slice(0,10);
+      sessions.push({ date: dateStr, start: _focusStartTs, end: Date.now(), dur: elapsed, interrupted: true, task: _focusCurrentTask || '' });
+      var cutoff = Date.now() - 90*24*3600*1000;
+      sessions = sessions.filter(function(s){ return s.start > cutoff; });
+      localStorage.setItem(FOCUS_KEY, JSON.stringify(sessions));
     }
+    // Stop the timer
+    _focusActive = false;
+    _focusPaused = false;
+    if (_focusRaf) cancelAnimationFrame(_focusRaf);
+    _focusRaf = null;
+    _focusShowIdle();
+    var pauseBtn = document.getElementById('peakFocusPauseBtn');
+    if (pauseBtn) { pauseBtn.textContent = '❚❚ Pause'; pauseBtn.style.color = '#F5C842'; }
+    if (window._arcSetMood) window._arcSetMood('idle');
+    _focusRenderSummary();
   }
   window._focusMarkInterrupted = _focusMarkInterrupted;
   var _focusCurrentTask = '';
@@ -24632,7 +24651,10 @@ function switchTab(tab) {
   }
   function _focusRenderSummary() {
     var sessions = _focusLoadSessions();
-    var todayStr = new Date().toISOString().slice(0,10);
+    // respect day offset — show logs for the viewed day, not always today
+    var _viewOffset = (typeof _peakDayOffset !== 'undefined') ? _peakDayOffset : 0;
+    var _viewDate = new Date(); _viewDate.setDate(_viewDate.getDate() + _viewOffset);
+    var todayStr = _viewDate.toISOString().slice(0,10);
     var todaySec = sessions.filter(function(s){ return s.date === todayStr; })
                            .reduce(function(sum,s){ return sum + s.dur; }, 0);
     var th = Math.floor(todaySec/3600), tm = Math.floor((todaySec%3600)/60);
@@ -24820,6 +24842,12 @@ function switchTab(tab) {
   var _focusPaused = false, _focusPausedAt = 0, _focusPausedTotal = 0;
   var _focus80Warned = false;
 
+  // Re-render pills whenever Goals tasks change (checkbox toggle, task add/remove)
+  window.addEventListener('goals-changed', function() {
+    if (!_focusActive) _focusRenderIdleExtras(_focusWins, _focusWakeHour);
+    _focusRenderSummary();
+  });
+
   function _focusShowIdle() {
     var idle = document.getElementById('peakFocusIdleState');
     var active = document.getElementById('peakFocusActiveState');
@@ -24829,6 +24857,8 @@ function switchTab(tab) {
     if (taskInput) taskInput.value = '';
     var msg = document.getElementById('peakFocusMsg');
     if (msg) msg.textContent = 'Start when you\'re ready';
+    // always re-render pills so they reflect current Goals task state
+    _focusRenderIdleExtras(_focusWins, _focusWakeHour);
   }
   function _focusShowActive(taskName) {
     var idle = document.getElementById('peakFocusIdleState');
@@ -24907,6 +24937,8 @@ function switchTab(tab) {
     _focusRenderSummary();
     var wins = (typeof findBestWindows === 'function') ? findBestWindows(arr, wakeHour) : [];
     window._peakFocusWins = wins;
+    _focusWins = wins;
+    _focusWakeHour = wakeHour;
     var curWin = wins && wins[0];
     if (zoneEl && curWin) zoneEl.textContent = curWin.label + ' · ' + curWin.dur + 'min window';
     _focusRenderIdleExtras(wins, wakeHour);
@@ -27029,15 +27061,18 @@ function switchTab(tab) {
     var wh = _wakeHour;
     var r = oura.readiness && oura.readiness[Math.abs(offset)] && oura.readiness[Math.abs(offset)].score;
     var s = oura.sleep && oura.sleep[Math.abs(offset)] && oura.sleep[Math.abs(offset)].score;
+    var d2 = new Date(); d2.setDate(d2.getDate() + offset);
+    var _dateStr2 = d2.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    var _pgDate = document.getElementById('peakPageDate');
+    if (_pgDate) _pgDate.textContent = offset === 0 ? new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) : _dateStr2;
+    var _pgTitle = document.getElementById('peakPageTitle');
+    if (_pgTitle) _pgTitle.textContent = offset === 0 ? 'Your peak today' : 'Your peak — ' + d2.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    var _nextBtn = document.getElementById('peakDayNext');
+    if (_nextBtn) { _nextBtn.disabled = offset >= 0; _nextBtn.style.opacity = offset >= 0 ? '0.3' : ''; }
+    var _prevBtn = document.getElementById('peakDayPrev');
+    if (_prevBtn) { _prevBtn.disabled = false; _prevBtn.style.opacity = ''; }
     var dayLbl = document.getElementById('peakDayLabel');
-    if (dayLbl) {
-      if (offset === 0) {
-        dayLbl.textContent = 'Your Day';
-      } else {
-        var d2 = new Date(); d2.setDate(d2.getDate() + offset);
-        dayLbl.textContent = d2.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-      }
-    }
+    if (dayLbl) dayLbl.textContent = offset === 0 ? 'Your Day' : _dateStr2;
     // HRV in ms from detailedSleep, indexed by day offset
     var hrv2 = (function() {
       var ds = oura.detailedSleep || [];
@@ -27148,6 +27183,17 @@ function switchTab(tab) {
     renderCaffLogs();
     renderCoffeeScore(cl2, r);
     renderVitality();
+    // Focus session log — update for viewed day
+    if (typeof _focusRenderSummary === 'function') _focusRenderSummary();
+    // Hide START on past days — can't log a session in the past
+    var _focusIdle = document.getElementById('peakFocusIdleState');
+    var _focusActive2 = document.getElementById('peakFocusActiveState');
+    if (offset !== 0) {
+      if (_focusIdle) _focusIdle.style.display = 'none';
+      if (_focusActive2 && !_focusActive) _focusActive2.style.display = 'none';
+    } else {
+      if (_focusIdle && !_focusActive) _focusIdle.style.display = '';
+    }
   }
 
   // ── Event wiring ───────────────────────────────────────────
