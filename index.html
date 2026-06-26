@@ -24906,7 +24906,11 @@ function switchTab(tab) {
     if (pillList) {
       try {
         var todayStr = (typeof gsDateKey === 'function') ? gsDateKey() : new Date().toISOString().slice(0,10);
-        var tasks = JSON.parse(localStorage.getItem('goals_daily_' + todayStr)) || [];
+        // ensure today's task list exists even if Main tab hasn't been visited yet
+        if (typeof gsEnsureDailyFromTemplate === 'function') gsEnsureDailyFromTemplate(todayStr);
+        var tasks = (typeof storeGet === 'function')
+          ? (storeGet('goals_daily_' + todayStr) || [])
+          : (JSON.parse(localStorage.getItem('goals_daily_' + todayStr)) || []);
         var pending = tasks.filter(function(t){ return !t.checked && !t.skipped; });
         if (pending.length && pillsWrap) {
           pillsWrap.style.display = '';
