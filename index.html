@@ -13417,7 +13417,7 @@ function computeLifeArcScore() {
     // focus depth: 1h=2pts, 2h=4pts, 3h+=5pts (target 3h deep work)
     let focusPts = 0;
     try {
-      const fSessions = JSON.parse(localStorage.getItem('po_focus_sessions') || '[]');
+      const fSessions = JSON.parse(localStorage.getItem('goals_focus_sessions') || '[]');
       const fTodaySec = fSessions.filter(s => s.date === todayStr).reduce((a, s) => a + s.dur, 0);
       focusPts = Math.min(5, Math.round((fTodaySec / (3 * 3600)) * 5));
     } catch(e) {}
@@ -24609,7 +24609,7 @@ function switchTab(tab) {
   // ══════════════════════════════════════════════════════════════
   var _focusActive = false, _focusEnd = 0, _focusDur = 0, _focusRaf = null;
   var _focusStartTs = 0;
-  var FOCUS_KEY = 'po_focus_sessions';
+  var FOCUS_KEY = 'goals_focus_sessions';
   var _focusWins = [], _focusWakeHour = 7;
 
   function _focusLoadSessions() {
@@ -24797,25 +24797,28 @@ function switchTab(tab) {
         if (streak >= 3) insight = 'You\'re on a '+streak+'-day focus streak, sir. Keep the momentum.';
         else if (best >= 3) insight = 'Your best focus streak is '+best+' days. Current streak: '+streak+'.';
       }
-      if (!insight && sessions.length >= 1) {
+      if (!insight) {
         // fallback: today's total vs weekly avg
         var weekSec = 0, weekDays = 0;
         for (var wi=1; wi<=7; wi++) {
-          var wd = new Date(); wd.setDate(wd.getDate()-wi);
-          var wds = wd.toISOString().slice(0,10);
-          var wdSec = sessions.filter(function(s){return s.date===wds;}).reduce(function(a,s){return a+s.dur;},0);
-          if (wdSec > 0) { weekSec += wdSec; weekDays++; }
+          var wd2 = new Date(); wd2.setDate(wd2.getDate()-wi);
+          var wds2 = wd2.toISOString().slice(0,10);
+          var wdSec2 = sessions.filter(function(s){return s.date===wds2;}).reduce(function(a,s){return a+s.dur;},0);
+          if (wdSec2 > 0) { weekSec += wdSec2; weekDays++; }
         }
         if (weekDays >= 2) {
           var avgSec = weekSec / weekDays;
           var avgMin = Math.round(avgSec / 60);
-          insight = 'Your 7-day focus average is '+avgMin+' min/day, sir. Log a session to build the streak.';
+          var todayClause2 = todayReadiness != null ? ' Readiness today: ' + todayReadiness + ', sir.' : '';
+          insight = 'Your 7-day focus average is ' + avgMin + ' min/day.' + todayClause2;
+        } else if (todayReadiness != null) {
+          insight = 'Readiness today is ' + todayReadiness + '. Start a session to begin tracking your focus streak, sir.';
         } else {
           insight = 'Track your deep work sessions here. Consistency compounds, sir.';
         }
       }
-      if (insight) { insightEl.textContent = insight; insightEl.style.display = ''; }
-      else insightEl.style.display = 'none';
+      insightEl.textContent = insight;
+      insightEl.style.display = '';
     }
   }
   // Mark a Goals task done by title match (called on session end/complete)
@@ -25417,7 +25420,7 @@ function switchTab(tab) {
         'Current time right now: ' + nowClock + ' (sir woke at ' + wakeClock + '). ' +
         (wxStr ? wxStr + '. ' : '') +
         'Biometrics: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + '. ' +
-        (function(){ try { var fs=JSON.parse(localStorage.getItem('po_focus_sessions')||'[]'); var td=new Date().toISOString().slice(0,10); var wk=0; for(var wi=0;wi<7;wi++){var wd=new Date();wd.setDate(wd.getDate()-wi);var wds=wd.toISOString().slice(0,10);wk+=fs.filter(function(s){return s.date===wds;}).reduce(function(a,s){return a+s.dur;},0);} var wh=Math.floor(wk/3600),wm=Math.floor((wk%3600)/60); return 'Deep work this week: '+wh+'h '+wm+'m against a 15h target. '; } catch(e){ return ''; } })() +
+        (function(){ try { var fs=JSON.parse(localStorage.getItem('goals_focus_sessions')||'[]'); var td=new Date().toISOString().slice(0,10); var wk=0; for(var wi=0;wi<7;wi++){var wd=new Date();wd.setDate(wd.getDate()-wi);var wds=wd.toISOString().slice(0,10);wk+=fs.filter(function(s){return s.date===wds;}).reduce(function(a,s){return a+s.dur;},0);} var wh=Math.floor(wk/3600),wm=Math.floor((wk%3600)/60); return 'Deep work this week: '+wh+'h '+wm+'m against a 15h target. '; } catch(e){ return ''; } })() +
         'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + '. ' +
         (newsStr ? newsStr + '. ' : '') +
         (lifeCtx ? ('\nFULL LIFE SNAPSHOT (for line 5):\n' + lifeCtx + '\n') : '') +
