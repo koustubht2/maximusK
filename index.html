@@ -2742,6 +2742,8 @@ body::after {
 .gs-dating-person.stale { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.08); }
 .gs-dating-person.stale-red { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.08); }
 .gs-dating-person.stale-amber { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.06); }
+.gs-dating-person.dragging { opacity: 0.4; }
+.gs-dating-stage.drag-over { background: rgba(110,231,183,0.08); border-color: rgba(110,231,183,0.35); }
 /* Approaches log */
 .gs-approach-item {
   display: flex; align-items: center; gap: 10px; padding: 9px 12px;
@@ -7588,7 +7590,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ---- glass tokens shared by the regular (non-insight) cards ---- */
 #dashView .gs-banner, #dashView .gs-focus-card, #dashView .gs-rings-wrap, #dashView .gs-section,
 #dashView .gp-thesis-card, #dashView .gp-commitments-wrap, #dashView .gp-braindump-card,
-#dashView .gp-plan-day-card, #dashView .gw-cal-wrap{
+#dashView .gp-plan-day-card, #dashView .gw-cal-wrap,
+#dashView .gs-reading-wrap, #dashView .gs-rel-wrap{
   background:rgba(255,255,255,0.035) !important;
   border:1px solid rgba(231,210,160,0.10) !important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 0 1px rgba(255,255,255,0.02), 0 18px 44px -28px #000 !important;
@@ -7667,6 +7670,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ---- section titles → Fraunces; keep semantic badge colours (sacred=orange, etc.) ---- */
 #dashView .gs-section-title{ font-family:var(--pk-serif); font-weight:400; font-size:17px; }
+#dashView .gs-reading-title, #dashView .gs-rel-title{ font-family:var(--pk-serif); font-weight:400; font-size:15px; letter-spacing:0; text-transform:none; color:var(--text-primary); }
+#dashView .gs-reading-header svg, #dashView .gs-rel-header svg{ opacity:0.7; }
 
 /* ---- goals sub-tabs + ticker → gold accents ---- */
 #dashView .goals-tab.active{ color:var(--pk-gold-soft); }
@@ -7675,7 +7680,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ---- entrance animation (re-uses Peak's, triggered by .pk-animate on this view) ---- */
 #dashView.pk-animate .gs-section, #dashView.pk-animate .wotd-card, #dashView.pk-animate #jvInsightCard,
-#dashView.pk-animate .gs-banner, #dashView.pk-animate .gs-rings-wrap, #dashView.pk-animate .gs-focus-card{
+#dashView.pk-animate .gs-banner, #dashView.pk-animate .gs-rings-wrap, #dashView.pk-animate .gs-focus-card,
+#dashView.pk-animate .gs-reading-wrap, #dashView.pk-animate .gs-rel-wrap{
   animation:pkBlurIn 1.26s cubic-bezier(.16,1,.3,1) both;
 }
 @media (prefers-reduced-motion: reduce){ #dashView.pk-animate *{ animation:none !important; } }
@@ -7811,6 +7817,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* shared hover glow (matches Peak's .peak-card:hover) on all 4 tabs' glass cards */
 #dashView .gs-banner:hover, #dashView .gs-focus-card:hover, #dashView .gs-rings-wrap:hover, #dashView .gs-section:hover,
+#dashView .gs-reading-wrap:hover, #dashView .gs-rel-wrap:hover,
 #healthView .oura-scores:hover, #healthView .oura-metrics:hover, #healthView .oura-sleep-breakdown:hover, #healthView .oura-week-cal:hover, #healthView .oura-trend-wrap:hover, #healthView .stack-card:hover, #healthView .wc-card:hover,
 #gymView .wt-card:hover, #gymView .card:hover,
 #profileView .prof-card:hover{
@@ -13811,7 +13818,7 @@ Reply with ONLY the sentence, nothing else.`;
 // order. The other tabs animate SCATTERED classes (not sequential siblings), so
 // CSS nth-of-type can't stagger them correctly — we stamp delays in JS instead.
 window._STAGGER_SEL = {
-  dashView:    '.one-thing-card, .gs-section, .wotd-card, #jvInsightCard, .gs-banner, .gs-rings-wrap, .gs-focus-card',
+  dashView:    '.one-thing-card, .gs-section, .wotd-card, #jvInsightCard, .gs-banner, .gs-rings-wrap, .gs-focus-card, .gs-reading-wrap, .gs-rel-wrap',
   healthView:  '.oura-scores, .oura-metrics, .stack-card, .wc-card, .oura-todays-call',
   gymView:     '.wt-card, .card, .po-tw',
   profileView: '.prof-card',
@@ -30393,22 +30400,57 @@ document.addEventListener('DOMContentLoaded', function() {
         var people = pipeline.filter(function(p){ return p.stage===stage; });
         var stale3 = 3 * 86400000;  // amber
         var stale7 = 7 * 86400000;  // red
-        return '<div class="gs-dating-stage">'
+        return '<div class="gs-dating-stage" data-stage="'+stage+'">'
           + '<div class="gs-dating-stage-label">'+stage+'</div>'
           + people.map(function(p){
               var staleClass = p.lastMsg ? ((Date.now()-p.lastMsg) > stale7 ? ' stale-red' : (Date.now()-p.lastMsg) > stale3 ? ' stale-amber' : '') : '';
-              return '<div class="gs-dating-person'+staleClass+'" data-pid="'+p.id+'" style="cursor:pointer">'
+              return '<div class="gs-dating-person'+staleClass+'" data-pid="'+p.id+'" draggable="true" style="cursor:grab">'
                 + _esc(p.name)
                 + '<div class="gs-dating-person-app">'+_esc(p.app||'')+'</div>'
                 + '</div>';
             }).join('')
           + '</div>';
       }).join('');
-      // Tap to advance stage
+      // Tap to open modal
       dpEl.querySelectorAll('.gs-dating-person').forEach(function(el){
         el.addEventListener('click', function(e){
           e.stopPropagation();
           showDatingModal(parseInt(el.dataset.pid));
+        });
+        // Drag start
+        el.addEventListener('dragstart', function(e){
+          e.dataTransfer.setData('text/plain', el.dataset.pid);
+          e.dataTransfer.effectAllowed = 'move';
+          setTimeout(function(){ el.classList.add('dragging'); }, 0);
+        });
+        el.addEventListener('dragend', function(){
+          el.classList.remove('dragging');
+          dpEl.querySelectorAll('.gs-dating-stage').forEach(function(col){ col.classList.remove('drag-over'); });
+        });
+      });
+      // Drop zones on each column
+      dpEl.querySelectorAll('.gs-dating-stage').forEach(function(col){
+        col.addEventListener('dragover', function(e){
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          col.classList.add('drag-over');
+        });
+        col.addEventListener('dragleave', function(e){
+          if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+        });
+        col.addEventListener('drop', function(e){
+          e.preventDefault();
+          col.classList.remove('drag-over');
+          var pid = parseInt(e.dataTransfer.getData('text/plain'));
+          var newStage = col.dataset.stage;
+          var pipeline2 = load(DATING_KEY, []);
+          var p2 = pipeline2.find(function(x){ return x.id===pid; });
+          if (p2 && p2.stage !== newStage) {
+            p2.stage = newStage;
+            p2.lastMsg = Date.now();
+            save(DATING_KEY, pipeline2);
+          }
+          render();
         });
       });
     }
@@ -30506,6 +30548,9 @@ document.addEventListener('DOMContentLoaded', function() {
       + '<div class="gs-modal-row">'
       + '<button class="gs-modal-btn primary" id="relLogSave">✓ Log contact today</button>'
       + '<button class="gs-modal-btn cancel" id="relLogCancel">Cancel</button>'
+      + '</div>'
+      + '<div style="margin-top:6px;text-align:center">'
+      + '<button id="relContactDelete" style="font-size:10px;font-family:var(--font-mono);color:rgba(239,68,68,0.6);background:none;border:none;cursor:pointer;padding:4px 8px;">Remove contact</button>'
       + '</div></div>';
     document.body.appendChild(overlay);
     document.getElementById('relLogCancel').onclick = function(){ document.body.removeChild(overlay); };
@@ -30517,6 +30562,12 @@ document.addEventListener('DOMContentLoaded', function() {
       var relLog = load(REL_LOG_KEY, []);
       relLog.push({ date: today(), contactId: cid, name: c.name, note: note });
       save(REL_LOG_KEY, relLog);
+      document.body.removeChild(overlay); render();
+    };
+    document.getElementById('relContactDelete').onclick = function(){
+      if (!confirm('Remove ' + c.name + ' from contacts?')) return;
+      var contacts2 = load(REL_KEY, []);
+      save(REL_KEY, contacts2.filter(function(x){ return x.id!==cid; }));
       document.body.removeChild(overlay); render();
     };
   }
@@ -30552,18 +30603,28 @@ document.addEventListener('DOMContentLoaded', function() {
     var curIdx = PIPELINE_STAGES.indexOf(p.stage);
     var overlay = document.createElement('div');
     overlay.className = 'gs-modal-overlay';
+    var lastMsgAgo = p.lastMsg ? Math.floor((Date.now() - p.lastMsg) / 86400000) : null;
+    var lastMsgLabel = lastMsgAgo === null ? 'Never messaged' : lastMsgAgo === 0 ? 'Last message: today' : 'Last message: ' + lastMsgAgo + 'd ago';
     overlay.innerHTML = '<div class="gs-modal-box">'
       + '<div class="gs-modal-title">'+_esc(p.name)+'</div>'
-      + '<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:4px">'+_esc(p.app||'')+'  ·  Stage: '+_esc(p.stage)+'</div>'
+      + '<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px">'+_esc(p.app||'')+'  ·  Stage: '+_esc(p.stage)+'</div>'
+      + '<div style="font-size:10px;font-family:var(--font-mono);color:var(--text-tertiary);margin-bottom:10px">'+lastMsgLabel+'</div>'
+      + '<button class="gs-modal-btn primary" id="relDMLogged" style="margin-bottom:10px;width:100%">📩 We messaged today</button>'
       + '<select class="gs-modal-select" id="relDMStage">'
       + PIPELINE_STAGES.map(function(s,i){ return '<option'+(i===curIdx?' selected':'')+'>'+s+'</option>'; }).join('')
       + '</select>'
       + '<div class="gs-modal-row">'
-      + '<button class="gs-modal-btn primary" id="relDMSave">Update</button>'
+      + '<button class="gs-modal-btn primary" id="relDMSave">Move stage</button>'
       + '<button class="gs-modal-btn cancel" id="relDMRemove" style="color:#EF4444;border-color:rgba(239,68,68,0.3)">Remove</button>'
       + '</div></div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
+    document.getElementById('relDMLogged').onclick = function(){
+      var pipeline2 = load(DATING_KEY, []);
+      var p2 = pipeline2.find(function(x){ return x.id===pid; });
+      if (p2) { p2.lastMsg = Date.now(); }
+      save(DATING_KEY, pipeline2); document.body.removeChild(overlay); render();
+    };
     document.getElementById('relDMRemove').onclick = function(){
       var pipeline2 = load(DATING_KEY, []);
       save(DATING_KEY, pipeline2.filter(function(x){ return x.id!==pid; }));
