@@ -29751,6 +29751,20 @@ function switchTab(tab) {
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.60;
 
+        // iOS Safari reclaims WebGL context on pinch-zoom — catch it so the page
+        // doesn't crash. On restore, reinitialise the whole Three.js engine.
+        var _contextLost = false;
+        canvas.addEventListener('webglcontextlost', function(e){
+          e.preventDefault(); // required — tells browser we'll handle restore
+          _contextLost = true;
+        }, false);
+        canvas.addEventListener('webglcontextrestored', function(){
+          _contextLost = false;
+          // Reset the lazy-init flag and re-run initThree on next drawMandala call
+          _three = null;
+          _inited = false;
+        }, false);
+
         var scene  = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera(36,1,.1,100);
         camera.position.set(0,0,5.2);
@@ -30096,6 +30110,7 @@ function switchTab(tab) {
 
         function frame(){
           requestAnimationFrame(frame);
+          if(_contextLost) return;
 
           // render-gate: only run when healthView is active
           var hv = document.getElementById('healthView');
