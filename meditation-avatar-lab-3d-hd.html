@@ -44,10 +44,10 @@ select{
 .btn:hover{ background:rgba(124,58,237,.25); }
 .btn.on{ background:rgba(124,58,237,.40); border-color:#a78bfa; color:#fff; }
 .stage{
-  position:relative; width:360px; height:360px;
+  position:relative; width:468px; height:468px;
   display:flex; align-items:center; justify-content:center;
 }
-#medCanvas{ width:360px; height:360px; max-width:90vw; max-height:90vw; display:block; cursor:pointer; }
+#medCanvas{ width:468px; height:468px; max-width:90vw; max-height:90vw; display:block; cursor:pointer; }
 .breath-label{
   position:absolute; bottom:-38px; left:50%; transform:translateX(-50%);
   font-family:'Fraunces',Georgia,serif; font-size:17px; font-weight:300;
@@ -108,7 +108,7 @@ select{
 <div class="variants" id="variantRow"></div>
 
 <div class="stage">
-  <canvas id="medCanvas" width="480" height="480" title="Click to ping"></canvas>
+  <canvas id="medCanvas" width="624" height="624" title="Click to ping"></canvas>
   <div class="breath-label" id="breathLabel">Rest</div>
   <div class="phase-pct" id="phasePct"></div>
 </div>
@@ -132,78 +132,82 @@ import { UnrealBloomPass }  from 'three/addons/postprocessing/UnrealBloomPass.js
 function buildMandala(){
   const pts = [];
   const PI2 = Math.PI * 2;
+  // sub: index of the distinct sub-element within the layer.
+  // Adjacent sub-elements alternate CW/CCW via sub%2 in updateParticles.
+  let _sub = 0;
 
   function ring(r, n, layer, bright, zSpread=0){
+    const s=_sub++;
     for(let i=0;i<n;i++){
-      const a = (i/n)*PI2;
-      const z = (Math.random()-.5)*zSpread;
-      pts.push({ x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer, bright });
+      const a=(i/n)*PI2, z=(Math.random()-.5)*zSpread;
+      pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer, bright, sub:s});
     }
   }
 
   function arcPts(cx,cy,r,a0,a1,n,layer,bright,zSpread=0){
+    const s=_sub++;
     for(let i=0;i<n;i++){
-      const t=i/(n-1), a=a0+(a1-a0)*t;
-      const z=(Math.random()-.5)*zSpread;
-      pts.push({ x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r, z, layer, bright });
+      const t=i/(n-1), a=a0+(a1-a0)*t, z=(Math.random()-.5)*zSpread;
+      pts.push({x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r, z, layer, bright, sub:s});
     }
   }
 
-  // ── LAYER 0 — core glow cluster ── (90 → 220)
+  // ── LAYER 0 — core cluster ──
   for(let i=0;i<220;i++){
     const r=Math.random()*.12, a=Math.random()*PI2;
-    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0});
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0, sub:0});
   }
+  _sub++;
 
-  // ── LAYER 1 — innermost ring + 6-pointed star ── (252 → 750)
+  // ── LAYER 1 — ring + Star of David (ring=sub0, triangle1=sub1, triangle2=sub2) ──
   ring(.22, 200, 1, .95, .04);
   for(let t=0;t<2;t++){
-    const offset = t===0 ? 0 : Math.PI/3;
+    const offset=t===0?0:Math.PI/3;
     for(let v=0;v<3;v++){
-      const a0=(v/3)*PI2+offset-Math.PI/2;
-      const a1=((v+1)/3)*PI2+offset-Math.PI/2;
+      const a0=(v/3)*PI2+offset-Math.PI/2, a1=((v+1)/3)*PI2+offset-Math.PI/2;
       arcPts(0,0,.22,a0,a1,84,1,.90,.04);
     }
   }
 
-  // ── LAYER 2 — 12-petal lotus ── (336 → 1020)
+  // ── LAYER 2 — ring + 12 petals (ring=sub0, each petal its own sub) ──
   ring(.45, 280, 2, .88, .06);
   for(let i=0;i<12;i++){
-    const a = (i/12)*PI2;
-    const cx = Math.cos(a)*.22, cy = Math.sin(a)*.22;
+    const a=(i/12)*PI2, cx=Math.cos(a)*.22, cy=Math.sin(a)*.22;
     arcPts(cx,cy,.26, a+.1, a+PI2/12-.1, 62, 2, .85, .06);
   }
 
-  // ── LAYER 3 — Flower of Life ── (414 → 1240)
+  // ── LAYER 3 — Flower of Life (each of 6 circles its own sub) ──
   ring(.45, 18, 3, .80, .06);
-  const folR = .45;
+  const folR=.45;
   for(let i=0;i<6;i++){
     const ca=(i/6)*PI2;
     arcPts(Math.cos(ca)*folR, Math.sin(ca)*folR, folR, 0, PI2, 190, 3, .78, .07);
   }
   ring(.45, 70, 3, .82, .05);
 
-  // ── LAYER 4 — Sri Yantra: 9 triangles ── (972 → 2916)
-  const sriR = [.30,.44,.58,.70,.82,.94,1.06,1.18,1.30];
+  // ── LAYER 4 — Sri Yantra: each of 9 triangles its own sub ──
+  const sriR=[.30,.44,.58,.70,.82,.94,1.06,1.18,1.30];
   sriR.forEach((r,ri)=>{
-    const up = ri%2===0;
-    const baseAngle = up ? -Math.PI/2 : Math.PI/2;
+    const up=ri%2===0, baseAngle=up?-Math.PI/2:Math.PI/2;
+    const s=_sub++; // all 3 sides of same triangle share one sub
     for(let v=0;v<3;v++){
-      const a0=baseAngle+(v/3)*PI2;
-      const a1=baseAngle+((v+1)/3)*PI2;
-      arcPts(0,0,r,a0,a1,108,4,.72+.04*(3-Math.abs(ri-4))*.1,.07);
+      const a0=baseAngle+(v/3)*PI2, a1=baseAngle+((v+1)/3)*PI2;
+      // push directly so all 3 sides share same sub s
+      for(let j=0;j<108;j++){
+        const tt=j/107, a=a0+(a1-a0)*tt, z=(Math.random()-.5)*.07;
+        pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:4, bright:.72+.04*(3-Math.abs(ri-4))*.1, sub:s});
+      }
     }
   });
 
-  // ── LAYER 5 — 24-petal lotus ── (528 → 1584)
+  // ── LAYER 5 — ring + 24 petals ──
   ring(.88, 420, 5, .70, .09);
   for(let i=0;i<24;i++){
-    const a=(i/24)*PI2;
-    const cx=Math.cos(a)*.44, cy=Math.sin(a)*.44;
+    const a=(i/24)*PI2, cx=Math.cos(a)*.44, cy=Math.sin(a)*.44;
     arcPts(cx,cy,.48, a+.05, a+PI2/24-.05, 49, 5, .65, .08);
   }
 
-  // ── LAYER 6 — Metatron's Cube ── (792 → 2370)
+  // ── LAYER 6 — inner ring, 6 spokes, 6 cross-spokes, outer ring, 12 ticks ──
   ring(1.10, 540, 6, .62, .10);
   for(let i=0;i<6;i++){
     const a=(i/6)*PI2;
@@ -219,23 +223,22 @@ function buildMandala(){
     arcPts(0,0,1.28, a-.004, a+.004, 42, 6, .65, .09);
   }
 
-  // ── LAYER 7 — outer concentric halos ── (936 → 2800)
-  [1.48, 1.65, 1.82].forEach((r,ri)=>{
+  // ── LAYER 7 — 3 halos, each its own sub ──
+  [1.48,1.65,1.82].forEach((r,ri)=>{
     ring(r, 540+ri*108, 7, .50-.08*ri, .12+ri*.04);
     for(let i=0;i<12;i++){
-      const a=(i/12)*PI2+(ri*.13);
-      const r0=r-.04, r1=r+.04;
+      const a=(i/12)*PI2+(ri*.13), r0=r-.04, r1=r+.04;
       for(let j=0;j<24;j++){
         const rr=r0+(r1-r0)*j/23;
-        pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri});
+        pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri, sub:ri});
       }
     }
   });
 
-  // ── LAYER 8 — fringe stardust ── (280 → 800)
+  // ── LAYER 8 — fringe stardust ──
   for(let i=0;i<800;i++){
     const r=1.88+Math.random()*.50, a=Math.random()*PI2;
-    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15});
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15, sub:0});
   }
 
   return pts;
@@ -337,17 +340,26 @@ const N   = RAW.length;
 const homeX   = new Float32Array(N);
 const homeY   = new Float32Array(N);
 const homeZ   = new Float32Array(N);
+const homeR   = new Float32Array(N);
 const layerArr= new Uint8Array(N);
+const subArr  = new Uint16Array(N);    // sub-element index → drives CW/CCW per element
 const brightArr=new Float32Array(N);
 const shimPh  = new Float32Array(N);
 const isBig   = new Uint8Array(N);
 
 RAW.forEach((p,i)=>{
   homeX[i]=p.x; homeY[i]=p.y; homeZ[i]=p.z;
+  homeR[i]=Math.sqrt(p.x*p.x+p.y*p.y);
   layerArr[i]=p.layer; brightArr[i]=p.bright;
+  subArr[i]=p.sub||0;
   shimPh[i]=Math.random()*Math.PI*2;
   isBig[i] = Math.random() < (.7-.08*p.layer) ? 1 : 0;
 });
+
+// ── RIPPLE STATE ──
+// _rippleT: -1=inactive, 0→1 = wave travelling outward over 2.5s
+let _rippleT   = -1;
+let _lastPhase = 3;
 
 // ═════════════════════════════════════════════════════════════
 //  THREE.JS
@@ -361,7 +373,7 @@ renderer.setClearColor(0,0);
 const DPR=Math.min(window.devicePixelRatio||1,2);
 renderer.setPixelRatio(DPR);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.80;
+renderer.toneMappingExposure=1.60;
 
 const scene  = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(36,1,.1,100);
@@ -385,11 +397,40 @@ const coreMat=new THREE.SpriteMaterial({
 });
 const coreSprite=new THREE.Sprite(coreMat); coreSprite.scale.setScalar(.22); coreSprite.layers.set(BLOOM_L); scene.add(coreSprite);
 
-const nebMat=new THREE.SpriteMaterial({
-  map:gradSprite([[0,'rgba(200,170,255,.90)'],[.15,'rgba(145,105,248,.50)'],[.35,'rgba(105,70,228,.22)'],[.60,'rgba(70,48,196,.07)'],[1,'rgba(0,0,0,0)']]),
-  transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,opacity:.26,
-});
-const nebSprite=new THREE.Sprite(nebMat); nebSprite.scale.setScalar(.60); nebSprite.position.z=-.35; nebSprite.layers.set(BLOOM_L); scene.add(nebSprite);
+// ── NEBULA — particle cloud (JARVIS-style fluid sphere drift) ──
+// Each particle has a unit direction on a sphere + 3 independent sine phases.
+// Position = dir * (baseR * breathScale) + small 3-axis sine drift.
+// Identical motion model to the JARVIS avatar — organic, fluid, alive.
+const NEB_N   = 320;
+const nebDir  = new Float32Array(NEB_N*3);  // unit direction on sphere
+const nebBase = new Float32Array(NEB_N);    // base radius (0.04–0.28)
+const nebPh   = new Float32Array(NEB_N*3);  // 3 independent drift phases per particle
+const nebBig  = new Uint8Array(NEB_N);
+const nebPosB = new Float32Array(NEB_N*3);
+const nebColB = new Float32Array(NEB_N*3);
+const nebSzB  = new Float32Array(NEB_N);
+
+for(let i=0;i<NEB_N;i++){
+  // Uniform random point on unit sphere
+  const cosT = Math.random()*2-1, phi = Math.random()*Math.PI*2;
+  const sinT = Math.sqrt(1-cosT*cosT);
+  nebDir[i*3]=sinT*Math.cos(phi); nebDir[i*3+1]=sinT*Math.sin(phi); nebDir[i*3+2]=cosT;
+  // Radius distribution: dense core + sparse outer halo (mirrors JARVIS base dist)
+  const roll = Math.random();
+  nebBase[i] = roll < 0.62 ? 0.06 + Math.random()*0.14   // core cluster
+             : roll < 0.90 ? Math.pow(Math.random(),1.6)*0.04 // very inner
+             :               0.04 + Math.random()*0.10;   // mid halo
+  nebPh[i*3]   = Math.random()*Math.PI*2;
+  nebPh[i*3+1] = Math.random()*Math.PI*2;
+  nebPh[i*3+2] = Math.random()*Math.PI*2;
+  nebBig[i] = Math.random()<0.25 ? 1 : 0;
+}
+
+const nebGeo = new THREE.BufferGeometry();
+nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPosB, 3));
+nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebColB, 3));
+nebGeo.setAttribute('aSize',    new THREE.BufferAttribute(nebSzB,  1));
+// nebMesh created after pMat is defined (see below)
 
 const haloMat=new THREE.SpriteMaterial({
   map:gradSprite([[0,'rgba(165,135,255,.38)'],[.28,'rgba(115,85,238,.16)'],[.58,'rgba(75,52,198,.06)'],[1,'rgba(0,0,0,0)']]),
@@ -424,6 +465,8 @@ const pMat=new THREE.ShaderMaterial({
   fragmentShader:'uniform sampler2D uTex;varying vec3 vCol;\nvoid main(){vec4 t=texture2D(uTex,gl_PointCoord);gl_FragColor=vec4(vCol*t.rgb,t.a);}',
 });
 const ptsMesh=new THREE.Points(pGeo,pMat); ptsMesh.layers.set(0); mandalaGrp.add(ptsMesh);
+// Nebula mesh — created here so pMat is already defined
+const nebMesh = new THREE.Points(nebGeo, pMat); nebMesh.layers.set(BLOOM_L); scene.add(nebMesh);
 
 // ── HUD RINGS ──
 function arcLine(r,segs,col,op,s0,len){
@@ -451,7 +494,7 @@ const RG3=new THREE.Group(); ringGrp.add(RG3);
 })();
 
 // ── BLOOM ──
-let bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.80,.70,.06);
+let bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.40,.65,.08);
 const bComp=new EffectComposer(renderer); bComp.renderToScreen=false;
 bComp.addPass(new RenderPass(scene,camera)); bComp.addPass(bloomPass);
 const fPass=new ShaderPass(new THREE.ShaderMaterial({
@@ -474,9 +517,62 @@ function sizeR(){
 }
 new ResizeObserver(sizeR).observe(canvas); sizeR();
 
+// ── NEBULA UPDATE — JARVIS-style fluid sphere drift ──
+// Warm white-gold core fading to deep amber at the edge.
+const NEB_INNER = [1.00, 0.90, 0.50];  // #ffe580 — bright warm gold
+const NEB_OUTER = [0.85, 0.48, 0.05];  // #d97a0d — deep amber
+
+function updateNebula(t, bs){
+  // Sphere breathes: expands slightly on inhale
+  const breathScale = 1.0 + (bs-.72)/.28 * 0.18;
+  // Drift amplitude — small enough that particles never leave the core zone
+  const dA = 0.022, dS = 0.75;
+
+  for(let i=0;i<NEB_N;i++){
+    const x=nebDir[i*3], y=nebDir[i*3+1], z=nebDir[i*3+2];
+    const r = nebBase[i] * breathScale;
+
+    // 3-axis independent sine drift — identical to JARVIS particle motion
+    const dx = Math.sin(t*dS + nebPh[i*3])   * dA;
+    const dy = Math.cos(t*dS + nebPh[i*3+1]) * dA;
+    const dz = Math.sin(t*dS + nebPh[i*3+2]) * dA;
+
+    nebPosB[i*3]   = x*r + dx;
+    nebPosB[i*3+1] = y*r + dy;
+    nebPosB[i*3+2] = z*r + dz;
+
+    // Depth cue — front particles brighter (same as JARVIS)
+    const depth = (z + 1) * 0.5;
+    const norm  = Math.min(nebBase[i] / 0.20, 1.0); // 0=core, 1=edge
+    const bright = (0.07 + (1-norm)*0.07) * (0.75 + depth*0.25);
+
+    nebColB[i*3]   = (NEB_INNER[0]*(1-norm) + NEB_OUTER[0]*norm) * bright;
+    nebColB[i*3+1] = (NEB_INNER[1]*(1-norm) + NEB_OUTER[1]*norm) * bright;
+    nebColB[i*3+2] = (NEB_INNER[2]*(1-norm) + NEB_OUTER[2]*norm) * bright;
+
+    // Big particles slightly larger — same 30% big/70% small split as JARVIS
+    const base = nebBig[i] ? 0.11 : 0.075;
+    nebSzB[i] = (base + 0.03*(1-nebBase[i]/0.20)) * (0.65 + 0.55*depth);
+  }
+  nebGeo.attributes.position.needsUpdate=true;
+  nebGeo.attributes.color.needsUpdate=true;
+  nebGeo.attributes.aSize.needsUpdate=true;
+}
+
 // ═════════════════════════════════════════════════════════════
 //  PARTICLE UPDATE
 // ═════════════════════════════════════════════════════════════
+// Per-layer spin speed multipliers — slight variation makes it feel like
+// a real gyroscope rather than uniform rotation. Odd layers CW, even CCW.
+// Sub-element speeds: slight variation per layer so elements within the same
+// pattern move at subtly different rates, making the gears feel organic.
+const LAYER_SPEED = [0.70, 1.00, 0.85, 1.15, 0.90, 1.05, 0.80, 1.10, 0.95];
+
+// Pre-allocated cos/sin caches — filled per unique sub index each frame.
+// Max sub index won't exceed ~120, so 256 is safe.
+const _cosCache = new Float32Array(256);
+const _sinCache = new Float32Array(256);
+
 function updateParticles(t){
   const v  = VARIANTS[_variant];
   const bs = _bs;
@@ -484,33 +580,61 @@ function updateParticles(t){
   const breathS = 1.0 + (bs-.72) * .40;
   const tilt = (bs-.72)/.28 * v.tiltAmp;
   const cosTilt=Math.cos(tilt), sinTilt=Math.sin(tilt);
-  const spinA = t * v.spinSpeed;
-  const cosS=Math.cos(spinA), sinS=Math.sin(spinA);
+  const baseSpeed = v.spinSpeed;
+
+  // Fill cos/sin cache for every sub index present.
+  // Direction = sub%2 === 0 ? +1 (CCW) : -1 (CW) → adjacent elements oppose.
+  // Speed scaled by the layer's LAYER_SPEED, looked up via layerArr per particle.
+  // We pre-fill for all 256 slots using a rough per-sub layer estimate;
+  // actual per-particle lookup in the loop uses the particle's own layer.
+  for(let s=0;s<256;s++){
+    const dir = (s%2===0) ? 1 : -1;
+    const a   = t * baseSpeed * dir;
+    _cosCache[s]=Math.cos(a); _sinCache[s]=Math.sin(a);
+  }
 
   for(let i=0;i<N;i++){
+    const lay=layerArr[i];
+    const sub=subArr[i];
     const hx=homeX[i], hy=homeY[i], hz=homeZ[i];
-    const sx=hx*breathS, sy=hy*breathS, sz=hz;
-    const rx= sx*cosS - sy*sinS;
-    const ry= sx*sinS + sy*cosS;
-    const rz= sz;
+
+    // Direction alternates per sub-element: even sub=CCW, odd sub=CW
+    const dir  = (sub%2===0) ? 1 : -1;
+    const rotA = t * baseSpeed * LAYER_SPEED[lay] * dir;
+    const cA   = Math.cos(rotA), sA = Math.sin(rotA);
+
+    const sx=(hx*cA - hy*sA)*breathS;
+    const sy=(hx*sA + hy*cA)*breathS;
+    const sz=hz;
+    const rx=sx, ry=sy, rz=sz;
     const ty= ry*cosTilt - rz*sinTilt;
     const tz= ry*sinTilt + rz*cosTilt;
 
     pPos[i*3]=rx; pPos[i*3+1]=ty; pPos[i*3+2]=tz;
 
     const col = v.layerCols[Math.min(layerArr[i], v.layerCols.length-1)];
-    const shim = .88 + .12*Math.sin(t*1.8+shimPh[i]);
+    const shim = .92 + .08*Math.sin(t*1.8+shimPh[i]);
     const depth = (tz+1.5)/3.0;
-    const dbright = .65 + .35*(depth*depth);
-    const a = brightArr[i]*shim*dbright;
+    const dbright = .82 + .18*(depth*depth);
+
+    // ── RIPPLE WAVE ──
+    // Wave front travels from r=0 to r=2.4 over 2.5s.
+    // Particles near the front flash up to 3× brighter then fade back.
+    let ripple = 1.0;
+    if(_rippleT >= 0){
+      const front = _rippleT * 2.4;          // 0 → 2.4 (covers fringe)
+      const dist  = Math.abs(homeR[i] - front);
+      if(dist < 0.30) ripple = 1.0 + (1.0 - dist/0.30) * 2.0;
+    }
+
+    const a = brightArr[i]*shim*dbright*0.85*ripple;
     pCol[i*3]=col[0]*a; pCol[i*3+1]=col[1]*a; pCol[i*3+2]=col[2]*a;
 
-    // HD: sizes scaled down ~30% vs standard to keep dots distinct at 3× density
-    const baseSize = layerArr[i]<=1 ? .122
-                   : layerArr[i]<=3 ? .100
-                   : layerArr[i]<=5 ? .086
-                   : layerArr[i]<=6 ? .074
-                   : .058;
+    const baseSize = layerArr[i]<=1 ? .175
+                   : layerArr[i]<=3 ? .145
+                   : layerArr[i]<=5 ? .122
+                   : layerArr[i]<=6 ? .105
+                   : .082;
     pSz[i] = baseSize*(isBig[i]?1.85:1)*(.65+.55*depth);
   }
 
@@ -531,6 +655,15 @@ function frame(){
 
   _bs+=( bsTarget(_phase,_phaseT)-_bs )*Math.min(1,dt*3.0);
 
+  // fire ripple on every phase change when animating, loop continuously
+  if(_phase!==_lastPhase) _rippleT=0;
+  _lastPhase=_phase;
+  // advance wave; when it reaches the fringe restart immediately if animating
+  if(_rippleT>=0){
+    _rippleT+=dt/2.5;
+    if(_rippleT>1.1){ _rippleT = _animating ? 0 : -1; }
+  }
+
   updateParticles(t);
 
   RG1.rotation.z =  t*.020;
@@ -541,8 +674,7 @@ function frame(){
   coreMat.opacity=(.48+_bs*.38)*pulse;
   coreSprite.scale.setScalar(.16+_bs*.16);
 
-  nebMat.opacity=.12+_bs*.26;
-  nebSprite.scale.setScalar(.42+_bs*.52);
+  updateNebula(t, _bs);
 
   haloMat.opacity=.07+_bs*.14;
   haloSprite.scale.setScalar(1.65+_bs*.75);
