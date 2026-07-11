@@ -29310,16 +29310,30 @@ function switchTab(tab) {
     if(label) label.textContent=pack.label;
     if(status) status.textContent = B2_BASE ? '' : 'Preview mode — configure B2 for audio';
     var log=loadLog();
-    list.innerHTML=pack.sessions.map(function(s){
-      var done=log.some(function(e){ return e.trackId===s.id; });
-      return '<div class="med-session-row" data-sid="'+s.id+'" data-pack="'+pack.id+'" data-color="'+pack.color+'">'
-        +'<div class="med-session-play" style="border-color:'+pack.color+'44;color:'+pack.color+'">▶</div>'
-        +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+s.title+'</div>'
-        +'<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">'+fmtDur(s.duration)+(done?' · ✓ done':'')+'</div>'
-        +'</div>'
-        +'</div>';
-    }).join('');
+    // group sessions by sub-category
+    var groups=[]; var groupMap={};
+    pack.sessions.forEach(function(s){
+      var key=s.sub||'';
+      if(!groupMap[key]){ groupMap[key]=[]; groups.push({sub:key,sessions:groupMap[key]}); }
+      groupMap[key].push(s);
+    });
+    var html='';
+    groups.forEach(function(g){
+      if(g.sub){
+        html+='<div style="padding:8px 4px 4px;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:'+pack.color+';opacity:0.8">'+g.sub+'</div>';
+      }
+      g.sessions.forEach(function(s){
+        var done=log.some(function(e){ return e.trackId===s.id; });
+        html+='<div class="med-session-row" data-sid="'+s.id+'" data-pack="'+pack.id+'" data-color="'+pack.color+'">'
+          +'<div class="med-session-play" style="border-color:'+pack.color+'44;color:'+pack.color+'">▶</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+s.title+'</div>'
+          +'<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">'+fmtDur(s.duration)+(done?' · ✓ done':'')+'</div>'
+          +'</div>'
+          +'</div>';
+      });
+    });
+    list.innerHTML=html;
     list.querySelectorAll('.med-session-row').forEach(function(row){
       row.addEventListener('click',function(){
         var sid=row.dataset.sid;
