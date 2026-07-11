@@ -30188,9 +30188,14 @@ window.drawMandala = function(progress, phase, phaseT){
     init();
   }
   document.addEventListener('DOMContentLoaded', maybeInit);
-  // also called by switchTab('health') — handles the case where the page
-  // reloads with health as the active tab and DOMContentLoaded has already fired
   window._medInit = maybeInit;
+  // If the health tab is already active when this script runs (page reloaded
+  // with health tab open — tab restore fires before this IIFE executes), init now.
+  // setTimeout(0) defers until after all sync scripts finish, so the DOM is settled.
+  setTimeout(function(){
+    var hv = document.getElementById('healthView');
+    if(hv && hv.classList.contains('active')) maybeInit();
+  }, 0);
   window._medRender=function(){
     renderStats(); renderLog();
     if(_lib){ renderPacks(_lib); renderSessions(_lib); }
