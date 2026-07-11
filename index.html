@@ -8514,7 +8514,7 @@ window.canonicalJson = function(obj) {
   <!-- Mandala card — always visible -->
   <div class="wc-card" style="padding:0;overflow:hidden;background:radial-gradient(ellipse 110% 100% at 50% 0%,rgba(109,40,217,0.28) 0%,rgba(10,7,26,0.95) 70%) !important;border-color:rgba(167,139,250,0.2) !important">
     <div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px 16px;position:relative">
-      <canvas id="medMandala" width="240" height="240" style="display:block"></canvas>
+      <canvas id="medMandala" width="480" height="480" style="display:block;width:360px;height:360px"></canvas>
       <div id="medBreathCue" style="margin-top:14px;font-family:var(--pk-serif,Georgia,serif);font-size:20px;color:rgba(221,214,254,0.9);letter-spacing:0.03em;text-align:center;min-height:28px;transition:opacity 0.5s">Breathe in</div>
       <div id="medBreathSub" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.45);letter-spacing:0.14em;text-transform:uppercase;margin-top:4px;min-height:14px;text-align:center"></div>
     </div>
@@ -29522,92 +29522,599 @@ function switchTab(tab) {
   };
 
   /* ============================================================
-     BREATHING MANDALA — sacred geometry canvas
+     BREATHING MANDALA — Three.js HD sacred geometry avatar
   ============================================================ */
-  function drawMandala(progress, phase, phaseT){
-    var c=document.getElementById('medMandala'); if(!c) return;
-    var ctx=c.getContext('2d');
-    var W=c.width, H=c.height, cx=W/2, cy=H/2;
-    ctx.clearRect(0,0,W,H);
+  (function(){
+    var _three = null; // lazy-init guard
+    var _phase = 3, _phaseT = 0, _bs = 0.72;
+    var _animating = false;
+    var _variant = 2; // Golden Om
 
-    // breathing scale: inhale→expand, exhale→contract
-    var breathScale;
-    if(phase===0)       breathScale=0.72+phaseT*0.28;        // inhale: 0.72→1.0
-    else if(phase===1)  breathScale=1.0;                      // hold
-    else if(phase===2)  breathScale=1.0-(phaseT*0.28);        // exhale: 1.0→0.72
-    else                breathScale=0.72;                     // rest
+    // ── point generator ──
+    function buildMandala(){
+      var pts = [];
+      var PI2 = Math.PI * 2;
+      var _sub = 0;
 
-    var R=110*breathScale;
-
-    // glow pulse
-    var grd=ctx.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.4);
-    grd.addColorStop(0,'rgba(167,139,250,'+((0.08+breathScale*0.07)).toFixed(3)+')');
-    grd.addColorStop(0.5,'rgba(99,102,241,'+((0.04+breathScale*0.04)).toFixed(3)+')');
-    grd.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.beginPath(); ctx.arc(cx,cy,R*1.4,0,Math.PI*2);
-    ctx.fillStyle=grd; ctx.fill();
-
-    // rotation drift
-    var rot=progress*Math.PI*2;
-
-    // petals (lotus — 12 petals)
-    var petals=12;
-    ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.3);
-    for(var i=0;i<petals;i++){
-      var a=(Math.PI*2/petals)*i;
-      ctx.save(); ctx.rotate(a);
-      ctx.beginPath();
-      ctx.ellipse(0,-R*0.55, R*0.12, R*0.42, 0, 0, Math.PI*2);
-      var alpha=(0.15+breathScale*0.25).toFixed(3);
-      ctx.fillStyle='rgba(167,139,250,'+alpha+')';
-      ctx.fill();
-      ctx.restore();
-    }
-    ctx.restore();
-
-    // concentric rings (6)
-    var rings=[0.28,0.42,0.56,0.70,0.84,1.0];
-    rings.forEach(function(rf,ri){
-      var r=R*rf;
-      var alpha=(0.08+breathScale*0.12*(1-ri/6)).toFixed(3);
-      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-      ctx.strokeStyle='rgba(167,139,250,'+alpha+')';
-      ctx.lineWidth=ri===5?1.5:0.8;
-      ctx.stroke();
-    });
-
-    // inner star of David (2 overlapping triangles)
-    ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.5);
-    for(var t=0;t<2;t++){
-      ctx.beginPath();
-      for(var v=0;v<3;v++){
-        var angle=(Math.PI*2/3)*v+(t===1?Math.PI/3:0)-Math.PI/2;
-        var rx=Math.cos(angle)*R*0.38, ry=Math.sin(angle)*R*0.38;
-        if(v===0) ctx.moveTo(rx,ry); else ctx.lineTo(rx,ry);
+      function ring(r, n, layer, bright, zSpread){
+        zSpread = zSpread || 0;
+        var s = _sub++;
+        for(var i=0;i<n;i++){
+          var a=(i/n)*PI2, z=(Math.random()-.5)*zSpread;
+          pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:z, layer:layer, bright:bright, sub:s});
+        }
       }
-      ctx.closePath();
-      ctx.strokeStyle='rgba(196,181,253,'+(0.18+breathScale*0.15)+')';
-      ctx.lineWidth=0.8; ctx.stroke();
-    }
-    ctx.restore();
 
-    // centre dot
-    ctx.beginPath(); ctx.arc(cx,cy,R*0.06,0,Math.PI*2);
-    ctx.fillStyle='rgba(221,214,254,'+(0.5+breathScale*0.4)+')';
-    ctx.fill();
-
-    // particle dust on exhale
-    if(phase===2 && phaseT>0.1){
-      var seed=Math.floor(progress*1000);
-      for(var p=0;p<12;p++){
-        var px=Math.sin(seed*0.7+p*2.5)*R*(0.9+phaseT*0.5);
-        var py=Math.cos(seed*0.5+p*1.8)*R*(0.9+phaseT*0.5);
-        var palpha=(0.4*(1-phaseT)).toFixed(3);
-        ctx.beginPath(); ctx.arc(cx+px,cy+py,1.2,0,Math.PI*2);
-        ctx.fillStyle='rgba(196,181,253,'+palpha+')'; ctx.fill();
+      function arcPts(cx,cy,r,a0,a1,n,layer,bright,zSpread){
+        zSpread = zSpread || 0;
+        var s = _sub++;
+        for(var i=0;i<n;i++){
+          var t=i/(n-1), a=a0+(a1-a0)*t, z=(Math.random()-.5)*zSpread;
+          pts.push({x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r, z:z, layer:layer, bright:bright, sub:s});
+        }
       }
+
+      // LAYER 0 — core cluster
+      for(var i=0;i<220;i++){
+        var r=Math.random()*.12, a=Math.random()*PI2;
+        pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0, sub:0});
+      }
+      _sub++;
+
+      // LAYER 1 — ring + Star of David
+      ring(.22, 200, 1, .95, .04);
+      for(var t=0;t<2;t++){
+        var offset=t===0?0:Math.PI/3;
+        for(var v=0;v<3;v++){
+          var a0=(v/3)*PI2+offset-Math.PI/2, a1=((v+1)/3)*PI2+offset-Math.PI/2;
+          arcPts(0,0,.22,a0,a1,84,1,.90,.04);
+        }
+      }
+
+      // LAYER 2 — ring + 12 petals
+      ring(.45, 280, 2, .88, .06);
+      for(var i=0;i<12;i++){
+        var a=(i/12)*PI2, cx=Math.cos(a)*.22, cy=Math.sin(a)*.22;
+        arcPts(cx,cy,.26, a+.1, a+PI2/12-.1, 62, 2, .85, .06);
+      }
+
+      // LAYER 3 — Flower of Life
+      ring(.45, 18, 3, .80, .06);
+      var folR=.45;
+      for(var i=0;i<6;i++){
+        var ca=(i/6)*PI2;
+        arcPts(Math.cos(ca)*folR, Math.sin(ca)*folR, folR, 0, PI2, 190, 3, .78, .07);
+      }
+      ring(.45, 70, 3, .82, .05);
+
+      // LAYER 4 — Sri Yantra: 9 triangles
+      var sriR=[.30,.44,.58,.70,.82,.94,1.06,1.18,1.30];
+      sriR.forEach(function(r,ri){
+        var up=ri%2===0, baseAngle=up?-Math.PI/2:Math.PI/2;
+        var s=_sub++;
+        for(var v=0;v<3;v++){
+          var a0=baseAngle+(v/3)*PI2, a1=baseAngle+((v+1)/3)*PI2;
+          for(var j=0;j<108;j++){
+            var tt=j/107, a=a0+(a1-a0)*tt, z=(Math.random()-.5)*.07;
+            pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:z, layer:4, bright:.72+.04*(3-Math.abs(ri-4))*.1, sub:s});
+          }
+        }
+      });
+
+      // LAYER 5 — ring + 24 petals
+      ring(.88, 420, 5, .70, .09);
+      for(var i=0;i<24;i++){
+        var a=(i/24)*PI2, cx=Math.cos(a)*.44, cy=Math.sin(a)*.44;
+        arcPts(cx,cy,.48, a+.05, a+PI2/24-.05, 49, 5, .65, .08);
+      }
+
+      // LAYER 6 — inner ring, 6 spokes, 6 cross-spokes, outer ring, 12 ticks
+      ring(1.10, 540, 6, .62, .10);
+      for(var i=0;i<6;i++){
+        var a=(i/6)*PI2;
+        arcPts(0,0,1.10, a-.008, a+.008, 84, 6, .68, .08);
+      }
+      for(var i=0;i<6;i++){
+        var a=(i/6)*PI2+Math.PI/6;
+        arcPts(0,0,1.10, a-.006, a+.006, 66, 6, .60, .08);
+      }
+      ring(1.28, 420, 6, .58, .11);
+      for(var i=0;i<12;i++){
+        var a=(i/12)*PI2;
+        arcPts(0,0,1.28, a-.004, a+.004, 42, 6, .65, .09);
+      }
+
+      // LAYER 7 — 3 halos
+      [1.48,1.65,1.82].forEach(function(r,ri){
+        ring(r, 540+ri*108, 7, .50-.08*ri, .12+ri*.04);
+        for(var i=0;i<12;i++){
+          var a=(i/12)*PI2+(ri*.13), r0=r-.04, r1=r+.04;
+          for(var j=0;j<24;j++){
+            var rr=r0+(r1-r0)*j/23;
+            pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri, sub:ri});
+          }
+        }
+      });
+
+      // LAYER 8 — fringe stardust
+      for(var i=0;i<800;i++){
+        var r=1.88+Math.random()*.50, a=Math.random()*PI2;
+        pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15, sub:0});
+      }
+
+      return pts;
     }
-  }
+
+    // ── VARIANTS ──
+    var VARIANTS = [
+      {
+        id:'A', name:'Violet Soul',
+        layerCols:[
+          [1.00,.96,1.00],[0.94,.88,1.00],[0.80,.65,.98],[0.68,.52,.96],[0.55,.40,.92],
+          [0.45,.32,.88],[0.36,.26,.80],[0.26,.18,.68],[0.18,.12,.52],
+        ],
+        spinSpeed:.028, bloomStr:1.80, bloomRad:.70, bloomThr:.06, tiltAmp:.18,
+      },
+      {
+        id:'B', name:'Rose Amethyst',
+        layerCols:[
+          [1.00,.92,.97],[0.98,.82,.92],[0.90,.62,.80],[0.78,.45,.70],[0.65,.32,.62],
+          [0.55,.24,.55],[0.44,.18,.48],[0.32,.12,.38],[0.20,.08,.26],
+        ],
+        spinSpeed:.022, bloomStr:2.00, bloomRad:.78, bloomThr:.05, tiltAmp:.22,
+      },
+      {
+        id:'C', name:'Golden Om',
+        layerCols:[
+          [1.00,.98,.80],[1.00,.92,.55],[0.95,.78,.30],[0.88,.65,.18],[0.78,.52,.10],
+          [0.68,.42,.06],[0.55,.32,.04],[0.40,.22,.02],[0.26,.14,.01],
+        ],
+        spinSpeed:.020, bloomStr:1.90, bloomRad:.74, bloomThr:.06, tiltAmp:.14,
+      },
+      {
+        id:'D', name:'Ice Temple',
+        layerCols:[
+          [0.92,.96,1.00],[0.80,.90,1.00],[0.58,.72,.98],[0.40,.58,.96],[0.28,.45,.90],
+          [0.18,.35,.82],[0.12,.26,.72],[0.08,.18,.58],[0.04,.12,.40],
+        ],
+        spinSpeed:.034, bloomStr:1.65, bloomRad:.62, bloomThr:.07, tiltAmp:.16,
+      },
+    ];
+
+    function bsTarget(ph,pt){
+      if(ph===0) return .72+pt*.28;
+      if(ph===1) return 1.0;
+      if(ph===2) return 1.0-pt*.28;
+      return .72;
+    }
+
+    function initThree(canvas){
+      if(_three) return;
+      _three = true; // mark started
+
+      Promise.all([
+        import('three'),
+        import('three/addons/postprocessing/EffectComposer.js'),
+        import('three/addons/postprocessing/RenderPass.js'),
+        import('three/addons/postprocessing/ShaderPass.js'),
+        import('three/addons/postprocessing/UnrealBloomPass.js'),
+      ]).then(function(mods){
+        var THREE          = mods[0];
+        var EffectComposer = mods[1].EffectComposer;
+        var RenderPass     = mods[2].RenderPass;
+        var ShaderPass     = mods[3].ShaderPass;
+        var UnrealBloomPass= mods[4].UnrealBloomPass;
+
+        var BLOOM_L = 1;
+        var bMask = new THREE.Layers(); bMask.set(BLOOM_L);
+
+        var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
+        renderer.setClearColor(0,0);
+        var DPR = Math.min(window.devicePixelRatio||1, 2);
+        renderer.setPixelRatio(DPR);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.60;
+
+        var scene  = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(36,1,.1,100);
+        camera.position.set(0,0,5.2);
+        camera.layers.enableAll();
+
+        var mandalaGrp = new THREE.Group(); scene.add(mandalaGrp);
+        var ringGrp    = new THREE.Group(); scene.add(ringGrp);
+
+        function gradSprite(stops){
+          var c=document.createElement('canvas'); c.width=c.height=256;
+          var g=c.getContext('2d'), gr=g.createRadialGradient(128,128,0,128,128,128);
+          stops.forEach(function(s){ gr.addColorStop(s[0],s[1]); });
+          g.fillStyle=gr; g.fillRect(0,0,256,256);
+          return new THREE.CanvasTexture(c);
+        }
+
+        // ── NUCLEUS ──
+        var CORE_N = 90;
+        var coreDirs  = new Float32Array(CORE_N*3);
+        var coreBase  = new Float32Array(CORE_N);
+        var coreBig   = new Uint8Array(CORE_N);
+        var corePhase = new Float32Array(CORE_N*3);
+        for(var i=0;i<CORE_N;i++){
+          corePhase[i*3]=Math.random()*Math.PI*2; corePhase[i*3+1]=Math.random()*Math.PI*2; corePhase[i*3+2]=Math.random()*Math.PI*2;
+          var cosT=Math.random()*2-1, phi=Math.random()*Math.PI*2, sinT=Math.sqrt(1-cosT*cosT);
+          coreDirs[i*3]=sinT*Math.cos(phi); coreDirs[i*3+1]=sinT*Math.sin(phi); coreDirs[i*3+2]=cosT;
+          var roll=Math.random();
+          coreBase[i] = roll<0.70 ? Math.pow(Math.random(),1.4)*0.45
+                      : roll<0.92 ? 0.45+Math.random()*0.35
+                      :             0.80+Math.random()*0.20;
+          coreBig[i]=Math.random()<0.30?1:0;
+        }
+        var CORE_R = 0.10;
+        var corePos = new Float32Array(CORE_N*3);
+        var coreCol = new Float32Array(CORE_N*3);
+        var coreSz  = new Float32Array(CORE_N);
+        var coreGeo = new THREE.BufferGeometry();
+        coreGeo.setAttribute('position', new THREE.BufferAttribute(corePos,3));
+        coreGeo.setAttribute('color',    new THREE.BufferAttribute(coreCol,3));
+        coreGeo.setAttribute('aSize',    new THREE.BufferAttribute(coreSz, 1));
+        var coreDotTex=(function(){
+          var c=document.createElement('canvas'); c.width=c.height=64;
+          var g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
+          gr.addColorStop(0,   'rgba(255,255,255,1)');
+          gr.addColorStop(0.35,'rgba(255,230,120,0.95)');
+          gr.addColorStop(0.70,'rgba(255,160,20,0.30)');
+          gr.addColorStop(1,   'rgba(200,80,0,0)');
+          g.fillStyle=gr; g.fillRect(0,0,64,64);
+          return new THREE.CanvasTexture(c);
+        })();
+        var corePMat=new THREE.ShaderMaterial({
+          uniforms:{uScale:{value:160}, uTex:{value:coreDotTex}},
+          vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+          vertexShader:'attribute float aSize;varying vec3 vCol;uniform float uScale;\nvoid main(){vCol=color;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=aSize*uScale/-mv.z;gl_Position=projectionMatrix*mv;}',
+          fragmentShader:'uniform sampler2D uTex;varying vec3 vCol;\nvoid main(){vec4 t=texture2D(uTex,gl_PointCoord);gl_FragColor=vec4(vCol*t.rgb,t.a);}',
+        });
+        var coreMesh=new THREE.Points(coreGeo,corePMat); coreMesh.layers.set(BLOOM_L); scene.add(coreMesh);
+
+        // ── NEBULA ──
+        var NEB_N = 700;
+        var nebDirs  = new Float32Array(NEB_N*3);
+        var nebBase  = new Float32Array(NEB_N);
+        var nebBig   = new Uint8Array(NEB_N);
+        var nebPhase = new Float32Array(NEB_N*3);
+        for(var i=0;i<NEB_N;i++){
+          nebPhase[i*3]=Math.random()*Math.PI*2; nebPhase[i*3+1]=Math.random()*Math.PI*2; nebPhase[i*3+2]=Math.random()*Math.PI*2;
+          var cosT=Math.random()*2-1, phi=Math.random()*Math.PI*2, sinT=Math.sqrt(1-cosT*cosT);
+          nebDirs[i*3]=sinT*Math.cos(phi); nebDirs[i*3+1]=sinT*Math.sin(phi); nebDirs[i*3+2]=cosT;
+          var roll=Math.random();
+          if(roll<0.62) nebBase[i]=0.82+Math.random()*0.18;
+          else if(roll<0.90) nebBase[i]=Math.pow(Math.random(),1.6)*0.40;
+          else nebBase[i]=0.40+Math.random()*0.42;
+          nebBig[i]=Math.random()<0.30?1:0;
+        }
+        var NEB_SPHERE_R = 0.38;
+        var nebPos  = new Float32Array(NEB_N*3);
+        var nebCol  = new Float32Array(NEB_N*3);
+        var nebSz   = new Float32Array(NEB_N);
+        var nebGeo  = new THREE.BufferGeometry();
+        nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos,3));
+        nebGeo.setAttribute('color',    new THREE.BufferAttribute(nebCol,3));
+        nebGeo.setAttribute('aSize',    new THREE.BufferAttribute(nebSz, 1));
+        var nebTex=(function(){
+          var c=document.createElement('canvas'); c.width=c.height=64;
+          var g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
+          gr.addColorStop(0,   'rgba(255,255,255,1)');
+          gr.addColorStop(0.35,'rgba(255,220,120,0.95)');
+          gr.addColorStop(0.70,'rgba(255,140,0,0.30)');
+          gr.addColorStop(1,   'rgba(200,80,0,0)');
+          g.fillStyle=gr; g.fillRect(0,0,64,64);
+          return new THREE.CanvasTexture(c);
+        })();
+        var nebMat2=new THREE.ShaderMaterial({
+          uniforms:{uScale:{value:160}, uTex:{value:nebTex}},
+          vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+          vertexShader:'attribute float aSize;varying vec3 vCol;uniform float uScale;\nvoid main(){vCol=color;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=aSize*uScale/-mv.z;gl_Position=projectionMatrix*mv;}',
+          fragmentShader:'uniform sampler2D uTex;varying vec3 vCol;\nvoid main(){vec4 t=texture2D(uTex,gl_PointCoord);gl_FragColor=vec4(vCol*t.rgb,t.a);}',
+        });
+        var nebMesh=new THREE.Points(nebGeo,nebMat2); nebMesh.layers.set(BLOOM_L); scene.add(nebMesh);
+
+        var nebMat=new THREE.SpriteMaterial({
+          map: gradSprite([
+            [0.00, 'rgba(255,240,180,0.85)'],[0.10, 'rgba(255,185,40,0.50)'],
+            [0.24, 'rgba(220,130,8,0.30)'],[0.40, 'rgba(180,90,4,0.16)'],
+            [0.56, 'rgba(140,60,2,0.08)'],[0.72, 'rgba(100,38,1,0.035)'],
+            [0.88, 'rgba(60,20,0,0.01)'],[1.00, 'rgba(0,0,0,0)'],
+          ]),
+          transparent:true, blending:THREE.AdditiveBlending,
+          depthWrite:false, depthTest:false, opacity:0,
+        });
+        var nebSprite=new THREE.Sprite(nebMat);
+        nebSprite.scale.setScalar(0.55);
+        nebSprite.position.z=-0.6;
+        nebSprite.layers.set(BLOOM_L);
+        scene.add(nebSprite);
+
+        var haloMat=new THREE.SpriteMaterial({
+          map:gradSprite([[0,'rgba(165,135,255,.38)'],[.28,'rgba(115,85,238,.16)'],[.58,'rgba(75,52,198,.06)'],[1,'rgba(0,0,0,0)']]),
+          transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,opacity:.14,
+        });
+        var haloSprite=new THREE.Sprite(haloMat); haloSprite.scale.setScalar(2.2); haloSprite.position.z=-1.0; haloSprite.layers.set(BLOOM_L); scene.add(haloSprite);
+
+        // ── MANDALA PARTICLES ──
+        var RAW = buildMandala();
+        var N   = RAW.length;
+        var homeX   = new Float32Array(N);
+        var homeY   = new Float32Array(N);
+        var homeZ   = new Float32Array(N);
+        var homeR   = new Float32Array(N);
+        var layerArr= new Uint8Array(N);
+        var subArr  = new Uint16Array(N);
+        var brightArr=new Float32Array(N);
+        var shimPh  = new Float32Array(N);
+        var isBig   = new Uint8Array(N);
+        RAW.forEach(function(p,i){
+          homeX[i]=p.x; homeY[i]=p.y; homeZ[i]=p.z;
+          homeR[i]=Math.sqrt(p.x*p.x+p.y*p.y);
+          layerArr[i]=p.layer; brightArr[i]=p.bright;
+          subArr[i]=p.sub||0;
+          shimPh[i]=Math.random()*Math.PI*2;
+          isBig[i] = Math.random() < (.7-.08*p.layer) ? 1 : 0;
+        });
+
+        var _rippleT   = -1;
+        var _lastPhase = 3;
+
+        var pPos  = new Float32Array(N*3);
+        var pCol  = new Float32Array(N*3);
+        var pSz   = new Float32Array(N);
+        var pGeo  = new THREE.BufferGeometry();
+        pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+        pGeo.setAttribute('color',   new THREE.BufferAttribute(pCol,3));
+        pGeo.setAttribute('aSize',   new THREE.BufferAttribute(pSz,1));
+
+        var dotTex=(function(){
+          var c=document.createElement('canvas'); c.width=c.height=64;
+          var g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+          gr.addColorStop(0,'rgba(255,255,255,1)');
+          gr.addColorStop(.25,'rgba(215,195,255,.94)');
+          gr.addColorStop(.55,'rgba(155,115,255,.42)');
+          gr.addColorStop(1,'rgba(85,52,210,0)');
+          g.fillStyle=gr; g.fillRect(0,0,64,64);
+          return new THREE.CanvasTexture(c);
+        })();
+
+        var pMat=new THREE.ShaderMaterial({
+          uniforms:{uScale:{value:160},uTex:{value:dotTex}},
+          vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+          vertexShader:'attribute float aSize;varying vec3 vCol;uniform float uScale;\nvoid main(){vCol=color;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=aSize*uScale/-mv.z;gl_Position=projectionMatrix*mv;}',
+          fragmentShader:'uniform sampler2D uTex;varying vec3 vCol;\nvoid main(){vec4 t=texture2D(uTex,gl_PointCoord);gl_FragColor=vec4(vCol*t.rgb,t.a);}',
+        });
+        var ptsMesh=new THREE.Points(pGeo,pMat); ptsMesh.layers.set(0); mandalaGrp.add(ptsMesh);
+
+        // ── HUD RINGS ──
+        function arcLine(r,segs,col,op,s0,len){
+          var v=[]; var s=s0||0,l=len!=null?len:Math.PI*2;
+          for(var i=0;i<=segs;i++){var a=s+(i/segs)*l; v.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
+          var ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(v),
+            new THREE.LineBasicMaterial({color:new THREE.Color(col),transparent:true,opacity:op,depthWrite:false}));
+          ln.layers.set(0); return ln;
+        }
+        var RG1=new THREE.Group(); ringGrp.add(RG1);
+        var RG2=new THREE.Group(); ringGrp.add(RG2);
+        var RG3=new THREE.Group(); ringGrp.add(RG3);
+
+        // ── BLOOM ──
+        var bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.40,.65,.08);
+        var bComp=new EffectComposer(renderer); bComp.renderToScreen=false;
+        bComp.addPass(new RenderPass(scene,camera)); bComp.addPass(bloomPass);
+        var fPass=new ShaderPass(new THREE.ShaderMaterial({
+          uniforms:{baseTexture:{value:null},bloomTexture:{value:bComp.renderTarget2.texture}},
+          vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+          fragmentShader:'uniform sampler2D baseTexture;uniform sampler2D bloomTexture;varying vec2 vUv;void main(){gl_FragColor=texture2D(baseTexture,vUv)+vec4(texture2D(bloomTexture,vUv).rgb,0.);}',
+        }),'baseTexture'); fPass.needsSwap=true;
+        var fComp=new EffectComposer(renderer);
+        fComp.addPass(new RenderPass(scene,camera)); fComp.addPass(fPass);
+
+        // init bloom for default variant
+        var dv=VARIANTS[_variant];
+        bloomPass.strength=dv.bloomStr; bloomPass.radius=dv.bloomRad; bloomPass.threshold=dv.bloomThr;
+
+        // set renderer size to canvas backing buffer (480×480), fixed uScale
+        renderer.setSize(canvas.width, canvas.height, false);
+        bComp.setSize(canvas.width, canvas.height);
+        fComp.setSize(canvas.width, canvas.height);
+        camera.aspect=1; camera.updateProjectionMatrix();
+        var uScaleVal = 160 * (480 * DPR) / 720;
+        pMat.uniforms.uScale.value      = uScaleVal;
+        nebMat2.uniforms.uScale.value   = uScaleVal;
+        corePMat.uniforms.uScale.value  = uScaleVal;
+
+        var _hid=[];
+        function hideNB(o){if((o.isMesh||o.isPoints||o.isLine||o.isLineSegments||o.isSprite)&&!o.layers.test(bMask)&&o.visible){o.visible=false;_hid.push(o);}}
+        function restV(){_hid.forEach(function(o){o.visible=true;}); _hid.length=0;}
+
+        // ── LAYER SPEED ──
+        var LAYER_SPEED = [0.70, 1.00, 0.85, 1.15, 0.90, 1.05, 0.80, 1.10, 0.95];
+
+        function updateParticles(t){
+          var v  = VARIANTS[_variant];
+          var bs = _bs;
+          var breathS = 1.0 + (bs-.72) * .40;
+          var tilt = (bs-.72)/.28 * v.tiltAmp;
+          var cosTilt=Math.cos(tilt), sinTilt=Math.sin(tilt);
+          var baseSpeed = v.spinSpeed;
+
+          for(var i=0;i<N;i++){
+            var lay=layerArr[i];
+            var sub=subArr[i];
+            var hx=homeX[i], hy=homeY[i], hz=homeZ[i];
+            var dir  = (sub%2===0) ? 1 : -1;
+            var rotA = t * baseSpeed * LAYER_SPEED[lay] * dir;
+            var cA   = Math.cos(rotA), sA = Math.sin(rotA);
+            var sx=(hx*cA - hy*sA)*breathS;
+            var sy=(hx*sA + hy*cA)*breathS;
+            var sz=hz;
+            var rx=sx, ry=sy, rz=sz;
+            var ty= ry*cosTilt - rz*sinTilt;
+            var tz= ry*sinTilt + rz*cosTilt;
+            pPos[i*3]=rx; pPos[i*3+1]=ty; pPos[i*3+2]=tz;
+            var col = v.layerCols[Math.min(layerArr[i], v.layerCols.length-1)];
+            var shim = .92 + .08*Math.sin(t*1.8+shimPh[i]);
+            var depth = (tz+1.5)/3.0;
+            var dbright = .82 + .18*(depth*depth);
+            var ripple = 1.0;
+            if(_rippleT >= 0){
+              var front = _rippleT * 2.4;
+              var dist  = Math.abs(homeR[i] - front);
+              if(dist < 0.30) ripple = 1.0 + (1.0 - dist/0.30) * 2.0;
+            }
+            var a = brightArr[i]*shim*dbright*0.85*ripple;
+            pCol[i*3]=col[0]*a; pCol[i*3+1]=col[1]*a; pCol[i*3+2]=col[2]*a;
+            var baseSize = layerArr[i]<=1 ? .175
+                         : layerArr[i]<=3 ? .145
+                         : layerArr[i]<=5 ? .122
+                         : layerArr[i]<=6 ? .105
+                         : .082;
+            pSz[i] = baseSize*(isBig[i]?1.85:1)*(.65+.55*depth);
+          }
+          pGeo.attributes.position.needsUpdate=true;
+          pGeo.attributes.color.needsUpdate=true;
+          pGeo.attributes.aSize.needsUpdate=true;
+        }
+
+        function updateCore(t, bs, pulse){
+          var ay = t * 0.18;
+          var ax = Math.sin(t * 0.22) * 0.18;
+          var cosY=Math.cos(ay), sinY=Math.sin(ay);
+          var cosX=Math.cos(ax), sinX=Math.sin(ax);
+          var breathe = Math.sin(t*1.1)*0.012;
+          var amp = (bs - 0.72) / 0.28;
+          var converge = pulse*amp*0.18;
+          var dA=0.05, dS=0.8;
+          for(var i=0;i<CORE_N;i++){
+            var x=coreDirs[i*3], y=coreDirs[i*3+1], z=coreDirs[i*3+2];
+            var x1= x*cosY + z*sinY;
+            var z1=-x*sinY + z*cosY;
+            var y1= y*cosX - z1*sinX;
+            var z2= y*sinX + z1*cosX;
+            var pull = converge*(1.15-0.3*coreBase[i]);
+            var r = coreBase[i]*CORE_R*(1-pull+breathe);
+            var dx=Math.sin(t*dS+corePhase[i*3])*dA*CORE_R;
+            var dy=Math.cos(t*dS+corePhase[i*3+1])*dA*CORE_R;
+            var dz=Math.sin(t*dS+corePhase[i*3+2])*dA*CORE_R;
+            corePos[i*3]=x1*r+dx; corePos[i*3+1]=y1*r+dy; corePos[i*3+2]=z2*r+dz;
+            var depth=(z2+1)/2;
+            var amp2 = (bs - 0.72) / 0.28;
+            var restBright = 0.075 + 0.925*amp2;
+            if(coreBig[i]){
+              var bb=(0.90+0.10*depth)*restBright;
+              coreCol[i*3]=bb; coreCol[i*3+1]=bb*0.88; coreCol[i*3+2]=bb*0.40;
+              coreSz[i]=(0.019+0.006*(1-coreBase[i]))*(0.7+0.6*depth);
+            } else {
+              var opa=(0.55+0.45*(depth*depth))*restBright;
+              coreCol[i*3]=1.0*opa; coreCol[i*3+1]=0.78*opa; coreCol[i*3+2]=0.05*opa;
+              coreSz[i]=(0.014+0.005*(1-coreBase[i]))*(0.6+0.6*depth);
+            }
+          }
+          coreGeo.attributes.position.needsUpdate=true;
+          coreGeo.attributes.color.needsUpdate=true;
+          coreGeo.attributes.aSize.needsUpdate=true;
+        }
+
+        function updateNebula(t, amp, pulse){
+          var ay = t * 0.12;
+          var ax = Math.sin(t * 0.22) * 0.18;
+          var cosY=Math.cos(ay), sinY=Math.sin(ay);
+          var cosX=Math.cos(ax), sinX=Math.sin(ax);
+          var breathe = Math.sin(t*1.1)*0.012;
+          var converge = pulse*amp*0.22;
+          var dA=0.05, dS=0.8;
+          for(var i=0;i<NEB_N;i++){
+            var x=nebDirs[i*3], y=nebDirs[i*3+1], z=nebDirs[i*3+2];
+            var x1= x*cosY + z*sinY;
+            var z1=-x*sinY + z*cosY;
+            var y1= y*cosX - z1*sinX;
+            var z2= y*sinX + z1*cosX;
+            var pull = converge*(1.15-0.3*nebBase[i]);
+            var r = nebBase[i]*NEB_SPHERE_R*(1-pull+breathe);
+            var dx=Math.sin(t*dS+nebPhase[i*3])*dA*NEB_SPHERE_R;
+            var dy=Math.cos(t*dS+nebPhase[i*3+1])*dA*NEB_SPHERE_R;
+            var dz=Math.sin(t*dS+nebPhase[i*3+2])*dA*NEB_SPHERE_R;
+            nebPos[i*3]=x1*r+dx; nebPos[i*3+1]=y1*r+dy; nebPos[i*3+2]=z2*r+dz;
+            var depth=(z2+1)/2;
+            var opa=(0.30+0.70*(depth*depth))*amp;
+            if(nebBig[i]){
+              var bb=0.55+0.45*depth;
+              nebCol[i*3]=bb; nebCol[i*3+1]=bb*0.78; nebCol[i*3+2]=bb*0.08;
+              nebSz[i]=(0.032+0.016*(1-nebBase[i]))*(0.7+0.6*depth);
+            } else {
+              nebCol[i*3]=1.0*opa; nebCol[i*3+1]=0.72*opa; nebCol[i*3+2]=0.0*opa;
+              nebSz[i]=(0.024+0.016*(1-nebBase[i]))*(0.6+0.6*depth);
+            }
+          }
+          nebGeo.attributes.position.needsUpdate=true;
+          nebGeo.attributes.color.needsUpdate=true;
+          nebGeo.attributes.aSize.needsUpdate=true;
+        }
+
+        // ── FRAME LOOP ──
+        var prevT = performance.now() / 1000;
+        var elapsed = 0;
+
+        function frame(){
+          requestAnimationFrame(frame);
+
+          // render-gate: only run when healthView is active
+          var hv = document.getElementById('healthView');
+          if(!hv || !hv.classList.contains('active')) return;
+
+          var now = performance.now() / 1000;
+          var dt  = Math.min(now - prevT, .05);
+          prevT   = now;
+          elapsed += dt;
+          var t   = elapsed;
+
+          _bs += (bsTarget(_phase, _phaseT) - _bs) * Math.min(1, dt*3.0);
+
+          // fire ripple on phase change
+          if(_phase !== _lastPhase) _rippleT = 0;
+          _lastPhase = _phase;
+          if(_rippleT >= 0){
+            _rippleT += dt/2.5;
+            if(_rippleT > 1.1){ _rippleT = _animating ? 0 : -1; }
+          }
+
+          updateParticles(t);
+
+          RG1.rotation.z =  t*.020;
+          RG2.rotation.z = -t*.035;
+          RG3.rotation.z =  t*.014;
+
+          var pulse=.88+.12*Math.sin(t*1.5);
+          updateCore(t, _bs, pulse);
+
+          var nebAmp = (_bs - 0.72) / 0.28;
+          updateNebula(t, nebAmp, pulse);
+          nebMat.opacity = nebAmp * (0.32 + 0.18 * pulse);
+          nebSprite.scale.setScalar(0.55 + nebAmp * (0.25 + 0.15 * pulse));
+
+          haloMat.opacity=.07+_bs*.14;
+          haloSprite.scale.setScalar(1.65+_bs*.75);
+
+          scene.traverse(hideNB); bComp.render(); restV(); fComp.render();
+        }
+        frame();
+      });
+    }
+
+    window.drawMandala = function(progress, phase, phaseT){
+      var canvas = document.getElementById('medMandala');
+      if(!canvas) return;
+      // lazy-init Three.js on first call
+      initThree(canvas);
+      // drive state for frame loop
+      _phase    = phase;
+      _phaseT   = phaseT;
+      _animating = (phase !== 3);
+    };
+  })();
 
   /* ---- wire buttons ---- */
   function wireButtons(){
