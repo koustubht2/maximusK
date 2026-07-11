@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Meditation Avatar Lab — 3D</title>
+<title>Meditation Avatar Lab — Mandala Plasma</title>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -11,202 +11,81 @@
 } }
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap');
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  :root{
-    --bg:#08060f;
-    --violet:#7c3aed;
-    --lavender:#a78bfa;
-    --indigo:#6366f1;
-    --mono:'JetBrains Mono',monospace;
-    --serif:'Fraunces',Georgia,serif;
-  }
-  body{
-    background:var(--bg);
-    color:rgba(239,231,255,0.9);
-    font-family:var(--mono);
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:24px 16px 60px;
-    gap:20px;
-  }
-  h1{
-    font-family:var(--serif);
-    font-weight:300;
-    font-size:22px;
-    color:var(--lavender);
-    letter-spacing:0.02em;
-  }
-  .sub{
-    font-size:9px;
-    letter-spacing:0.16em;
-    text-transform:uppercase;
-    color:rgba(167,139,250,0.45);
-    margin-top:-14px;
-  }
-
-  /* ── controls ── */
-  .controls{
-    display:flex;
-    flex-wrap:wrap;
-    gap:12px;
-    justify-content:center;
-    padding:14px 18px;
-    background:rgba(255,255,255,0.025);
-    border:1px solid rgba(167,139,250,0.12);
-    border-radius:16px;
-    width:100%;
-    max-width:680px;
-  }
-  .cg{ display:flex; flex-direction:column; align-items:center; gap:5px; }
-  .cl{ font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(167,139,250,0.5); }
-  select{
-    background:rgba(255,255,255,0.04);
-    border:1px solid rgba(167,139,250,0.18);
-    border-radius:8px;
-    color:rgba(239,231,255,0.85);
-    font-family:var(--mono);
-    font-size:10px;
-    padding:5px 10px;
-    cursor:pointer;
-  }
-  .btn{
-    padding:7px 16px;
-    border-radius:10px;
-    border:1px solid rgba(167,139,250,0.28);
-    background:rgba(124,58,237,0.10);
-    color:var(--lavender);
-    font-family:var(--mono);
-    font-size:10px;
-    letter-spacing:0.08em;
-    cursor:pointer;
-    transition:background 0.2s, border-color 0.2s;
-  }
-  .btn:hover{ background:rgba(124,58,237,0.25); }
-  .btn.on{ background:rgba(124,58,237,0.40); border-color:var(--lavender); color:#fff; }
-
-  /* ── avatar stage ── */
-  .stage{
-    position:relative;
-    width:320px; height:320px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-  #medCanvas{
-    width:320px; height:320px;
-    max-width:90vw; max-height:90vw;
-    border-radius:50%;
-    cursor:pointer;
-    display:block;
-  }
-
-  /* ── breath UI ── */
-  .breath-ring{
-    position:absolute;
-    inset:0;
-    border-radius:50%;
-    pointer-events:none;
-    border:1px solid rgba(167,139,250,0.12);
-    transition:border-color 0.4s, box-shadow 0.4s;
-  }
-  .breath-ring.inhale{
-    border-color:rgba(167,139,250,0.35);
-    box-shadow:0 0 28px rgba(124,58,237,0.25), inset 0 0 20px rgba(124,58,237,0.08);
-  }
-  .breath-ring.exhale{
-    border-color:rgba(167,139,250,0.10);
-    box-shadow:none;
-  }
-
-  .breath-label{
-    position:absolute;
-    bottom:-38px;
-    left:50%;
-    transform:translateX(-50%);
-    font-family:var(--serif);
-    font-size:18px;
-    font-weight:300;
-    color:rgba(221,214,254,0.85);
-    letter-spacing:0.04em;
-    white-space:nowrap;
-    transition:opacity 0.5s;
-  }
-  .phase-sub{
-    position:absolute;
-    bottom:-58px;
-    left:50%;
-    transform:translateX(-50%);
-    font-family:var(--mono);
-    font-size:8px;
-    letter-spacing:0.16em;
-    text-transform:uppercase;
-    color:rgba(167,139,250,0.40);
-    white-space:nowrap;
-  }
-
-  /* ── stats bar ── */
-  .stats{
-    display:flex;
-    gap:24px;
-    font-size:9px;
-    letter-spacing:0.12em;
-    text-transform:uppercase;
-    color:rgba(167,139,250,0.40);
-  }
-  .stat-val{ color:rgba(196,181,253,0.8); font-size:11px; display:block; text-align:center; font-weight:600; }
-
-  /* ── variant picker ── */
-  .variants{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    justify-content:center;
-    max-width:680px;
-  }
-  .vbtn{
-    padding:6px 14px;
-    border-radius:20px;
-    border:1px solid rgba(167,139,250,0.18);
-    background:rgba(124,58,237,0.06);
-    color:rgba(167,139,250,0.6);
-    font-family:var(--mono);
-    font-size:9px;
-    letter-spacing:0.10em;
-    cursor:pointer;
-    transition:all 0.2s;
-  }
-  .vbtn:hover{ background:rgba(124,58,237,0.18); color:var(--lavender); }
-  .vbtn.active{ background:rgba(124,58,237,0.35); border-color:var(--lavender); color:#fff; }
-
-  /* ── chosen banner ── */
-  #banner{
-    display:none;
-    position:fixed;
-    bottom:20px; left:50%;
-    transform:translateX(-50%);
-    background:rgba(124,58,237,0.92);
-    border:1px solid var(--lavender);
-    border-radius:14px;
-    padding:10px 22px;
-    font-size:11px;
-    color:#fff;
-    letter-spacing:0.08em;
-    backdrop-filter:blur(12px);
-    z-index:99;
-  }
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Fraunces:opsz,wght@9..144,300&display=swap');
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{
+  background:#06040e;
+  color:rgba(239,231,255,.9);
+  font-family:'JetBrains Mono',monospace;
+  min-height:100vh;
+  display:flex; flex-direction:column; align-items:center;
+  padding:24px 16px 60px; gap:18px;
+}
+h1{ font-family:'Fraunces',Georgia,serif; font-weight:300; font-size:21px; color:#a78bfa; }
+.sub{ font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgba(167,139,250,.4); margin-top:-12px; }
+.controls{
+  display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+  padding:12px 16px;
+  background:rgba(255,255,255,.025); border:1px solid rgba(167,139,250,.12); border-radius:14px;
+  width:100%; max-width:720px;
+}
+.cg{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+.cl{ font-size:8px; letter-spacing:.13em; text-transform:uppercase; color:rgba(167,139,250,.45); }
+select{
+  background:rgba(255,255,255,.04); border:1px solid rgba(167,139,250,.18); border-radius:8px;
+  color:rgba(239,231,255,.85); font-family:'JetBrains Mono',monospace; font-size:10px; padding:4px 8px; cursor:pointer;
+}
+.btn{
+  padding:7px 15px; border-radius:10px; border:1px solid rgba(167,139,250,.28);
+  background:rgba(124,58,237,.10); color:#a78bfa;
+  font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; cursor:pointer;
+  transition:background .2s;
+}
+.btn:hover{ background:rgba(124,58,237,.25); }
+.btn.on{ background:rgba(124,58,237,.40); border-color:#a78bfa; color:#fff; }
+.stage{
+  position:relative; width:340px; height:340px;
+  display:flex; align-items:center; justify-content:center;
+}
+#medCanvas{
+  width:340px; height:340px; max-width:90vw; max-height:90vw;
+  display:block; cursor:pointer;
+}
+.breath-label{
+  position:absolute; bottom:-36px; left:50%; transform:translateX(-50%);
+  font-family:'Fraunces',Georgia,serif; font-size:17px; font-weight:300;
+  color:rgba(221,214,254,.85); letter-spacing:.04em; white-space:nowrap;
+}
+.phase-pct{
+  position:absolute; bottom:-56px; left:50%; transform:translateX(-50%);
+  font-size:8px; letter-spacing:.16em; text-transform:uppercase;
+  color:rgba(167,139,250,.38); white-space:nowrap;
+}
+.variants{
+  display:flex; gap:8px; flex-wrap:wrap; justify-content:center; max-width:720px;
+}
+.vbtn{
+  padding:5px 13px; border-radius:18px; border:1px solid rgba(167,139,250,.18);
+  background:rgba(124,58,237,.06); color:rgba(167,139,250,.6);
+  font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.10em; cursor:pointer; transition:all .2s;
+}
+.vbtn:hover{ background:rgba(124,58,237,.20); color:#a78bfa; }
+.vbtn.active{ background:rgba(124,58,237,.38); border-color:#a78bfa; color:#fff; }
+#banner{
+  display:none; position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+  background:rgba(124,58,237,.93); border:1px solid #a78bfa; border-radius:13px;
+  padding:9px 20px; font-size:11px; color:#fff; letter-spacing:.08em;
+  backdrop-filter:blur(12px); z-index:99;
+}
 </style>
 </head>
 <body>
 
-<h1>Meditation Avatar Lab — 3D</h1>
-<p class="sub">plasma orb · three.js · breath-synced</p>
+<h1>Meditation Avatar Lab</h1>
+<p class="sub">mandala plasma · sacred geometry · breath-synced · three.js</p>
 
 <div class="controls">
-  <div class="cg">
-    <span class="cl">Breath phase</span>
+  <div class="cg"><span class="cl">Breath phase</span>
     <select id="phaseSelect">
       <option value="0">Inhale (4s)</option>
       <option value="1">Hold (4s)</option>
@@ -214,21 +93,18 @@
       <option value="3" selected>Rest (2s)</option>
     </select>
   </div>
-  <div class="cg">
-    <span class="cl">Animate</span>
+  <div class="cg"><span class="cl">Animate</span>
     <button class="btn" id="animBtn" onclick="toggleAnim()">▶ Live breath</button>
   </div>
-  <div class="cg">
-    <span class="cl">Speed</span>
+  <div class="cg"><span class="cl">Speed</span>
     <select id="speedSelect">
       <option value="0.4">Slow</option>
       <option value="1" selected>Normal</option>
       <option value="2">Fast</option>
     </select>
   </div>
-  <div class="cg">
-    <span class="cl">Choose</span>
-    <button class="btn" onclick="choose()">✓ Ship this</button>
+  <div class="cg"><span class="cl">Ship</span>
+    <button class="btn" onclick="choose()">✓ Choose variant</button>
   </div>
 </div>
 
@@ -236,584 +112,589 @@
 
 <div class="stage">
   <canvas id="medCanvas" width="480" height="480" title="Click to ping"></canvas>
-  <div class="breath-ring" id="breathRing"></div>
   <div class="breath-label" id="breathLabel">Rest</div>
-  <div class="phase-sub" id="phaseSub"></div>
+  <div class="phase-pct" id="phasePct"></div>
 </div>
 
-<div class="stats">
-  <div class="cg"><span class="stat-val" id="sFps">—</span>fps</div>
-  <div class="cg"><span class="stat-val" id="sPhase">—</span>phase</div>
-  <div class="cg"><span class="stat-val" id="sVariant">—</span>variant</div>
-</div>
-
-<div id="banner">✓ Variant chosen — tell me to ship it into index.html</div>
+<div id="banner"></div>
 
 <script type="module">
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
-import { ShaderPass }     from 'three/addons/postprocessing/ShaderPass.js';
+import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass }      from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  VARIANTS — each defines colour palette + behaviour knobs.
-//  All share the same particle sphere + bloom pipeline.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  MANDALA GEOMETRY GENERATOR
+//  Produces a dense cloud of 3-D points shaped like sacred
+//  geometry: concentric rings of petals, Flower-of-Life circles,
+//  Sri Yantra triangles, metatron cube edges — all at varying
+//  radii so particles have depth and can orbit.
+// ─────────────────────────────────────────────────────────────
+
+function buildMandalaPoints(N_total){
+  // Returns Float32Array of [x,y,z, layer, role]  (5 floats / point)
+  // layer  0=core  1=inner  2=mid  3=outer  4=fringe
+  // role   0=ring  1=petal  2=triangle  3=metatron  4=free
+
+  const out   = [];   // will hold {x,y,z,layer,role,base}
+
+  const TWO_PI = Math.PI * 2;
+  const jitter = (a) => a * (0.85 + Math.random()*0.30);
+
+  // ── Flower of Life: 7 circles, each circle = ring of points ──
+  const FOL_CENTERS = [{x:0,y:0}];
+  for(let i=0;i<6;i++){
+    const a = (i/6)*TWO_PI; FOL_CENTERS.push({x:Math.cos(a),y:Math.sin(a)});
+  }
+  // Each of those 6 outer centres also spawns 6 more (2nd ring)
+  for(let i=0;i<6;i++){
+    const a=(i/6)*TWO_PI, cx=Math.cos(a)*2, cy=Math.sin(a)*2;
+    for(let j=0;j<6;j++){
+      const b=(j/6)*TWO_PI; FOL_CENTERS.push({x:cx+Math.cos(b),y:cy+Math.sin(b)});
+    }
+  }
+
+  function addRing(cx,cy,cz,r,count,layer,role,zSpread){
+    for(let i=0;i<count;i++){
+      const a=(i/count)*TWO_PI;
+      const jx=(Math.random()-.5)*r*.12, jy=(Math.random()-.5)*r*.12;
+      const z=(Math.random()-.5)*(zSpread||0.08);
+      out.push({x:cx+Math.cos(a)*jitter(r)+jx, y:cy+Math.sin(a)*jitter(r)+jy, z:cz+z, layer, role, base:r});
+    }
+  }
+
+  function addArc(cx,cy,cz,r,fromA,toA,count,layer,role,zSpread){
+    for(let i=0;i<count;i++){
+      const t=i/(count-1), a=fromA+(toA-fromA)*t;
+      const jx=(Math.random()-.5)*r*.10, jy=(Math.random()-.5)*r*.10;
+      const z=(Math.random()-.5)*(zSpread||0.06);
+      out.push({x:cx+Math.cos(a)*jitter(r)+jx, y:cy+Math.sin(a)*jitter(r)+jy, z:cz+z, layer, role, base:r});
+    }
+  }
+
+  // ── 1. Core dot cluster ──
+  for(let i=0;i<120;i++){
+    const r=Math.random()*.18, a=Math.random()*TWO_PI;
+    out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.15, layer:0, role:0, base:0});
+  }
+
+  // ── 2. FOL circles (inner 7 at unit radius) ──
+  for(let ci=0;ci<7;ci++){
+    const {x:cx,y:cy}=FOL_CENTERS[ci];
+    addRing(cx*.52,cy*.52,0, .52, 48, ci===0?0:1, 0, .10);
+  }
+
+  // ── 3. 12-petal lotus (inner) ──
+  for(let i=0;i<12;i++){
+    const a=(i/12)*TWO_PI, mid=a+(1/12)*TWO_PI*.5;
+    const px=Math.cos(mid)*.55, py=Math.sin(mid)*.55;
+    addArc(px*.5,py*.5,0, .40, a, a+TWO_PI/12, 30, 1, 1, .08);
+  }
+
+  // ── 4. 24-petal lotus (mid) ──
+  for(let i=0;i<24;i++){
+    const a=(i/24)*TWO_PI, mid=a+(1/24)*TWO_PI*.5;
+    const px=Math.cos(mid)*.90, py=Math.sin(mid)*.90;
+    addArc(px*.55,py*.55,0, .48, a, a+TWO_PI/24, 22, 2, 1, .12);
+  }
+
+  // ── 5. Sri Yantra — 9 interlocking triangles (4 up, 5 down) ──
+  const SRI_RADII = [.22,.34,.48,.60,.72,.84,.96,1.08,1.20];
+  SRI_RADII.forEach((r,ri)=>{
+    const up = ri%2===0;
+    for(let v=0;v<3;v++){
+      const a0 = (up? -Math.PI/2 : Math.PI/2) + (v/3)*TWO_PI;
+      const a1 = (up? -Math.PI/2 : Math.PI/2) + ((v+1)/3)*TWO_PI;
+      addArc(0,0,0, r, a0, a1, 28, ri<3?1:ri<6?2:3, 2, .10);
+    }
+  });
+
+  // ── 6. Metatron's Cube — 13 circles + connecting lines ──
+  const META_R = [.32,.64,.96,1.28];
+  META_R.forEach((r,ri)=>{
+    addRing(0,0,0, r, 60+ri*20, ri<2?2:3, 3, .12+ri*.04);
+  });
+  // Metatron spokes (6 directions × 2 rings)
+  for(let i=0;i<6;i++){
+    const a=(i/6)*TWO_PI;
+    addArc(0,0,0, .96, a-.02, a+.02, 18, 2, 3, .08);
+    addArc(0,0,0, 1.28, a-.015, a+.015, 14, 3, 3, .10);
+  }
+
+  // ── 7. Vesica Piscis pairs (6 sets) ──
+  for(let i=0;i<6;i++){
+    const a=(i/6)*TWO_PI;
+    const cx=Math.cos(a)*.52, cy=Math.sin(a)*.52;
+    addArc(cx,cy,0, .52, a+Math.PI*.25, a+Math.PI*1.75, 30, 2, 1, .09);
+  }
+
+  // ── 8. Outer concentric halos (4 rings) ──
+  [1.30,1.52,1.72,1.92].forEach((r,ri)=>{
+    addRing(0,0,(ri*.04-.06), r, 80+ri*16, 3, 0, .14+ri*.04);
+  });
+
+  // ── 9. Fringe scatter — stardust beyond the outer edge ──
+  for(let i=0;i<300;i++){
+    const r=1.85+Math.random()*.55, a=Math.random()*TWO_PI;
+    const z=(Math.random()-.5)*.35;
+    out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:4, role:4, base:r});
+  }
+
+  // ── 10. Fill to N_total with extra petal/ring density ──
+  while(out.length < N_total){
+    const pick=Math.random();
+    if(pick<.35){ // extra inner petal
+      const r=.3+Math.random()*.7, a=Math.random()*TWO_PI;
+      const z=(Math.random()-.5)*.20;
+      out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:1, role:1, base:r});
+    } else if(pick<.70){ // extra mid geometry
+      const r=.6+Math.random()*.5, a=Math.random()*TWO_PI;
+      const z=(Math.random()-.5)*.18;
+      out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:2, role:2, base:r});
+    } else { // outer fill
+      const r=1.1+Math.random()*.8, a=Math.random()*TWO_PI;
+      const z=(Math.random()-.5)*.25;
+      out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:3, role:0, base:r});
+    }
+  }
+
+  return out.slice(0, N_total);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  VARIANTS
+// ─────────────────────────────────────────────────────────────
 const VARIANTS = [
   {
     id:'A', name:'Violet Soul',
-    // core = bright white-lavender; shell = deep violet; nebula = indigo
-    coreColor:   [0.92, 0.88, 1.00],
-    shellColor:  [0.49, 0.27, 0.98],
-    nebulaColor: [0.39, 0.40, 0.95],
-    // rings
-    ring1Hex: '#8b7cf8', ring2Hex: '#6366f1', ring3Hex: '#a78bfa',
-    // bloom
-    bloomStr: 1.1, bloomRad: 0.55, bloomThr: 0.12,
-    // drift speed
-    driftSpeed: 0.7, driftAmp: 0.045,
-    // sphere radius scale
-    baseR: 1.40,
+    core:[.93,.88,1.0], mid:[.62,.45,.98], shell:[.39,.27,.90], fringe:[.25,.18,.72],
+    bloomStr:1.2, bloomRad:.60, bloomThr:.10,
+    orbitSpeed:0.055, breathPulse:1.0,
+    ring1:'#8b7cf8', ring2:'#6366f1', ring3:'#a78bfa',
   },
   {
-    id:'B', name:'Amethyst Mist',
-    coreColor:   [0.95, 0.90, 1.00],
-    shellColor:  [0.62, 0.38, 0.95],
-    nebulaColor: [0.48, 0.32, 0.88],
-    ring1Hex: '#c4b5fd', ring2Hex: '#a78bfa', ring3Hex: '#7c3aed',
-    bloomStr: 1.4, bloomRad: 0.7,  bloomThr: 0.08,
-    driftSpeed: 0.5, driftAmp: 0.06,
-    baseR: 1.45,
+    id:'B', name:'Rose Amethyst',
+    core:[1.0,.90,.96], mid:[.80,.42,.72], shell:[.60,.28,.62], fringe:[.38,.18,.48],
+    bloomStr:1.5, bloomRad:.70, bloomThr:.08,
+    orbitSpeed:0.045, breathPulse:1.2,
+    ring1:'#e879f9', ring2:'#c026d3', ring3:'#f0abfc',
   },
   {
-    id:'C', name:'Indigo Deep',
-    coreColor:   [0.88, 0.88, 1.00],
-    shellColor:  [0.38, 0.40, 0.92],
-    nebulaColor: [0.30, 0.32, 0.80],
-    ring1Hex: '#6366f1', ring2Hex: '#4f46e5', ring3Hex: '#818cf8',
-    bloomStr: 0.9, bloomRad: 0.45, bloomThr: 0.15,
-    driftSpeed: 0.9, driftAmp: 0.038,
-    baseR: 1.35,
+    id:'C', name:'Ice Temple',
+    core:[.90,.96,1.0], mid:[.45,.60,.98], shell:[.28,.42,.85], fringe:[.16,.28,.65],
+    bloomStr:1.0, bloomRad:.50, bloomThr:.13,
+    orbitSpeed:0.065, breathPulse:.85,
+    ring1:'#93c5fd', ring2:'#6366f1', ring3:'#bfdbfe',
   },
   {
-    id:'D', name:'Lilac Dawn',
-    coreColor:   [1.00, 0.94, 1.00],
-    shellColor:  [0.78, 0.58, 0.96],
-    nebulaColor: [0.68, 0.50, 0.90],
-    ring1Hex: '#e9d5ff', ring2Hex: '#c084fc', ring3Hex: '#a855f7',
-    bloomStr: 1.6, bloomRad: 0.80, bloomThr: 0.06,
-    driftSpeed: 0.45, driftAmp: 0.07,
-    baseR: 1.50,
+    id:'D', name:'Golden Om',
+    core:[1.0,.95,.72], mid:[.90,.72,.28], shell:[.72,.52,.14], fringe:[.50,.36,.08],
+    bloomStr:1.3, bloomRad:.65, bloomThr:.09,
+    orbitSpeed:0.040, breathPulse:1.1,
+    ring1:'#fbbf24', ring2:'#d97706', ring3:'#fde68a',
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  BREATH CYCLE
-// ─────────────────────────────────────────────────────────────────────────────
-const PHASES      = ['Breathe in', 'Hold', 'Breathe out', 'Rest'];
-const PHASE_DUR   = [4, 4, 6, 2];  // seconds
-const CYCLE_LEN   = PHASE_DUR.reduce((a,b)=>a+b, 0); // 16s
+// ─────────────────────────────────────────────────────────────
+//  BREATH
+// ─────────────────────────────────────────────────────────────
+const PHASE_NAMES = ['Breathe in','Hold','Breathe out','Rest'];
+const PHASE_DUR   = [4,4,6,2];
+const CYCLE       = 16;
 
-let _phase = 3, _phaseT = 0;
-let _animating = false, _animStart = null, _animRaf = null;
-let _currentVariant = 0;
+let _phase=3, _phaseT=0, _bs=0.72;
+let _animating=false, _animStart=null, _animRaf=null;
+let _variant=0;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  BUILD VARIANT BUTTONS
-// ─────────────────────────────────────────────────────────────────────────────
-(function(){
-  const row = document.getElementById('variantRow');
-  VARIANTS.forEach((v, i) => {
-    const b = document.createElement('button');
-    b.className = 'vbtn' + (i===0?' active':'');
-    b.textContent = v.id + ' — ' + v.name;
-    b.onclick = () => switchVariant(i);
-    row.appendChild(b);
-  });
-})();
-
-function switchVariant(i){
-  _currentVariant = i;
-  document.querySelectorAll('.vbtn').forEach((b,j) => b.classList.toggle('active', j===i));
-  document.getElementById('sVariant').textContent = VARIANTS[i].id;
-  rebuildMaterials(VARIANTS[i]);
+function bsTarget(ph,pt){
+  if(ph===0) return .72+pt*.28;
+  if(ph===1) return 1.0;
+  if(ph===2) return 1.0-pt*.28;
+  return .72;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  THREE.JS SETUP
-// ─────────────────────────────────────────────────────────────────────────────
-const canvas   = document.getElementById('medCanvas');
-const BLOOM_L  = 1;
-const bloomMask = new THREE.Layers(); bloomMask.set(BLOOM_L);
+// ─────────────────────────────────────────────────────────────
+//  BUILD PARTICLE DATA
+// ─────────────────────────────────────────────────────────────
+const N      = 7200;
+const MPTS   = buildMandalaPoints(N);
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-renderer.setClearColor(0x000000, 0);
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
+// Each particle has: home position, phase offsets for drift,
+// layer/role for colouring, and orbit angle
+const homeX  = new Float32Array(N);
+const homeY  = new Float32Array(N);
+const homeZ  = new Float32Array(N);
+const phA    = new Float32Array(N);  // drift phase x
+const phB    = new Float32Array(N);  // drift phase y
+const phC    = new Float32Array(N);  // drift phase z
+const layer  = new Uint8Array(N);
+const role   = new Uint8Array(N);
+const baseR  = new Float32Array(N);  // normalised 0-1 (radius / max_radius)
+const isBig  = new Uint8Array(N);
+// orbit: each particle slowly rotates around Z and tilts around X
+const orbitA = new Float32Array(N);  // initial orbit angle
+const orbitR = new Float32Array(N);  // how much it orbits (0 = stays put)
+
+const MAX_R = 2.5;
+
+MPTS.forEach((p,i)=>{
+  homeX[i] = p.x; homeY[i] = p.y; homeZ[i] = p.z;
+  phA[i] = Math.random()*Math.PI*2;
+  phB[i] = Math.random()*Math.PI*2;
+  phC[i] = Math.random()*Math.PI*2;
+  layer[i]  = p.layer;
+  role[i]   = p.role;
+  baseR[i]  = Math.min(1, p.base / MAX_R);
+  isBig[i]  = Math.random() < (p.layer===0?.6:p.layer===1?.3:.18) ? 1 : 0;
+  orbitA[i] = Math.random()*Math.PI*2;
+  // outer particles orbit more; inner core stays mostly fixed
+  orbitR[i] = p.layer===0 ? .005
+             : p.layer===1 ? .020
+             : p.layer===2 ? .040
+             : p.layer===3 ? .065
+             :               .10;
+});
+
+// ─────────────────────────────────────────────────────────────
+//  THREE.JS RENDERER
+// ─────────────────────────────────────────────────────────────
+const canvas  = document.getElementById('medCanvas');
+const BLOOM_L = 1;
+const bMask   = new THREE.Layers(); bMask.set(BLOOM_L);
+
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setClearColor(0,0);
+const DPR = Math.min(window.devicePixelRatio||1,2);
 renderer.setPixelRatio(DPR);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-camera.position.set(0, 0, 5.8);
+const camera = new THREE.PerspectiveCamera(38,1,.1,100);
+camera.position.set(0,0,5.5);
 camera.layers.enableAll();
 
-const brain = new THREE.Group(); scene.add(brain);
-const rig   = new THREE.Group(); scene.add(rig);
+const mandalaGroup = new THREE.Group(); scene.add(mandalaGroup);
+const ringGroup    = new THREE.Group(); scene.add(ringGroup);
 
-// ── gradient texture helper ──
-function gradTex(stops){
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const g = c.getContext('2d');
-  const grd = g.createRadialGradient(128,128,0,128,128,128);
-  stops.forEach(s => grd.addColorStop(s[0], s[1]));
-  g.fillStyle = grd; g.fillRect(0,0,256,256);
+// ── gradient sprite helper ──
+function gradSprite(stops){
+  const c=document.createElement('canvas'); c.width=c.height=256;
+  const g=c.getContext('2d'), gr=g.createRadialGradient(128,128,0,128,128,128);
+  stops.forEach(s=>gr.addColorStop(s[0],s[1]));
+  g.fillStyle=gr; g.fillRect(0,0,256,256);
   return new THREE.CanvasTexture(c);
 }
 
-// ── CORE (bright centre glow, always visible) ──
-const coreTex = gradTex([
-  [0,   'rgba(255,255,255,0.98)'],
-  [0.15,'rgba(230,220,255,0.75)'],
-  [0.35,'rgba(180,160,255,0.40)'],
-  [0.60,'rgba(130,100,240,0.15)'],
-  [0.82,'rgba(80,60,200,0.05)'],
-  [1,   'rgba(0,0,0,0)'],
-]);
-const coreMat = new THREE.SpriteMaterial({
-  map: coreTex, transparent:true,
-  blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.7,
-});
-const core = new THREE.Sprite(coreMat);
-core.scale.setScalar(0.30); core.layers.set(BLOOM_L); scene.add(core);
+// ── CORE BLOOM sprite ──
+const coreSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: gradSprite([[0,'rgba(255,255,255,.98)'],[.15,'rgba(220,200,255,.75)'],[.4,'rgba(160,120,255,.35)'],[.7,'rgba(100,70,220,.10)'],[1,'rgba(0,0,0,0)']]),
+  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:.80,
+}));
+coreSprite.scale.setScalar(.28); coreSprite.layers.set(BLOOM_L); scene.add(coreSprite);
 
-// ── NEBULA (breath-pulse halo) ──
-const nebulaTex = gradTex([
-  [0,   'rgba(210,190,255,0.90)'],
-  [0.10,'rgba(160,130,250,0.55)'],
-  [0.25,'rgba(120,90,230,0.30)'],
-  [0.42,'rgba(100,70,210,0.14)'],
-  [0.60,'rgba(80,55,190,0.06)'],
-  [0.78,'rgba(60,40,160,0.02)'],
-  [1,   'rgba(0,0,0,0)'],
-]);
-const nebulaMat = new THREE.SpriteMaterial({
-  map: nebulaTex, transparent:true,
-  blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.35,
-});
-const nebula = new THREE.Sprite(nebulaMat);
-nebula.scale.setScalar(0.70); nebula.position.z = -0.5; nebula.layers.set(BLOOM_L); scene.add(nebula);
+// ── NEBULA (breath halo) ──
+const nebulaSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: gradSprite([[0,'rgba(200,170,255,.88)'],[.12,'rgba(150,110,250,.50)'],[.30,'rgba(110,75,230,.24)'],[.55,'rgba(75,50,200,.08)'],[1,'rgba(0,0,0,0)']]),
+  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:.28,
+}));
+nebulaSprite.scale.setScalar(.65); nebulaSprite.position.z=-.4; nebulaSprite.layers.set(BLOOM_L); scene.add(nebulaSprite);
 
-// ── OUTER HALO (very soft, large, breath-synced) ──
-const haloTex = gradTex([
-  [0,   'rgba(180,150,255,0.45)'],
-  [0.20,'rgba(130,100,240,0.22)'],
-  [0.45,'rgba(100,70,210,0.10)'],
-  [0.70,'rgba(70,50,180,0.04)'],
-  [1,   'rgba(0,0,0,0)'],
-]);
-const haloMat = new THREE.SpriteMaterial({
-  map: haloTex, transparent:true,
-  blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.20,
-});
-const halo = new THREE.Sprite(haloMat);
-halo.scale.setScalar(2.2); halo.position.z = -1.0; halo.layers.set(BLOOM_L); scene.add(halo);
+// ── OUTER HALO ──
+const haloSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: gradSprite([[0,'rgba(170,140,255,.40)'],[.25,'rgba(120,90,240,.18)'],[.55,'rgba(80,55,200,.07)'],[1,'rgba(0,0,0,0)']]),
+  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:.15,
+}));
+haloSprite.scale.setScalar(2.4); haloSprite.position.z=-1.2; haloSprite.layers.set(BLOOM_L); scene.add(haloSprite);
 
-// ── PARTICLE SPHERE ──
-const N = 6500;
-const dirs   = new Float32Array(N*3);
-const bases  = new Float32Array(N);
-const isBig  = new Uint8Array(N);
-const phases = new Float32Array(N*3);
-
-for(let i=0; i<N; i++){
-  phases[i*3]   = Math.random()*Math.PI*2;
-  phases[i*3+1] = Math.random()*Math.PI*2;
-  phases[i*3+2] = Math.random()*Math.PI*2;
-  const cosT = Math.random()*2-1, phi = Math.random()*Math.PI*2;
-  const sinT = Math.sqrt(1-cosT*cosT);
-  dirs[i*3]   = sinT*Math.cos(phi);
-  dirs[i*3+1] = sinT*Math.sin(phi);
-  dirs[i*3+2] = cosT;
-  const roll = Math.random();
-  if      (roll < 0.60) bases[i] = 0.82 + Math.random()*0.18; // shell
-  else if (roll < 0.88) bases[i] = Math.pow(Math.random(), 1.8)*0.38; // interior
-  else                  bases[i] = 0.38 + Math.random()*0.44; // mid
-  isBig[i] = Math.random() < 0.28 ? 1 : 0;
-}
-
-const SPHERE_R = 1.42;
+// ── PARTICLE BUFFERS ──
 const pPos  = new Float32Array(N*3);
 const pCol  = new Float32Array(N*3);
 const pSize = new Float32Array(N);
-const zArr  = new Float32Array(N);
+const pGeo  = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
+pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol,3));
+pGeo.setAttribute('aSize',    new THREE.BufferAttribute(pSize,1));
 
-const pGeo = new THREE.BufferGeometry();
-pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,  3));
-pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol,  3));
-pGeo.setAttribute('aSize',    new THREE.BufferAttribute(pSize, 1));
-
-// soft orb texture for each particle
-const orbTex = (function(){
-  const c = document.createElement('canvas'); c.width = c.height = 64;
-  const g = c.getContext('2d');
-  const grd = g.createRadialGradient(32,32,0,32,32,32);
-  grd.addColorStop(0,    'rgba(255,255,255,1)');
-  grd.addColorStop(0.30, 'rgba(210,195,255,0.92)');
-  grd.addColorStop(0.65, 'rgba(140,110,250,0.35)');
-  grd.addColorStop(1,    'rgba(100,70,220,0)');
-  g.fillStyle = grd; g.fillRect(0,0,64,64);
+// soft glow particle texture
+const dotTex = (function(){
+  const c=document.createElement('canvas'); c.width=c.height=64;
+  const g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,255,255,1)');
+  gr.addColorStop(.28,'rgba(210,190,255,.92)');
+  gr.addColorStop(.60,'rgba(150,110,255,.38)');
+  gr.addColorStop(1,'rgba(80,50,200,0)');
+  g.fillStyle=gr; g.fillRect(0,0,64,64);
   return new THREE.CanvasTexture(c);
 })();
 
 const pMat = new THREE.ShaderMaterial({
-  uniforms: { uScale:{ value:160.0 }, uTex:{ value:orbTex } },
-  vertexColors: true, transparent:true, depthWrite:false,
-  blending: THREE.AdditiveBlending,
-  vertexShader:[
-    'attribute float aSize; varying vec3 vCol; uniform float uScale;',
-    'void main(){ vCol=color; vec4 mv=modelViewMatrix*vec4(position,1.0);',
-    '  gl_PointSize=aSize*uScale/-mv.z; gl_Position=projectionMatrix*mv; }'
-  ].join('\n'),
-  fragmentShader:[
-    'uniform sampler2D uTex; varying vec3 vCol;',
-    'void main(){ vec4 tx=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(vCol*tx.rgb,tx.a); }'
-  ].join('\n'),
+  uniforms:{ uScale:{value:160}, uTex:{value:dotTex} },
+  vertexColors:true, transparent:true, depthWrite:false,
+  blending:THREE.AdditiveBlending,
+  vertexShader:'attribute float aSize; varying vec3 vCol; uniform float uScale;\nvoid main(){ vCol=color; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=aSize*uScale/-mv.z; gl_Position=projectionMatrix*mv; }',
+  fragmentShader:'uniform sampler2D uTex; varying vec3 vCol;\nvoid main(){ vec4 t=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(vCol*t.rgb,t.a); }',
 });
-const points = new THREE.Points(pGeo, pMat);
-points.layers.set(0); brain.add(points);
+const pts = new THREE.Points(pGeo,pMat);
+pts.layers.set(0); mandalaGroup.add(pts);
 
-// ── PLEXUS LINES ──
-let triSeeds = [], plexTick = 0;
-const MAXLINE = 300;
-const linePos = new Float32Array(MAXLINE*6);
-const lineCol = new Float32Array(MAXLINE*6);
-const lGeo = new THREE.BufferGeometry();
-lGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
-lGeo.setAttribute('color',    new THREE.BufferAttribute(lineCol, 3));
-const lMat = new THREE.LineBasicMaterial({
-  vertexColors:true, transparent:true, opacity:0.12,
-  blending:THREE.AdditiveBlending, depthWrite:false
-});
-const plexus = new THREE.LineSegments(lGeo, lMat);
-plexus.layers.set(0); plexus.frustumCulled = false; brain.add(plexus);
-
-function rebuildTriangles(){
-  triSeeds.length = 0;
-  const TRIS=18, MAXR2=0.60*0.60;
-  for(let n=0; n<TRIS; n++){
-    const a = (Math.random()*N)|0; if(zArr[a]<=0.12) continue;
-    let b1=-1, b2=-1, d1=1e9, d2=1e9;
-    for(let s=0; s<30; s++){
-      const b=(Math.random()*N)|0; if(b===a||zArr[b]<=0) continue;
-      const dx=pPos[a*3]-pPos[b*3], dy=pPos[a*3+1]-pPos[b*3+1], dz=pPos[a*3+2]-pPos[b*3+2];
-      const dd=dx*dx+dy*dy+dz*dz; if(dd>MAXR2) continue;
-      if(dd<d1){ d2=d1; b2=b1; d1=dd; b1=b; } else if(dd<d2){ d2=dd; b2=b; }
-    }
-    if(b1>=0 && b2>=0) triSeeds.push([a,b1,b2]);
-  }
+// ── HUD RINGS ──
+function arcLine(r,segs,color,op,s0,len){
+  const pts2=[]; const s=s0||0, l=len!=null?len:Math.PI*2;
+  for(let i=0;i<=segs;i++){ const a=s+(i/segs)*l; pts2.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0)); }
+  const geo=new THREE.BufferGeometry().setFromPoints(pts2);
+  const ln=new THREE.Line(geo,new THREE.LineBasicMaterial({color:new THREE.Color(color),transparent:true,opacity:op,depthWrite:false}));
+  ln.layers.set(0); return ln;
 }
 
-// ── HUD RINGS (soft violet arcs) ──
-function ringMat(hex, op){
-  return new THREE.LineBasicMaterial({ color:new THREE.Color(hex), transparent:true, opacity:op, depthWrite:false });
-}
-function arcLine(radius, segs, mat, start, len){
-  const pts=[]; const s=start||0, l=(len!=null)?len:Math.PI*2;
-  for(let i=0;i<=segs;i++){ const a=s+(i/segs)*l; pts.push(new THREE.Vector3(Math.cos(a)*radius,Math.sin(a)*radius,0)); }
-  const g=new THREE.BufferGeometry().setFromPoints(pts);
-  const ln=new THREE.Line(g,mat); ln.layers.set(0); return ln;
-}
-
-// outer dashed arcs
-const L3 = new THREE.Group(); rig.add(L3);
-[[0.3,2.1],[2.8,1.3],[5.0,0.9]].forEach(([s,l])=>{
-  L3.add(arcLine(1.90, 80, ringMat('#8b7cf8',0.80), s, l));
-  L3.add(arcLine(1.92, 80, ringMat('#8b7cf8',0.40), s, l));
+const RG1=new THREE.Group(); ringGroup.add(RG1);
+[[.28,2.10],[2.95,1.40],[5.30,0.90]].forEach(([s,l])=>{
+  RG1.add(arcLine(1.96,90,'#8b7cf8',.85,s,l));
+  RG1.add(arcLine(1.98,90,'#8b7cf8',.35,s,l));
 });
-
-// middle tick ring
-const L2 = new THREE.Group(); rig.add(L2);
-L2.add(arcLine(2.18, 200, ringMat('#a78bfa', 0.70)));
-
-// inner tick marks
-const L1 = new THREE.Group(); rig.add(L1);
+const RG2=new THREE.Group(); ringGroup.add(RG2);
+RG2.add(arcLine(2.22,200,'#a78bfa',.65));
+const RG3=new THREE.Group(); ringGroup.add(RG3);
 (function(){
-  const TICKS=60, r=2.40, smArr=[], lgArr=[];
+  const TICKS=72,r=2.46,sm=[],lg=[];
   for(let i=0;i<TICKS;i++){
-    const major=i%5===0, a=(i/TICKS)*Math.PI*2;
-    const c=Math.cos(a),s=Math.sin(a);
-    const inner=major?r-0.09:r-0.045;
-    (major?lgArr:smArr).push(c*inner,s*inner,0, c*r,s*r,0);
+    const major=i%6===0,a=(i/TICKS)*Math.PI*2,c=Math.cos(a),s=Math.sin(a);
+    const inn=major?r-.09:r-.045; (major?lg:sm).push(c*inn,s*inn,0,c*r,s*r,0);
   }
-  const gSm=new THREE.BufferGeometry(); gSm.setAttribute('position',new THREE.BufferAttribute(new Float32Array(smArr),3));
-  L1.add(new THREE.LineSegments(gSm, new THREE.LineBasicMaterial({color:0xb4a4f8,transparent:true,opacity:0.30,depthWrite:false})));
-  const gLg=new THREE.BufferGeometry(); gLg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(lgArr),3));
-  L1.add(new THREE.LineSegments(gLg, new THREE.LineBasicMaterial({color:0xddd6fe,transparent:true,opacity:0.70,depthWrite:false})));
+  const gsm=new THREE.BufferGeometry(); gsm.setAttribute('position',new THREE.BufferAttribute(new Float32Array(sm),3));
+  RG3.add(new THREE.LineSegments(gsm,new THREE.LineBasicMaterial({color:0xb4a4f8,transparent:true,opacity:.28,depthWrite:false})));
+  const glg=new THREE.BufferGeometry(); glg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(lg),3));
+  RG3.add(new THREE.LineSegments(glg,new THREE.LineBasicMaterial({color:0xddd6fe,transparent:true,opacity:.65,depthWrite:false})));
 })();
 
-// ── BLOOM PIPELINE ──
-let bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 1.1, 0.55, 0.12);
-const bloomComp = new EffectComposer(renderer);
-bloomComp.renderToScreen = false;
+// ── BLOOM ──
+let bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.2,.60,.10);
+const bloomComp=new EffectComposer(renderer);
+bloomComp.renderToScreen=false;
 bloomComp.addPass(new RenderPass(scene,camera));
 bloomComp.addPass(bloomPass);
 
-const finalPass = new ShaderPass(new THREE.ShaderMaterial({
-  uniforms:{
-    baseTexture:  { value:null },
-    bloomTexture: { value: bloomComp.renderTarget2.texture },
-  },
-  vertexShader:   'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-  fragmentShader: 'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(baseTexture,vUv)+vec4(texture2D(bloomTexture,vUv).rgb,0.0); }',
-}), 'baseTexture'); finalPass.needsSwap = true;
+const finalPass=new ShaderPass(new THREE.ShaderMaterial({
+  uniforms:{baseTexture:{value:null},bloomTexture:{value:bloomComp.renderTarget2.texture}},
+  vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+  fragmentShader:'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(baseTexture,vUv)+vec4(texture2D(bloomTexture,vUv).rgb,0.); }',
+}),'baseTexture'); finalPass.needsSwap=true;
 
-const finalComp = new EffectComposer(renderer);
+const finalComp=new EffectComposer(renderer);
 finalComp.addPass(new RenderPass(scene,camera));
 finalComp.addPass(finalPass);
 
-const _hidden = [];
-function hideNonBloom(o){ if((o.isMesh||o.isPoints||o.isLine||o.isLineSegments||o.isSprite)&&!o.layers.test(bloomMask)&&o.visible){ o.visible=false; _hidden.push(o); } }
-function restoreVis(){ for(let i=0;i<_hidden.length;i++) _hidden[i].visible=true; _hidden.length=0; }
+const _hidden=[];
+function hideNB(o){ if((o.isMesh||o.isPoints||o.isLine||o.isLineSegments||o.isSprite)&&!o.layers.test(bMask)&&o.visible){ o.visible=false;_hidden.push(o);} }
+function restVis(){ _hidden.forEach(o=>o.visible=true); _hidden.length=0; }
 
-// ── RESIZE ──
-function sizeRenderer(){
-  const s = canvas.clientWidth || 320;
-  renderer.setSize(s, s, false);
-  bloomComp.setSize(s, s);
-  finalComp.setSize(s, s);
-  camera.aspect = 1; camera.updateProjectionMatrix();
-  pMat.uniforms.uScale.value = 160.0 * (s * DPR) / 720.0;
+function sizeR(){
+  const s=canvas.clientWidth||340;
+  renderer.setSize(s,s,false);
+  bloomComp.setSize(s,s); finalComp.setSize(s,s);
+  camera.aspect=1; camera.updateProjectionMatrix();
+  pMat.uniforms.uScale.value=160*(s*DPR)/720;
 }
-new ResizeObserver(sizeRenderer).observe(canvas);
-sizeRenderer();
-
-// ── MATERIAL REBUILD when variant changes ──
-function rebuildMaterials(v){
-  bloomPass.strength  = v.bloomStr;
-  bloomPass.radius    = v.bloomRad;
-  bloomPass.threshold = v.bloomThr;
-}
-rebuildMaterials(VARIANTS[0]);
-
-// ── STATE ──
-const state = {
-  t: 0,
-  breathScale: 0.72,   // 0.72 (rest) → 1.0 (full inhale)
-  breathTarget: 0.72,
-  haloScale: 1.0,
-  pingT: -1,
-};
-
-canvas.addEventListener('click', ()=>{ state.pingT = 0.01; });
+new ResizeObserver(sizeR).observe(canvas); sizeR();
 
 // ── PARTICLE UPDATE ──
-function updateParticles(ay, ax){
-  const v = VARIANTS[_currentVariant];
-  const bs = state.breathScale;
-  // sphere radius expands with breath
-  const SR = SPHERE_R * (v.baseR * 0.72 + bs * (v.baseR - v.baseR*0.72)) / v.baseR;
+function updateParticles(t, bs){
+  const v = VARIANTS[_variant];
+  // slow overall mandala rotation in 3D: yaw + gentle pitch
+  const yaw   = t * v.orbitSpeed;
+  const pitch = Math.sin(t*.13) * .12;
+  const cosY=Math.cos(yaw),sinY=Math.sin(yaw);
+  const cosP=Math.cos(pitch),sinP=Math.sin(pitch);
 
-  const cosY=Math.cos(ay), sinY=Math.sin(ay);
-  const cosX=Math.cos(ax), sinX=Math.sin(ax);
+  // exhale causes outer particles to drift outward (breath release)
+  const exhaleBloom = _phase===2 ? 1+_phaseT*.35 : 1;
+  // inhale draws particles slightly inward (gathering)
+  const inhaleGather = _phase===0 ? 1-_phaseT*.06 : 1;
+  const radScale = bs * exhaleBloom * inhaleGather;
 
-  for(let i=0; i<N; i++){
-    let x=dirs[i*3], y=dirs[i*3+1], z=dirs[i*3+2];
-    // gentle y-rotation + x-tilt
-    const x1=x*cosY+z*sinY, z1=-x*sinY+z*cosY;
-    const y1=y*cosX-z1*sinX, z2=y*sinX+z1*cosX;
+  for(let i=0;i<N;i++){
+    // layer-specific orbit speed — inner layers nearly static, outer rotate
+    const oSpeed = v.orbitSpeed * (0.3 + layer[i]*0.5);
+    orbitA[i] += oSpeed * .016; // approximate dt; real dt below in frame()
 
-    // drift noise — faster + wider on exhale
-    const exhaleBoost = _phase===2 ? 1.0+_phaseT*0.6 : 1.0;
-    const ds = v.driftSpeed * exhaleBoost;
-    const da = v.driftAmp   * exhaleBoost;
-    const dx = Math.sin(state.t*ds + phases[i*3]  )*da;
-    const dy = Math.cos(state.t*ds + phases[i*3+1])*da;
-    const dz = Math.sin(state.t*ds + phases[i*3+2])*da;
+    // orbit the home position around Z
+    const oa=orbitA[i], or=orbitR[i];
+    const ox=homeX[i]+Math.cos(oa)*or - homeX[i]*or*.5;
+    const oy=homeY[i]+Math.sin(oa)*or - homeY[i]*or*.5;
+    const oz=homeZ[i];
 
-    const r = bases[i] * SR;
-    pPos[i*3]   = x1*r + dx;
-    pPos[i*3+1] = y1*r + dy;
-    pPos[i*3+2] = z2*r + dz;
-    zArr[i] = z2;
+    // micro-drift (organic noise per particle)
+    const dScale = .025 + baseR[i]*.025;
+    const ds = .55 + baseR[i]*.4;
+    const dx=Math.sin(t*ds+phA[i])*dScale;
+    const dy=Math.cos(t*ds+phB[i])*dScale;
+    const dz=Math.sin(t*ds*1.3+phC[i])*dScale*.6;
 
-    const depth = (z2+1)/2;
-    const opa   = 0.28 + 0.72*(depth*depth);
+    // radius-breathing: particles move outward/inward with breath
+    const breathR = 1 + (radScale-1) * (0.4+baseR[i]*.6); // outer particles breathe more
+    let px = (ox+dx)*breathR;
+    let py = (oy+dy)*breathR;
+    let pz = (oz+dz)*breathR;
 
-    if(isBig[i]){
-      // bright white-lavender "star" particle
-      const bb = 0.70 + 0.30*depth;
-      const cr = v.coreColor, sh = v.shellColor;
-      // blend toward shell colour at depth
-      pCol[i*3]   = cr[0]*bb*(1-bases[i]*0.4) + sh[0]*opa*bases[i]*0.4;
-      pCol[i*3+1] = cr[1]*bb*(1-bases[i]*0.4) + sh[1]*opa*bases[i]*0.4;
-      pCol[i*3+2] = cr[2]*bb*(1-bases[i]*0.4) + sh[2]*opa*bases[i]*0.4;
-      pSize[i] = (0.11 + 0.05*(1-bases[i])) * (0.65+0.65*depth);
-    } else {
-      // shell particle — violet tinted
-      const sh = v.shellColor;
-      pCol[i*3]   = sh[0]*opa;
-      pCol[i*3+1] = sh[1]*opa;
-      pCol[i*3+2] = sh[2]*opa;
-      pSize[i] = (0.072 + 0.04*(1-bases[i])) * (0.55+0.65*depth);
+    // rotate entire mandala: yaw (around Y) then pitch (around X)
+    const rx = px*cosY + pz*sinY;
+    const rz =-px*sinY + pz*cosY;
+    const ry = py*cosP - rz*sinP;
+    const rz2= py*sinP + rz*cosP;
+
+    pPos[i*3]=rx; pPos[i*3+1]=ry; pPos[i*3+2]=rz2;
+
+    // ── colour by layer + depth ──
+    const depth=(rz2+2.5)/5;   // 0-1 depth (front bright)
+    const dBright=.30+.70*(depth*depth);
+
+    const cr=v.core, md=v.mid, sh=v.shell, fr=v.fringe;
+    let cr3, cg3, cb3, sz;
+
+    if(layer[i]===0){        // core
+      cr3=cr[0]; cg3=cr[1]; cb3=cr[2]; sz=.13;
+    } else if(layer[i]===1){ // inner petal/ring
+      const t2=baseR[i]/.5;
+      cr3=cr[0]*(1-t2)+md[0]*t2; cg3=cr[1]*(1-t2)+md[1]*t2; cb3=cr[2]*(1-t2)+md[2]*t2;
+      sz=.095;
+    } else if(layer[i]===2){ // mid geometry
+      const t2=(baseR[i]-.3)/.5;
+      cr3=md[0]*(1-t2)+sh[0]*t2; cg3=md[1]*(1-t2)+sh[1]*t2; cb3=md[2]*(1-t2)+sh[2]*t2;
+      sz=.082;
+    } else if(layer[i]===3){ // outer halo
+      cr3=sh[0]; cg3=sh[1]; cb3=sh[2]; sz=.072;
+    } else {                  // fringe stardust
+      cr3=fr[0]; cg3=fr[1]; cb3=fr[2]; sz=.055;
     }
-  }
-  pGeo.attributes.position.needsUpdate = true;
-  pGeo.attributes.color.needsUpdate    = true;
-  pGeo.attributes.aSize.needsUpdate    = true;
 
-  // plexus
-  plexTick++; if(plexTick%15===0) rebuildTriangles();
-  let lw = 0;
-  for(const tri of triSeeds){
-    const edges = [[tri[0],tri[1]],[tri[1],tri[2]],[tri[2],tri[0]]];
-    for(const [a,b] of edges){
-      const md = ((zArr[a]+1)/2 + (zArr[b]+1)/2)/2;
-      const cv = v.shellColor;
-      linePos[lw*6]=pPos[a*3]; linePos[lw*6+1]=pPos[a*3+1]; linePos[lw*6+2]=pPos[a*3+2];
-      linePos[lw*6+3]=pPos[b*3]; linePos[lw*6+4]=pPos[b*3+1]; linePos[lw*6+5]=pPos[b*3+2];
-      const c = 0.45 + 0.55*md;
-      lineCol[lw*6]=cv[0]*c; lineCol[lw*6+1]=cv[1]*c; lineCol[lw*6+2]=cv[2]*c;
-      lineCol[lw*6+3]=cv[0]*c; lineCol[lw*6+4]=cv[1]*c; lineCol[lw*6+5]=cv[2]*c;
-      lw++;
-    }
+    // role highlight: triangles slightly brighter, metatron slightly bigger
+    let roleMult=1;
+    if(role[i]===2) roleMult=1.18;
+    if(role[i]===3){ roleMult=1.12; sz*=1.15; }
+
+    const a = dBright*roleMult;
+    pCol[i*3]=cr3*a; pCol[i*3+1]=cg3*a; pCol[i*3+2]=cb3*a;
+    pSize[i] = sz * (isBig[i]?1.8:1) * (.6+.7*depth);
   }
-  lGeo.setDrawRange(0, lw*2);
-  lGeo.attributes.position.needsUpdate = true;
-  lGeo.attributes.color.needsUpdate    = true;
+
+  pGeo.attributes.position.needsUpdate=true;
+  pGeo.attributes.color.needsUpdate=true;
+  pGeo.attributes.aSize.needsUpdate=true;
 }
 
-// ── BREATH SCALE HELPER ──
-function targetBreathScale(ph, phT){
-  if(ph===0) return 0.72 + phT*0.28;    // inhale: expand
-  if(ph===1) return 1.0;                 // hold: full
-  if(ph===2) return 1.0 - phT*0.28;     // exhale: contract
-  return 0.72;                           // rest: small
-}
+// ── MAIN LOOP ──
+const clock=new THREE.Clock();
+let pingT=-1;
+canvas.addEventListener('click',()=>{ pingT=0.01; });
 
-// ── FPS COUNTER ──
-let _fpsLast=0, _fpsCount=0, _fps=0;
-
-// ── MAIN RENDER LOOP ──
-const clock = new THREE.Clock();
 function frame(){
   requestAnimationFrame(frame);
-  const dt = Math.min(clock.getDelta(), 0.05);
-  state.t += dt;
+  const dt=Math.min(clock.getDelta(),.05);
+  const t=clock.elapsedTime;
 
-  // breath scale smooth lerp
-  const bs_target = targetBreathScale(_phase, _phaseT);
-  state.breathScale += (bs_target - state.breathScale) * Math.min(1, dt * 3.5);
+  // smooth breath scale
+  _bs += (bsTarget(_phase,_phaseT)-_bs) * Math.min(1,dt*3.2);
 
-  // rotation — gentle slow for meditation (much calmer than JARVIS)
-  const ay = state.t * 0.09;
-  const ax = Math.sin(state.t * 0.17) * 0.12;
+  // update orbit angles (proper dt)
+  const v=VARIANTS[_variant];
+  for(let i=0;i<N;i++) orbitA[i] += v.orbitSpeed*(0.3+layer[i]*.5)*dt;
 
-  updateParticles(ay, ax);
+  updateParticles(t, _bs);
 
-  // rings rotate slowly
-  L1.rotation.z =  state.t * 0.025;
-  L2.rotation.z = -state.t * 0.040;
-  L3.rotation.z =  state.t * 0.018;
+  // rings
+  RG1.rotation.z =  t*.022;
+  RG2.rotation.z = -t*.038;
+  RG3.rotation.z =  t*.016;
 
-  // core — always gently pulsing + breath scale
-  const bs = state.breathScale;
-  const softPulse = 0.85 + 0.15*Math.sin(state.t*1.3);
-  coreMat.opacity = (0.55 + bs*0.35) * softPulse;
-  core.scale.setScalar(0.20 + bs*0.18);
+  // core glow
+  const pulse=.85+.15*Math.sin(t*1.4);
+  coreSprite.material.opacity=(.50+_bs*.38)*pulse;
+  coreSprite.scale.setScalar(.18+_bs*.18);
 
-  // nebula — breath pulsing halo
-  nebulaMat.opacity = 0.18 + bs*0.30;
-  nebula.scale.setScalar(0.50 + bs*0.55);
+  // nebula breath
+  nebulaSprite.material.opacity=.14+_bs*.28;
+  nebulaSprite.scale.setScalar(.45+_bs*.55);
 
-  // outer halo
-  haloMat.opacity = 0.10 + bs*0.18;
-  halo.scale.setScalar(1.8 + bs*0.7);
+  // halo
+  haloSprite.material.opacity=.08+_bs*.16;
+  haloSprite.scale.setScalar(1.7+_bs*.8);
 
-  // click ping
-  if(state.pingT >= 0){
-    state.pingT += dt * 1.5;
-    const k = Math.max(0, 1-state.pingT);
-    brain.scale.setScalar(1 + k*0.10);
-    if(state.pingT > 1.2){ state.pingT=-1; brain.scale.setScalar(1); }
-  }
+  // ping
+  if(pingT>=0){ pingT+=dt*1.4; const k=Math.max(0,1-pingT); mandalaGroup.scale.setScalar(1+k*.12); if(pingT>1.2){pingT=-1;mandalaGroup.scale.setScalar(1);} }
 
-  // selective bloom
-  scene.traverse(hideNonBloom);
+  scene.traverse(hideNB);
   bloomComp.render();
-  restoreVis();
+  restVis();
   finalComp.render();
-
-  // fps
-  _fpsCount++;
-  const now = performance.now();
-  if(now - _fpsLast > 1000){ _fps=_fpsCount; _fpsCount=0; _fpsLast=now; document.getElementById('sFps').textContent=_fps; }
 }
 frame();
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  ANIMATION (breath cycle)
-// ─────────────────────────────────────────────────────────────────────────────
-window.toggleAnim = function(){
-  _animating = !_animating;
-  document.getElementById('animBtn').classList.toggle('on', _animating);
-  document.getElementById('animBtn').textContent = _animating ? '■ Stop' : '▶ Live breath';
-  if(_animating){ _animStart = null; tick(); }
-  else if(_animRaf){ cancelAnimationFrame(_animRaf); }
+// ─────────────────────────────────────────────────────────────
+//  ANIMATION
+// ─────────────────────────────────────────────────────────────
+window.toggleAnim=function(){
+  _animating=!_animating;
+  document.getElementById('animBtn').classList.toggle('on',_animating);
+  document.getElementById('animBtn').textContent=_animating?'■ Stop':'▶ Live breath';
+  if(_animating){_animStart=null;breathTick();}
+  else if(_animRaf) cancelAnimationFrame(_animRaf);
 };
 
-function tick(){
-  if(!_animating) return;
-  const speed = parseFloat(document.getElementById('speedSelect').value);
-  const now = performance.now() / 1000 * speed;
-  if(!_animStart) _animStart = now;
-  const elapsed = now - _animStart;
-
-  // which phase
-  let pos = elapsed % CYCLE_LEN;
-  let ph=0, acc=0;
+function breathTick(){
+  if(!_animating)return;
+  const speed=parseFloat(document.getElementById('speedSelect').value);
+  const now=performance.now()/1000*speed;
+  if(!_animStart)_animStart=now;
+  const el=(now-_animStart)%CYCLE;
+  let ph=0,acc=0;
   for(let p=0;p<4;p++){
-    if(pos < acc + PHASE_DUR[p]){ ph=p; _phaseT=(pos-acc)/PHASE_DUR[p]; break; }
-    acc += PHASE_DUR[p];
+    if(el<acc+PHASE_DUR[p]){ph=p;_phaseT=(el-acc)/PHASE_DUR[p];break;}
+    acc+=PHASE_DUR[p];
   }
-  _phase = ph;
-  document.getElementById('phaseSelect').value = ph;
-  updateBreathUI(ph, _phaseT);
-
-  _animRaf = requestAnimationFrame(tick);
+  _phase=ph;
+  document.getElementById('phaseSelect').value=ph;
+  updateBreathUI(ph,_phaseT);
+  _animRaf=requestAnimationFrame(breathTick);
 }
 
-// manual phase select
-document.getElementById('phaseSelect').addEventListener('change', function(){
-  _phase = parseInt(this.value); _phaseT = 0;
-  updateBreathUI(_phase, _phaseT);
+document.getElementById('phaseSelect').addEventListener('change',function(){
+  _phase=parseInt(this.value);_phaseT=0;updateBreathUI(_phase,0);
 });
 
-function updateBreathUI(ph, phT){
-  const ring  = document.getElementById('breathRing');
-  const label = document.getElementById('breathLabel');
-  const sub   = document.getElementById('phaseSub');
-  label.textContent = PHASES[ph];
-  sub.textContent   = Math.round(phT*100)+'%';
-  ring.className = 'breath-ring ' + (ph===0?'inhale':ph===2?'exhale':'');
-  document.getElementById('sPhase').textContent = PHASES[ph].split(' ')[0];
+function updateBreathUI(ph,pt){
+  document.getElementById('breathLabel').textContent=PHASE_NAMES[ph];
+  document.getElementById('phasePct').textContent=Math.round(pt*100)+'%';
 }
 
-// init
-updateBreathUI(3, 0);
-document.getElementById('sVariant').textContent = VARIANTS[0].id;
+// ─────────────────────────────────────────────────────────────
+//  VARIANTS UI
+// ─────────────────────────────────────────────────────────────
+(function(){
+  const row=document.getElementById('variantRow');
+  VARIANTS.forEach((v,i)=>{
+    const b=document.createElement('button');
+    b.className='vbtn'+(i===0?' active':'');
+    b.textContent=v.id+' — '+v.name;
+    b.onclick=()=>{
+      _variant=i;
+      document.querySelectorAll('.vbtn').forEach((x,j)=>x.classList.toggle('active',j===i));
+      bloomPass.strength=v.bloomStr; bloomPass.radius=v.bloomRad; bloomPass.threshold=v.bloomThr;
+    };
+    row.appendChild(b);
+  });
+})();
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CHOOSE
-// ─────────────────────────────────────────────────────────────────────────────
-window.choose = function(){
-  const v = VARIANTS[_currentVariant];
-  const b = document.getElementById('banner');
-  b.textContent = '✓ Variant ' + v.id + ' "' + v.name + '" chosen — tell me to ship it into index.html';
-  b.style.display = '';
-  setTimeout(()=>{ b.style.display='none'; }, 5000);
+window.choose=function(){
+  const v=VARIANTS[_variant];
+  const b=document.getElementById('banner');
+  b.textContent='✓ Variant '+v.id+' "'+v.name+'" chosen — tell me to ship it into index.html';
+  b.style.display='';
+  setTimeout(()=>{b.style.display='none';},5000);
 };
+
+updateBreathUI(3,0);
 </script>
 </body>
 </html>
