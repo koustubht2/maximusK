@@ -29342,7 +29342,7 @@ function switchTab(tab) {
     if(B2_BASE && track.file){
       _audio = new Audio();
       _audio.preload = 'auto';
-      _audio.src = B2_BASE + '/' + track.file.toLowerCase().split('/').map(function(s){ return encodeURIComponent(s); }).join('/');
+      _audio.src = B2_BASE + '/' + track.file.replace(/^Packs\//, '').split('/').map(function(s){ return encodeURIComponent(s); }).join('/');
       console.log('[MED] audio src:', _audio.src);
       _audio.onerror = function(e){ console.error('[MED] audio error:', _audio.error && _audio.error.message, 'src:', _audio.src); };
       _audio.play().catch(function(e){ console.warn('[MED] play() rejected:', e.message); });
