@@ -44,20 +44,17 @@ select{
 .btn:hover{ background:rgba(124,58,237,.25); }
 .btn.on{ background:rgba(124,58,237,.40); border-color:#a78bfa; color:#fff; }
 .stage{
-  position:relative; width:340px; height:340px;
+  position:relative; width:360px; height:360px;
   display:flex; align-items:center; justify-content:center;
 }
-#medCanvas{
-  width:340px; height:340px; max-width:90vw; max-height:90vw;
-  display:block; cursor:pointer;
-}
+#medCanvas{ width:360px; height:360px; max-width:90vw; max-height:90vw; display:block; cursor:pointer; }
 .breath-label{
-  position:absolute; bottom:-36px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:-38px; left:50%; transform:translateX(-50%);
   font-family:'Fraunces',Georgia,serif; font-size:17px; font-weight:300;
   color:rgba(221,214,254,.85); letter-spacing:.04em; white-space:nowrap;
 }
 .phase-pct{
-  position:absolute; bottom:-56px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:-58px; left:50%; transform:translateX(-50%);
   font-size:8px; letter-spacing:.16em; text-transform:uppercase;
   color:rgba(167,139,250,.38); white-space:nowrap;
 }
@@ -120,190 +117,215 @@ select{
 
 <script type="module">
 import * as THREE from 'three';
-import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
-import { ShaderPass }      from 'three/addons/postprocessing/ShaderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { EffectComposer }   from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }       from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass }       from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass }  from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-// ─────────────────────────────────────────────────────────────
-//  MANDALA GEOMETRY GENERATOR
-//  Produces a dense cloud of 3-D points shaped like sacred
-//  geometry: concentric rings of petals, Flower-of-Life circles,
-//  Sri Yantra triangles, metatron cube edges — all at varying
-//  radii so particles have depth and can orbit.
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
+//  MANDALA POINT GENERATOR
+//  Every point has a fixed polar home (r, theta) on the mandala.
+//  z is a tiny depth offset so the disc has slight 3-D thickness.
+//  No random walk — geometry is precise and readable.
+// ═════════════════════════════════════════════════════════════
+function buildMandala(){
+  const pts = [];   // {x,y,z, layer, brightness}
+  const PI2 = Math.PI * 2;
 
-function buildMandalaPoints(N_total){
-  // Returns Float32Array of [x,y,z, layer, role]  (5 floats / point)
-  // layer  0=core  1=inner  2=mid  3=outer  4=fringe
-  // role   0=ring  1=petal  2=triangle  3=metatron  4=free
-
-  const out   = [];   // will hold {x,y,z,layer,role,base}
-
-  const TWO_PI = Math.PI * 2;
-  const jitter = (a) => a * (0.85 + Math.random()*0.30);
-
-  // ── Flower of Life: 7 circles, each circle = ring of points ──
-  const FOL_CENTERS = [{x:0,y:0}];
-  for(let i=0;i<6;i++){
-    const a = (i/6)*TWO_PI; FOL_CENTERS.push({x:Math.cos(a),y:Math.sin(a)});
-  }
-  // Each of those 6 outer centres also spawns 6 more (2nd ring)
-  for(let i=0;i<6;i++){
-    const a=(i/6)*TWO_PI, cx=Math.cos(a)*2, cy=Math.sin(a)*2;
-    for(let j=0;j<6;j++){
-      const b=(j/6)*TWO_PI; FOL_CENTERS.push({x:cx+Math.cos(b),y:cy+Math.sin(b)});
+  function ring(r, n, layer, bright, zSpread=0){
+    for(let i=0;i<n;i++){
+      const a = (i/n)*PI2;
+      const z = (Math.random()-.5)*zSpread;
+      pts.push({ x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer, bright });
     }
   }
 
-  function addRing(cx,cy,cz,r,count,layer,role,zSpread){
-    for(let i=0;i<count;i++){
-      const a=(i/count)*TWO_PI;
-      const jx=(Math.random()-.5)*r*.12, jy=(Math.random()-.5)*r*.12;
-      const z=(Math.random()-.5)*(zSpread||0.08);
-      out.push({x:cx+Math.cos(a)*jitter(r)+jx, y:cy+Math.sin(a)*jitter(r)+jy, z:cz+z, layer, role, base:r});
+  function arcPts(cx,cy,r,a0,a1,n,layer,bright,zSpread=0){
+    for(let i=0;i<n;i++){
+      const t=i/(n-1), a=a0+(a1-a0)*t;
+      const z=(Math.random()-.5)*zSpread;
+      pts.push({ x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r, z, layer, bright });
     }
   }
 
-  function addArc(cx,cy,cz,r,fromA,toA,count,layer,role,zSpread){
-    for(let i=0;i<count;i++){
-      const t=i/(count-1), a=fromA+(toA-fromA)*t;
-      const jx=(Math.random()-.5)*r*.10, jy=(Math.random()-.5)*r*.10;
-      const z=(Math.random()-.5)*(zSpread||0.06);
-      out.push({x:cx+Math.cos(a)*jitter(r)+jx, y:cy+Math.sin(a)*jitter(r)+jy, z:cz+z, layer, role, base:r});
-    }
+  // ── LAYER 0 — core glow cluster ──
+  for(let i=0;i<90;i++){
+    const r=Math.random()*.12, a=Math.random()*PI2;
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0});
   }
 
-  // ── 1. Core dot cluster ──
-  for(let i=0;i<120;i++){
-    const r=Math.random()*.18, a=Math.random()*TWO_PI;
-    out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.15, layer:0, role:0, base:0});
-  }
-
-  // ── 2. FOL circles (inner 7 at unit radius) ──
-  for(let ci=0;ci<7;ci++){
-    const {x:cx,y:cy}=FOL_CENTERS[ci];
-    addRing(cx*.52,cy*.52,0, .52, 48, ci===0?0:1, 0, .10);
-  }
-
-  // ── 3. 12-petal lotus (inner) ──
-  for(let i=0;i<12;i++){
-    const a=(i/12)*TWO_PI, mid=a+(1/12)*TWO_PI*.5;
-    const px=Math.cos(mid)*.55, py=Math.sin(mid)*.55;
-    addArc(px*.5,py*.5,0, .40, a, a+TWO_PI/12, 30, 1, 1, .08);
-  }
-
-  // ── 4. 24-petal lotus (mid) ──
-  for(let i=0;i<24;i++){
-    const a=(i/24)*TWO_PI, mid=a+(1/24)*TWO_PI*.5;
-    const px=Math.cos(mid)*.90, py=Math.sin(mid)*.90;
-    addArc(px*.55,py*.55,0, .48, a, a+TWO_PI/24, 22, 2, 1, .12);
-  }
-
-  // ── 5. Sri Yantra — 9 interlocking triangles (4 up, 5 down) ──
-  const SRI_RADII = [.22,.34,.48,.60,.72,.84,.96,1.08,1.20];
-  SRI_RADII.forEach((r,ri)=>{
-    const up = ri%2===0;
+  // ── LAYER 1 — innermost ring + 6-pointed star ──
+  ring(.22, 72, 1, .95, .04);
+  // Star of David: 2 equilateral triangles
+  for(let t=0;t<2;t++){
+    const offset = t===0 ? 0 : Math.PI/3;
     for(let v=0;v<3;v++){
-      const a0 = (up? -Math.PI/2 : Math.PI/2) + (v/3)*TWO_PI;
-      const a1 = (up? -Math.PI/2 : Math.PI/2) + ((v+1)/3)*TWO_PI;
-      addArc(0,0,0, r, a0, a1, 28, ri<3?1:ri<6?2:3, 2, .10);
-    }
-  });
-
-  // ── 6. Metatron's Cube — 13 circles + connecting lines ──
-  const META_R = [.32,.64,.96,1.28];
-  META_R.forEach((r,ri)=>{
-    addRing(0,0,0, r, 60+ri*20, ri<2?2:3, 3, .12+ri*.04);
-  });
-  // Metatron spokes (6 directions × 2 rings)
-  for(let i=0;i<6;i++){
-    const a=(i/6)*TWO_PI;
-    addArc(0,0,0, .96, a-.02, a+.02, 18, 2, 3, .08);
-    addArc(0,0,0, 1.28, a-.015, a+.015, 14, 3, 3, .10);
-  }
-
-  // ── 7. Vesica Piscis pairs (6 sets) ──
-  for(let i=0;i<6;i++){
-    const a=(i/6)*TWO_PI;
-    const cx=Math.cos(a)*.52, cy=Math.sin(a)*.52;
-    addArc(cx,cy,0, .52, a+Math.PI*.25, a+Math.PI*1.75, 30, 2, 1, .09);
-  }
-
-  // ── 8. Outer concentric halos (4 rings) ──
-  [1.30,1.52,1.72,1.92].forEach((r,ri)=>{
-    addRing(0,0,(ri*.04-.06), r, 80+ri*16, 3, 0, .14+ri*.04);
-  });
-
-  // ── 9. Fringe scatter — stardust beyond the outer edge ──
-  for(let i=0;i<300;i++){
-    const r=1.85+Math.random()*.55, a=Math.random()*TWO_PI;
-    const z=(Math.random()-.5)*.35;
-    out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:4, role:4, base:r});
-  }
-
-  // ── 10. Fill to N_total with extra petal/ring density ──
-  while(out.length < N_total){
-    const pick=Math.random();
-    if(pick<.35){ // extra inner petal
-      const r=.3+Math.random()*.7, a=Math.random()*TWO_PI;
-      const z=(Math.random()-.5)*.20;
-      out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:1, role:1, base:r});
-    } else if(pick<.70){ // extra mid geometry
-      const r=.6+Math.random()*.5, a=Math.random()*TWO_PI;
-      const z=(Math.random()-.5)*.18;
-      out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:2, role:2, base:r});
-    } else { // outer fill
-      const r=1.1+Math.random()*.8, a=Math.random()*TWO_PI;
-      const z=(Math.random()-.5)*.25;
-      out.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer:3, role:0, base:r});
+      const a0=(v/3)*PI2+offset-Math.PI/2;
+      const a1=((v+1)/3)*PI2+offset-Math.PI/2;
+      arcPts(0,0,.22,a0,a1,30,1,.90,.04);
     }
   }
 
-  return out.slice(0, N_total);
+  // ── LAYER 2 — 12-petal lotus ──
+  // each petal = vesica arc between two points on the ring
+  ring(.45, 96, 2, .88, .06);
+  for(let i=0;i<12;i++){
+    const a = (i/12)*PI2;
+    const midA = a + (1/12)*PI2*.5;
+    // arc centre offset inward so the petal curves
+    const cx = Math.cos(a)*.22, cy = Math.sin(a)*.22;
+    arcPts(cx,cy,.26, a+.1, a+PI2/12-.1, 20, 2, .85, .06);
+  }
+
+  // ── LAYER 3 — Flower of Life (7 circles) ──
+  ring(.45, 6, 3, .80, .06);   // centres of the 6 outer circles
+  const folR = .45;
+  for(let i=0;i<6;i++){
+    const ca=(i/6)*PI2;
+    arcPts(Math.cos(ca)*folR, Math.sin(ca)*folR, folR, 0, PI2, 64, 3, .78, .07);
+  }
+  // centre circle already = layer 2 ring; add extra density
+  ring(.45, 24, 3, .82, .05);
+
+  // ── LAYER 4 — Sri Yantra: 9 triangles at increasing radii ──
+  const sriR = [.30,.44,.58,.70,.82,.94,1.06,1.18,1.30];
+  sriR.forEach((r,ri)=>{
+    const up = ri%2===0;
+    const baseAngle = up ? -Math.PI/2 : Math.PI/2;
+    for(let v=0;v<3;v++){
+      const a0=baseAngle+(v/3)*PI2;
+      const a1=baseAngle+((v+1)/3)*PI2;
+      arcPts(0,0,r,a0,a1,36,4,.72+.04*(3-Math.abs(ri-4))*.1,.07);
+    }
+  });
+
+  // ── LAYER 5 — 24-petal lotus (mid) ──
+  ring(.88, 144, 5, .70, .09);
+  for(let i=0;i<24;i++){
+    const a=(i/24)*PI2;
+    const cx=Math.cos(a)*.44, cy=Math.sin(a)*.44;
+    arcPts(cx,cy,.48, a+.05, a+PI2/24-.05, 16, 5, .65, .08);
+  }
+
+  // ── LAYER 6 — Metatron's Cube ──
+  ring(1.10, 180, 6, .62, .10);
+  // 6 long spokes
+  for(let i=0;i<6;i++){
+    const a=(i/6)*PI2;
+    arcPts(0,0,1.10, a-.008, a+.008, 28, 6, .68, .08);
+  }
+  // 6 cross-spokes (60° offset)
+  for(let i=0;i<6;i++){
+    const a=(i/6)*PI2+Math.PI/6;
+    arcPts(0,0,1.10, a-.006, a+.006, 22, 6, .60, .08);
+  }
+  // outer metatron ring with tick marks
+  ring(1.28, 144, 6, .58, .11);
+  for(let i=0;i<12;i++){
+    const a=(i/12)*PI2;
+    arcPts(0,0,1.28, a-.004, a+.004, 14, 6, .65, .09);
+  }
+
+  // ── LAYER 7 — outer concentric halos ──
+  [1.48, 1.65, 1.82].forEach((r,ri)=>{
+    ring(r, 180+ri*36, 7, .50-.08*ri, .12+ri*.04);
+    // radial tick bursts at 12 positions
+    for(let i=0;i<12;i++){
+      const a=(i/12)*PI2+(ri*.13);
+      const r0=r-.04, r1=r+.04;
+      for(let j=0;j<8;j++){
+        const rr=r0+(r1-r0)*j/7;
+        pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri});
+      }
+    }
+  });
+
+  // ── LAYER 8 — fringe stardust ──
+  for(let i=0;i<280;i++){
+    const r=1.88+Math.random()*.50, a=Math.random()*PI2;
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15});
+  }
+
+  return pts;
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
 //  VARIANTS
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
 const VARIANTS = [
   {
     id:'A', name:'Violet Soul',
-    core:[.93,.88,1.0], mid:[.62,.45,.98], shell:[.39,.27,.90], fringe:[.25,.18,.72],
-    bloomStr:1.2, bloomRad:.60, bloomThr:.10,
-    orbitSpeed:0.055, breathPulse:1.0,
-    ring1:'#8b7cf8', ring2:'#6366f1', ring3:'#a78bfa',
+    // colour per layer [R,G,B] — interpolated by layer index
+    layerCols:[
+      [1.00,.96,1.00],  // 0 core
+      [0.94,.88,1.00],  // 1 inner star
+      [0.80,.65,.98],   // 2 12-petal
+      [0.68,.52,.96],   // 3 flower of life
+      [0.55,.40,.92],   // 4 sri yantra
+      [0.45,.32,.88],   // 5 24-petal
+      [0.36,.26,.80],   // 6 metatron
+      [0.26,.18,.68],   // 7 outer halos
+      [0.18,.12,.52],   // 8 fringe
+    ],
+    spinSpeed:.028, bloomStr:1.25, bloomRad:.62, bloomThr:.10,
+    tiltAmp:.18,  // how much the disc tilts toward camera on breath
   },
   {
     id:'B', name:'Rose Amethyst',
-    core:[1.0,.90,.96], mid:[.80,.42,.72], shell:[.60,.28,.62], fringe:[.38,.18,.48],
-    bloomStr:1.5, bloomRad:.70, bloomThr:.08,
-    orbitSpeed:0.045, breathPulse:1.2,
-    ring1:'#e879f9', ring2:'#c026d3', ring3:'#f0abfc',
+    layerCols:[
+      [1.00,.92,.97],
+      [0.98,.82,.92],
+      [0.90,.62,.80],
+      [0.78,.45,.70],
+      [0.65,.32,.62],
+      [0.55,.24,.55],
+      [0.44,.18,.48],
+      [0.32,.12,.38],
+      [0.20,.08,.26],
+    ],
+    spinSpeed:.022, bloomStr:1.55, bloomRad:.72, bloomThr:.08,
+    tiltAmp:.22,
   },
   {
-    id:'C', name:'Ice Temple',
-    core:[.90,.96,1.0], mid:[.45,.60,.98], shell:[.28,.42,.85], fringe:[.16,.28,.65],
-    bloomStr:1.0, bloomRad:.50, bloomThr:.13,
-    orbitSpeed:0.065, breathPulse:.85,
-    ring1:'#93c5fd', ring2:'#6366f1', ring3:'#bfdbfe',
+    id:'C', name:'Golden Om',
+    layerCols:[
+      [1.00,.98,.80],
+      [1.00,.92,.55],
+      [0.95,.78,.30],
+      [0.88,.65,.18],
+      [0.78,.52,.10],
+      [0.68,.42,.06],
+      [0.55,.32,.04],
+      [0.40,.22,.02],
+      [0.26,.14,.01],
+    ],
+    spinSpeed:.020, bloomStr:1.40, bloomRad:.68, bloomThr:.09,
+    tiltAmp:.14,
   },
   {
-    id:'D', name:'Golden Om',
-    core:[1.0,.95,.72], mid:[.90,.72,.28], shell:[.72,.52,.14], fringe:[.50,.36,.08],
-    bloomStr:1.3, bloomRad:.65, bloomThr:.09,
-    orbitSpeed:0.040, breathPulse:1.1,
-    ring1:'#fbbf24', ring2:'#d97706', ring3:'#fde68a',
+    id:'D', name:'Ice Temple',
+    layerCols:[
+      [0.92,.96,1.00],
+      [0.80,.90,1.00],
+      [0.58,.72,.98],
+      [0.40,.58,.96],
+      [0.28,.45,.90],
+      [0.18,.35,.82],
+      [0.12,.26,.72],
+      [0.08,.18,.58],
+      [0.04,.12,.40],
+    ],
+    spinSpeed:.034, bloomStr:1.10, bloomRad:.52, bloomThr:.12,
+    tiltAmp:.16,
   },
 ];
 
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
 //  BREATH
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
 const PHASE_NAMES = ['Breathe in','Hold','Breathe out','Rest'];
 const PHASE_DUR   = [4,4,6,2];
 const CYCLE       = 16;
-
 let _phase=3, _phaseT=0, _bs=0.72;
 let _animating=false, _animStart=null, _animRaf=null;
 let _variant=0;
@@ -315,71 +337,52 @@ function bsTarget(ph,pt){
   return .72;
 }
 
-// ─────────────────────────────────────────────────────────────
-//  BUILD PARTICLE DATA
-// ─────────────────────────────────────────────────────────────
-const N      = 7200;
-const MPTS   = buildMandalaPoints(N);
+// ═════════════════════════════════════════════════════════════
+//  BUILD POINT DATA
+// ═════════════════════════════════════════════════════════════
+const RAW = buildMandala();
+const N   = RAW.length;
 
-// Each particle has: home position, phase offsets for drift,
-// layer/role for colouring, and orbit angle
-const homeX  = new Float32Array(N);
-const homeY  = new Float32Array(N);
-const homeZ  = new Float32Array(N);
-const phA    = new Float32Array(N);  // drift phase x
-const phB    = new Float32Array(N);  // drift phase y
-const phC    = new Float32Array(N);  // drift phase z
-const layer  = new Uint8Array(N);
-const role   = new Uint8Array(N);
-const baseR  = new Float32Array(N);  // normalised 0-1 (radius / max_radius)
-const isBig  = new Uint8Array(N);
-// orbit: each particle slowly rotates around Z and tilts around X
-const orbitA = new Float32Array(N);  // initial orbit angle
-const orbitR = new Float32Array(N);  // how much it orbits (0 = stays put)
+const homeX   = new Float32Array(N);
+const homeY   = new Float32Array(N);
+const homeZ   = new Float32Array(N);
+const layerArr= new Uint8Array(N);
+const brightArr=new Float32Array(N);
+// tiny per-particle shimmer phase
+const shimPh  = new Float32Array(N);
+const isBig   = new Uint8Array(N);
 
-const MAX_R = 2.5;
-
-MPTS.forEach((p,i)=>{
-  homeX[i] = p.x; homeY[i] = p.y; homeZ[i] = p.z;
-  phA[i] = Math.random()*Math.PI*2;
-  phB[i] = Math.random()*Math.PI*2;
-  phC[i] = Math.random()*Math.PI*2;
-  layer[i]  = p.layer;
-  role[i]   = p.role;
-  baseR[i]  = Math.min(1, p.base / MAX_R);
-  isBig[i]  = Math.random() < (p.layer===0?.6:p.layer===1?.3:.18) ? 1 : 0;
-  orbitA[i] = Math.random()*Math.PI*2;
-  // outer particles orbit more; inner core stays mostly fixed
-  orbitR[i] = p.layer===0 ? .005
-             : p.layer===1 ? .020
-             : p.layer===2 ? .040
-             : p.layer===3 ? .065
-             :               .10;
+RAW.forEach((p,i)=>{
+  homeX[i]=p.x; homeY[i]=p.y; homeZ[i]=p.z;
+  layerArr[i]=p.layer; brightArr[i]=p.bright;
+  shimPh[i]=Math.random()*Math.PI*2;
+  // core and inner layers more likely to be big/bright
+  isBig[i] = Math.random() < (.7-.08*p.layer) ? 1 : 0;
 });
 
-// ─────────────────────────────────────────────────────────────
-//  THREE.JS RENDERER
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
+//  THREE.JS
+// ═════════════════════════════════════════════════════════════
 const canvas  = document.getElementById('medCanvas');
 const BLOOM_L = 1;
 const bMask   = new THREE.Layers(); bMask.set(BLOOM_L);
 
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
 renderer.setClearColor(0,0);
-const DPR = Math.min(window.devicePixelRatio||1,2);
+const DPR=Math.min(window.devicePixelRatio||1,2);
 renderer.setPixelRatio(DPR);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
 
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38,1,.1,100);
-camera.position.set(0,0,5.5);
+const camera = new THREE.PerspectiveCamera(36,1,.1,100);
+camera.position.set(0,0,5.2);
 camera.layers.enableAll();
 
-const mandalaGroup = new THREE.Group(); scene.add(mandalaGroup);
-const ringGroup    = new THREE.Group(); scene.add(ringGroup);
+const mandalaGrp = new THREE.Group(); scene.add(mandalaGrp);
+const ringGrp    = new THREE.Group(); scene.add(ringGrp);
 
-// ── gradient sprite helper ──
+// ── gradient sprite ──
 function gradSprite(stops){
   const c=document.createElement('canvas'); c.width=c.height=256;
   const g=c.getContext('2d'), gr=g.createRadialGradient(128,128,0,128,128,128);
@@ -388,195 +391,164 @@ function gradSprite(stops){
   return new THREE.CanvasTexture(c);
 }
 
-// ── CORE BLOOM sprite ──
-const coreSprite = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: gradSprite([[0,'rgba(255,255,255,.98)'],[.15,'rgba(220,200,255,.75)'],[.4,'rgba(160,120,255,.35)'],[.7,'rgba(100,70,220,.10)'],[1,'rgba(0,0,0,0)']]),
-  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:.80,
-}));
-coreSprite.scale.setScalar(.28); coreSprite.layers.set(BLOOM_L); scene.add(coreSprite);
+// ── CORE bloom sprite ──
+const coreMat=new THREE.SpriteMaterial({
+  map:gradSprite([[0,'rgba(255,255,255,.98)'],[.15,'rgba(220,200,255,.78)'],[.38,'rgba(160,120,255,.38)'],[.65,'rgba(100,70,220,.12)'],[1,'rgba(0,0,0,0)']]),
+  transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,opacity:.82,
+});
+const coreSprite=new THREE.Sprite(coreMat); coreSprite.scale.setScalar(.22); coreSprite.layers.set(BLOOM_L); scene.add(coreSprite);
 
-// ── NEBULA (breath halo) ──
-const nebulaSprite = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: gradSprite([[0,'rgba(200,170,255,.88)'],[.12,'rgba(150,110,250,.50)'],[.30,'rgba(110,75,230,.24)'],[.55,'rgba(75,50,200,.08)'],[1,'rgba(0,0,0,0)']]),
-  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:.28,
-}));
-nebulaSprite.scale.setScalar(.65); nebulaSprite.position.z=-.4; nebulaSprite.layers.set(BLOOM_L); scene.add(nebulaSprite);
+// ── NEBULA ──
+const nebMat=new THREE.SpriteMaterial({
+  map:gradSprite([[0,'rgba(200,170,255,.90)'],[.15,'rgba(145,105,248,.50)'],[.35,'rgba(105,70,228,.22)'],[.60,'rgba(70,48,196,.07)'],[1,'rgba(0,0,0,0)']]),
+  transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,opacity:.26,
+});
+const nebSprite=new THREE.Sprite(nebMat); nebSprite.scale.setScalar(.60); nebSprite.position.z=-.35; nebSprite.layers.set(BLOOM_L); scene.add(nebSprite);
 
-// ── OUTER HALO ──
-const haloSprite = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: gradSprite([[0,'rgba(170,140,255,.40)'],[.25,'rgba(120,90,240,.18)'],[.55,'rgba(80,55,200,.07)'],[1,'rgba(0,0,0,0)']]),
-  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:.15,
-}));
-haloSprite.scale.setScalar(2.4); haloSprite.position.z=-1.2; haloSprite.layers.set(BLOOM_L); scene.add(haloSprite);
+// ── HALO ──
+const haloMat=new THREE.SpriteMaterial({
+  map:gradSprite([[0,'rgba(165,135,255,.38)'],[.28,'rgba(115,85,238,.16)'],[.58,'rgba(75,52,198,.06)'],[1,'rgba(0,0,0,0)']]),
+  transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,opacity:.14,
+});
+const haloSprite=new THREE.Sprite(haloMat); haloSprite.scale.setScalar(2.2); haloSprite.position.z=-1.0; haloSprite.layers.set(BLOOM_L); scene.add(haloSprite);
 
-// ── PARTICLE BUFFERS ──
+// ── PARTICLES ──
 const pPos  = new Float32Array(N*3);
 const pCol  = new Float32Array(N*3);
-const pSize = new Float32Array(N);
+const pSz   = new Float32Array(N);
 const pGeo  = new THREE.BufferGeometry();
-pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
-pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol,3));
-pGeo.setAttribute('aSize',    new THREE.BufferAttribute(pSize,1));
+pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+pGeo.setAttribute('color',   new THREE.BufferAttribute(pCol,3));
+pGeo.setAttribute('aSize',   new THREE.BufferAttribute(pSz,1));
 
-// soft glow particle texture
-const dotTex = (function(){
+const dotTex=(function(){
   const c=document.createElement('canvas'); c.width=c.height=64;
-  const g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
+  const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)');
-  gr.addColorStop(.28,'rgba(210,190,255,.92)');
-  gr.addColorStop(.60,'rgba(150,110,255,.38)');
-  gr.addColorStop(1,'rgba(80,50,200,0)');
+  gr.addColorStop(.25,'rgba(215,195,255,.94)');
+  gr.addColorStop(.55,'rgba(155,115,255,.42)');
+  gr.addColorStop(1,'rgba(85,52,210,0)');
   g.fillStyle=gr; g.fillRect(0,0,64,64);
   return new THREE.CanvasTexture(c);
 })();
 
-const pMat = new THREE.ShaderMaterial({
-  uniforms:{ uScale:{value:160}, uTex:{value:dotTex} },
-  vertexColors:true, transparent:true, depthWrite:false,
-  blending:THREE.AdditiveBlending,
-  vertexShader:'attribute float aSize; varying vec3 vCol; uniform float uScale;\nvoid main(){ vCol=color; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=aSize*uScale/-mv.z; gl_Position=projectionMatrix*mv; }',
-  fragmentShader:'uniform sampler2D uTex; varying vec3 vCol;\nvoid main(){ vec4 t=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(vCol*t.rgb,t.a); }',
+const pMat=new THREE.ShaderMaterial({
+  uniforms:{uScale:{value:160},uTex:{value:dotTex}},
+  vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  vertexShader:'attribute float aSize;varying vec3 vCol;uniform float uScale;\nvoid main(){vCol=color;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=aSize*uScale/-mv.z;gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'uniform sampler2D uTex;varying vec3 vCol;\nvoid main(){vec4 t=texture2D(uTex,gl_PointCoord);gl_FragColor=vec4(vCol*t.rgb,t.a);}',
 });
-const pts = new THREE.Points(pGeo,pMat);
-pts.layers.set(0); mandalaGroup.add(pts);
+const ptsMesh=new THREE.Points(pGeo,pMat); ptsMesh.layers.set(0); mandalaGrp.add(ptsMesh);
 
 // ── HUD RINGS ──
-function arcLine(r,segs,color,op,s0,len){
-  const pts2=[]; const s=s0||0, l=len!=null?len:Math.PI*2;
-  for(let i=0;i<=segs;i++){ const a=s+(i/segs)*l; pts2.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0)); }
-  const geo=new THREE.BufferGeometry().setFromPoints(pts2);
-  const ln=new THREE.Line(geo,new THREE.LineBasicMaterial({color:new THREE.Color(color),transparent:true,opacity:op,depthWrite:false}));
+function arcLine(r,segs,col,op,s0,len){
+  const v=[]; const s=s0||0,l=len!=null?len:Math.PI*2;
+  for(let i=0;i<=segs;i++){const a=s+(i/segs)*l; v.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
+  const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(v),
+    new THREE.LineBasicMaterial({color:new THREE.Color(col),transparent:true,opacity:op,depthWrite:false}));
   ln.layers.set(0); return ln;
 }
-
-const RG1=new THREE.Group(); ringGroup.add(RG1);
-[[.28,2.10],[2.95,1.40],[5.30,0.90]].forEach(([s,l])=>{
-  RG1.add(arcLine(1.96,90,'#8b7cf8',.85,s,l));
-  RG1.add(arcLine(1.98,90,'#8b7cf8',.35,s,l));
+const RG1=new THREE.Group(); ringGrp.add(RG1);
+[[.30,2.05],[3.00,1.38],[5.38,.88]].forEach(([s,l])=>{
+  RG1.add(arcLine(1.96,90,'#8b7cf8',.80,s,l));
+  RG1.add(arcLine(1.98,90,'#8b7cf8',.32,s,l));
 });
-const RG2=new THREE.Group(); ringGroup.add(RG2);
-RG2.add(arcLine(2.22,200,'#a78bfa',.65));
-const RG3=new THREE.Group(); ringGroup.add(RG3);
+const RG2=new THREE.Group(); ringGrp.add(RG2);
+RG2.add(arcLine(2.20,200,'#a78bfa',.62));
+const RG3=new THREE.Group(); ringGrp.add(RG3);
 (function(){
-  const TICKS=72,r=2.46,sm=[],lg=[];
-  for(let i=0;i<TICKS;i++){
-    const major=i%6===0,a=(i/TICKS)*Math.PI*2,c=Math.cos(a),s=Math.sin(a);
-    const inn=major?r-.09:r-.045; (major?lg:sm).push(c*inn,s*inn,0,c*r,s*r,0);
-  }
-  const gsm=new THREE.BufferGeometry(); gsm.setAttribute('position',new THREE.BufferAttribute(new Float32Array(sm),3));
-  RG3.add(new THREE.LineSegments(gsm,new THREE.LineBasicMaterial({color:0xb4a4f8,transparent:true,opacity:.28,depthWrite:false})));
-  const glg=new THREE.BufferGeometry(); glg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(lg),3));
-  RG3.add(new THREE.LineSegments(glg,new THREE.LineBasicMaterial({color:0xddd6fe,transparent:true,opacity:.65,depthWrite:false})));
+  const T=72,r=2.44,sm=[],lg=[];
+  for(let i=0;i<T;i++){const maj=i%6===0,a=(i/T)*Math.PI*2,c=Math.cos(a),s=Math.sin(a),inn=maj?r-.09:r-.045;(maj?lg:sm).push(c*inn,s*inn,0,c*r,s*r,0);}
+  const gSm=new THREE.BufferGeometry(); gSm.setAttribute('position',new THREE.BufferAttribute(new Float32Array(sm),3));
+  RG3.add(new THREE.LineSegments(gSm,new THREE.LineBasicMaterial({color:0xb4a4f8,transparent:true,opacity:.26,depthWrite:false})));
+  const gLg=new THREE.BufferGeometry(); gLg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(lg),3));
+  RG3.add(new THREE.LineSegments(gLg,new THREE.LineBasicMaterial({color:0xddd6fe,transparent:true,opacity:.62,depthWrite:false})));
 })();
 
 // ── BLOOM ──
-let bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.2,.60,.10);
-const bloomComp=new EffectComposer(renderer);
-bloomComp.renderToScreen=false;
-bloomComp.addPass(new RenderPass(scene,camera));
-bloomComp.addPass(bloomPass);
+let bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.25,.62,.10);
+const bComp=new EffectComposer(renderer); bComp.renderToScreen=false;
+bComp.addPass(new RenderPass(scene,camera)); bComp.addPass(bloomPass);
+const fPass=new ShaderPass(new THREE.ShaderMaterial({
+  uniforms:{baseTexture:{value:null},bloomTexture:{value:bComp.renderTarget2.texture}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'uniform sampler2D baseTexture;uniform sampler2D bloomTexture;varying vec2 vUv;void main(){gl_FragColor=texture2D(baseTexture,vUv)+vec4(texture2D(bloomTexture,vUv).rgb,0.);}',
+}),'baseTexture'); fPass.needsSwap=true;
+const fComp=new EffectComposer(renderer);
+fComp.addPass(new RenderPass(scene,camera)); fComp.addPass(fPass);
 
-const finalPass=new ShaderPass(new THREE.ShaderMaterial({
-  uniforms:{baseTexture:{value:null},bloomTexture:{value:bloomComp.renderTarget2.texture}},
-  vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-  fragmentShader:'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(baseTexture,vUv)+vec4(texture2D(bloomTexture,vUv).rgb,0.); }',
-}),'baseTexture'); finalPass.needsSwap=true;
-
-const finalComp=new EffectComposer(renderer);
-finalComp.addPass(new RenderPass(scene,camera));
-finalComp.addPass(finalPass);
-
-const _hidden=[];
-function hideNB(o){ if((o.isMesh||o.isPoints||o.isLine||o.isLineSegments||o.isSprite)&&!o.layers.test(bMask)&&o.visible){ o.visible=false;_hidden.push(o);} }
-function restVis(){ _hidden.forEach(o=>o.visible=true); _hidden.length=0; }
+const _hid=[];
+function hideNB(o){if((o.isMesh||o.isPoints||o.isLine||o.isLineSegments||o.isSprite)&&!o.layers.test(bMask)&&o.visible){o.visible=false;_hid.push(o);}}
+function restV(){_hid.forEach(o=>o.visible=true);_hid.length=0;}
 
 function sizeR(){
-  const s=canvas.clientWidth||340;
-  renderer.setSize(s,s,false);
-  bloomComp.setSize(s,s); finalComp.setSize(s,s);
+  const s=canvas.clientWidth||360;
+  renderer.setSize(s,s,false); bComp.setSize(s,s); fComp.setSize(s,s);
   camera.aspect=1; camera.updateProjectionMatrix();
   pMat.uniforms.uScale.value=160*(s*DPR)/720;
 }
 new ResizeObserver(sizeR).observe(canvas); sizeR();
 
-// ── PARTICLE UPDATE ──
-function updateParticles(t, bs){
-  const v = VARIANTS[_variant];
-  // slow overall mandala rotation in 3D: yaw + gentle pitch
-  const yaw   = t * v.orbitSpeed;
-  const pitch = Math.sin(t*.13) * .12;
-  const cosY=Math.cos(yaw),sinY=Math.sin(yaw);
-  const cosP=Math.cos(pitch),sinP=Math.sin(pitch);
+// ═════════════════════════════════════════════════════════════
+//  PARTICLE UPDATE — mandala stays a mandala
+//  The ONLY movement is:
+//  1. Slow Z-rotation of the whole disc (spin)
+//  2. Gentle tilt toward camera on inhale
+//  3. Uniform scale breath (expand/contract)
+//  4. Per-particle shimmer: tiny brightness flicker, NO position wander
+// ═════════════════════════════════════════════════════════════
+function updateParticles(t){
+  const v  = VARIANTS[_variant];
+  const bs = _bs;
 
-  // exhale causes outer particles to drift outward (breath release)
-  const exhaleBloom = _phase===2 ? 1+_phaseT*.35 : 1;
-  // inhale draws particles slightly inward (gathering)
-  const inhaleGather = _phase===0 ? 1-_phaseT*.06 : 1;
-  const radScale = bs * exhaleBloom * inhaleGather;
+  // 1. BREATH SCALE: mandala expands (1.0→1.28) on inhale, contracts on exhale
+  const breathS = 1.0 + (bs-.72) * .40;   // range 1.0 at rest → 1.11 full inhale
+
+  // 2. DISC TILT: on inhale the mandala tilts slightly toward viewer (cinematic depth)
+  const tilt = (bs-.72)/.28 * v.tiltAmp;  // 0 at rest, max at full inhale
+  const cosTilt=Math.cos(tilt), sinTilt=Math.sin(tilt);
+
+  // 3. SPIN (slow Z rotation)
+  const spinA = t * v.spinSpeed;
+  const cosS=Math.cos(spinA), sinS=Math.sin(spinA);
 
   for(let i=0;i<N;i++){
-    // layer-specific orbit speed — inner layers nearly static, outer rotate
-    const oSpeed = v.orbitSpeed * (0.3 + layer[i]*0.5);
-    orbitA[i] += oSpeed * .016; // approximate dt; real dt below in frame()
+    // home position in mandala space
+    const hx=homeX[i], hy=homeY[i], hz=homeZ[i];
 
-    // orbit the home position around Z
-    const oa=orbitA[i], or=orbitR[i];
-    const ox=homeX[i]+Math.cos(oa)*or - homeX[i]*or*.5;
-    const oy=homeY[i]+Math.sin(oa)*or - homeY[i]*or*.5;
-    const oz=homeZ[i];
+    // apply breath scale (radial — scale x,y not z)
+    const sx=hx*breathS, sy=hy*breathS, sz=hz;
 
-    // micro-drift (organic noise per particle)
-    const dScale = .025 + baseR[i]*.025;
-    const ds = .55 + baseR[i]*.4;
-    const dx=Math.sin(t*ds+phA[i])*dScale;
-    const dy=Math.cos(t*ds+phB[i])*dScale;
-    const dz=Math.sin(t*ds*1.3+phC[i])*dScale*.6;
+    // spin around Z
+    const rx= sx*cosS - sy*sinS;
+    const ry= sx*sinS + sy*cosS;
+    const rz= sz;
 
-    // radius-breathing: particles move outward/inward with breath
-    const breathR = 1 + (radScale-1) * (0.4+baseR[i]*.6); // outer particles breathe more
-    let px = (ox+dx)*breathR;
-    let py = (oy+dy)*breathR;
-    let pz = (oz+dz)*breathR;
+    // tilt around X (tip top of mandala toward camera)
+    const ty= ry*cosTilt - rz*sinTilt;
+    const tz= ry*sinTilt + rz*cosTilt;
 
-    // rotate entire mandala: yaw (around Y) then pitch (around X)
-    const rx = px*cosY + pz*sinY;
-    const rz =-px*sinY + pz*cosY;
-    const ry = py*cosP - rz*sinP;
-    const rz2= py*sinP + rz*cosP;
+    pPos[i*3]=rx; pPos[i*3+1]=ty; pPos[i*3+2]=tz;
 
-    pPos[i*3]=rx; pPos[i*3+1]=ry; pPos[i*3+2]=rz2;
+    // ── colour ──
+    const col = v.layerCols[Math.min(layerArr[i], v.layerCols.length-1)];
 
-    // ── colour by layer + depth ──
-    const depth=(rz2+2.5)/5;   // 0-1 depth (front bright)
-    const dBright=.30+.70*(depth*depth);
+    // shimmer: tiny brightness oscillation so particles "breathe" individually
+    const shim = .80 + .20*Math.sin(t*1.8+shimPh[i]);
+    // depth brightness: front particles slightly brighter
+    const depth = (tz+1.5)/3.0;
+    const dbright = .35 + .65*(depth*depth);
 
-    const cr=v.core, md=v.mid, sh=v.shell, fr=v.fringe;
-    let cr3, cg3, cb3, sz;
+    const a = brightArr[i]*shim*dbright;
+    pCol[i*3]=col[0]*a; pCol[i*3+1]=col[1]*a; pCol[i*3+2]=col[2]*a;
 
-    if(layer[i]===0){        // core
-      cr3=cr[0]; cg3=cr[1]; cb3=cr[2]; sz=.13;
-    } else if(layer[i]===1){ // inner petal/ring
-      const t2=baseR[i]/.5;
-      cr3=cr[0]*(1-t2)+md[0]*t2; cg3=cr[1]*(1-t2)+md[1]*t2; cb3=cr[2]*(1-t2)+md[2]*t2;
-      sz=.095;
-    } else if(layer[i]===2){ // mid geometry
-      const t2=(baseR[i]-.3)/.5;
-      cr3=md[0]*(1-t2)+sh[0]*t2; cg3=md[1]*(1-t2)+sh[1]*t2; cb3=md[2]*(1-t2)+sh[2]*t2;
-      sz=.082;
-    } else if(layer[i]===3){ // outer halo
-      cr3=sh[0]; cg3=sh[1]; cb3=sh[2]; sz=.072;
-    } else {                  // fringe stardust
-      cr3=fr[0]; cg3=fr[1]; cb3=fr[2]; sz=.055;
-    }
-
-    // role highlight: triangles slightly brighter, metatron slightly bigger
-    let roleMult=1;
-    if(role[i]===2) roleMult=1.18;
-    if(role[i]===3){ roleMult=1.12; sz*=1.15; }
-
-    const a = dBright*roleMult;
-    pCol[i*3]=cr3*a; pCol[i*3+1]=cg3*a; pCol[i*3+2]=cb3*a;
-    pSize[i] = sz * (isBig[i]?1.8:1) * (.6+.7*depth);
+    // size: big particles at inner layers, smaller at fringe
+    const baseSize = layerArr[i]<=1 ? .115
+                   : layerArr[i]<=3 ? .090
+                   : layerArr[i]<=5 ? .075
+                   : layerArr[i]<=6 ? .062
+                   : .048;
+    pSz[i] = baseSize*(isBig[i]?1.75:1)*(.55+.60*depth);
   }
 
   pGeo.attributes.position.needsUpdate=true;
@@ -587,53 +559,46 @@ function updateParticles(t, bs){
 // ── MAIN LOOP ──
 const clock=new THREE.Clock();
 let pingT=-1;
-canvas.addEventListener('click',()=>{ pingT=0.01; });
+canvas.addEventListener('click',()=>{ pingT=.01; });
 
 function frame(){
   requestAnimationFrame(frame);
   const dt=Math.min(clock.getDelta(),.05);
   const t=clock.elapsedTime;
 
-  // smooth breath scale
-  _bs += (bsTarget(_phase,_phaseT)-_bs) * Math.min(1,dt*3.2);
+  // smooth breath
+  _bs+=( bsTarget(_phase,_phaseT)-_bs )*Math.min(1,dt*3.0);
 
-  // update orbit angles (proper dt)
-  const v=VARIANTS[_variant];
-  for(let i=0;i<N;i++) orbitA[i] += v.orbitSpeed*(0.3+layer[i]*.5)*dt;
+  updateParticles(t);
 
-  updateParticles(t, _bs);
+  // rings rotate gently
+  RG1.rotation.z =  t*.020;
+  RG2.rotation.z = -t*.035;
+  RG3.rotation.z =  t*.014;
 
-  // rings
-  RG1.rotation.z =  t*.022;
-  RG2.rotation.z = -t*.038;
-  RG3.rotation.z =  t*.016;
+  // core
+  const pulse=.88+.12*Math.sin(t*1.5);
+  coreMat.opacity=(.48+_bs*.38)*pulse;
+  coreSprite.scale.setScalar(.16+_bs*.16);
 
-  // core glow
-  const pulse=.85+.15*Math.sin(t*1.4);
-  coreSprite.material.opacity=(.50+_bs*.38)*pulse;
-  coreSprite.scale.setScalar(.18+_bs*.18);
-
-  // nebula breath
-  nebulaSprite.material.opacity=.14+_bs*.28;
-  nebulaSprite.scale.setScalar(.45+_bs*.55);
+  // nebula breathes
+  nebMat.opacity=.12+_bs*.26;
+  nebSprite.scale.setScalar(.42+_bs*.52);
 
   // halo
-  haloSprite.material.opacity=.08+_bs*.16;
-  haloSprite.scale.setScalar(1.7+_bs*.8);
+  haloMat.opacity=.07+_bs*.14;
+  haloSprite.scale.setScalar(1.65+_bs*.75);
 
   // ping
-  if(pingT>=0){ pingT+=dt*1.4; const k=Math.max(0,1-pingT); mandalaGroup.scale.setScalar(1+k*.12); if(pingT>1.2){pingT=-1;mandalaGroup.scale.setScalar(1);} }
+  if(pingT>=0){ pingT+=dt*1.5; const k=Math.max(0,1-pingT); mandalaGrp.scale.setScalar(1+k*.12); if(pingT>1.3){pingT=-1;mandalaGrp.scale.setScalar(1);} }
 
-  scene.traverse(hideNB);
-  bloomComp.render();
-  restVis();
-  finalComp.render();
+  scene.traverse(hideNB); bComp.render(); restV(); fComp.render();
 }
 frame();
 
-// ─────────────────────────────────────────────────────────────
-//  ANIMATION
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
+//  BREATH ANIMATION
+// ═════════════════════════════════════════════════════════════
 window.toggleAnim=function(){
   _animating=!_animating;
   document.getElementById('animBtn').classList.toggle('on',_animating);
@@ -649,10 +614,7 @@ function breathTick(){
   if(!_animStart)_animStart=now;
   const el=(now-_animStart)%CYCLE;
   let ph=0,acc=0;
-  for(let p=0;p<4;p++){
-    if(el<acc+PHASE_DUR[p]){ph=p;_phaseT=(el-acc)/PHASE_DUR[p];break;}
-    acc+=PHASE_DUR[p];
-  }
+  for(let p=0;p<4;p++){ if(el<acc+PHASE_DUR[p]){ph=p;_phaseT=(el-acc)/PHASE_DUR[p];break;} acc+=PHASE_DUR[p]; }
   _phase=ph;
   document.getElementById('phaseSelect').value=ph;
   updateBreathUI(ph,_phaseT);
@@ -668,9 +630,9 @@ function updateBreathUI(ph,pt){
   document.getElementById('phasePct').textContent=Math.round(pt*100)+'%';
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
 //  VARIANTS UI
-// ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
 (function(){
   const row=document.getElementById('variantRow');
   VARIANTS.forEach((v,i)=>{
@@ -689,7 +651,7 @@ function updateBreathUI(ph,pt){
 window.choose=function(){
   const v=VARIANTS[_variant];
   const b=document.getElementById('banner');
-  b.textContent='✓ Variant '+v.id+' "'+v.name+'" chosen — tell me to ship it into index.html';
+  b.textContent='✓ Variant '+v.id+' "'+v.name+'" — tell me to ship it into index.html';
   b.style.display='';
   setTimeout(()=>{b.style.display='none';},5000);
 };
