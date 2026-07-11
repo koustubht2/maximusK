@@ -154,7 +154,7 @@ function buildMandala(){
   // ── LAYER 0 — core glow cluster ──
   for(let i=0;i<90;i++){
     const r=Math.random()*.12, a=Math.random()*PI2;
-    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0});
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0, type:1});
   }
 
   // ── LAYER 1 — innermost ring + 6-pointed star ──
@@ -232,13 +232,13 @@ function buildMandala(){
   // ── LAYER 7 — outer concentric halos ──
   [1.48, 1.65, 1.82].forEach((r,ri)=>{
     ring(r, 180+ri*36, 7, .50-.08*ri, .12+ri*.04);
-    // radial tick bursts at 12 positions
+    // radial tick bursts at 12 positions — fixed spokes, type:0
     for(let i=0;i<12;i++){
       const a=(i/12)*PI2+(ri*.13);
       const r0=r-.04, r1=r+.04;
       for(let j=0;j<8;j++){
         const rr=r0+(r1-r0)*j/7;
-        pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri});
+        pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri, type:0});
       }
     }
   });
@@ -246,7 +246,7 @@ function buildMandala(){
   // ── LAYER 8 — fringe stardust ──
   for(let i=0;i<280;i++){
     const r=1.88+Math.random()*.50, a=Math.random()*PI2;
-    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15});
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15, type:1});
   }
 
   return pts;
@@ -355,8 +355,9 @@ const layerArr= new Uint8Array(N);
 const brightArr=new Float32Array(N);
 const shimPh  = new Float32Array(N);
 const isBig   = new Uint8Array(N);
-// Travel offset: each particle has a phase offset so it appears to
-// travel along its ring/path independently (not all in sync)
+const typeArr = new Uint8Array(N);     // 0=fixed geometry, 1=ring (can orbit)
+// Travel offset: each ring particle has a phase offset so it appears to
+// travel along its ring independently (not all in sync)
 const travelPh= new Float32Array(N);
 
 RAW.forEach((p,i)=>{
@@ -364,6 +365,7 @@ RAW.forEach((p,i)=>{
   homeR[i]=Math.sqrt(p.x*p.x+p.y*p.y);
   homeA[i]=Math.atan2(p.y,p.x);
   layerArr[i]=p.layer; brightArr[i]=p.bright;
+  typeArr[i] = p.type || 0;
   shimPh[i]  =Math.random()*Math.PI*2;
   travelPh[i]=Math.random()*Math.PI*2;  // staggered so particles don't bunch
   isBig[i] = Math.random() < (.7-.08*p.layer) ? 1 : 0;
@@ -534,27 +536,37 @@ function updateParticles(t){
   // ── BASE SPIN (whole mandala) ──
   const baseSpinA = t * v.spinSpeed;
 
+  // Pre-compute per-layer rigid-body rotation angle
+  // (same for ALL particles in a layer — preserves relative geometry)
+  const layerGroupA = new Float32Array(9);
+  for(let l=0;l<9;l++) layerGroupA[l] = baseSpinA + t * 0.008 * LAYER_SPIN[l];
+
   for(let i=0;i<N;i++){
     const lay = layerArr[i];
     const r   = homeR[i];
-    const a0  = homeA[i];
 
-    // ── EFFECT 1: differential layer rotation ──
-    // independent per-layer spin — uses a fixed slow base so rings visibly
-    // counter-rotate without blurring the mandala geometry
-    const layerAngle = t * 0.008 * LAYER_SPIN[lay];
+    let mx, my;
 
-    // ── EFFECT 5: particle travel along mandala path ──
-    // particle advances along its ring at layer-specific speed
-    // travelPh staggers particles so they don't all bunch at the same point
-    const travelAngle = t * TRAVEL_SPEED[lay] + travelPh[i];
+    if(typeArr[i] === 1){
+      // ── RING PARTICLE — orbits along its ring ──
+      // EFFECT 1 (layer spin) + EFFECT 5 (travel): advance angle on the ring
+      const a0 = homeA[i];
+      const travelAngle = t * TRAVEL_SPEED[lay] + travelPh[i];
+      const finalA = a0 + layerGroupA[lay] + travelAngle;
+      mx = Math.cos(finalA) * r * breathS;
+      my = Math.sin(finalA) * r * breathS;
+    } else {
+      // ── FIXED PARTICLE — rigid-body rotation of home position ──
+      // Rotate the stored (homeX, homeY) as a rigid body around the origin.
+      // All particles in the same layer share the same rotation angle,
+      // so petal curves, triangle edges, and spokes stay intact.
+      const ca = Math.cos(layerGroupA[lay]);
+      const sa = Math.sin(layerGroupA[lay]);
+      const hx = homeX[i], hy = homeY[i];
+      mx = (hx*ca - hy*sa) * breathS;
+      my = (hx*sa + hy*ca) * breathS;
+    }
 
-    // final angle in mandala space = home angle + layer rotation + travel
-    const finalA = a0 + baseSpinA + layerAngle + travelAngle;
-
-    // position on ring (stays on exact radius — geometry preserved)
-    const mx = Math.cos(finalA) * r * breathS;
-    const my = Math.sin(finalA) * r * breathS;
     const mz = homeZ[i];
 
     // ── tilt around X ──
@@ -564,24 +576,22 @@ function updateParticles(t){
     pPos[i*3]=mx; pPos[i*3+1]=fy; pPos[i*3+2]=fz;
 
     // ── EFFECT 2: brightness ripple wave ──
-    // wave front travels from r=0 to r=2 over 2.5s
-    // particles near the wave front flash bright
     let rippleMult = 1.0;
     if(_rippleT >= 0){
-      const waveFront = _rippleT * 2.2;          // 0 → 2.2 (covers full mandala)
+      const waveFront = _rippleT * 2.2;
       const dist = Math.abs(r - waveFront);
-      if(dist < 0.35) rippleMult = 1.0 + (1.0-dist/0.35)*1.8;  // up to 2.8× brighter at wave front
+      if(dist < 0.35) rippleMult = 1.0 + (1.0-dist/0.35)*1.8;
     }
 
-    // ── EFFECT 3: petal rotating glow (sequential brightness on lotus layers) ──
-    // a spotlight sweeps around the ring — different speed per layer
+    // ── EFFECT 3: petal glow sweep on lotus layers ──
+    // a spotlight sweeps the outer angle — computed from the particle's
+    // current mandala angle (not finalA, which only exists for ring particles)
     let petalMult = 1.0;
     if(lay === 2 || lay === 5){
-      // angular position of brightness spotlight for this layer
-      const spotA  = t * (lay===2 ? 0.7 : -0.5);
-      // angular distance from particle to spotlight
-      let dA = ((finalA - spotA) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-      if(dA > Math.PI) dA = Math.PI*2 - dA;  // wrap to 0–PI
+      const curA = Math.atan2(my, mx);
+      const spotA = t * (lay===2 ? 0.7 : -0.5);
+      let dA = ((curA - spotA) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+      if(dA > Math.PI) dA = Math.PI*2 - dA;
       if(dA < 0.9) petalMult = 1.0 + (1.0-dA/0.9)*1.2;
     }
 
