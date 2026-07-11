@@ -343,20 +343,28 @@ function bsTarget(ph,pt){
 const RAW = buildMandala();
 const N   = RAW.length;
 
-const homeX   = new Float32Array(N);
-const homeY   = new Float32Array(N);
-const homeZ   = new Float32Array(N);
-const layerArr= new Uint8Array(N);
-const brightArr=new Float32Array(N);
-// tiny per-particle shimmer phase
-const shimPh  = new Float32Array(N);
-const isBig   = new Uint8Array(N);
+const homeX    = new Float32Array(N);
+const homeY    = new Float32Array(N);
+const homeZ    = new Float32Array(N);
+const layerArr = new Uint8Array(N);
+const brightArr= new Float32Array(N);
+const shimPh   = new Float32Array(N);
+const isBig    = new Uint8Array(N);
+// per-particle drift phases (3 axes, like JARVIS)
+const driftPhX = new Float32Array(N);
+const driftPhY = new Float32Array(N);
+const driftPhZ = new Float32Array(N);
+// per-particle drift speed multiplier (variety keeps it organic)
+const driftSpd = new Float32Array(N);
 
 RAW.forEach((p,i)=>{
   homeX[i]=p.x; homeY[i]=p.y; homeZ[i]=p.z;
   layerArr[i]=p.layer; brightArr[i]=p.bright;
-  shimPh[i]=Math.random()*Math.PI*2;
-  // core and inner layers more likely to be big/bright
+  shimPh[i]  = Math.random()*Math.PI*2;
+  driftPhX[i]= Math.random()*Math.PI*2;
+  driftPhY[i]= Math.random()*Math.PI*2;
+  driftPhZ[i]= Math.random()*Math.PI*2;
+  driftSpd[i]= 0.55 + Math.random()*0.90;  // 0.55–1.45× speed variety
   isBig[i] = Math.random() < (.7-.08*p.layer) ? 1 : 0;
 });
 
@@ -422,13 +430,18 @@ pGeo.setAttribute('color',   new THREE.BufferAttribute(pCol,3));
 pGeo.setAttribute('aSize',   new THREE.BufferAttribute(pSz,1));
 
 const dotTex=(function(){
-  const c=document.createElement('canvas'); c.width=c.height=64;
-  const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
-  gr.addColorStop(0,'rgba(255,255,255,1)');
-  gr.addColorStop(.25,'rgba(215,195,255,.94)');
-  gr.addColorStop(.55,'rgba(155,115,255,.42)');
-  gr.addColorStop(1,'rgba(85,52,210,0)');
-  g.fillStyle=gr; g.fillRect(0,0,64,64);
+  const c=document.createElement('canvas'); c.width=c.height=128;
+  const g=c.getContext('2d'), cx=64, cy=64;
+  // sharp bright pinpoint core + soft violet halo
+  const gr=g.createRadialGradient(cx,cy,0,cx,cy,64);
+  gr.addColorStop(0,    'rgba(255,255,255,1.0)');
+  gr.addColorStop(0.08, 'rgba(245,238,255,1.0)');
+  gr.addColorStop(0.18, 'rgba(220,200,255,0.95)');
+  gr.addColorStop(0.35, 'rgba(175,140,255,0.72)');
+  gr.addColorStop(0.55, 'rgba(130,95,248,0.38)');
+  gr.addColorStop(0.75, 'rgba(90,60,220,0.14)');
+  gr.addColorStop(1.0,  'rgba(60,35,180,0)');
+  g.fillStyle=gr; g.fillRect(0,0,128,128);
   return new THREE.CanvasTexture(c);
 })();
 
@@ -490,64 +503,98 @@ function sizeR(){
 new ResizeObserver(sizeR).observe(canvas); sizeR();
 
 // ═════════════════════════════════════════════════════════════
-//  PARTICLE UPDATE — mandala stays a mandala
-//  The ONLY movement is:
-//  1. Slow Z-rotation of the whole disc (spin)
-//  2. Gentle tilt toward camera on inhale
-//  3. Uniform scale breath (expand/contract)
-//  4. Per-particle shimmer: tiny brightness flicker, NO position wander
+//  PARTICLE UPDATE
+//  Each particle lives near its mandala home position but drifts
+//  with independent noise — exactly like JARVIS, but the drift
+//  amplitude is small so geometry stays readable.
+//
+//  Breath drives TWO things separately:
+//    • Radial push/pull  — inhale draws inward, exhale bursts out
+//    • Z-axis flutter    — exhale sends particles forward (toward cam)
+//
+//  Outer layers drift more than inner core (same law as JARVIS).
 // ═════════════════════════════════════════════════════════════
 function updateParticles(t){
   const v  = VARIANTS[_variant];
-  const bs = _bs;
+  const bs = _bs;                        // 0.72 (rest) → 1.0 (inhale peak)
+  const bNorm = (bs - .72) / .28;        // 0 → 1
 
-  // 1. BREATH SCALE: mandala expands (1.0→1.28) on inhale, contracts on exhale
-  const breathS = 1.0 + (bs-.72) * .40;   // range 1.0 at rest → 1.11 full inhale
-
-  // 2. DISC TILT: on inhale the mandala tilts slightly toward viewer (cinematic depth)
-  const tilt = (bs-.72)/.28 * v.tiltAmp;  // 0 at rest, max at full inhale
-  const cosTilt=Math.cos(tilt), sinTilt=Math.sin(tilt);
-
-  // 3. SPIN (slow Z rotation)
+  // ── SPIN ──
   const spinA = t * v.spinSpeed;
   const cosS=Math.cos(spinA), sinS=Math.sin(spinA);
 
+  // ── TILT toward camera on inhale ──
+  const tilt = bNorm * v.tiltAmp;
+  const cosTilt=Math.cos(tilt), sinTilt=Math.sin(tilt);
+
+  // ── BREATH RADIAL SCALE ──
+  // rest=1.0, full inhale=1.10 (gentle gather-then-release)
+  const breathS = 1.0 + bNorm * 0.10;
+
+  // ── EXHALE BURST: particles push outward on exhale ──
+  // on exhale (phase 2) phaseT goes 0→1, outer particles push harder
+  const exhalePush = (_phase===2) ? _phaseT * 0.18 : 0;
+
+  // ── DRIFT SPEED & AMPLITUDE by layer ──
+  // Inner layers barely move (mandala structure preserved).
+  // Outer layers move more — feels alive without losing shape.
+  const DRIFT_AMP  = [0.012, 0.022, 0.032, 0.042, 0.055, 0.065, 0.075, 0.090, 0.110];
+  const DRIFT_RATE = [0.40,  0.55,  0.65,  0.75,  0.85,  0.90,  0.95,  1.00,  1.10 ];
+
   for(let i=0;i<N;i++){
-    // home position in mandala space
+    const lay = layerArr[i];
     const hx=homeX[i], hy=homeY[i], hz=homeZ[i];
+    const homeR = Math.sqrt(hx*hx+hy*hy);  // radial distance from centre
 
-    // apply breath scale (radial — scale x,y not z)
-    const sx=hx*breathS, sy=hy*breathS, sz=hz;
+    // ── per-particle organic drift (tethered, never wanders far) ──
+    const ds = DRIFT_RATE[lay] * driftSpd[i];
+    const da = DRIFT_AMP[lay];
+    const dx = Math.sin(t*ds        + driftPhX[i]) * da;
+    const dy = Math.cos(t*ds*0.97   + driftPhY[i]) * da;
+    const dz = Math.sin(t*ds*1.13   + driftPhZ[i]) * da * 0.5;
 
-    // spin around Z
-    const rx= sx*cosS - sy*sinS;
-    const ry= sx*sinS + sy*cosS;
-    const rz= sz;
+    // ── breath radial push/pull ──
+    // inhale: subtle inward gather on inner layers, stay on outer
+    // exhale: outward burst proportional to radius
+    const radPush = homeR * exhalePush * (0.3 + lay * 0.12);
+    const nx = hx + hx * radPush / (homeR+.0001);
+    const ny = hy + hy * radPush / (homeR+.0001);
 
-    // tilt around X (tip top of mandala toward camera)
-    const ty= ry*cosTilt - rz*sinTilt;
-    const tz= ry*sinTilt + rz*cosTilt;
+    // ── apply breath scale ──
+    const sx = nx * breathS + dx;
+    const sy = ny * breathS + dy;
+    const sz = hz            + dz;
+
+    // ── spin around Z ──
+    const rx = sx*cosS - sy*sinS;
+    const ry = sx*sinS + sy*cosS;
+    const rz = sz;
+
+    // ── tilt around X ──
+    const ty =  ry*cosTilt - rz*sinTilt;
+    const tz =  ry*sinTilt + rz*cosTilt;
 
     pPos[i*3]=rx; pPos[i*3+1]=ty; pPos[i*3+2]=tz;
 
     // ── colour ──
-    const col = v.layerCols[Math.min(layerArr[i], v.layerCols.length-1)];
+    const col = v.layerCols[Math.min(lay, v.layerCols.length-1)];
 
-    // shimmer: brightness oscillation per particle
-    const shim = .88 + .12*Math.sin(t*1.8+shimPh[i]);
-    // mild depth cue — front brighter but outer layers never disappear
-    const depth = (tz+1.5)/3.0;
-    const dbright = .65 + .35*(depth*depth);
+    // shimmer — faster on outer layers so they sparkle independently
+    const shimRate = 1.2 + lay * 0.25;
+    const shim = .82 + .18*Math.sin(t*shimRate + shimPh[i]);
+
+    const depth  = (tz+1.5)/3.0;
+    const dbright= .60 + .40*(depth*depth);
 
     const a = brightArr[i]*shim*dbright;
     pCol[i*3]=col[0]*a; pCol[i*3+1]=col[1]*a; pCol[i*3+2]=col[2]*a;
 
-    // size — boosted so geometry is clearly readable
-    const baseSize = layerArr[i]<=1 ? .175
-                   : layerArr[i]<=3 ? .145
-                   : layerArr[i]<=5 ? .122
-                   : layerArr[i]<=6 ? .105
-                   : .082;
+    // ── size ──
+    const baseSize = lay<=1 ? .175
+                   : lay<=3 ? .145
+                   : lay<=5 ? .122
+                   : lay<=6 ? .105
+                   :          .082;
     pSz[i] = baseSize*(isBig[i]?1.85:1)*(.65+.55*depth);
   }
 
