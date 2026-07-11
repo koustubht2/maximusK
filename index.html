@@ -8482,103 +8482,94 @@ window.canonicalJson = function(obj) {
 <!-- ========== MEDITATION SECTION ========== -->
 <div id="meditationSection" style="max-width:720px;margin:0 auto;padding:0 16px 20px">
 
-  <!-- Header card -->
+  <!-- Stats + pack browser card -->
   <div class="wc-card" id="medHeaderCard">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(167,139,250,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
-        <span style="font-family:var(--pk-serif,Georgia,serif);font-size:17px;color:var(--text-primary)">Meditation</span>
-      </div>
-      <button id="medBreatheOnlyBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(167,139,250,0.7);background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:20px;padding:5px 12px;cursor:pointer">Breathe</button>
+      <span style="font-family:var(--pk-serif,Georgia,serif);font-size:17px;color:var(--text-primary)">Meditation</span>
+      <button id="medBreatheOnlyBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(167,139,250,0.7);background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:20px;padding:5px 12px;cursor:pointer">✦ Breathe</button>
     </div>
-    <!-- Stats row -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
       <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
-        <div id="medStatStreak" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div id="medStatStreak" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">0</div>
         <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Streak</div>
       </div>
       <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
-        <div id="medStatWeekMin" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div id="medStatWeekMin" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">0</div>
         <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Min/wk</div>
       </div>
       <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
-        <div id="medStatMonth" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div id="medStatMonth" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">0</div>
         <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Sessions</div>
       </div>
       <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
-        <div id="medStatTotal" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div id="medStatTotal" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">0</div>
         <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Total h</div>
+      </div>
+    </div>
+    <!-- Pack chips -->
+    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px">Packs</div>
+    <div id="medPackRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none"></div>
+  </div>
+
+  <!-- Active player card — shown when session running -->
+  <div class="wc-card" id="medPlayerCard" style="display:none;padding:0;overflow:hidden;background:radial-gradient(ellipse 110% 100% at 50% 0%,rgba(109,40,217,0.28) 0%,rgba(10,7,26,0.95) 70%) !important;border-color:rgba(167,139,250,0.2) !important">
+
+    <!-- Mandala -->
+    <div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px 16px;position:relative">
+      <canvas id="medMandala" width="240" height="240" style="display:block"></canvas>
+      <!-- Breath cue overlaid below mandala -->
+      <div id="medBreathCue" style="margin-top:14px;font-family:var(--pk-serif,Georgia,serif);font-size:20px;color:rgba(221,214,254,0.9);letter-spacing:0.03em;text-align:center;min-height:28px;transition:opacity 0.5s">Breathe in</div>
+      <div id="medBreathSub" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.45);letter-spacing:0.14em;text-transform:uppercase;margin-top:4px;min-height:14px;text-align:center"></div>
+    </div>
+
+    <!-- Track info + progress -->
+    <div style="padding:0 20px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div id="medPlayerTitle" style="font-size:13px;color:rgba(239,231,255,0.9);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">—</div>
+          <div id="medPlayerPack" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.5);margin-top:2px"></div>
+        </div>
+        <!-- Mood -->
+        <div style="display:flex;gap:4px" id="medMoodBtns">
+          <button onclick="window._medSetMood(1)" class="med-mood-btn" data-m="1">😔</button>
+          <button onclick="window._medSetMood(2)" class="med-mood-btn" data-m="2">😐</button>
+          <button onclick="window._medSetMood(3)" class="med-mood-btn" data-m="3">🙂</button>
+          <button onclick="window._medSetMood(4)" class="med-mood-btn" data-m="4">😌</button>
+          <button onclick="window._medSetMood(5)" class="med-mood-btn" data-m="5">✨</button>
+        </div>
+      </div>
+
+      <!-- Scrubable progress bar -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span id="medOverlayElapsed" style="font-family:var(--font-mono);font-size:10px;color:rgba(167,139,250,0.5);min-width:32px">0:00</span>
+        <div id="medScrubTrack" style="flex:1;height:4px;background:rgba(167,139,250,0.15);border-radius:4px;cursor:pointer;position:relative">
+          <div id="medOverlayBar" style="height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa);width:0%;border-radius:4px;pointer-events:none"></div>
+          <div id="medScrubThumb" style="position:absolute;top:50%;width:14px;height:14px;background:#a78bfa;border-radius:50%;transform:translate(-50%,-50%);left:0%;box-shadow:0 0 8px rgba(167,139,250,0.6);pointer-events:none"></div>
+        </div>
+        <span id="medOverlayRemaining" style="font-family:var(--font-mono);font-size:10px;color:rgba(167,139,250,0.5);min-width:32px;text-align:right">—</span>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex;gap:8px">
+        <button id="medOverlayPause" style="flex:1;padding:12px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:14px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer">❚❚ Pause</button>
+        <button id="medOverlayClose" style="flex:1;padding:12px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:14px;color:rgba(252,165,165,0.8);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer">■ End</button>
       </div>
     </div>
   </div>
 
-  <!-- Pack browser -->
-  <div class="wc-card" style="padding:16px 16px 10px">
-    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Packs</div>
-    <div id="medPackRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none"></div>
-  </div>
-
-  <!-- Session list -->
+  <!-- Session list card -->
   <div class="wc-card" id="medSessionCard" style="padding:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary)" id="medSessionPackLabel">Sessions</div>
-      <div id="medLibraryStatus" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.5)"></div>
+      <div id="medLibraryStatus" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.4)"></div>
     </div>
-    <div id="medSessionList" style="display:flex;flex-direction:column;gap:6px">
-      <div style="font-size:12px;color:var(--text-tertiary);text-align:center;padding:20px 0">Configure your B2 URL to load sessions.</div>
-    </div>
+    <div id="medSessionList" style="display:flex;flex-direction:column;gap:6px"></div>
   </div>
 
   <!-- Recent log -->
   <div class="wc-card" id="medLogCard" style="display:none;padding:16px">
     <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Recent Sessions</div>
     <div id="medLogList" style="display:flex;flex-direction:column;gap:6px"></div>
-  </div>
-
-</div>
-
-<!-- ========== MEDITATION FULL-SCREEN OVERLAY ========== -->
-<div id="medOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#07061a;flex-direction:column;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,20px) 0 env(safe-area-inset-bottom,20px)">
-
-  <!-- Top bar -->
-  <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px">
-    <button id="medOverlayClose" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);border-radius:20px;color:rgba(167,139,250,0.7);font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;padding:6px 14px;cursor:pointer">✕ End</button>
-    <div style="text-align:right">
-      <div id="medOverlayTitle" style="font-size:12px;color:rgba(239,231,255,0.7);font-family:var(--pk-serif,Georgia,serif)">Breathe</div>
-      <div id="medOverlayPack" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.5);margin-top:1px"></div>
-    </div>
-  </div>
-
-  <!-- Mandala canvas -->
-  <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:18px">
-    <canvas id="medMandala" width="280" height="280"></canvas>
-    <div id="medBreathCue" style="font-family:var(--pk-serif,Georgia,serif);font-size:22px;color:rgba(196,181,253,0.9);letter-spacing:0.04em;min-height:32px;text-align:center;transition:opacity 0.6s">Breathe in</div>
-    <div id="medBreathSub" style="font-family:var(--font-mono);font-size:10px;color:rgba(167,139,250,0.4);letter-spacing:0.12em;text-transform:uppercase;min-height:16px;text-align:center"></div>
-  </div>
-
-  <!-- Bottom controls -->
-  <div style="width:100%;padding:0 24px;display:flex;flex-direction:column;gap:12px">
-    <!-- Progress -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-      <div id="medOverlayElapsed" style="font-family:var(--font-mono);font-size:11px;color:rgba(167,139,250,0.5)">0:00</div>
-      <div id="medOverlayRemaining" style="font-family:var(--font-mono);font-size:11px;color:rgba(167,139,250,0.5)">—</div>
-    </div>
-    <div style="height:2px;background:rgba(167,139,250,0.1);border-radius:2px;overflow:hidden">
-      <div id="medOverlayBar" style="height:100%;background:rgba(167,139,250,0.5);width:0%;transition:width 1s linear;border-radius:2px"></div>
-    </div>
-    <!-- Mood before/after -->
-    <div id="medMoodRow" style="display:flex;align-items:center;justify-content:center;gap:6px">
-      <span style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.4);letter-spacing:0.08em">MOOD</span>
-      <div style="display:flex;gap:4px" id="medMoodBtns">
-        <button onclick="window._medSetMood(1)" class="med-mood-btn" data-m="1">😔</button>
-        <button onclick="window._medSetMood(2)" class="med-mood-btn" data-m="2">😐</button>
-        <button onclick="window._medSetMood(3)" class="med-mood-btn" data-m="3">🙂</button>
-        <button onclick="window._medSetMood(4)" class="med-mood-btn" data-m="4">😌</button>
-        <button onclick="window._medSetMood(5)" class="med-mood-btn" data-m="5">✨</button>
-      </div>
-    </div>
-    <!-- Pause -->
-    <button id="medOverlayPause" style="width:100%;padding:14px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:16px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;cursor:pointer">❚❚ PAUSE</button>
   </div>
 
 </div>
@@ -29104,6 +29095,7 @@ function switchTab(tab) {
   /* ---- config ---- */
   var B2_BASE = 'https://pub-7e59265d4bb146e0b2f0fe51adae8f3b.r2.dev';
   var LIBRARY_URL = B2_BASE + '/meditation-library.json';
+  var _inited = false;
   var MED_LOG_KEY = 'goals_meditation_log_v1';
   var MED_LIB_KEY = 'med_library_cache';
 
@@ -29332,79 +29324,103 @@ function switchTab(tab) {
       durSec:track.duration||1200, startTs:Date.now(), elapsed:0, moodBefore:0, moodAfter:0,
       paused:false, pausedAt:0, pausedTotal:0 };
 
-    // audio
+    // audio — use HTMLAudioElement directly for proper streaming + seek support
     if(_audio){ try{_audio.pause();}catch(e){} _audio=null; }
     if(B2_BASE && track.file){
-      _audio=new Audio(B2_BASE+'/'+track.file);
-      _audio.play().catch(function(){});
+      _audio = new Audio();
+      _audio.crossOrigin = 'anonymous';
+      _audio.preload = 'auto';
+      _audio.src = B2_BASE + '/' + track.file;
+      _audio.play().catch(function(e){ console.warn('Audio play failed:', e); });
+      // sync timer to actual audio time when available
+      _audio.addEventListener('timeupdate', function(){
+        if(!_session.active || _session.paused) return;
+        if(_audio.duration && _audio.duration > 0){
+          _session.durSec = Math.round(_audio.duration);
+        }
+      });
+      _audio.addEventListener('ended', function(){ endSession(true); });
     }
 
-    // overlay
-    var ov=document.getElementById('medOverlay');
-    if(ov){ ov.style.display='flex'; }
-    document.getElementById('medOverlayTitle').textContent=track.title;
-    document.getElementById('medOverlayPack').textContent=pack.label||'';
-    document.getElementById('medOverlayBar').style.width='0%';
-    document.getElementById('medOverlayElapsed').textContent='0:00';
-    document.getElementById('medOverlayRemaining').textContent=fmtTime(_session.durSec);
-    document.getElementById('medOverlayPause').textContent='❚❚ PAUSE';
-    // reset mood
+    // show inline player card
+    var playerCard = document.getElementById('medPlayerCard');
+    var sessionCard = document.getElementById('medSessionCard');
+    if(playerCard) playerCard.style.display = '';
+    if(sessionCard) sessionCard.style.display = 'none';
+    var titleEl = document.getElementById('medPlayerTitle');
+    var packEl  = document.getElementById('medPlayerPack');
+    if(titleEl) titleEl.textContent = track.title;
+    if(packEl)  packEl.textContent  = pack.label || '';
+    var barEl = document.getElementById('medOverlayBar');
+    var thumbEl = document.getElementById('medScrubThumb');
+    if(barEl) barEl.style.width = '0%';
+    if(thumbEl) thumbEl.style.left = '0%';
+    document.getElementById('medOverlayElapsed').textContent = '0:00';
+    document.getElementById('medOverlayRemaining').textContent = fmtTime(_session.durSec);
+    document.getElementById('medOverlayPause').textContent = '❚❚ Pause';
     document.querySelectorAll('.med-mood-btn').forEach(function(b){ b.classList.remove('selected'); });
-    // reset breath phase
-    _breathPhase=0; _breathTs=Date.now();
+    _breathPhase = 0; _breathTs = Date.now();
 
     if(_raf) cancelAnimationFrame(_raf);
-    _raf=requestAnimationFrame(tick);
+    _raf = requestAnimationFrame(tick);
   }
 
   /* ---- breathe-only mode ---- */
   function startBreatheOnly(){
-    startSession({id:'breathe',title:'Breathe',duration:600,file:''},
-                 {id:'breathe',label:'Breathe',color:'#a78bfa'});
+    startSession({id:'breathe', title:'Breathe', duration:600, file:''},
+                 {id:'breathe', label:'Breathe', color:'#a78bfa'});
   }
 
   /* ---- tick ---- */
   function tick(){
     if(!_session.active) return;
-    if(_session.paused){ _raf=requestAnimationFrame(tick); return; }
-    var now=Date.now();
-    _session.elapsed=Math.floor((now-_session.startTs-_session.pausedTotal)/1000);
-    var rem=Math.max(0,_session.durSec-_session.elapsed);
-    var pct=Math.min(100,(_session.elapsed/_session.durSec)*100);
+    if(_session.paused){ _raf = requestAnimationFrame(tick); return; }
+    var now = Date.now();
 
-    // overlay progress
-    var barEl=document.getElementById('medOverlayBar');
-    var elEl=document.getElementById('medOverlayElapsed');
-    var remEl=document.getElementById('medOverlayRemaining');
-    if(barEl) barEl.style.width=pct+'%';
-    if(elEl)  elEl.textContent=fmtTime(_session.elapsed);
-    if(remEl) remEl.textContent=fmtTime(rem);
-
-    // breath phase
-    var phase=_PHASES[_breathPhase];
-    if(now-_breathTs>=phase.dur){
-      _breathPhase=(_breathPhase+1)%4;
-      _breathTs=now;
-      var cue=document.getElementById('medBreathCue');
-      var sub=document.getElementById('medBreathSub');
-      if(cue) cue.textContent=_PHASES[_breathPhase].label;
-      if(sub) sub.textContent=_PHASES[_breathPhase].sub;
+    // prefer audio currentTime for elapsed if available (avoids drift)
+    if(_audio && !isNaN(_audio.currentTime) && _audio.currentTime > 0){
+      _session.elapsed = Math.floor(_audio.currentTime);
+      if(_audio.duration && _audio.duration > 0) _session.durSec = Math.round(_audio.duration);
+    } else {
+      _session.elapsed = Math.floor((now - _session.startTs - _session.pausedTotal) / 1000);
     }
 
-    // mandala
-    drawMandala(pct/100, _breathPhase, (now-_breathTs)/_PHASES[_breathPhase].dur);
+    var rem = Math.max(0, _session.durSec - _session.elapsed);
+    var pct = _session.durSec > 0 ? Math.min(100, (_session.elapsed / _session.durSec) * 100) : 0;
 
-    if(rem<=0){ endSession(true); return; }
-    _raf=requestAnimationFrame(tick);
+    var barEl   = document.getElementById('medOverlayBar');
+    var thumbEl = document.getElementById('medScrubThumb');
+    var elEl    = document.getElementById('medOverlayElapsed');
+    var remEl   = document.getElementById('medOverlayRemaining');
+    if(barEl)   barEl.style.width   = pct + '%';
+    if(thumbEl) thumbEl.style.left  = pct + '%';
+    if(elEl)    elEl.textContent    = fmtTime(_session.elapsed);
+    if(remEl)   remEl.textContent   = fmtTime(rem);
+
+    // breath phase cycling
+    var phase = _PHASES[_breathPhase];
+    if(now - _breathTs >= phase.dur){
+      _breathPhase = (_breathPhase + 1) % 4;
+      _breathTs = now;
+      var cueEl = document.getElementById('medBreathCue');
+      var subEl = document.getElementById('medBreathSub');
+      if(cueEl) cueEl.textContent = _PHASES[_breathPhase].label;
+      if(subEl) subEl.textContent = _PHASES[_breathPhase].sub;
+    }
+
+    drawMandala(pct / 100, _breathPhase, (now - _breathTs) / _PHASES[_breathPhase].dur);
+
+    if(rem <= 0 && !_audio){ endSession(true); return; }
+    _raf = requestAnimationFrame(tick);
   }
 
   /* ---- end session ---- */
   function endSession(completed){
     if(!_session.active) return;
-    _session.active=false;
-    if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
-    if(_audio){ try{_audio.pause();}catch(e){} _audio=null; }
-    if(_session.elapsed>=30){
+    _session.active = false;
+    if(_raf){ cancelAnimationFrame(_raf); _raf = null; }
+    if(_audio){ try{ _audio.pause(); }catch(e){} _audio = null; }
+    if(_session.elapsed >= 30){
       appendLog({
         date:dkey(), startTs:_session.startTs, trackId:_session.trackId,
         trackTitle:_session.trackTitle, pack:_session.pack,
@@ -29412,31 +29428,59 @@ function switchTab(tab) {
         moodBefore:_session.moodBefore, moodAfter:_session.moodAfter
       });
     }
-    var ov=document.getElementById('medOverlay'); if(ov) ov.style.display='none';
+    var playerCard  = document.getElementById('medPlayerCard');
+    var sessionCard = document.getElementById('medSessionCard');
+    if(playerCard)  playerCard.style.display  = 'none';
+    if(sessionCard) sessionCard.style.display  = '';
+    // draw mandala at rest state
+    drawMandala(0, 3, 0);
     renderStats(); renderLog();
     if(_lib) renderSessions(_lib);
   }
 
-  /* ---- pause ---- */
+  /* ---- pause / resume ---- */
   function togglePause(){
     if(!_session.active) return;
-    _session.paused=!_session.paused;
+    _session.paused = !_session.paused;
     if(_session.paused){
-      _session.pausedAt=Date.now();
+      _session.pausedAt = Date.now();
       if(_audio) _audio.pause();
     } else {
-      _session.pausedTotal+=Date.now()-_session.pausedAt;
+      _session.pausedTotal += Date.now() - _session.pausedAt;
       if(_audio) _audio.play().catch(function(){});
     }
-    var btn=document.getElementById('medOverlayPause');
-    if(btn) btn.textContent=_session.paused?'▶ RESUME':'❚❚ PAUSE';
+    var btn = document.getElementById('medOverlayPause');
+    if(btn) btn.textContent = _session.paused ? '▶ Resume' : '❚❚ Pause';
+  }
+
+  /* ---- scrub bar (drag to seek) ---- */
+  function wireScrub(){
+    var track = document.getElementById('medScrubTrack'); if(!track) return;
+    function seek(e){
+      var rect = track.getBoundingClientRect();
+      var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      var pct = Math.max(0, Math.min(1, x / rect.width));
+      if(_audio && !isNaN(_audio.duration) && _audio.duration > 0){
+        _audio.currentTime = pct * _audio.duration;
+      } else {
+        // no audio — move timer
+        _session.startTs = Date.now() - Math.round(pct * _session.durSec * 1000) - _session.pausedTotal;
+      }
+    }
+    var dragging = false;
+    track.addEventListener('mousedown',  function(e){ dragging=true; seek(e); });
+    track.addEventListener('touchstart', function(e){ dragging=true; seek(e); }, {passive:true});
+    document.addEventListener('mousemove',  function(e){ if(dragging) seek(e); });
+    document.addEventListener('touchmove',  function(e){ if(dragging) seek(e); }, {passive:true});
+    document.addEventListener('mouseup',  function(){ dragging=false; });
+    document.addEventListener('touchend', function(){ dragging=false; });
   }
 
   /* ---- mood ---- */
-  window._medSetMood=function(n){
-    if(_session.active) _session.moodAfter=n;
+  window._medSetMood = function(n){
+    if(_session.active) _session.moodAfter = n;
     document.querySelectorAll('.med-mood-btn').forEach(function(b){
-      b.classList.toggle('selected',parseInt(b.dataset.m)===n);
+      b.classList.toggle('selected', parseInt(b.dataset.m) === n);
     });
   };
 
@@ -29530,15 +29574,16 @@ function switchTab(tab) {
 
   /* ---- wire buttons ---- */
   function wireButtons(){
-    var closeBtn=document.getElementById('medOverlayClose');
-    if(closeBtn && !closeBtn._wired){ closeBtn._wired=true;
-      closeBtn.addEventListener('click',function(){ endSession(false); }); }
-    var pauseBtn=document.getElementById('medOverlayPause');
-    if(pauseBtn && !pauseBtn._wired){ pauseBtn._wired=true;
-      pauseBtn.addEventListener('click',togglePause); }
-    var breathBtn=document.getElementById('medBreatheOnlyBtn');
-    if(breathBtn && !breathBtn._wired){ breathBtn._wired=true;
-      breathBtn.addEventListener('click',startBreatheOnly); }
+    var closeBtn = document.getElementById('medOverlayClose');
+    if(closeBtn && !closeBtn._wired){ closeBtn._wired = true;
+      closeBtn.addEventListener('click', function(){ endSession(false); }); }
+    var pauseBtn = document.getElementById('medOverlayPause');
+    if(pauseBtn && !pauseBtn._wired){ pauseBtn._wired = true;
+      pauseBtn.addEventListener('click', togglePause); }
+    var breathBtn = document.getElementById('medBreatheOnlyBtn');
+    if(breathBtn && !breathBtn._wired){ breathBtn._wired = true;
+      breathBtn.addEventListener('click', startBreatheOnly); }
+    wireScrub();
   }
 
   /* ---- init ---- */
