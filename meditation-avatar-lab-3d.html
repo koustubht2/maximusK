@@ -267,7 +267,7 @@ const VARIANTS = [
       [0.26,.18,.68],   // 7 outer halos
       [0.18,.12,.52],   // 8 fringe
     ],
-    spinSpeed:.028, bloomStr:1.25, bloomRad:.62, bloomThr:.10,
+    spinSpeed:.028, bloomStr:1.80, bloomRad:.70, bloomThr:.06,
     tiltAmp:.18,  // how much the disc tilts toward camera on breath
   },
   {
@@ -283,7 +283,7 @@ const VARIANTS = [
       [0.32,.12,.38],
       [0.20,.08,.26],
     ],
-    spinSpeed:.022, bloomStr:1.55, bloomRad:.72, bloomThr:.08,
+    spinSpeed:.022, bloomStr:2.00, bloomRad:.78, bloomThr:.05,
     tiltAmp:.22,
   },
   {
@@ -299,7 +299,7 @@ const VARIANTS = [
       [0.40,.22,.02],
       [0.26,.14,.01],
     ],
-    spinSpeed:.020, bloomStr:1.40, bloomRad:.68, bloomThr:.09,
+    spinSpeed:.020, bloomStr:1.90, bloomRad:.74, bloomThr:.06,
     tiltAmp:.14,
   },
   {
@@ -315,7 +315,7 @@ const VARIANTS = [
       [0.08,.18,.58],
       [0.04,.12,.40],
     ],
-    spinSpeed:.034, bloomStr:1.10, bloomRad:.52, bloomThr:.12,
+    spinSpeed:.034, bloomStr:1.65, bloomRad:.62, bloomThr:.07,
     tiltAmp:.16,
   },
 ];
@@ -372,7 +372,7 @@ renderer.setClearColor(0,0);
 const DPR=Math.min(window.devicePixelRatio||1,2);
 renderer.setPixelRatio(DPR);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.05;
+renderer.toneMappingExposure=1.80;
 
 const scene  = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(36,1,.1,100);
@@ -466,7 +466,7 @@ const RG3=new THREE.Group(); ringGrp.add(RG3);
 })();
 
 // ── BLOOM ──
-let bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.25,.62,.10);
+let bloomPass=new UnrealBloomPass(new THREE.Vector2(1,1),1.80,.70,.06);
 const bComp=new EffectComposer(renderer); bComp.renderToScreen=false;
 bComp.addPass(new RenderPass(scene,camera)); bComp.addPass(bloomPass);
 const fPass=new ShaderPass(new THREE.ShaderMaterial({
@@ -533,22 +533,22 @@ function updateParticles(t){
     // ── colour ──
     const col = v.layerCols[Math.min(layerArr[i], v.layerCols.length-1)];
 
-    // shimmer: tiny brightness oscillation so particles "breathe" individually
-    const shim = .80 + .20*Math.sin(t*1.8+shimPh[i]);
-    // depth brightness: front particles slightly brighter
+    // shimmer: brightness oscillation per particle
+    const shim = .88 + .12*Math.sin(t*1.8+shimPh[i]);
+    // mild depth cue — front brighter but outer layers never disappear
     const depth = (tz+1.5)/3.0;
-    const dbright = .35 + .65*(depth*depth);
+    const dbright = .65 + .35*(depth*depth);
 
     const a = brightArr[i]*shim*dbright;
     pCol[i*3]=col[0]*a; pCol[i*3+1]=col[1]*a; pCol[i*3+2]=col[2]*a;
 
-    // size: big particles at inner layers, smaller at fringe
-    const baseSize = layerArr[i]<=1 ? .115
-                   : layerArr[i]<=3 ? .090
-                   : layerArr[i]<=5 ? .075
-                   : layerArr[i]<=6 ? .062
-                   : .048;
-    pSz[i] = baseSize*(isBig[i]?1.75:1)*(.55+.60*depth);
+    // size — boosted so geometry is clearly readable
+    const baseSize = layerArr[i]<=1 ? .175
+                   : layerArr[i]<=3 ? .145
+                   : layerArr[i]<=5 ? .122
+                   : layerArr[i]<=6 ? .105
+                   : .082;
+    pSz[i] = baseSize*(isBig[i]?1.85:1)*(.65+.55*depth);
   }
 
   pGeo.attributes.position.needsUpdate=true;
