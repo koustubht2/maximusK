@@ -8511,19 +8511,19 @@ window.canonicalJson = function(obj) {
     <div id="medPackRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none"></div>
   </div>
 
-  <!-- Active player card — shown when session running -->
-  <div class="wc-card" id="medPlayerCard" style="display:none;padding:0;overflow:hidden;background:radial-gradient(ellipse 110% 100% at 50% 0%,rgba(109,40,217,0.28) 0%,rgba(10,7,26,0.95) 70%) !important;border-color:rgba(167,139,250,0.2) !important">
-
-    <!-- Mandala -->
+  <!-- Mandala card — always visible -->
+  <div class="wc-card" style="padding:0;overflow:hidden;background:radial-gradient(ellipse 110% 100% at 50% 0%,rgba(109,40,217,0.28) 0%,rgba(10,7,26,0.95) 70%) !important;border-color:rgba(167,139,250,0.2) !important">
     <div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px 16px;position:relative">
       <canvas id="medMandala" width="240" height="240" style="display:block"></canvas>
-      <!-- Breath cue overlaid below mandala -->
       <div id="medBreathCue" style="margin-top:14px;font-family:var(--pk-serif,Georgia,serif);font-size:20px;color:rgba(221,214,254,0.9);letter-spacing:0.03em;text-align:center;min-height:28px;transition:opacity 0.5s">Breathe in</div>
       <div id="medBreathSub" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.45);letter-spacing:0.14em;text-transform:uppercase;margin-top:4px;min-height:14px;text-align:center"></div>
     </div>
+  </div>
 
+  <!-- Active player controls — shown only when session running -->
+  <div class="wc-card" id="medPlayerCard" style="display:none;padding:0;overflow:hidden;background:radial-gradient(ellipse 110% 100% at 50% 0%,rgba(109,40,217,0.28) 0%,rgba(10,7,26,0.95) 70%) !important;border-color:rgba(167,139,250,0.2) !important">
     <!-- Track info + progress -->
-    <div style="padding:0 20px 20px">
+    <div style="padding:16px 20px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
           <div id="medPlayerTitle" style="font-size:13px;color:rgba(239,231,255,0.9);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">—</div>
@@ -29270,12 +29270,13 @@ function switchTab(tab) {
     if(!list) return;
     if(!log.length){ if(card) card.style.display='none'; return; }
     if(card) card.style.display='';
-    list.innerHTML=log.map(function(e){
+    list.innerHTML=log.map(function(e,i){
       var mAfter=e.moodAfter?['','😔','😐','🙂','😌','✨'][e.moodAfter]:'';
-      return '<div class="med-log-row">'
-        +'<div><div style="font-size:12px;color:var(--text-primary)">'+(e.trackTitle||'Breathe session')+'</div>'
+      return '<div class="med-log-row" style="display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(e.trackTitle||'Breathe session')+'</div>'
         +'<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">'+e.date+' · '+fmtDur(e.duration||0)+'</div></div>'
-        +(mAfter?'<div style="font-size:16px">'+mAfter+'</div>':'')
+        +(mAfter?'<div style="font-size:16px;margin:0 8px">'+mAfter+'</div>':'')
+        +'<button onclick="window._medDelLog('+e.startTs+')" style="background:none;border:none;color:rgba(167,139,250,0.4);font-size:14px;cursor:pointer;padding:4px 6px;line-height:1;flex-shrink:0">×</button>'
         +'</div>';
     }).join('');
   }
@@ -29512,6 +29513,14 @@ function switchTab(tab) {
     });
   };
 
+  window._medDelLog = function(startTs){
+    var raw = localStorage.getItem(MED_LOG_KEY);
+    var log = raw ? JSON.parse(raw) : [];
+    log = log.filter(function(e){ return e.startTs !== startTs; });
+    localStorage.setItem(MED_LOG_KEY, JSON.stringify(log));
+    renderStats(); renderLog();
+  };
+
   /* ============================================================
      BREATHING MANDALA — sacred geometry canvas
   ============================================================ */
@@ -29624,6 +29633,7 @@ function switchTab(tab) {
     });
     renderStats();
     renderLog();
+    drawMandala(0, 3, 0);
   }
 
   // init when health tab opens, and on load

@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meditation Avatar Lab</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&display=swap');
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  :root{
+    --bg: #08060f;
+    --card-bg: rgba(255,255,255,0.03);
+    --border: rgba(167,139,250,0.15);
+    --text: rgba(239,231,255,0.9);
+    --text-sub: rgba(167,139,250,0.55);
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'Fraunces', Georgia, serif;
+    --violet: #7c3aed;
+    --lavender: #a78bfa;
+    --indigo: #6366f1;
+    --gold: #c79a4e;
+  }
+
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  h1{
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--lavender);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .lab-sub{
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  /* controls bar */
+  .controls{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 28px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+  .ctrl-group{ display:flex; flex-direction:column; gap:4px; align-items:center; }
+  .ctrl-label{ font-size:8px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-sub); }
+  select, input[type=range]{
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+  input[type=range]{ padding:0; width:100px; accent-color:var(--lavender); }
+  .btn{
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(167,139,250,0.3);
+    background: rgba(124,58,237,0.12);
+    color: var(--lavender);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn:hover{ background: rgba(124,58,237,0.25); }
+  .btn.active{ background: rgba(124,58,237,0.35); border-color: var(--lavender); }
+
+  /* avatar grid */
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .avatar-card{
+    background: radial-gradient(ellipse 110% 100% at 50% 0%, rgba(109,40,217,0.22) 0%, rgba(10,7,26,0.95) 70%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-card .card-label{
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+  }
+  .avatar-card .card-name{
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    color: rgba(167,139,250,0.35);
+    text-transform: uppercase;
+  }
+  .breath-cue{
+    font-family: var(--serif);
+    font-size: 16px;
+    color: rgba(221,214,254,0.8);
+    letter-spacing: 0.03em;
+    min-height: 22px;
+    text-align: center;
+  }
+  .phase-tag{
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(167,139,250,0.45);
+    min-height: 12px;
+  }
+  .pick-btn{
+    margin-top: 4px;
+    padding: 6px 18px;
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 20px;
+    color: var(--lavender);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pick-btn:hover{ background: rgba(124,58,237,0.3); }
+  .pick-btn.chosen{ background: rgba(124,58,237,0.5); border-color:var(--lavender); color:#fff; }
+
+  /* chosen banner */
+  #chosenBanner{
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(124,58,237,0.9);
+    border: 1px solid var(--lavender);
+    border-radius: 14px;
+    padding: 10px 20px;
+    font-size: 11px;
+    color: #fff;
+    letter-spacing: 0.08em;
+    z-index: 999;
+    backdrop-filter: blur(10px);
+  }
+</style>
+</head>
+<body>
+
+<h1>Meditation Avatar Lab</h1>
+<p class="lab-sub">pick the style — then we ship it</p>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Breath phase</span>
+    <select id="phaseSelect">
+      <option value="0">Inhale</option>
+      <option value="1">Hold</option>
+      <option value="2">Exhale</option>
+      <option value="3" selected>Rest (idle)</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Phase progress</span>
+    <input type="range" id="phaseProgress" min="0" max="1" step="0.01" value="0.5">
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Session progress</span>
+    <input type="range" id="sessionProgress" min="0" max="1" step="0.01" value="0.3">
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Animation</span>
+    <button class="btn" id="animBtn" onclick="toggleAnim()">▶ Animate</button>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Speed</span>
+    <select id="speedSelect">
+      <option value="0.3">Slow</option>
+      <option value="1" selected>Normal</option>
+      <option value="2">Fast</option>
+    </select>
+  </div>
+</div>
+
+<div class="grid" id="avatarGrid"></div>
+
+<div id="chosenBanner">✓ <span id="chosenName"></span> chosen — copy the key below and tell me to ship it</div>
+
+<script>
+// ─── state ───────────────────────────────────────────────────────────────────
+var _animating = false;
+var _animRaf = null;
+var _animStart = null;
+var BREATH_CYCLE = 16; // seconds: 4 inhale + 4 hold + 6 exhale + 2 rest
+
+var PHASES = ['Breathe in', 'Hold', 'Breathe out', 'Rest'];
+var PHASE_DURATIONS = [4, 4, 6, 2]; // seconds
+
+// ─── avatars registry ────────────────────────────────────────────────────────
+var AVATARS = [
+  { id: 'v1-current',    name: 'Current',        draw: drawV1  },
+  { id: 'v2-orb',        name: 'Plasma Orb',     draw: drawV2  },
+  { id: 'v3-ripple',     name: 'Ripple Rings',   draw: drawV3  },
+  { id: 'v4-lotus',      name: 'Sacred Lotus',   draw: drawV4  },
+  { id: 'v5-aurora',     name: 'Aurora Field',   draw: drawV5  },
+  { id: 'v6-geometric',  name: 'Geo Lattice',    draw: drawV6  },
+];
+
+// ─── build grid ──────────────────────────────────────────────────────────────
+function buildGrid(){
+  var grid = document.getElementById('avatarGrid');
+  grid.innerHTML = '';
+  AVATARS.forEach(function(av, i){
+    var card = document.createElement('div');
+    card.className = 'avatar-card';
+    card.innerHTML =
+      '<span class="card-label">v'+(i+1)+'</span>'
+      +'<span class="card-name">'+av.name+'</span>'
+      +'<canvas id="c_'+av.id+'" width="240" height="240" style="display:block"></canvas>'
+      +'<div class="breath-cue" id="cue_'+av.id+'">Rest</div>'
+      +'<div class="phase-tag" id="tag_'+av.id+'"></div>'
+      +'<button class="pick-btn" id="pick_'+av.id+'" onclick="pickAvatar(\''+av.id+'\',\''+av.name+'\')">Choose this</button>';
+    grid.appendChild(card);
+  });
+}
+
+// ─── render all avatars ───────────────────────────────────────────────────────
+function renderAll(){
+  var phase    = parseInt(document.getElementById('phaseSelect').value);
+  var phaseT   = parseFloat(document.getElementById('phaseProgress').value);
+  var progress = parseFloat(document.getElementById('sessionProgress').value);
+  AVATARS.forEach(function(av){
+    av.draw('c_'+av.id, progress, phase, phaseT);
+    document.getElementById('cue_'+av.id).textContent = PHASES[phase];
+    document.getElementById('tag_'+av.id).textContent = (phaseT*100).toFixed(0)+'%';
+  });
+}
+
+// ─── animation loop ───────────────────────────────────────────────────────────
+function toggleAnim(){
+  _animating = !_animating;
+  document.getElementById('animBtn').classList.toggle('active', _animating);
+  document.getElementById('animBtn').textContent = _animating ? '■ Stop' : '▶ Animate';
+  if(_animating){ _animStart = null; requestAnimationFrame(animTick); }
+  else if(_animRaf){ cancelAnimationFrame(_animRaf); }
+}
+
+function animTick(ts){
+  if(!_animating) return;
+  if(!_animStart) _animStart = ts;
+  var speed = parseFloat(document.getElementById('speedSelect').value);
+  var elapsed = (ts - _animStart) / 1000 * speed; // virtual seconds
+
+  // which breath phase + phase progress
+  var cyclePos = elapsed % BREATH_CYCLE;
+  var phase = 0, acc = 0, phaseT = 0;
+  for(var p=0; p<4; p++){
+    if(cyclePos < acc + PHASE_DURATIONS[p]){
+      phase  = p;
+      phaseT = (cyclePos - acc) / PHASE_DURATIONS[p];
+      break;
+    }
+    acc += PHASE_DURATIONS[p];
+  }
+  var progress = (elapsed % 120) / 120; // 2-min fake session progress
+
+  // sync controls
+  document.getElementById('phaseSelect').value = phase;
+  document.getElementById('phaseProgress').value = phaseT.toFixed(2);
+  document.getElementById('sessionProgress').value = progress.toFixed(2);
+
+  AVATARS.forEach(function(av){
+    av.draw('c_'+av.id, progress, phase, phaseT);
+    document.getElementById('cue_'+av.id).textContent = PHASES[phase];
+    document.getElementById('tag_'+av.id).textContent = (phaseT*100).toFixed(0)+'%';
+  });
+
+  _animRaf = requestAnimationFrame(animTick);
+}
+
+// ─── pick ─────────────────────────────────────────────────────────────────────
+function pickAvatar(id, name){
+  document.querySelectorAll('.pick-btn').forEach(function(b){ b.classList.remove('chosen'); b.textContent='Choose this'; });
+  var btn = document.getElementById('pick_'+id);
+  btn.classList.add('chosen'); btn.textContent = '✓ Chosen';
+  document.getElementById('chosenName').textContent = name + ' (key: '+id+')';
+  document.getElementById('chosenBanner').style.display = '';
+  setTimeout(function(){ document.getElementById('chosenBanner').style.display='none'; }, 4000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  AVATAR DRAW FUNCTIONS
+//  Each receives: (canvasId, progress 0-1, phase 0-3, phaseT 0-1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/* V1 — Current production mandala (lotus + rings + star of David) */
+function drawV1(cid, progress, phase, phaseT){
+  var c=document.getElementById(cid); if(!c) return;
+  var ctx=c.getContext('2d'), W=c.width, H=c.height, cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  var bs = breathScale(phase, phaseT);
+  var R = 110*bs;
+  var rot = progress*Math.PI*2;
+
+  // glow
+  var grd=ctx.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.4);
+  grd.addColorStop(0,'rgba(167,139,250,'+(0.08+bs*0.07)+')');
+  grd.addColorStop(0.5,'rgba(99,102,241,'+(0.04+bs*0.04)+')');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R*1.4,0,Math.PI*2);
+  ctx.fillStyle=grd; ctx.fill();
+
+  // petals
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.3);
+  for(var i=0;i<12;i++){
+    ctx.save(); ctx.rotate((Math.PI*2/12)*i);
+    ctx.beginPath(); ctx.ellipse(0,-R*0.55,R*0.12,R*0.42,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(167,139,250,'+(0.15+bs*0.25)+')'; ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // rings
+  [0.28,0.42,0.56,0.70,0.84,1.0].forEach(function(rf,ri){
+    ctx.beginPath(); ctx.arc(cx,cy,R*rf,0,Math.PI*2);
+    ctx.strokeStyle='rgba(167,139,250,'+(0.08+bs*0.12*(1-ri/6))+')';
+    ctx.lineWidth=ri===5?1.5:0.8; ctx.stroke();
+  });
+
+  // star of david
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.5);
+  for(var t=0;t<2;t++){
+    ctx.beginPath();
+    for(var v=0;v<3;v++){
+      var a=(Math.PI*2/3)*v+(t?Math.PI/3:0)-Math.PI/2;
+      var rx=Math.cos(a)*R*0.38, ry=Math.sin(a)*R*0.38;
+      v===0?ctx.moveTo(rx,ry):ctx.lineTo(rx,ry);
+    }
+    ctx.closePath(); ctx.strokeStyle='rgba(196,181,253,'+(0.18+bs*0.15)+')';
+    ctx.lineWidth=0.8; ctx.stroke();
+  }
+  ctx.restore();
+
+  // centre
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.06,0,Math.PI*2);
+  ctx.fillStyle='rgba(221,214,254,'+(0.5+bs*0.4)+')'; ctx.fill();
+
+  // particles on exhale
+  if(phase===2 && phaseT>0.1){
+    var seed=Math.floor(progress*1000);
+    for(var p=0;p<12;p++){
+      var px=Math.sin(seed*0.7+p*2.5)*R*(0.9+phaseT*0.5);
+      var py=Math.cos(seed*0.5+p*1.8)*R*(0.9+phaseT*0.5);
+      ctx.beginPath(); ctx.arc(cx+px,cy+py,1.2,0,Math.PI*2);
+      ctx.fillStyle='rgba(196,181,253,'+(0.4*(1-phaseT))+')'; ctx.fill();
+    }
+  }
+}
+
+/* V2 — Plasma Orb: liquid glowing sphere with shifting inner light */
+function drawV2(cid, progress, phase, phaseT){
+  var c=document.getElementById(cid); if(!c) return;
+  var ctx=c.getContext('2d'), W=c.width, H=c.height, cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  var bs = breathScale(phase, phaseT);
+  var R = 90*bs;
+  var rot = progress*Math.PI*6;
+
+  // outer ambient glow
+  var outer=ctx.createRadialGradient(cx,cy,R*0.3,cx,cy,R*2.2);
+  outer.addColorStop(0,'rgba(124,58,237,'+(0.12+bs*0.10)+')');
+  outer.addColorStop(0.5,'rgba(99,102,241,'+(0.05+bs*0.05)+')');
+  outer.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R*2.2,0,Math.PI*2);
+  ctx.fillStyle=outer; ctx.fill();
+
+  // main orb body
+  var orb=ctx.createRadialGradient(cx-R*0.3,cy-R*0.3,R*0.05,cx,cy,R);
+  orb.addColorStop(0,'rgba(221,214,254,'+(0.55+bs*0.3)+')');
+  orb.addColorStop(0.35,'rgba(167,139,250,'+(0.40+bs*0.2)+')');
+  orb.addColorStop(0.7,'rgba(99,102,241,'+(0.25+bs*0.12)+')');
+  orb.addColorStop(1,'rgba(55,30,120,'+(0.15+bs*0.08)+')');
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.fillStyle=orb; ctx.fill();
+
+  // inner plasma swirl — 3 rotating blobs
+  ctx.save(); ctx.globalCompositeOperation='screen';
+  for(var b=0;b<3;b++){
+    var ba = rot + b*(Math.PI*2/3);
+    var bx = cx + Math.cos(ba)*R*0.3;
+    var by = cy + Math.sin(ba)*R*0.3;
+    var blob=ctx.createRadialGradient(bx,by,0,bx,by,R*0.5);
+    blob.addColorStop(0,'rgba(196,181,253,'+(0.35+bs*0.25)+')');
+    blob.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(bx,by,R*0.5,0,Math.PI*2);
+    ctx.fillStyle=blob; ctx.fill();
+  }
+  ctx.restore();
+
+  // specular highlight
+  var spec=ctx.createRadialGradient(cx-R*0.38,cy-R*0.38,0,cx-R*0.25,cy-R*0.25,R*0.45);
+  spec.addColorStop(0,'rgba(255,255,255,'+(0.18+bs*0.12)+')');
+  spec.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.fillStyle=spec; ctx.fill();
+
+  // rim ring
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.strokeStyle='rgba(196,181,253,'+(0.3+bs*0.3)+')';
+  ctx.lineWidth=1.5; ctx.stroke();
+
+  // exhale sparkles
+  if(phase===2 && phaseT>0.15){
+    for(var s=0;s<8;s++){
+      var sa=rot*0.7+s*(Math.PI*2/8);
+      var sr=R*(1.1+phaseT*0.6);
+      ctx.beginPath(); ctx.arc(cx+Math.cos(sa)*sr, cy+Math.sin(sa)*sr, 1.5, 0, Math.PI*2);
+      ctx.fillStyle='rgba(221,214,254,'+(0.6*(1-phaseT))+')'; ctx.fill();
+    }
+  }
+}
+
+/* V3 — Ripple Rings: concentric expanding ripples synced to breath */
+function drawV3(cid, progress, phase, phaseT){
+  var c=document.getElementById(cid); if(!c) return;
+  var ctx=c.getContext('2d'), W=c.width, H=c.height, cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  var bs = breathScale(phase, phaseT);
+  var R = 80*bs;
+
+  // ambient glow
+  var grd=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*2.5);
+  grd.addColorStop(0,'rgba(99,102,241,'+(0.10+bs*0.08)+')');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R*2.5,0,Math.PI*2);
+  ctx.fillStyle=grd; ctx.fill();
+
+  // ripple rings — 6 rings, each offset by phase
+  var NRINGS = 6;
+  for(var i=0;i<NRINGS;i++){
+    var offset = i/NRINGS;
+    var rippleT;
+    if(phase===0) rippleT=(phaseT+offset)%1; // inhale: expand outward
+    else if(phase===2) rippleT=1-((phaseT+offset)%1); // exhale: contract inward
+    else rippleT=(offset+progress*0.1)%1;
+
+    var rr = R*(0.2 + rippleT*1.6);
+    var alpha = (1-rippleT)*(0.5+bs*0.3);
+    if(alpha<0) continue;
+    ctx.beginPath(); ctx.arc(cx,cy,rr,0,Math.PI*2);
+    ctx.strokeStyle='rgba(167,139,250,'+alpha.toFixed(3)+')';
+    ctx.lineWidth = 1.5*(1-rippleT*0.6);
+    ctx.stroke();
+  }
+
+  // centre orb
+  var centre=ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.35);
+  centre.addColorStop(0,'rgba(221,214,254,'+(0.8+bs*0.2)+')');
+  centre.addColorStop(0.5,'rgba(167,139,250,'+(0.5+bs*0.2)+')');
+  centre.addColorStop(1,'rgba(99,102,241,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.35,0,Math.PI*2);
+  ctx.fillStyle=centre; ctx.fill();
+
+  // inner dot
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.07,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,'+(0.7+bs*0.3)+')'; ctx.fill();
+
+  // rotating 4-petal indicator
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(progress*Math.PI*4);
+  for(var p=0;p<4;p++){
+    ctx.save(); ctx.rotate((Math.PI*2/4)*p);
+    ctx.beginPath(); ctx.ellipse(0,-R*0.5,R*0.06,R*0.18,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(196,181,253,'+(0.2+bs*0.2)+')'; ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* V4 — Sacred Lotus: detailed petal geometry, warm gold-violet */
+function drawV4(cid, progress, phase, phaseT){
+  var c=document.getElementById(cid); if(!c) return;
+  var ctx=c.getContext('2d'), W=c.width, H=c.height, cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  var bs = breathScale(phase, phaseT);
+  var R = 105*bs;
+  var rot = progress*Math.PI*2;
+
+  // warm outer glow
+  var grd=ctx.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.6);
+  grd.addColorStop(0,'rgba(199,154,78,'+(0.12+bs*0.10)+')');
+  grd.addColorStop(0.4,'rgba(167,139,250,'+(0.07+bs*0.07)+')');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R*1.6,0,Math.PI*2);
+  ctx.fillStyle=grd; ctx.fill();
+
+  // outer petals (8, wide)
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.2);
+  for(var i=0;i<8;i++){
+    ctx.save(); ctx.rotate((Math.PI*2/8)*i+Math.PI/8);
+    ctx.beginPath(); ctx.ellipse(0,-R*0.62, R*0.14, R*0.45, 0,0,Math.PI*2);
+    ctx.fillStyle='rgba(199,154,78,'+(0.12+bs*0.18)+')'; ctx.fill();
+    ctx.strokeStyle='rgba(225,185,110,'+(0.20+bs*0.15)+')'; ctx.lineWidth=0.6; ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // inner petals (8, narrow)
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-rot*0.35+Math.PI/8);
+  for(var i=0;i<8;i++){
+    ctx.save(); ctx.rotate((Math.PI*2/8)*i);
+    ctx.beginPath(); ctx.ellipse(0,-R*0.40, R*0.09, R*0.30, 0,0,Math.PI*2);
+    ctx.fillStyle='rgba(167,139,250,'+(0.18+bs*0.22)+')'; ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // 6 concentric rings — alternating gold/violet
+  [0.22,0.36,0.52,0.65,0.80,1.0].forEach(function(rf,ri){
+    ctx.beginPath(); ctx.arc(cx,cy,R*rf,0,Math.PI*2);
+    var col = ri%2===0 ? '199,154,78' : '167,139,250';
+    ctx.strokeStyle='rgba('+col+','+(0.10+bs*0.12*(1-ri/6))+')';
+    ctx.lineWidth=ri===5?1.5:0.7; ctx.stroke();
+  });
+
+  // rotating hex
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.7);
+  ctx.beginPath();
+  for(var v=0;v<6;v++){
+    var a=(Math.PI*2/6)*v-Math.PI/2;
+    var hx=Math.cos(a)*R*0.28, hy=Math.sin(a)*R*0.28;
+    v===0?ctx.moveTo(hx,hy):ctx.lineTo(hx,hy);
+  }
+  ctx.closePath(); ctx.strokeStyle='rgba(225,185,110,'+(0.22+bs*0.18)+')'; ctx.lineWidth=0.8; ctx.stroke();
+  ctx.restore();
+
+  // gold centre
+  var cg=ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.10);
+  cg.addColorStop(0,'rgba(255,235,150,'+(0.9+bs*0.1)+')');
+  cg.addColorStop(1,'rgba(199,154,78,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.10,0,Math.PI*2);
+  ctx.fillStyle=cg; ctx.fill();
+}
+
+/* V5 — Aurora Field: flowing northern-lights bands */
+function drawV5(cid, progress, phase, phaseT){
+  var c=document.getElementById(cid); if(!c) return;
+  var ctx=c.getContext('2d'), W=c.width, H=c.height, cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  var bs = breathScale(phase, phaseT);
+  var t = progress*Math.PI*4;
+
+  // draw 5 undulating aurora bands
+  var bands=[
+    {col:'99,102,241', base:0.18},
+    {col:'124,58,237', base:0.28},
+    {col:'139,92,246', base:0.38},
+    {col:'167,139,250', base:0.50},
+    {col:'196,181,253', base:0.62},
+  ];
+
+  bands.forEach(function(band, bi){
+    var alpha=(0.07+bs*0.12)*(1-bi*0.1);
+    ctx.beginPath();
+    for(var x=0;x<=W;x+=4){
+      var nx = x/W;
+      var wave1 = Math.sin(nx*Math.PI*2+t+bi*0.8)*0.08;
+      var wave2 = Math.sin(nx*Math.PI*3.7+t*0.7+bi)*0.05;
+      var y = cy + (band.base-0.5)*H*1.2*bs + (wave1+wave2)*H;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fillStyle='rgba('+band.col+','+alpha.toFixed(3)+')'; ctx.fill();
+  });
+
+  // centre circle with glow
+  var grd=ctx.createRadialGradient(cx,cy,0,cx,cy,80*bs);
+  grd.addColorStop(0,'rgba(221,214,254,'+(0.55+bs*0.3)+')');
+  grd.addColorStop(0.3,'rgba(167,139,250,'+(0.25+bs*0.15)+')');
+  grd.addColorStop(0.7,'rgba(99,102,241,'+(0.10+bs*0.08)+')');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,80*bs,0,Math.PI*2);
+  ctx.fillStyle=grd; ctx.fill();
+
+  // rotating star lines
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(t*0.15);
+  for(var s=0;s<8;s++){
+    var sa=(Math.PI*2/8)*s;
+    ctx.beginPath(); ctx.moveTo(0,0);
+    ctx.lineTo(Math.cos(sa)*55*bs, Math.sin(sa)*55*bs);
+    ctx.strokeStyle='rgba(196,181,253,'+(0.08+bs*0.10)+')';
+    ctx.lineWidth=0.8; ctx.stroke();
+  }
+  ctx.restore();
+
+  // pulsing centre dot
+  ctx.beginPath(); ctx.arc(cx,cy,5*bs+2,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,'+(0.7+bs*0.3)+')'; ctx.fill();
+
+  // breath ring
+  ctx.beginPath(); ctx.arc(cx,cy,22*bs,0,Math.PI*2);
+  ctx.strokeStyle='rgba(221,214,254,'+(0.3+bs*0.4)+')';
+  ctx.lineWidth=1; ctx.stroke();
+}
+
+/* V6 — Geo Lattice: wireframe icosphere-like rotating geometry */
+function drawV6(cid, progress, phase, phaseT){
+  var c=document.getElementById(cid); if(!c) return;
+  var ctx=c.getContext('2d'), W=c.width, H=c.height, cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  var bs = breathScale(phase, phaseT);
+  var R = 95*bs;
+  var rot = progress*Math.PI*4;
+
+  // background glow
+  var grd=ctx.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.8);
+  grd.addColorStop(0,'rgba(99,102,241,'+(0.10+bs*0.08)+')');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx,cy,R*1.8,0,Math.PI*2);
+  ctx.fillStyle=grd; ctx.fill();
+
+  // 3 nested rotating polygons
+  [[5, 1.0, rot], [6, 0.7, -rot*0.8], [3, 0.45, rot*1.5]].forEach(function(spec){
+    var n=spec[0], rf=spec[1], r=spec[2];
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(r);
+    ctx.beginPath();
+    for(var v=0;v<n;v++){
+      var a=(Math.PI*2/n)*v-Math.PI/2;
+      var px=Math.cos(a)*R*rf, py=Math.sin(a)*R*rf;
+      v===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle='rgba(167,139,250,'+(0.15+bs*0.20)+')';
+    ctx.lineWidth=0.8; ctx.stroke();
+    ctx.restore();
+  });
+
+  // radial spokes
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.4);
+  for(var s=0;s<12;s++){
+    var sa=(Math.PI*2/12)*s;
+    ctx.beginPath(); ctx.moveTo(Math.cos(sa)*R*0.15, Math.sin(sa)*R*0.15);
+    ctx.lineTo(Math.cos(sa)*R, Math.sin(sa)*R);
+    ctx.strokeStyle='rgba(167,139,250,'+(0.06+bs*0.08)+')';
+    ctx.lineWidth=0.6; ctx.stroke();
+  }
+  ctx.restore();
+
+  // cross-lattice lines connecting polygon vertices
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.3);
+  var pts5=[];
+  for(var v=0;v<5;v++){
+    var a=(Math.PI*2/5)*v-Math.PI/2;
+    pts5.push([Math.cos(a)*R, Math.sin(a)*R]);
+  }
+  for(var i=0;i<5;i++){
+    for(var j=i+2;j<5;j++){
+      if(Math.abs(i-j)===1 || (i===0&&j===4)) continue;
+      ctx.beginPath(); ctx.moveTo(pts5[i][0],pts5[i][1]); ctx.lineTo(pts5[j][0],pts5[j][1]);
+      ctx.strokeStyle='rgba(196,181,253,'+(0.08+bs*0.10)+')'; ctx.lineWidth=0.5; ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // centre filled polygon (5-sided, small)
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-rot*0.6);
+  ctx.beginPath();
+  for(var v=0;v<5;v++){
+    var a=(Math.PI*2/5)*v-Math.PI/2;
+    var px=Math.cos(a)*R*0.12, py=Math.sin(a)*R*0.12;
+    v===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.closePath();
+  ctx.fillStyle='rgba(196,181,253,'+(0.4+bs*0.4)+')'; ctx.fill();
+  ctx.restore();
+
+  // bright centre dot
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.04,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,'+(0.8+bs*0.2)+')'; ctx.fill();
+
+  // particles
+  if(phase===0 || (phase===2&&phaseT<0.5)){
+    for(var p=0;p<6;p++){
+      var pa=rot*2+p*(Math.PI*2/6);
+      var pr=R*(0.55+Math.sin(rot*3+p)*0.15);
+      ctx.beginPath(); ctx.arc(cx+Math.cos(pa)*pr, cy+Math.sin(pa)*pr, 1.5,0,Math.PI*2);
+      ctx.fillStyle='rgba(196,181,253,'+(0.3+bs*0.2)+')'; ctx.fill();
+    }
+  }
+}
+
+// ─── breath scale helper ─────────────────────────────────────────────────────
+function breathScale(phase, phaseT){
+  if(phase===0) return 0.72+phaseT*0.28;
+  if(phase===1) return 1.0;
+  if(phase===2) return 1.0-phaseT*0.28;
+  return 0.72;
+}
+
+// ─── wire manual controls ────────────────────────────────────────────────────
+document.getElementById('phaseSelect').addEventListener('change', renderAll);
+document.getElementById('phaseProgress').addEventListener('input', renderAll);
+document.getElementById('sessionProgress').addEventListener('input', renderAll);
+document.getElementById('speedSelect').addEventListener('change', function(){});
+
+// ─── init ────────────────────────────────────────────────────────────────────
+buildGrid();
+renderAll();
+</script>
+</body>
+</html>
