@@ -29093,8 +29093,8 @@ function switchTab(tab) {
 <script>
 (function(){
   /* ---- config ---- */
-  var B2_BASE = 'https://pub-7e59265d4bb146e0b2f0fe51adae8f3b.r2.dev';
-  var LIBRARY_URL = B2_BASE + '/meditation-library.json';
+  var B2_BASE = 'https://pub-7e59265d4bb146e0b2f0fe51adae8f3b.r2.dev/lifearc-meditation';
+  var LIBRARY_URL = 'https://pub-7e59265d4bb146e0b2f0fe51adae8f3b.r2.dev/meditation-library.json';
   var _inited = false;
   var MED_LOG_KEY = 'goals_meditation_log_v1';
   var MED_LIB_KEY = 'med_library_cache';
@@ -29200,12 +29200,25 @@ function switchTab(tab) {
   /* ---- load library ---- */
   function loadLibrary(cb){
     if (_lib){ cb(_lib); return; }
-    var cached = ls(MED_LIB_KEY);
-    if (cached && cached.version){ _lib=cached; cb(_lib); }
     if (!LIBRARY_URL){ _lib=MOCK_LIBRARY; cb(_lib); return; }
-    fetch(LIBRARY_URL).then(function(r){ return r.json(); }).then(function(d){
-      _lib=d; lsSet(MED_LIB_KEY,d); cb(_lib);
-    }).catch(function(){ _lib=MOCK_LIBRARY; cb(_lib); });
+    // always fetch fresh — use localStorage only as offline fallback
+    fetch(LIBRARY_URL)
+      .then(function(r){
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(d){
+        console.log('[MED] library loaded from R2, packs:', d.packs && d.packs.length);
+        _lib = d;
+        try{ localStorage.setItem(MED_LIB_KEY, JSON.stringify(d)); }catch(e){}
+        cb(_lib);
+      })
+      .catch(function(err){
+        console.warn('[MED] R2 fetch failed:', err, '— trying cache');
+        var cached = ls(MED_LIB_KEY);
+        _lib = (cached && cached.version) ? cached : MOCK_LIBRARY;
+        cb(_lib);
+      });
   }
 
   /* ---- log ---- */
