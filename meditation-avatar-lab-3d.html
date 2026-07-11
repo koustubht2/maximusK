@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meditation Avatar Lab — 3D</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap');
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  :root{
+    --bg:#08060f;
+    --violet:#7c3aed;
+    --lavender:#a78bfa;
+    --indigo:#6366f1;
+    --mono:'JetBrains Mono',monospace;
+    --serif:'Fraunces',Georgia,serif;
+  }
+  body{
+    background:var(--bg);
+    color:rgba(239,231,255,0.9);
+    font-family:var(--mono);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 16px 60px;
+    gap:20px;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:300;
+    font-size:22px;
+    color:var(--lavender);
+    letter-spacing:0.02em;
+  }
+  .sub{
+    font-size:9px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:rgba(167,139,250,0.45);
+    margin-top:-14px;
+  }
+
+  /* ── controls ── */
+  .controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    justify-content:center;
+    padding:14px 18px;
+    background:rgba(255,255,255,0.025);
+    border:1px solid rgba(167,139,250,0.12);
+    border-radius:16px;
+    width:100%;
+    max-width:680px;
+  }
+  .cg{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .cl{ font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(167,139,250,0.5); }
+  select{
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(167,139,250,0.18);
+    border-radius:8px;
+    color:rgba(239,231,255,0.85);
+    font-family:var(--mono);
+    font-size:10px;
+    padding:5px 10px;
+    cursor:pointer;
+  }
+  .btn{
+    padding:7px 16px;
+    border-radius:10px;
+    border:1px solid rgba(167,139,250,0.28);
+    background:rgba(124,58,237,0.10);
+    color:var(--lavender);
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:0.08em;
+    cursor:pointer;
+    transition:background 0.2s, border-color 0.2s;
+  }
+  .btn:hover{ background:rgba(124,58,237,0.25); }
+  .btn.on{ background:rgba(124,58,237,0.40); border-color:var(--lavender); color:#fff; }
+
+  /* ── avatar stage ── */
+  .stage{
+    position:relative;
+    width:320px; height:320px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #medCanvas{
+    width:320px; height:320px;
+    max-width:90vw; max-height:90vw;
+    border-radius:50%;
+    cursor:pointer;
+    display:block;
+  }
+
+  /* ── breath UI ── */
+  .breath-ring{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    pointer-events:none;
+    border:1px solid rgba(167,139,250,0.12);
+    transition:border-color 0.4s, box-shadow 0.4s;
+  }
+  .breath-ring.inhale{
+    border-color:rgba(167,139,250,0.35);
+    box-shadow:0 0 28px rgba(124,58,237,0.25), inset 0 0 20px rgba(124,58,237,0.08);
+  }
+  .breath-ring.exhale{
+    border-color:rgba(167,139,250,0.10);
+    box-shadow:none;
+  }
+
+  .breath-label{
+    position:absolute;
+    bottom:-38px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:var(--serif);
+    font-size:18px;
+    font-weight:300;
+    color:rgba(221,214,254,0.85);
+    letter-spacing:0.04em;
+    white-space:nowrap;
+    transition:opacity 0.5s;
+  }
+  .phase-sub{
+    position:absolute;
+    bottom:-58px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:var(--mono);
+    font-size:8px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:rgba(167,139,250,0.40);
+    white-space:nowrap;
+  }
+
+  /* ── stats bar ── */
+  .stats{
+    display:flex;
+    gap:24px;
+    font-size:9px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:rgba(167,139,250,0.40);
+  }
+  .stat-val{ color:rgba(196,181,253,0.8); font-size:11px; display:block; text-align:center; font-weight:600; }
+
+  /* ── variant picker ── */
+  .variants{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:center;
+    max-width:680px;
+  }
+  .vbtn{
+    padding:6px 14px;
+    border-radius:20px;
+    border:1px solid rgba(167,139,250,0.18);
+    background:rgba(124,58,237,0.06);
+    color:rgba(167,139,250,0.6);
+    font-family:var(--mono);
+    font-size:9px;
+    letter-spacing:0.10em;
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .vbtn:hover{ background:rgba(124,58,237,0.18); color:var(--lavender); }
+  .vbtn.active{ background:rgba(124,58,237,0.35); border-color:var(--lavender); color:#fff; }
+
+  /* ── chosen banner ── */
+  #banner{
+    display:none;
+    position:fixed;
+    bottom:20px; left:50%;
+    transform:translateX(-50%);
+    background:rgba(124,58,237,0.92);
+    border:1px solid var(--lavender);
+    border-radius:14px;
+    padding:10px 22px;
+    font-size:11px;
+    color:#fff;
+    letter-spacing:0.08em;
+    backdrop-filter:blur(12px);
+    z-index:99;
+  }
+</style>
+</head>
+<body>
+
+<h1>Meditation Avatar Lab — 3D</h1>
+<p class="sub">plasma orb · three.js · breath-synced</p>
+
+<div class="controls">
+  <div class="cg">
+    <span class="cl">Breath phase</span>
+    <select id="phaseSelect">
+      <option value="0">Inhale (4s)</option>
+      <option value="1">Hold (4s)</option>
+      <option value="2">Exhale (6s)</option>
+      <option value="3" selected>Rest (2s)</option>
+    </select>
+  </div>
+  <div class="cg">
+    <span class="cl">Animate</span>
+    <button class="btn" id="animBtn" onclick="toggleAnim()">▶ Live breath</button>
+  </div>
+  <div class="cg">
+    <span class="cl">Speed</span>
+    <select id="speedSelect">
+      <option value="0.4">Slow</option>
+      <option value="1" selected>Normal</option>
+      <option value="2">Fast</option>
+    </select>
+  </div>
+  <div class="cg">
+    <span class="cl">Choose</span>
+    <button class="btn" onclick="choose()">✓ Ship this</button>
+  </div>
+</div>
+
+<div class="variants" id="variantRow"></div>
+
+<div class="stage">
+  <canvas id="medCanvas" width="480" height="480" title="Click to ping"></canvas>
+  <div class="breath-ring" id="breathRing"></div>
+  <div class="breath-label" id="breathLabel">Rest</div>
+  <div class="phase-sub" id="phaseSub"></div>
+</div>
+
+<div class="stats">
+  <div class="cg"><span class="stat-val" id="sFps">—</span>fps</div>
+  <div class="cg"><span class="stat-val" id="sPhase">—</span>phase</div>
+  <div class="cg"><span class="stat-val" id="sVariant">—</span>variant</div>
+</div>
+
+<div id="banner">✓ Variant chosen — tell me to ship it into index.html</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass }     from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  VARIANTS — each defines colour palette + behaviour knobs.
+//  All share the same particle sphere + bloom pipeline.
+// ─────────────────────────────────────────────────────────────────────────────
+const VARIANTS = [
+  {
+    id:'A', name:'Violet Soul',
+    // core = bright white-lavender; shell = deep violet; nebula = indigo
+    coreColor:   [0.92, 0.88, 1.00],
+    shellColor:  [0.49, 0.27, 0.98],
+    nebulaColor: [0.39, 0.40, 0.95],
+    // rings
+    ring1Hex: '#8b7cf8', ring2Hex: '#6366f1', ring3Hex: '#a78bfa',
+    // bloom
+    bloomStr: 1.1, bloomRad: 0.55, bloomThr: 0.12,
+    // drift speed
+    driftSpeed: 0.7, driftAmp: 0.045,
+    // sphere radius scale
+    baseR: 1.40,
+  },
+  {
+    id:'B', name:'Amethyst Mist',
+    coreColor:   [0.95, 0.90, 1.00],
+    shellColor:  [0.62, 0.38, 0.95],
+    nebulaColor: [0.48, 0.32, 0.88],
+    ring1Hex: '#c4b5fd', ring2Hex: '#a78bfa', ring3Hex: '#7c3aed',
+    bloomStr: 1.4, bloomRad: 0.7,  bloomThr: 0.08,
+    driftSpeed: 0.5, driftAmp: 0.06,
+    baseR: 1.45,
+  },
+  {
+    id:'C', name:'Indigo Deep',
+    coreColor:   [0.88, 0.88, 1.00],
+    shellColor:  [0.38, 0.40, 0.92],
+    nebulaColor: [0.30, 0.32, 0.80],
+    ring1Hex: '#6366f1', ring2Hex: '#4f46e5', ring3Hex: '#818cf8',
+    bloomStr: 0.9, bloomRad: 0.45, bloomThr: 0.15,
+    driftSpeed: 0.9, driftAmp: 0.038,
+    baseR: 1.35,
+  },
+  {
+    id:'D', name:'Lilac Dawn',
+    coreColor:   [1.00, 0.94, 1.00],
+    shellColor:  [0.78, 0.58, 0.96],
+    nebulaColor: [0.68, 0.50, 0.90],
+    ring1Hex: '#e9d5ff', ring2Hex: '#c084fc', ring3Hex: '#a855f7',
+    bloomStr: 1.6, bloomRad: 0.80, bloomThr: 0.06,
+    driftSpeed: 0.45, driftAmp: 0.07,
+    baseR: 1.50,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BREATH CYCLE
+// ─────────────────────────────────────────────────────────────────────────────
+const PHASES      = ['Breathe in', 'Hold', 'Breathe out', 'Rest'];
+const PHASE_DUR   = [4, 4, 6, 2];  // seconds
+const CYCLE_LEN   = PHASE_DUR.reduce((a,b)=>a+b, 0); // 16s
+
+let _phase = 3, _phaseT = 0;
+let _animating = false, _animStart = null, _animRaf = null;
+let _currentVariant = 0;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BUILD VARIANT BUTTONS
+// ─────────────────────────────────────────────────────────────────────────────
+(function(){
+  const row = document.getElementById('variantRow');
+  VARIANTS.forEach((v, i) => {
+    const b = document.createElement('button');
+    b.className = 'vbtn' + (i===0?' active':'');
+    b.textContent = v.id + ' — ' + v.name;
+    b.onclick = () => switchVariant(i);
+    row.appendChild(b);
+  });
+})();
+
+function switchVariant(i){
+  _currentVariant = i;
+  document.querySelectorAll('.vbtn').forEach((b,j) => b.classList.toggle('active', j===i));
+  document.getElementById('sVariant').textContent = VARIANTS[i].id;
+  rebuildMaterials(VARIANTS[i]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  THREE.JS SETUP
+// ─────────────────────────────────────────────────────────────────────────────
+const canvas   = document.getElementById('medCanvas');
+const BLOOM_L  = 1;
+const bloomMask = new THREE.Layers(); bloomMask.set(BLOOM_L);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+renderer.setClearColor(0x000000, 0);
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+renderer.setPixelRatio(DPR);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+camera.position.set(0, 0, 5.8);
+camera.layers.enableAll();
+
+const brain = new THREE.Group(); scene.add(brain);
+const rig   = new THREE.Group(); scene.add(rig);
+
+// ── gradient texture helper ──
+function gradTex(stops){
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(128,128,0,128,128,128);
+  stops.forEach(s => grd.addColorStop(s[0], s[1]));
+  g.fillStyle = grd; g.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+
+// ── CORE (bright centre glow, always visible) ──
+const coreTex = gradTex([
+  [0,   'rgba(255,255,255,0.98)'],
+  [0.15,'rgba(230,220,255,0.75)'],
+  [0.35,'rgba(180,160,255,0.40)'],
+  [0.60,'rgba(130,100,240,0.15)'],
+  [0.82,'rgba(80,60,200,0.05)'],
+  [1,   'rgba(0,0,0,0)'],
+]);
+const coreMat = new THREE.SpriteMaterial({
+  map: coreTex, transparent:true,
+  blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.7,
+});
+const core = new THREE.Sprite(coreMat);
+core.scale.setScalar(0.30); core.layers.set(BLOOM_L); scene.add(core);
+
+// ── NEBULA (breath-pulse halo) ──
+const nebulaTex = gradTex([
+  [0,   'rgba(210,190,255,0.90)'],
+  [0.10,'rgba(160,130,250,0.55)'],
+  [0.25,'rgba(120,90,230,0.30)'],
+  [0.42,'rgba(100,70,210,0.14)'],
+  [0.60,'rgba(80,55,190,0.06)'],
+  [0.78,'rgba(60,40,160,0.02)'],
+  [1,   'rgba(0,0,0,0)'],
+]);
+const nebulaMat = new THREE.SpriteMaterial({
+  map: nebulaTex, transparent:true,
+  blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.35,
+});
+const nebula = new THREE.Sprite(nebulaMat);
+nebula.scale.setScalar(0.70); nebula.position.z = -0.5; nebula.layers.set(BLOOM_L); scene.add(nebula);
+
+// ── OUTER HALO (very soft, large, breath-synced) ──
+const haloTex = gradTex([
+  [0,   'rgba(180,150,255,0.45)'],
+  [0.20,'rgba(130,100,240,0.22)'],
+  [0.45,'rgba(100,70,210,0.10)'],
+  [0.70,'rgba(70,50,180,0.04)'],
+  [1,   'rgba(0,0,0,0)'],
+]);
+const haloMat = new THREE.SpriteMaterial({
+  map: haloTex, transparent:true,
+  blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false, opacity:0.20,
+});
+const halo = new THREE.Sprite(haloMat);
+halo.scale.setScalar(2.2); halo.position.z = -1.0; halo.layers.set(BLOOM_L); scene.add(halo);
+
+// ── PARTICLE SPHERE ──
+const N = 6500;
+const dirs   = new Float32Array(N*3);
+const bases  = new Float32Array(N);
+const isBig  = new Uint8Array(N);
+const phases = new Float32Array(N*3);
+
+for(let i=0; i<N; i++){
+  phases[i*3]   = Math.random()*Math.PI*2;
+  phases[i*3+1] = Math.random()*Math.PI*2;
+  phases[i*3+2] = Math.random()*Math.PI*2;
+  const cosT = Math.random()*2-1, phi = Math.random()*Math.PI*2;
+  const sinT = Math.sqrt(1-cosT*cosT);
+  dirs[i*3]   = sinT*Math.cos(phi);
+  dirs[i*3+1] = sinT*Math.sin(phi);
+  dirs[i*3+2] = cosT;
+  const roll = Math.random();
+  if      (roll < 0.60) bases[i] = 0.82 + Math.random()*0.18; // shell
+  else if (roll < 0.88) bases[i] = Math.pow(Math.random(), 1.8)*0.38; // interior
+  else                  bases[i] = 0.38 + Math.random()*0.44; // mid
+  isBig[i] = Math.random() < 0.28 ? 1 : 0;
+}
+
+const SPHERE_R = 1.42;
+const pPos  = new Float32Array(N*3);
+const pCol  = new Float32Array(N*3);
+const pSize = new Float32Array(N);
+const zArr  = new Float32Array(N);
+
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,  3));
+pGeo.setAttribute('color',    new THREE.BufferAttribute(pCol,  3));
+pGeo.setAttribute('aSize',    new THREE.BufferAttribute(pSize, 1));
+
+// soft orb texture for each particle
+const orbTex = (function(){
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32,32,0,32,32,32);
+  grd.addColorStop(0,    'rgba(255,255,255,1)');
+  grd.addColorStop(0.30, 'rgba(210,195,255,0.92)');
+  grd.addColorStop(0.65, 'rgba(140,110,250,0.35)');
+  grd.addColorStop(1,    'rgba(100,70,220,0)');
+  g.fillStyle = grd; g.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+})();
+
+const pMat = new THREE.ShaderMaterial({
+  uniforms: { uScale:{ value:160.0 }, uTex:{ value:orbTex } },
+  vertexColors: true, transparent:true, depthWrite:false,
+  blending: THREE.AdditiveBlending,
+  vertexShader:[
+    'attribute float aSize; varying vec3 vCol; uniform float uScale;',
+    'void main(){ vCol=color; vec4 mv=modelViewMatrix*vec4(position,1.0);',
+    '  gl_PointSize=aSize*uScale/-mv.z; gl_Position=projectionMatrix*mv; }'
+  ].join('\n'),
+  fragmentShader:[
+    'uniform sampler2D uTex; varying vec3 vCol;',
+    'void main(){ vec4 tx=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(vCol*tx.rgb,tx.a); }'
+  ].join('\n'),
+});
+const points = new THREE.Points(pGeo, pMat);
+points.layers.set(0); brain.add(points);
+
+// ── PLEXUS LINES ──
+let triSeeds = [], plexTick = 0;
+const MAXLINE = 300;
+const linePos = new Float32Array(MAXLINE*6);
+const lineCol = new Float32Array(MAXLINE*6);
+const lGeo = new THREE.BufferGeometry();
+lGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+lGeo.setAttribute('color',    new THREE.BufferAttribute(lineCol, 3));
+const lMat = new THREE.LineBasicMaterial({
+  vertexColors:true, transparent:true, opacity:0.12,
+  blending:THREE.AdditiveBlending, depthWrite:false
+});
+const plexus = new THREE.LineSegments(lGeo, lMat);
+plexus.layers.set(0); plexus.frustumCulled = false; brain.add(plexus);
+
+function rebuildTriangles(){
+  triSeeds.length = 0;
+  const TRIS=18, MAXR2=0.60*0.60;
+  for(let n=0; n<TRIS; n++){
+    const a = (Math.random()*N)|0; if(zArr[a]<=0.12) continue;
+    let b1=-1, b2=-1, d1=1e9, d2=1e9;
+    for(let s=0; s<30; s++){
+      const b=(Math.random()*N)|0; if(b===a||zArr[b]<=0) continue;
+      const dx=pPos[a*3]-pPos[b*3], dy=pPos[a*3+1]-pPos[b*3+1], dz=pPos[a*3+2]-pPos[b*3+2];
+      const dd=dx*dx+dy*dy+dz*dz; if(dd>MAXR2) continue;
+      if(dd<d1){ d2=d1; b2=b1; d1=dd; b1=b; } else if(dd<d2){ d2=dd; b2=b; }
+    }
+    if(b1>=0 && b2>=0) triSeeds.push([a,b1,b2]);
+  }
+}
+
+// ── HUD RINGS (soft violet arcs) ──
+function ringMat(hex, op){
+  return new THREE.LineBasicMaterial({ color:new THREE.Color(hex), transparent:true, opacity:op, depthWrite:false });
+}
+function arcLine(radius, segs, mat, start, len){
+  const pts=[]; const s=start||0, l=(len!=null)?len:Math.PI*2;
+  for(let i=0;i<=segs;i++){ const a=s+(i/segs)*l; pts.push(new THREE.Vector3(Math.cos(a)*radius,Math.sin(a)*radius,0)); }
+  const g=new THREE.BufferGeometry().setFromPoints(pts);
+  const ln=new THREE.Line(g,mat); ln.layers.set(0); return ln;
+}
+
+// outer dashed arcs
+const L3 = new THREE.Group(); rig.add(L3);
+[[0.3,2.1],[2.8,1.3],[5.0,0.9]].forEach(([s,l])=>{
+  L3.add(arcLine(1.90, 80, ringMat('#8b7cf8',0.80), s, l));
+  L3.add(arcLine(1.92, 80, ringMat('#8b7cf8',0.40), s, l));
+});
+
+// middle tick ring
+const L2 = new THREE.Group(); rig.add(L2);
+L2.add(arcLine(2.18, 200, ringMat('#a78bfa', 0.70)));
+
+// inner tick marks
+const L1 = new THREE.Group(); rig.add(L1);
+(function(){
+  const TICKS=60, r=2.40, smArr=[], lgArr=[];
+  for(let i=0;i<TICKS;i++){
+    const major=i%5===0, a=(i/TICKS)*Math.PI*2;
+    const c=Math.cos(a),s=Math.sin(a);
+    const inner=major?r-0.09:r-0.045;
+    (major?lgArr:smArr).push(c*inner,s*inner,0, c*r,s*r,0);
+  }
+  const gSm=new THREE.BufferGeometry(); gSm.setAttribute('position',new THREE.BufferAttribute(new Float32Array(smArr),3));
+  L1.add(new THREE.LineSegments(gSm, new THREE.LineBasicMaterial({color:0xb4a4f8,transparent:true,opacity:0.30,depthWrite:false})));
+  const gLg=new THREE.BufferGeometry(); gLg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(lgArr),3));
+  L1.add(new THREE.LineSegments(gLg, new THREE.LineBasicMaterial({color:0xddd6fe,transparent:true,opacity:0.70,depthWrite:false})));
+})();
+
+// ── BLOOM PIPELINE ──
+let bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 1.1, 0.55, 0.12);
+const bloomComp = new EffectComposer(renderer);
+bloomComp.renderToScreen = false;
+bloomComp.addPass(new RenderPass(scene,camera));
+bloomComp.addPass(bloomPass);
+
+const finalPass = new ShaderPass(new THREE.ShaderMaterial({
+  uniforms:{
+    baseTexture:  { value:null },
+    bloomTexture: { value: bloomComp.renderTarget2.texture },
+  },
+  vertexShader:   'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+  fragmentShader: 'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main(){ gl_FragColor=texture2D(baseTexture,vUv)+vec4(texture2D(bloomTexture,vUv).rgb,0.0); }',
+}), 'baseTexture'); finalPass.needsSwap = true;
+
+const finalComp = new EffectComposer(renderer);
+finalComp.addPass(new RenderPass(scene,camera));
+finalComp.addPass(finalPass);
+
+const _hidden = [];
+function hideNonBloom(o){ if((o.isMesh||o.isPoints||o.isLine||o.isLineSegments||o.isSprite)&&!o.layers.test(bloomMask)&&o.visible){ o.visible=false; _hidden.push(o); } }
+function restoreVis(){ for(let i=0;i<_hidden.length;i++) _hidden[i].visible=true; _hidden.length=0; }
+
+// ── RESIZE ──
+function sizeRenderer(){
+  const s = canvas.clientWidth || 320;
+  renderer.setSize(s, s, false);
+  bloomComp.setSize(s, s);
+  finalComp.setSize(s, s);
+  camera.aspect = 1; camera.updateProjectionMatrix();
+  pMat.uniforms.uScale.value = 160.0 * (s * DPR) / 720.0;
+}
+new ResizeObserver(sizeRenderer).observe(canvas);
+sizeRenderer();
+
+// ── MATERIAL REBUILD when variant changes ──
+function rebuildMaterials(v){
+  bloomPass.strength  = v.bloomStr;
+  bloomPass.radius    = v.bloomRad;
+  bloomPass.threshold = v.bloomThr;
+}
+rebuildMaterials(VARIANTS[0]);
+
+// ── STATE ──
+const state = {
+  t: 0,
+  breathScale: 0.72,   // 0.72 (rest) → 1.0 (full inhale)
+  breathTarget: 0.72,
+  haloScale: 1.0,
+  pingT: -1,
+};
+
+canvas.addEventListener('click', ()=>{ state.pingT = 0.01; });
+
+// ── PARTICLE UPDATE ──
+function updateParticles(ay, ax){
+  const v = VARIANTS[_currentVariant];
+  const bs = state.breathScale;
+  // sphere radius expands with breath
+  const SR = SPHERE_R * (v.baseR * 0.72 + bs * (v.baseR - v.baseR*0.72)) / v.baseR;
+
+  const cosY=Math.cos(ay), sinY=Math.sin(ay);
+  const cosX=Math.cos(ax), sinX=Math.sin(ax);
+
+  for(let i=0; i<N; i++){
+    let x=dirs[i*3], y=dirs[i*3+1], z=dirs[i*3+2];
+    // gentle y-rotation + x-tilt
+    const x1=x*cosY+z*sinY, z1=-x*sinY+z*cosY;
+    const y1=y*cosX-z1*sinX, z2=y*sinX+z1*cosX;
+
+    // drift noise — faster + wider on exhale
+    const exhaleBoost = _phase===2 ? 1.0+_phaseT*0.6 : 1.0;
+    const ds = v.driftSpeed * exhaleBoost;
+    const da = v.driftAmp   * exhaleBoost;
+    const dx = Math.sin(state.t*ds + phases[i*3]  )*da;
+    const dy = Math.cos(state.t*ds + phases[i*3+1])*da;
+    const dz = Math.sin(state.t*ds + phases[i*3+2])*da;
+
+    const r = bases[i] * SR;
+    pPos[i*3]   = x1*r + dx;
+    pPos[i*3+1] = y1*r + dy;
+    pPos[i*3+2] = z2*r + dz;
+    zArr[i] = z2;
+
+    const depth = (z2+1)/2;
+    const opa   = 0.28 + 0.72*(depth*depth);
+
+    if(isBig[i]){
+      // bright white-lavender "star" particle
+      const bb = 0.70 + 0.30*depth;
+      const cr = v.coreColor, sh = v.shellColor;
+      // blend toward shell colour at depth
+      pCol[i*3]   = cr[0]*bb*(1-bases[i]*0.4) + sh[0]*opa*bases[i]*0.4;
+      pCol[i*3+1] = cr[1]*bb*(1-bases[i]*0.4) + sh[1]*opa*bases[i]*0.4;
+      pCol[i*3+2] = cr[2]*bb*(1-bases[i]*0.4) + sh[2]*opa*bases[i]*0.4;
+      pSize[i] = (0.11 + 0.05*(1-bases[i])) * (0.65+0.65*depth);
+    } else {
+      // shell particle — violet tinted
+      const sh = v.shellColor;
+      pCol[i*3]   = sh[0]*opa;
+      pCol[i*3+1] = sh[1]*opa;
+      pCol[i*3+2] = sh[2]*opa;
+      pSize[i] = (0.072 + 0.04*(1-bases[i])) * (0.55+0.65*depth);
+    }
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  pGeo.attributes.color.needsUpdate    = true;
+  pGeo.attributes.aSize.needsUpdate    = true;
+
+  // plexus
+  plexTick++; if(plexTick%15===0) rebuildTriangles();
+  let lw = 0;
+  for(const tri of triSeeds){
+    const edges = [[tri[0],tri[1]],[tri[1],tri[2]],[tri[2],tri[0]]];
+    for(const [a,b] of edges){
+      const md = ((zArr[a]+1)/2 + (zArr[b]+1)/2)/2;
+      const cv = v.shellColor;
+      linePos[lw*6]=pPos[a*3]; linePos[lw*6+1]=pPos[a*3+1]; linePos[lw*6+2]=pPos[a*3+2];
+      linePos[lw*6+3]=pPos[b*3]; linePos[lw*6+4]=pPos[b*3+1]; linePos[lw*6+5]=pPos[b*3+2];
+      const c = 0.45 + 0.55*md;
+      lineCol[lw*6]=cv[0]*c; lineCol[lw*6+1]=cv[1]*c; lineCol[lw*6+2]=cv[2]*c;
+      lineCol[lw*6+3]=cv[0]*c; lineCol[lw*6+4]=cv[1]*c; lineCol[lw*6+5]=cv[2]*c;
+      lw++;
+    }
+  }
+  lGeo.setDrawRange(0, lw*2);
+  lGeo.attributes.position.needsUpdate = true;
+  lGeo.attributes.color.needsUpdate    = true;
+}
+
+// ── BREATH SCALE HELPER ──
+function targetBreathScale(ph, phT){
+  if(ph===0) return 0.72 + phT*0.28;    // inhale: expand
+  if(ph===1) return 1.0;                 // hold: full
+  if(ph===2) return 1.0 - phT*0.28;     // exhale: contract
+  return 0.72;                           // rest: small
+}
+
+// ── FPS COUNTER ──
+let _fpsLast=0, _fpsCount=0, _fps=0;
+
+// ── MAIN RENDER LOOP ──
+const clock = new THREE.Clock();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  state.t += dt;
+
+  // breath scale smooth lerp
+  const bs_target = targetBreathScale(_phase, _phaseT);
+  state.breathScale += (bs_target - state.breathScale) * Math.min(1, dt * 3.5);
+
+  // rotation — gentle slow for meditation (much calmer than JARVIS)
+  const ay = state.t * 0.09;
+  const ax = Math.sin(state.t * 0.17) * 0.12;
+
+  updateParticles(ay, ax);
+
+  // rings rotate slowly
+  L1.rotation.z =  state.t * 0.025;
+  L2.rotation.z = -state.t * 0.040;
+  L3.rotation.z =  state.t * 0.018;
+
+  // core — always gently pulsing + breath scale
+  const bs = state.breathScale;
+  const softPulse = 0.85 + 0.15*Math.sin(state.t*1.3);
+  coreMat.opacity = (0.55 + bs*0.35) * softPulse;
+  core.scale.setScalar(0.20 + bs*0.18);
+
+  // nebula — breath pulsing halo
+  nebulaMat.opacity = 0.18 + bs*0.30;
+  nebula.scale.setScalar(0.50 + bs*0.55);
+
+  // outer halo
+  haloMat.opacity = 0.10 + bs*0.18;
+  halo.scale.setScalar(1.8 + bs*0.7);
+
+  // click ping
+  if(state.pingT >= 0){
+    state.pingT += dt * 1.5;
+    const k = Math.max(0, 1-state.pingT);
+    brain.scale.setScalar(1 + k*0.10);
+    if(state.pingT > 1.2){ state.pingT=-1; brain.scale.setScalar(1); }
+  }
+
+  // selective bloom
+  scene.traverse(hideNonBloom);
+  bloomComp.render();
+  restoreVis();
+  finalComp.render();
+
+  // fps
+  _fpsCount++;
+  const now = performance.now();
+  if(now - _fpsLast > 1000){ _fps=_fpsCount; _fpsCount=0; _fpsLast=now; document.getElementById('sFps').textContent=_fps; }
+}
+frame();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ANIMATION (breath cycle)
+// ─────────────────────────────────────────────────────────────────────────────
+window.toggleAnim = function(){
+  _animating = !_animating;
+  document.getElementById('animBtn').classList.toggle('on', _animating);
+  document.getElementById('animBtn').textContent = _animating ? '■ Stop' : '▶ Live breath';
+  if(_animating){ _animStart = null; tick(); }
+  else if(_animRaf){ cancelAnimationFrame(_animRaf); }
+};
+
+function tick(){
+  if(!_animating) return;
+  const speed = parseFloat(document.getElementById('speedSelect').value);
+  const now = performance.now() / 1000 * speed;
+  if(!_animStart) _animStart = now;
+  const elapsed = now - _animStart;
+
+  // which phase
+  let pos = elapsed % CYCLE_LEN;
+  let ph=0, acc=0;
+  for(let p=0;p<4;p++){
+    if(pos < acc + PHASE_DUR[p]){ ph=p; _phaseT=(pos-acc)/PHASE_DUR[p]; break; }
+    acc += PHASE_DUR[p];
+  }
+  _phase = ph;
+  document.getElementById('phaseSelect').value = ph;
+  updateBreathUI(ph, _phaseT);
+
+  _animRaf = requestAnimationFrame(tick);
+}
+
+// manual phase select
+document.getElementById('phaseSelect').addEventListener('change', function(){
+  _phase = parseInt(this.value); _phaseT = 0;
+  updateBreathUI(_phase, _phaseT);
+});
+
+function updateBreathUI(ph, phT){
+  const ring  = document.getElementById('breathRing');
+  const label = document.getElementById('breathLabel');
+  const sub   = document.getElementById('phaseSub');
+  label.textContent = PHASES[ph];
+  sub.textContent   = Math.round(phT*100)+'%';
+  ring.className = 'breath-ring ' + (ph===0?'inhale':ph===2?'exhale':'');
+  document.getElementById('sPhase').textContent = PHASES[ph].split(' ')[0];
+}
+
+// init
+updateBreathUI(3, 0);
+document.getElementById('sVariant').textContent = VARIANTS[0].id;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CHOOSE
+// ─────────────────────────────────────────────────────────────────────────────
+window.choose = function(){
+  const v = VARIANTS[_currentVariant];
+  const b = document.getElementById('banner');
+  b.textContent = '✓ Variant ' + v.id + ' "' + v.name + '" chosen — tell me to ship it into index.html';
+  b.style.display = '';
+  setTimeout(()=>{ b.style.display='none'; }, 5000);
+};
+</script>
+</body>
+</html>
