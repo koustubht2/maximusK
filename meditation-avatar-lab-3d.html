@@ -129,32 +129,29 @@ import { UnrealBloomPass }  from 'three/addons/postprocessing/UnrealBloomPass.js
 //  No random walk — geometry is precise and readable.
 // ═════════════════════════════════════════════════════════════
 function buildMandala(){
-  const pts = [];   // {x,y,z, layer, brightness, type}
-  // type: 0=fixed (petal/spoke/triangle — never moves position)
-  //       1=ring  (orbits around centre — beads on a circular wire)
+  const pts = [];   // {x,y,z, layer, brightness}
   const PI2 = Math.PI * 2;
 
   function ring(r, n, layer, bright, zSpread=0){
     for(let i=0;i<n;i++){
       const a = (i/n)*PI2;
       const z = (Math.random()-.5)*zSpread;
-      pts.push({ x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer, bright, type:1 });
+      pts.push({ x:Math.cos(a)*r, y:Math.sin(a)*r, z, layer, bright });
     }
   }
 
-  // fixed geometry — petals, triangles, spokes: position never changes
   function arcPts(cx,cy,r,a0,a1,n,layer,bright,zSpread=0){
     for(let i=0;i<n;i++){
       const t=i/(n-1), a=a0+(a1-a0)*t;
       const z=(Math.random()-.5)*zSpread;
-      pts.push({ x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r, z, layer, bright, type:0 });
+      pts.push({ x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r, z, layer, bright });
     }
   }
 
   // ── LAYER 0 — core glow cluster ──
   for(let i=0;i<90;i++){
     const r=Math.random()*.12, a=Math.random()*PI2;
-    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0, type:1});
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.05, layer:0, bright:1.0});
   }
 
   // ── LAYER 1 — innermost ring + 6-pointed star ──
@@ -232,13 +229,13 @@ function buildMandala(){
   // ── LAYER 7 — outer concentric halos ──
   [1.48, 1.65, 1.82].forEach((r,ri)=>{
     ring(r, 180+ri*36, 7, .50-.08*ri, .12+ri*.04);
-    // radial tick bursts at 12 positions — fixed spokes, type:0
+    // radial tick bursts at 12 positions
     for(let i=0;i<12;i++){
       const a=(i/12)*PI2+(ri*.13);
       const r0=r-.04, r1=r+.04;
       for(let j=0;j<8;j++){
         const rr=r0+(r1-r0)*j/7;
-        pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri, type:0});
+        pts.push({x:Math.cos(a)*rr, y:Math.sin(a)*rr, z:(Math.random()-.5)*.12, layer:7, bright:.55-.04*ri});
       }
     }
   });
@@ -246,7 +243,7 @@ function buildMandala(){
   // ── LAYER 8 — fringe stardust ──
   for(let i=0;i<280;i++){
     const r=1.88+Math.random()*.50, a=Math.random()*PI2;
-    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15, type:1});
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, z:(Math.random()-.5)*.28, layer:8, bright:.35+Math.random()*.15});
   }
 
   return pts;
@@ -349,32 +346,19 @@ const N   = RAW.length;
 const homeX   = new Float32Array(N);
 const homeY   = new Float32Array(N);
 const homeZ   = new Float32Array(N);
-const homeR   = new Float32Array(N);   // radial distance from centre
-const homeA   = new Float32Array(N);   // initial angle (atan2 of home pos)
 const layerArr= new Uint8Array(N);
 const brightArr=new Float32Array(N);
+// tiny per-particle shimmer phase
 const shimPh  = new Float32Array(N);
 const isBig   = new Uint8Array(N);
-const typeArr = new Uint8Array(N);     // 0=fixed geometry, 1=ring (can orbit)
-// Travel offset: each ring particle has a phase offset so it appears to
-// travel along its ring independently (not all in sync)
-const travelPh= new Float32Array(N);
 
 RAW.forEach((p,i)=>{
   homeX[i]=p.x; homeY[i]=p.y; homeZ[i]=p.z;
-  homeR[i]=Math.sqrt(p.x*p.x+p.y*p.y);
-  homeA[i]=Math.atan2(p.y,p.x);
   layerArr[i]=p.layer; brightArr[i]=p.bright;
-  typeArr[i] = p.type || 0;
-  shimPh[i]  =Math.random()*Math.PI*2;
-  travelPh[i]=Math.random()*Math.PI*2;  // staggered so particles don't bunch
+  shimPh[i]=Math.random()*Math.PI*2;
+  // core and inner layers more likely to be big/bright
   isBig[i] = Math.random() < (.7-.08*p.layer) ? 1 : 0;
 });
-
-// ── RIPPLE WAVE state ──
-// fired on each inhale start; travels from core outward
-let _rippleT   = -1;   // -1 = inactive; 0→1 = travelling outward
-let _lastPhase = 3;    // track phase transitions
 
 // ═════════════════════════════════════════════════════════════
 //  THREE.JS
@@ -506,115 +490,65 @@ function sizeR(){
 new ResizeObserver(sizeR).observe(canvas); sizeR();
 
 // ═════════════════════════════════════════════════════════════
-//  DIFFERENTIAL LAYER SPIN SPEEDS
-//  Each layer rotates at its own speed + direction.
-//  Pattern stays intact — individual rings counter-rotate like a gyroscope.
-//  Layer 0 = core (almost still), outer layers spin faster.
+//  PARTICLE UPDATE — mandala stays a mandala
+//  The ONLY movement is:
+//  1. Slow Z-rotation of the whole disc (spin)
+//  2. Gentle tilt toward camera on inhale
+//  3. Uniform scale breath (expand/contract)
+//  4. Per-particle shimmer: tiny brightness flicker, NO position wander
 // ═════════════════════════════════════════════════════════════
-//  spin multipliers per layer (positive=CCW, negative=CW)
-// Differential spin — slow enough that you always see the mandala shape.
-// Adjacent layers counter-rotate so it looks like a living gyroscope.
-const LAYER_SPIN = [ 0.00, 1.0, -1.6, 1.2, -0.9, 1.4, -1.1, 0.8, -0.6 ];
-
-// Travel along ring — tiny fraction of a revolution per second.
-// travelPh offsets stagger particles so the motion looks fluid not marching.
-// Direction alternates so adjacent rings flow opposite ways.
-const TRAVEL_SPEED = [ 0.00, 0.012, -0.018, 0.014, -0.016, 0.013, -0.010, 0.008, -0.006 ];
-
 function updateParticles(t){
-  const v     = VARIANTS[_variant];
-  const bs    = _bs;
-  const bNorm = (bs-.72)/.28;   // 0→1
+  const v  = VARIANTS[_variant];
+  const bs = _bs;
 
-  // ── BREATH SCALE ──
-  const breathS = 1.0 + bNorm * 0.10;
+  // 1. BREATH SCALE: mandala expands (1.0→1.28) on inhale, contracts on exhale
+  const breathS = 1.0 + (bs-.72) * .40;   // range 1.0 at rest → 1.11 full inhale
 
-  // ── TILT toward camera on inhale ──
-  const tilt = bNorm * v.tiltAmp;
+  // 2. DISC TILT: on inhale the mandala tilts slightly toward viewer (cinematic depth)
+  const tilt = (bs-.72)/.28 * v.tiltAmp;  // 0 at rest, max at full inhale
   const cosTilt=Math.cos(tilt), sinTilt=Math.sin(tilt);
 
-  // ── BASE SPIN (whole mandala) ──
-  const baseSpinA = t * v.spinSpeed;
-
-  // Pre-compute per-layer rigid-body rotation angle
-  // (same for ALL particles in a layer — preserves relative geometry)
-  const layerGroupA = new Float32Array(9);
-  for(let l=0;l<9;l++) layerGroupA[l] = baseSpinA + t * 0.008 * LAYER_SPIN[l];
+  // 3. SPIN (slow Z rotation)
+  const spinA = t * v.spinSpeed;
+  const cosS=Math.cos(spinA), sinS=Math.sin(spinA);
 
   for(let i=0;i<N;i++){
-    const lay = layerArr[i];
-    const r   = homeR[i];
+    // home position in mandala space
+    const hx=homeX[i], hy=homeY[i], hz=homeZ[i];
 
-    let mx, my;
+    // apply breath scale (radial — scale x,y not z)
+    const sx=hx*breathS, sy=hy*breathS, sz=hz;
 
-    if(typeArr[i] === 1){
-      // ── RING PARTICLE — orbits along its ring ──
-      // EFFECT 1 (layer spin) + EFFECT 5 (travel): advance angle on the ring
-      const a0 = homeA[i];
-      const travelAngle = t * TRAVEL_SPEED[lay] + travelPh[i];
-      const finalA = a0 + layerGroupA[lay] + travelAngle;
-      mx = Math.cos(finalA) * r * breathS;
-      my = Math.sin(finalA) * r * breathS;
-    } else {
-      // ── FIXED PARTICLE — rigid-body rotation of home position ──
-      // Rotate the stored (homeX, homeY) as a rigid body around the origin.
-      // All particles in the same layer share the same rotation angle,
-      // so petal curves, triangle edges, and spokes stay intact.
-      const ca = Math.cos(layerGroupA[lay]);
-      const sa = Math.sin(layerGroupA[lay]);
-      const hx = homeX[i], hy = homeY[i];
-      mx = (hx*ca - hy*sa) * breathS;
-      my = (hx*sa + hy*ca) * breathS;
-    }
+    // spin around Z
+    const rx= sx*cosS - sy*sinS;
+    const ry= sx*sinS + sy*cosS;
+    const rz= sz;
 
-    const mz = homeZ[i];
+    // tilt around X (tip top of mandala toward camera)
+    const ty= ry*cosTilt - rz*sinTilt;
+    const tz= ry*sinTilt + rz*cosTilt;
 
-    // ── tilt around X ──
-    const fy =  my*cosTilt - mz*sinTilt;
-    const fz =  my*sinTilt + mz*cosTilt;
-
-    pPos[i*3]=mx; pPos[i*3+1]=fy; pPos[i*3+2]=fz;
-
-    // ── EFFECT 2: brightness ripple wave ──
-    let rippleMult = 1.0;
-    if(_rippleT >= 0){
-      const waveFront = _rippleT * 2.2;
-      const dist = Math.abs(r - waveFront);
-      if(dist < 0.35) rippleMult = 1.0 + (1.0-dist/0.35)*1.8;
-    }
-
-    // ── EFFECT 3: petal glow sweep on lotus layers ──
-    // a spotlight sweeps the outer angle — computed from the particle's
-    // current mandala angle (not finalA, which only exists for ring particles)
-    let petalMult = 1.0;
-    if(lay === 2 || lay === 5){
-      const curA = Math.atan2(my, mx);
-      const spotA = t * (lay===2 ? 0.7 : -0.5);
-      let dA = ((curA - spotA) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-      if(dA > Math.PI) dA = Math.PI*2 - dA;
-      if(dA < 0.9) petalMult = 1.0 + (1.0-dA/0.9)*1.2;
-    }
-
-    // ── EFFECT 4: shimmer (per-particle brightness flicker) ──
-    const shimRate = 1.0 + lay*0.20;
-    const shim = .84 + .16*Math.sin(t*shimRate + shimPh[i]);
-
-    // depth brightness
-    const depth   = (fz+1.5)/3.0;
-    const dbright = .62 + .38*(depth*depth);
+    pPos[i*3]=rx; pPos[i*3+1]=ty; pPos[i*3+2]=tz;
 
     // ── colour ──
-    const col = v.layerCols[Math.min(lay, v.layerCols.length-1)];
-    const amp = brightArr[i] * shim * dbright * rippleMult * petalMult;
-    pCol[i*3]=col[0]*amp; pCol[i*3+1]=col[1]*amp; pCol[i*3+2]=col[2]*amp;
+    const col = v.layerCols[Math.min(layerArr[i], v.layerCols.length-1)];
 
-    // size — ripple wave also makes particles bigger at front
-    const baseSize = lay<=1 ? .175
-                   : lay<=3 ? .145
-                   : lay<=5 ? .122
-                   : lay<=6 ? .105
-                   :          .082;
-    pSz[i] = baseSize*(isBig[i]?1.85:1)*(.65+.55*depth)*(rippleMult>1?1+(rippleMult-1)*.3:1);
+    // shimmer: brightness oscillation per particle
+    const shim = .88 + .12*Math.sin(t*1.8+shimPh[i]);
+    // mild depth cue — front brighter but outer layers never disappear
+    const depth = (tz+1.5)/3.0;
+    const dbright = .65 + .35*(depth*depth);
+
+    const a = brightArr[i]*shim*dbright;
+    pCol[i*3]=col[0]*a; pCol[i*3+1]=col[1]*a; pCol[i*3+2]=col[2]*a;
+
+    // size — boosted so geometry is clearly readable
+    const baseSize = layerArr[i]<=1 ? .175
+                   : layerArr[i]<=3 ? .145
+                   : layerArr[i]<=5 ? .122
+                   : layerArr[i]<=6 ? .105
+                   : .082;
+    pSz[i] = baseSize*(isBig[i]?1.85:1)*(.65+.55*depth);
   }
 
   pGeo.attributes.position.needsUpdate=true;
@@ -634,11 +568,6 @@ function frame(){
 
   // smooth breath
   _bs+=( bsTarget(_phase,_phaseT)-_bs )*Math.min(1,dt*3.0);
-
-  // fire ripple wave on each inhale start
-  if(_phase===0 && _lastPhase!==0 && _rippleT<0) _rippleT=0;
-  _lastPhase=_phase;
-  if(_rippleT>=0){ _rippleT+=dt/2.5; if(_rippleT>1.2) _rippleT=-1; }
 
   updateParticles(t);
 
