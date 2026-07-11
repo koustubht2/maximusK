@@ -19112,6 +19112,8 @@ function switchTab(tab) {
   // re-evaluate One Thing + Streak Wall when switching to dash
   if (tab === 'dash' && typeof window._refreshOneThing === 'function') setTimeout(window._refreshOneThing, 100);
   if (tab === 'dash' && typeof window._renderStreakWall === 'function') setTimeout(window._renderStreakWall, 120);
+  // ensure meditation is initialised (handles reload-with-health-active case)
+  if (tab === 'health' && typeof window._medInit === 'function') setTimeout(window._medInit, 0);
   // refresh meditation stats/log when Health tab opens
   if (tab === 'health' && typeof window._medRender === 'function') setTimeout(window._medRender, 50);
   // count-up the Oura readiness number when the Health tab opens
@@ -30138,7 +30140,7 @@ function switchTab(tab) {
       });
     }
 
-    window.drawMandala = function(progress, phase, phaseT){
+window.drawMandala = function(progress, phase, phaseT){
       var canvas = document.getElementById('medMandala');
       if(!canvas) return;
       // lazy-init Three.js on first call
@@ -30178,10 +30180,17 @@ function switchTab(tab) {
   }
 
   // init when health tab opens, and on load
-  document.addEventListener('DOMContentLoaded', function(){
-    if(document.getElementById('meditationSection')) init();
-  });
-  window._medInit=init;
+  var _inited = false;
+  function maybeInit(){
+    if(_inited) return;
+    if(!document.getElementById('meditationSection')) return;
+    _inited = true;
+    init();
+  }
+  document.addEventListener('DOMContentLoaded', maybeInit);
+  // also called by switchTab('health') — handles the case where the page
+  // reloads with health as the active tab and DOMContentLoaded has already fired
+  window._medInit = maybeInit;
   window._medRender=function(){
     renderStats(); renderLog();
     if(_lib){ renderPacks(_lib); renderSessions(_lib); }
