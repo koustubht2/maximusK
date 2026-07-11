@@ -30124,9 +30124,9 @@ function switchTab(tab) {
 
           _bs += (bsTarget(_phase, _phaseT) - _bs) * Math.min(1, dt*3.0);
 
-          // fire ripple on phase change
-          if(_phase !== _lastPhase) _rippleT = 0;
+          // start ripple loop when animating, let it run uninterrupted
           _lastPhase = _phase;
+          if(_animating && _rippleT < 0) _rippleT = 0;
           if(_rippleT >= 0){
             _rippleT += dt/2.5;
             if(_rippleT > 1.1){ _rippleT = _animating ? 0 : -1; }
