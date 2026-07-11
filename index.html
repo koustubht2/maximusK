@@ -25625,7 +25625,7 @@ function switchTab(tab) {
         'Line 2: Biometric status — readiness, sleep, HRV in one sentence. ' +
         'Line 3: Training and focus window recommendation based on gym history and readiness. ' +
         'Line 4: One news headline woven into a market/world context sentence. ' +
-        'Line 5: ONE actionable note from the rest of his life today — pending goals/tasks, spending vs budget, or savings — whichever is most relevant, in one sentence. ' +
+        'Line 5: ONE actionable note from the rest of his life today — pending goals/tasks, spending vs budget, savings, or meditation streak/mindfulness — whichever is most urgent or most likely to be skipped today, in one sentence. ' +
         'Be specific, concise, and speak exactly as JARVIS would. No markdown, no emojis.';
 
       var reply = await gemini(prompt);
@@ -25945,6 +25945,27 @@ function switchTab(tab) {
       }
     }
 
+    // Meditation nudge: no session logged today, remind in the evening
+    if (!nudge && h >= 20) {
+      try {
+        var _medLog = JSON.parse(localStorage.getItem('goals_meditation_log_v1') || '[]');
+        var _medTod = today();
+        var _meditatedToday = _medLog.some(function(e){ return e.date === _medTod; });
+        if (!_meditatedToday) {
+          var _medStreak = 0;
+          for (var _mi = 1; _mi < 60; _mi++) {
+            var _md = new Date(); _md.setDate(_md.getDate() - _mi);
+            var _mdk = _md.getFullYear() + '-' + String(_md.getMonth()+1).padStart(2,'0') + '-' + String(_md.getDate()).padStart(2,'0');
+            if (_medLog.some(function(e){ return e.date === _mdk; })) _medStreak++;
+            else break;
+          }
+          nudge = _medStreak > 0
+            ? 'No meditation yet today, sir — your ' + _medStreak + '-day streak is on the line.'
+            : 'No meditation logged today, sir. Even five minutes will do.';
+        }
+      } catch(e){}
+    }
+
     // Finance nudge: a subscription renews within 3 days
     if (!nudge) {
       try {
@@ -26098,12 +26119,12 @@ function switchTab(tab) {
       var hist = []; try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); } catch(e){}
       var avgEnergy = hist.slice(-7).length ? Math.round(hist.slice(-7).reduce(function(s,e){return s+e.s;},0)/hist.slice(-7).length) : null;
       // Full omniscient context → a LIFE-ARC debrief across all domains
-      var fullCtx = (typeof window.getJarvisContext === 'function') ? window.getJarvisContext('weekly review health training nutrition goals finance', 'full') : '';
-      var prompt = 'You are JARVIS. Generate a 6-line weekly LIFE-ARC debrief for sir, spanning ALL domains (health, training, nutrition, goals, finance), not just readiness.\n\n' +
+      var fullCtx = (typeof window.getJarvisContext === 'function') ? window.getJarvisContext('weekly review health training nutrition goals finance meditation mindful', 'full') : '';
+      var prompt = 'You are JARVIS. Generate a 7-line weekly LIFE-ARC debrief for sir, spanning ALL domains (health, training, nutrition, goals, finance, meditation), not just readiness.\n\n' +
         fullCtx + '\n\n' +
         'Quick health figures: avg_readiness='+avgR+', best='+maxR+'('+bestDayName+'), worst='+minR+', avg_energy='+avgEnergy+'.\n' +
-        'Format: exactly 6 short lines, no bullets/numbering. ' +
-        'Line 1: overall week summary across life. Line 2: health/recovery. Line 3: training + nutrition. Line 4: goals/productivity. Line 5: finance (spending vs income, savings progress). Line 6: ONE cross-domain pattern you noticed (e.g. how spending, sleep, training or nutrition relate) + a specific recommendation. Address as sir. Plain text only.';
+        'Format: exactly 7 short lines, no bullets/numbering. ' +
+        'Line 1: overall week summary across life. Line 2: health/recovery. Line 3: training + nutrition. Line 4: goals/productivity. Line 5: finance (spending vs income, savings progress). Line 6: meditation — streak, minutes this week, mood impact. Line 7: ONE cross-domain pattern you noticed (e.g. how sleep, training, meditation or nutrition relate) + a specific recommendation. Address as sir. Plain text only.';
       var reply = await gemini(prompt);
       var text = reply && reply.trim() ? reply.trim() : 'Unable to generate weekly report, sir.';
       localStorage.setItem(WEEKLY_KEY + weekKey, JSON.stringify({text: text}));
