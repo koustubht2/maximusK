@@ -29328,10 +29328,11 @@ function switchTab(tab) {
     if(_audio){ try{_audio.pause();}catch(e){} _audio=null; }
     if(B2_BASE && track.file){
       _audio = new Audio();
-      _audio.crossOrigin = 'anonymous';
       _audio.preload = 'auto';
-      _audio.src = B2_BASE + '/' + track.file;
-      _audio.play().catch(function(e){ console.warn('Audio play failed:', e); });
+      _audio.src = B2_BASE + '/' + track.file.split('/').map(function(s){ return encodeURIComponent(s); }).join('/');
+      console.log('[MED] audio src:', _audio.src);
+      _audio.onerror = function(e){ console.error('[MED] audio error:', _audio.error && _audio.error.message, 'src:', _audio.src); };
+      _audio.play().catch(function(e){ console.warn('[MED] play() rejected:', e.message); });
       // sync timer to actual audio time when available
       _audio.addEventListener('timeupdate', function(){
         if(!_session.active || _session.paused) return;
