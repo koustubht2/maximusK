@@ -7940,6 +7940,47 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #jarvisView #peakMorningBriefCard .peak-section-label,
 #jarvisView #jvDebriefCard .peak-section-label{ color:var(--pk-gold-soft) !important; }
 
+/* ===== Meditation ===== */
+#healthView #meditationSection .wc-card{
+  background:rgba(255,255,255,0.035) !important;
+  border:1px solid rgba(167,139,250,0.12) !important;
+  box-shadow:inset 0 1px 0 rgba(167,139,250,0.08), 0 18px 44px -28px #000 !important;
+  border-radius:22px !important;
+  backdrop-filter:blur(30px) saturate(1.2);
+}
+#healthView #meditationSection .wc-card:hover{
+  border-color:rgba(167,139,250,0.25) !important;
+  box-shadow:inset 0 1px 0 rgba(167,139,250,0.14), 0 22px 50px -26px #000, 0 0 50px -30px #7c3aed !important;
+}
+.med-pack-chip {
+  flex-shrink:0; padding:8px 14px; border-radius:20px; cursor:pointer;
+  font-family:var(--font-mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase;
+  border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04);
+  color:var(--text-secondary); transition:all 0.2s; white-space:nowrap;
+}
+.med-pack-chip.active { color:#fff; }
+.med-session-row {
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  background:rgba(167,139,250,0.04); border:1px solid rgba(167,139,250,0.1);
+  border-radius:14px; cursor:pointer; transition:all 0.2s;
+}
+.med-session-row:hover { background:rgba(167,139,250,0.09); border-color:rgba(167,139,250,0.25); }
+.med-session-play {
+  width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:rgba(167,139,250,0.15); border:1px solid rgba(167,139,250,0.3); flex-shrink:0;
+  color:rgba(196,181,253,0.9); font-size:11px;
+}
+.med-mood-btn {
+  background:none; border:none; font-size:18px; cursor:pointer; opacity:0.4;
+  transition:opacity 0.2s, transform 0.2s; padding:2px 4px; border-radius:8px;
+}
+.med-mood-btn.selected { opacity:1; transform:scale(1.2); }
+.med-log-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 10px; background:rgba(167,139,250,0.04);
+  border:1px solid rgba(167,139,250,0.08); border-radius:12px;
+  font-size:11px; color:var(--text-secondary);
+}
 /* ===== Markets strip → warm gold glass + gold label ===== */
 #jarvisView #peakMarketsStrip{
   background:rgba(255,255,255,0.035) !important;
@@ -8435,6 +8476,110 @@ window.canonicalJson = function(obj) {
     </div>
   </div>
 </div>
+
+</div>
+
+<!-- ========== MEDITATION SECTION ========== -->
+<div id="meditationSection" style="max-width:720px;margin:0 auto;padding:0 16px 20px">
+
+  <!-- Header card -->
+  <div class="wc-card" id="medHeaderCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(167,139,250,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+        <span style="font-family:var(--pk-serif,Georgia,serif);font-size:17px;color:var(--text-primary)">Meditation</span>
+      </div>
+      <button id="medBreatheOnlyBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(167,139,250,0.7);background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:20px;padding:5px 12px;cursor:pointer">Breathe</button>
+    </div>
+    <!-- Stats row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
+        <div id="medStatStreak" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Streak</div>
+      </div>
+      <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
+        <div id="medStatWeekMin" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Min/wk</div>
+      </div>
+      <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
+        <div id="medStatMonth" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Sessions</div>
+      </div>
+      <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.12);border-radius:14px;padding:10px 8px;text-align:center">
+        <div id="medStatTotal" style="font-size:20px;font-weight:800;color:#a78bfa;line-height:1">—</div>
+        <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Total h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pack browser -->
+  <div class="wc-card" style="padding:16px 16px 10px">
+    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Packs</div>
+    <div id="medPackRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none"></div>
+  </div>
+
+  <!-- Session list -->
+  <div class="wc-card" id="medSessionCard" style="padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary)" id="medSessionPackLabel">Sessions</div>
+      <div id="medLibraryStatus" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.5)"></div>
+    </div>
+    <div id="medSessionList" style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:12px;color:var(--text-tertiary);text-align:center;padding:20px 0">Configure your B2 URL to load sessions.</div>
+    </div>
+  </div>
+
+  <!-- Recent log -->
+  <div class="wc-card" id="medLogCard" style="display:none;padding:16px">
+    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Recent Sessions</div>
+    <div id="medLogList" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+
+</div>
+
+<!-- ========== MEDITATION FULL-SCREEN OVERLAY ========== -->
+<div id="medOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#07061a;flex-direction:column;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,20px) 0 env(safe-area-inset-bottom,20px)">
+
+  <!-- Top bar -->
+  <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px">
+    <button id="medOverlayClose" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);border-radius:20px;color:rgba(167,139,250,0.7);font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;padding:6px 14px;cursor:pointer">✕ End</button>
+    <div style="text-align:right">
+      <div id="medOverlayTitle" style="font-size:12px;color:rgba(239,231,255,0.7);font-family:var(--pk-serif,Georgia,serif)">Breathe</div>
+      <div id="medOverlayPack" style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.5);margin-top:1px"></div>
+    </div>
+  </div>
+
+  <!-- Mandala canvas -->
+  <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:18px">
+    <canvas id="medMandala" width="280" height="280"></canvas>
+    <div id="medBreathCue" style="font-family:var(--pk-serif,Georgia,serif);font-size:22px;color:rgba(196,181,253,0.9);letter-spacing:0.04em;min-height:32px;text-align:center;transition:opacity 0.6s">Breathe in</div>
+    <div id="medBreathSub" style="font-family:var(--font-mono);font-size:10px;color:rgba(167,139,250,0.4);letter-spacing:0.12em;text-transform:uppercase;min-height:16px;text-align:center"></div>
+  </div>
+
+  <!-- Bottom controls -->
+  <div style="width:100%;padding:0 24px;display:flex;flex-direction:column;gap:12px">
+    <!-- Progress -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <div id="medOverlayElapsed" style="font-family:var(--font-mono);font-size:11px;color:rgba(167,139,250,0.5)">0:00</div>
+      <div id="medOverlayRemaining" style="font-family:var(--font-mono);font-size:11px;color:rgba(167,139,250,0.5)">—</div>
+    </div>
+    <div style="height:2px;background:rgba(167,139,250,0.1);border-radius:2px;overflow:hidden">
+      <div id="medOverlayBar" style="height:100%;background:rgba(167,139,250,0.5);width:0%;transition:width 1s linear;border-radius:2px"></div>
+    </div>
+    <!-- Mood before/after -->
+    <div id="medMoodRow" style="display:flex;align-items:center;justify-content:center;gap:6px">
+      <span style="font-family:var(--font-mono);font-size:9px;color:rgba(167,139,250,0.4);letter-spacing:0.08em">MOOD</span>
+      <div style="display:flex;gap:4px" id="medMoodBtns">
+        <button onclick="window._medSetMood(1)" class="med-mood-btn" data-m="1">😔</button>
+        <button onclick="window._medSetMood(2)" class="med-mood-btn" data-m="2">😐</button>
+        <button onclick="window._medSetMood(3)" class="med-mood-btn" data-m="3">🙂</button>
+        <button onclick="window._medSetMood(4)" class="med-mood-btn" data-m="4">😌</button>
+        <button onclick="window._medSetMood(5)" class="med-mood-btn" data-m="5">✨</button>
+      </div>
+    </div>
+    <!-- Pause -->
+    <button id="medOverlayPause" style="width:100%;padding:14px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:16px;color:rgba(196,181,253,0.9);font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;cursor:pointer">❚❚ PAUSE</button>
+  </div>
 
 </div>
 </div>
@@ -10573,6 +10718,18 @@ window.canonicalJson = function(obj) {
         </div>
       </div>
       <div id="peakMorningBriefText" style="font-size:13px;line-height:1.65;color:var(--text-secondary);margin-top:8px;white-space:pre-line">Generating your brief…</div>
+    </div>
+
+    <!-- Daily Wisdom -->
+    <div class="peak-card" id="jvWisdomCard" style="margin-top:10px;display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="peak-section-label">Wisdom</div>
+        <button id="jvWisdomNext" type="button" title="Next quote" style="background:none;border:none;cursor:pointer;padding:3px;color:rgba(199,154,78,0.5);font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em">↻</button>
+      </div>
+      <div id="jvWisdomQuote" style="font-family:var(--pk-serif,Georgia,serif);font-size:15px;line-height:1.65;color:rgba(239,231,216,0.92);font-style:italic;margin-bottom:8px"></div>
+      <div id="jvWisdomAuthor" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(199,154,78,0.6)"></div>
+      <div style="height:1px;background:rgba(199,154,78,0.12);margin:10px 0"></div>
+      <div id="jvWisdomContext" style="font-size:11px;line-height:1.5;color:var(--text-tertiary)"></div>
     </div>
 
     <!-- Markets strip (moved here from Peak) -->
@@ -18930,6 +19087,8 @@ function switchTab(tab) {
   // re-evaluate One Thing + Streak Wall when switching to dash
   if (tab === 'dash' && typeof window._refreshOneThing === 'function') setTimeout(window._refreshOneThing, 100);
   if (tab === 'dash' && typeof window._renderStreakWall === 'function') setTimeout(window._renderStreakWall, 120);
+  // refresh meditation stats/log when Health tab opens
+  if (tab === 'health' && typeof window._medRender === 'function') setTimeout(window._medRender, 50);
   // count-up the Oura readiness number when the Health tab opens
   if (tab === 'health') setTimeout(function(){
     var n=document.getElementById('ouraHeroNum'); if(!n) return;
@@ -28939,6 +29098,483 @@ function switchTab(tab) {
 })();
 </script>
 
+<!-- ========== MEDITATION ENGINE ========== -->
+<script>
+(function(){
+  /* ---- config ---- */
+  var B2_BASE = 'https://pub-7e59265d4bb146e0b2f0fe51adae8f3b.r2.dev';
+  var LIBRARY_URL = B2_BASE + '/meditation-library.json';
+  var MED_LOG_KEY = 'goals_meditation_log_v1';
+  var MED_LIB_KEY = 'med_library_cache';
+
+  /* ---- mock library (shown until B2 is wired) ---- */
+  var MOCK_LIBRARY = {
+    version: 1,
+    packs: [
+      { id:'foundation',   label:'Foundation',          color:'#818cf8',
+        sessions:[
+          {id:'f01',title:'Day 1 — The Basics',           duration:600,  file:''},
+          {id:'f02',title:'Day 2 — Focusing the Mind',    duration:600,  file:''},
+          {id:'f03',title:'Day 3 — Getting Comfortable',  duration:600,  file:''},
+          {id:'f04',title:'Day 4 — Being Present',        duration:900,  file:''},
+          {id:'f05',title:'Day 5 — Dealing with Thoughts',duration:900,  file:''},
+          {id:'f06',title:'Day 6 — Dealing with Emotions',duration:900,  file:''},
+          {id:'f07',title:'Day 7 — Working with Urges',   duration:900,  file:''},
+          {id:'f08',title:'Day 8 — Restful Sleep',        duration:1200, file:''},
+          {id:'f09',title:'Day 9 — Letting Go',           duration:1200, file:''},
+          {id:'f10',title:'Day 10 — Moving Forward',      duration:1200, file:''}
+        ]
+      },
+      { id:'health',       label:'Health',               color:'#6ee7b7',
+        sessions:[
+          {id:'h01',title:'Managing Anxiety',    duration:1200, file:''},
+          {id:'h02',title:'Overcoming Stress',   duration:1200, file:''},
+          {id:'h03',title:'Deep Sleep',          duration:1200, file:''},
+          {id:'h04',title:'Waking Up',           duration:600,  file:''},
+          {id:'h05',title:'Dealing with Pain',   duration:1200, file:''}
+        ]
+      },
+      { id:'happiness',    label:'Happiness',            color:'#fbbf24',
+        sessions:[
+          {id:'hp01',title:'Finding Calm',       duration:600,  file:''},
+          {id:'hp02',title:'Gratitude',          duration:900,  file:''},
+          {id:'hp03',title:'Kindness',           duration:900,  file:''},
+          {id:'hp04',title:'Equanimity',         duration:1200, file:''}
+        ]
+      },
+      { id:'work',         label:'Work & Performance',   color:'#38bdf8',
+        sessions:[
+          {id:'w01',title:'Focus Mode',          duration:900,  file:''},
+          {id:'w02',title:'Before a Meeting',    duration:300,  file:''},
+          {id:'w03',title:'Creativity',          duration:1200, file:''},
+          {id:'w04',title:'Managing Pressure',   duration:900,  file:''}
+        ]
+      },
+      { id:'sport',        label:'Sport',                color:'#86efac',
+        sessions:[
+          {id:'sp01',title:'Pre-game',           duration:600,  file:''},
+          {id:'sp02',title:'Recovery',           duration:1200, file:''},
+          {id:'sp03',title:'Visualisation',      duration:900,  file:''}
+        ]
+      },
+      { id:'brave',        label:'Brave',                color:'#f472b6',
+        sessions:[
+          {id:'b01',title:'Self-Doubt',          duration:1200, file:''},
+          {id:'b02',title:'Fear of Failure',     duration:1200, file:''},
+          {id:'b03',title:'Confidence',          duration:900,  file:''}
+        ]
+      },
+      { id:'pro',          label:'Headspace Pro',        color:'#c79a4e',
+        sessions:[
+          {id:'pro01',title:'Deep Awareness',    duration:1800, file:''},
+          {id:'pro02',title:'Open Monitoring',   duration:1800, file:''},
+          {id:'pro03',title:'Noting',            duration:1200, file:''}
+        ]
+      },
+      { id:'students',     label:'Students',             color:'#a78bfa',
+        sessions:[
+          {id:'st01',title:'Exam Stress',        duration:600,  file:''},
+          {id:'st02',title:'Focus & Retention',  duration:900,  file:''},
+          {id:'st03',title:'Better Sleep',       duration:1200, file:''}
+        ]
+      }
+    ],
+    singles: [
+      {id:'s01',title:'Morning Meditation',    duration:600,  file:''},
+      {id:'s02',title:'Mini Meditation',       duration:180,  file:''},
+      {id:'s03',title:'S.O.S. Headspace',      duration:60,   file:''},
+      {id:'s04',title:'Evening Wind Down',     duration:900,  file:''},
+      {id:'s05',title:'Body Scan',             duration:1200, file:''}
+    ]
+  };
+
+  /* ---- helpers ---- */
+  function dkey(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function ls(k){ try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;} }
+  function lsSet(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+  function fmtDur(s){ var m=Math.floor(s/60); return m+'m'; }
+  function fmtTime(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+
+  /* ---- state ---- */
+  var _lib = null;
+  var _activePack = null;
+  var _session = { active:false, trackId:null, trackTitle:'', pack:'', durSec:0, startTs:0, elapsed:0, moodBefore:0, moodAfter:0, paused:false, pausedAt:0, pausedTotal:0 };
+  var _raf = null;
+  var _audio = null;
+  var _breathPhase = 0; // 0=inhale 1=hold 2=exhale 3=rest
+  var _breathTs = 0;
+  var _PHASES = [{label:'Breathe in',sub:'',dur:4000},{label:'Hold',sub:'gently',dur:4000},{label:'Breathe out',sub:'',dur:6000},{label:'Rest',sub:'',dur:2000}];
+
+  /* ---- load library ---- */
+  function loadLibrary(cb){
+    if (_lib){ cb(_lib); return; }
+    var cached = ls(MED_LIB_KEY);
+    if (cached && cached.version){ _lib=cached; cb(_lib); }
+    if (!LIBRARY_URL){ _lib=MOCK_LIBRARY; cb(_lib); return; }
+    fetch(LIBRARY_URL).then(function(r){ return r.json(); }).then(function(d){
+      _lib=d; lsSet(MED_LIB_KEY,d); cb(_lib);
+    }).catch(function(){ _lib=MOCK_LIBRARY; cb(_lib); });
+  }
+
+  /* ---- log ---- */
+  function loadLog(){ return ls(MED_LOG_KEY)||[]; }
+  function saveLog(log){ lsSet(MED_LOG_KEY,log); }
+  function appendLog(entry){
+    var log=loadLog();
+    log.push(entry);
+    var cutoff=Date.now()-90*24*3600*1000;
+    log=log.filter(function(e){ return e.startTs>cutoff; });
+    saveLog(log);
+  }
+
+  /* ---- stats ---- */
+  function renderStats(){
+    var log=loadLog(); var tod=dkey();
+    // streak
+    var streak=0;
+    for(var i=0;i<60;i++){
+      var d=new Date(); d.setDate(d.getDate()-i);
+      var dk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      if(log.some(function(e){ return e.date===dk; })) streak++;
+      else if(i>0) break;
+    }
+    // week min
+    var weekSec=0;
+    for(var j=0;j<7;j++){
+      var wd=new Date(); wd.setDate(wd.getDate()-j);
+      var wdk=wd.getFullYear()+'-'+String(wd.getMonth()+1).padStart(2,'0')+'-'+String(wd.getDate()).padStart(2,'0');
+      log.filter(function(e){ return e.date===wdk; }).forEach(function(e){ weekSec+=e.duration||0; });
+    }
+    // month sessions
+    var now=new Date(), mStart=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+    var monthCount=log.filter(function(e){ return e.startTs>=mStart; }).length;
+    // total hours
+    var totalSec=log.reduce(function(a,e){ return a+(e.duration||0); },0);
+    var el=function(id){ return document.getElementById(id); };
+    if(el('medStatStreak'))   el('medStatStreak').textContent   = streak||'0';
+    if(el('medStatWeekMin'))  el('medStatWeekMin').textContent  = Math.round(weekSec/60)||'0';
+    if(el('medStatMonth'))    el('medStatMonth').textContent    = monthCount||'0';
+    if(el('medStatTotal'))    el('medStatTotal').textContent    = (totalSec/3600).toFixed(1);
+  }
+
+  /* ---- log list ---- */
+  function renderLog(){
+    var log=loadLog().slice(-10).reverse();
+    var card=document.getElementById('medLogCard');
+    var list=document.getElementById('medLogList');
+    if(!list) return;
+    if(!log.length){ if(card) card.style.display='none'; return; }
+    if(card) card.style.display='';
+    list.innerHTML=log.map(function(e){
+      var mAfter=e.moodAfter?['','😔','😐','🙂','😌','✨'][e.moodAfter]:'';
+      return '<div class="med-log-row">'
+        +'<div><div style="font-size:12px;color:var(--text-primary)">'+(e.trackTitle||'Breathe session')+'</div>'
+        +'<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">'+e.date+' · '+fmtDur(e.duration||0)+'</div></div>'
+        +(mAfter?'<div style="font-size:16px">'+mAfter+'</div>':'')
+        +'</div>';
+    }).join('');
+  }
+
+  /* ---- pack browser ---- */
+  function renderPacks(lib){
+    var row=document.getElementById('medPackRow'); if(!row) return;
+    var packs=lib.packs.concat([{id:'singles',label:'Singles',color:'#94a3b8',sessions:lib.singles}]);
+    row.innerHTML=packs.map(function(p){
+      return '<button class="med-pack-chip'+(p.id===_activePack?' active':'')+'" data-pid="'+p.id+'" '
+        +'style="'+(p.id===_activePack?'background:'+p.color+'22;border-color:'+p.color+'55;color:'+p.color:'')+'">'+p.label+'</button>';
+    }).join('');
+    row.querySelectorAll('.med-pack-chip').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        _activePack=btn.dataset.pid;
+        renderPacks(lib);
+        renderSessions(lib);
+      });
+    });
+  }
+
+  /* ---- session list ---- */
+  function renderSessions(lib){
+    var list=document.getElementById('medSessionList');
+    var label=document.getElementById('medSessionPackLabel');
+    var status=document.getElementById('medLibraryStatus');
+    if(!list) return;
+    var pack;
+    if(_activePack==='singles') pack={id:'singles',label:'Singles',color:'#94a3b8',sessions:lib.singles};
+    else pack=lib.packs.find(function(p){ return p.id===_activePack; })||lib.packs[0];
+    if(!pack){ list.innerHTML=''; return; }
+    if(label) label.textContent=pack.label;
+    if(status) status.textContent = B2_BASE ? '' : 'Preview mode — configure B2 for audio';
+    var log=loadLog();
+    list.innerHTML=pack.sessions.map(function(s){
+      var done=log.some(function(e){ return e.trackId===s.id; });
+      return '<div class="med-session-row" data-sid="'+s.id+'" data-pack="'+pack.id+'" data-color="'+pack.color+'">'
+        +'<div class="med-session-play" style="border-color:'+pack.color+'44;color:'+pack.color+'">▶</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+s.title+'</div>'
+        +'<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">'+fmtDur(s.duration)+(done?' · ✓ done':'')+'</div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    list.querySelectorAll('.med-session-row').forEach(function(row){
+      row.addEventListener('click',function(){
+        var sid=row.dataset.sid;
+        var packId=row.dataset.pack;
+        var p = packId==='singles'?{sessions:lib.singles,label:'Singles',color:'#94a3b8'}:lib.packs.find(function(x){ return x.id===packId; });
+        var s=p.sessions.find(function(x){ return x.id===sid; });
+        if(s) startSession(s,p);
+      });
+    });
+  }
+
+  /* ---- session start ---- */
+  function startSession(track, pack){
+    _session = { active:true, trackId:track.id, trackTitle:track.title, pack:pack.label||'',
+      durSec:track.duration||1200, startTs:Date.now(), elapsed:0, moodBefore:0, moodAfter:0,
+      paused:false, pausedAt:0, pausedTotal:0 };
+
+    // audio
+    if(_audio){ try{_audio.pause();}catch(e){} _audio=null; }
+    if(B2_BASE && track.file){
+      _audio=new Audio(B2_BASE+'/'+track.file);
+      _audio.play().catch(function(){});
+    }
+
+    // overlay
+    var ov=document.getElementById('medOverlay');
+    if(ov){ ov.style.display='flex'; }
+    document.getElementById('medOverlayTitle').textContent=track.title;
+    document.getElementById('medOverlayPack').textContent=pack.label||'';
+    document.getElementById('medOverlayBar').style.width='0%';
+    document.getElementById('medOverlayElapsed').textContent='0:00';
+    document.getElementById('medOverlayRemaining').textContent=fmtTime(_session.durSec);
+    document.getElementById('medOverlayPause').textContent='❚❚ PAUSE';
+    // reset mood
+    document.querySelectorAll('.med-mood-btn').forEach(function(b){ b.classList.remove('selected'); });
+    // reset breath phase
+    _breathPhase=0; _breathTs=Date.now();
+
+    if(_raf) cancelAnimationFrame(_raf);
+    _raf=requestAnimationFrame(tick);
+  }
+
+  /* ---- breathe-only mode ---- */
+  function startBreatheOnly(){
+    startSession({id:'breathe',title:'Breathe',duration:600,file:''},
+                 {id:'breathe',label:'Breathe',color:'#a78bfa'});
+  }
+
+  /* ---- tick ---- */
+  function tick(){
+    if(!_session.active) return;
+    if(_session.paused){ _raf=requestAnimationFrame(tick); return; }
+    var now=Date.now();
+    _session.elapsed=Math.floor((now-_session.startTs-_session.pausedTotal)/1000);
+    var rem=Math.max(0,_session.durSec-_session.elapsed);
+    var pct=Math.min(100,(_session.elapsed/_session.durSec)*100);
+
+    // overlay progress
+    var barEl=document.getElementById('medOverlayBar');
+    var elEl=document.getElementById('medOverlayElapsed');
+    var remEl=document.getElementById('medOverlayRemaining');
+    if(barEl) barEl.style.width=pct+'%';
+    if(elEl)  elEl.textContent=fmtTime(_session.elapsed);
+    if(remEl) remEl.textContent=fmtTime(rem);
+
+    // breath phase
+    var phase=_PHASES[_breathPhase];
+    if(now-_breathTs>=phase.dur){
+      _breathPhase=(_breathPhase+1)%4;
+      _breathTs=now;
+      var cue=document.getElementById('medBreathCue');
+      var sub=document.getElementById('medBreathSub');
+      if(cue) cue.textContent=_PHASES[_breathPhase].label;
+      if(sub) sub.textContent=_PHASES[_breathPhase].sub;
+    }
+
+    // mandala
+    drawMandala(pct/100, _breathPhase, (now-_breathTs)/_PHASES[_breathPhase].dur);
+
+    if(rem<=0){ endSession(true); return; }
+    _raf=requestAnimationFrame(tick);
+  }
+
+  /* ---- end session ---- */
+  function endSession(completed){
+    if(!_session.active) return;
+    _session.active=false;
+    if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
+    if(_audio){ try{_audio.pause();}catch(e){} _audio=null; }
+    if(_session.elapsed>=30){
+      appendLog({
+        date:dkey(), startTs:_session.startTs, trackId:_session.trackId,
+        trackTitle:_session.trackTitle, pack:_session.pack,
+        duration:_session.elapsed, completed:completed,
+        moodBefore:_session.moodBefore, moodAfter:_session.moodAfter
+      });
+    }
+    var ov=document.getElementById('medOverlay'); if(ov) ov.style.display='none';
+    renderStats(); renderLog();
+    if(_lib) renderSessions(_lib);
+  }
+
+  /* ---- pause ---- */
+  function togglePause(){
+    if(!_session.active) return;
+    _session.paused=!_session.paused;
+    if(_session.paused){
+      _session.pausedAt=Date.now();
+      if(_audio) _audio.pause();
+    } else {
+      _session.pausedTotal+=Date.now()-_session.pausedAt;
+      if(_audio) _audio.play().catch(function(){});
+    }
+    var btn=document.getElementById('medOverlayPause');
+    if(btn) btn.textContent=_session.paused?'▶ RESUME':'❚❚ PAUSE';
+  }
+
+  /* ---- mood ---- */
+  window._medSetMood=function(n){
+    if(_session.active) _session.moodAfter=n;
+    document.querySelectorAll('.med-mood-btn').forEach(function(b){
+      b.classList.toggle('selected',parseInt(b.dataset.m)===n);
+    });
+  };
+
+  /* ============================================================
+     BREATHING MANDALA — sacred geometry canvas
+  ============================================================ */
+  function drawMandala(progress, phase, phaseT){
+    var c=document.getElementById('medMandala'); if(!c) return;
+    var ctx=c.getContext('2d');
+    var W=c.width, H=c.height, cx=W/2, cy=H/2;
+    ctx.clearRect(0,0,W,H);
+
+    // breathing scale: inhale→expand, exhale→contract
+    var breathScale;
+    if(phase===0)       breathScale=0.72+phaseT*0.28;        // inhale: 0.72→1.0
+    else if(phase===1)  breathScale=1.0;                      // hold
+    else if(phase===2)  breathScale=1.0-(phaseT*0.28);        // exhale: 1.0→0.72
+    else                breathScale=0.72;                     // rest
+
+    var R=110*breathScale;
+
+    // glow pulse
+    var grd=ctx.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.4);
+    grd.addColorStop(0,'rgba(167,139,250,'+((0.08+breathScale*0.07)).toFixed(3)+')');
+    grd.addColorStop(0.5,'rgba(99,102,241,'+((0.04+breathScale*0.04)).toFixed(3)+')');
+    grd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.4,0,Math.PI*2);
+    ctx.fillStyle=grd; ctx.fill();
+
+    // rotation drift
+    var rot=progress*Math.PI*2;
+
+    // petals (lotus — 12 petals)
+    var petals=12;
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.3);
+    for(var i=0;i<petals;i++){
+      var a=(Math.PI*2/petals)*i;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath();
+      ctx.ellipse(0,-R*0.55, R*0.12, R*0.42, 0, 0, Math.PI*2);
+      var alpha=(0.15+breathScale*0.25).toFixed(3);
+      ctx.fillStyle='rgba(167,139,250,'+alpha+')';
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // concentric rings (6)
+    var rings=[0.28,0.42,0.56,0.70,0.84,1.0];
+    rings.forEach(function(rf,ri){
+      var r=R*rf;
+      var alpha=(0.08+breathScale*0.12*(1-ri/6)).toFixed(3);
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.strokeStyle='rgba(167,139,250,'+alpha+')';
+      ctx.lineWidth=ri===5?1.5:0.8;
+      ctx.stroke();
+    });
+
+    // inner star of David (2 overlapping triangles)
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.5);
+    for(var t=0;t<2;t++){
+      ctx.beginPath();
+      for(var v=0;v<3;v++){
+        var angle=(Math.PI*2/3)*v+(t===1?Math.PI/3:0)-Math.PI/2;
+        var rx=Math.cos(angle)*R*0.38, ry=Math.sin(angle)*R*0.38;
+        if(v===0) ctx.moveTo(rx,ry); else ctx.lineTo(rx,ry);
+      }
+      ctx.closePath();
+      ctx.strokeStyle='rgba(196,181,253,'+(0.18+breathScale*0.15)+')';
+      ctx.lineWidth=0.8; ctx.stroke();
+    }
+    ctx.restore();
+
+    // centre dot
+    ctx.beginPath(); ctx.arc(cx,cy,R*0.06,0,Math.PI*2);
+    ctx.fillStyle='rgba(221,214,254,'+(0.5+breathScale*0.4)+')';
+    ctx.fill();
+
+    // particle dust on exhale
+    if(phase===2 && phaseT>0.1){
+      var seed=Math.floor(progress*1000);
+      for(var p=0;p<12;p++){
+        var px=Math.sin(seed*0.7+p*2.5)*R*(0.9+phaseT*0.5);
+        var py=Math.cos(seed*0.5+p*1.8)*R*(0.9+phaseT*0.5);
+        var palpha=(0.4*(1-phaseT)).toFixed(3);
+        ctx.beginPath(); ctx.arc(cx+px,cy+py,1.2,0,Math.PI*2);
+        ctx.fillStyle='rgba(196,181,253,'+palpha+')'; ctx.fill();
+      }
+    }
+  }
+
+  /* ---- wire buttons ---- */
+  function wireButtons(){
+    var closeBtn=document.getElementById('medOverlayClose');
+    if(closeBtn && !closeBtn._wired){ closeBtn._wired=true;
+      closeBtn.addEventListener('click',function(){ endSession(false); }); }
+    var pauseBtn=document.getElementById('medOverlayPause');
+    if(pauseBtn && !pauseBtn._wired){ pauseBtn._wired=true;
+      pauseBtn.addEventListener('click',togglePause); }
+    var breathBtn=document.getElementById('medBreatheOnlyBtn');
+    if(breathBtn && !breathBtn._wired){ breathBtn._wired=true;
+      breathBtn.addEventListener('click',startBreatheOnly); }
+  }
+
+  /* ---- init ---- */
+  function init(){
+    wireButtons();
+    loadLibrary(function(lib){
+      _activePack=lib.packs[0].id;
+      renderPacks(lib);
+      renderSessions(lib);
+    });
+    renderStats();
+    renderLog();
+  }
+
+  // init when health tab opens, and on load
+  document.addEventListener('DOMContentLoaded', function(){
+    if(document.getElementById('meditationSection')) init();
+  });
+  window._medInit=init;
+  window._medRender=function(){
+    renderStats(); renderLog();
+    if(_lib){ renderPacks(_lib); renderSessions(_lib); }
+  };
+
+  /* ---- expose B2 setter for later wiring ---- */
+  window._medSetB2=function(url){
+    B2_BASE=url.replace(/\/$/,'');
+    LIBRARY_URL=B2_BASE+'/meditation-library.json';
+    localStorage.removeItem(MED_LIB_KEY);
+    _lib=null;
+    loadLibrary(function(lib){ renderPacks(lib); renderSessions(lib); });
+  };
+
+})();
+</script>
+
 <!-- ========== JARVIS OMNISCIENT ENGINE ========== -->
 <script>
 (function(){
@@ -29099,18 +29735,164 @@ function switchTab(tab) {
     return { summary:summary, detail:detail };
   }
 
+  function domMeditation(){
+    var log = ls('goals_meditation_log_v1') || [];
+    var days = lastDays(7);
+    var tod = todayKey();
+    var todaySec = log.filter(function(e){ return e.date===tod; }).reduce(function(a,e){ return a+(e.duration||0); },0);
+    var weekSec  = log.filter(function(e){ return days.indexOf(e.date)>=0; }).reduce(function(a,e){ return a+(e.duration||0); },0);
+    var streak=0;
+    for(var i=0;i<60;i++){
+      var d=new Date(); d.setDate(d.getDate()-i);
+      var dk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      if(log.some(function(e){ return e.date===dk; })) streak++;
+      else if(i>0) break;
+    }
+    var mStart=new Date(); mStart.setDate(1); mStart.setHours(0,0,0,0);
+    var monthCount=log.filter(function(e){ return new Date(e.date).getTime()>=mStart.getTime(); }).length;
+    var avgMood=0;
+    var moodLogs=log.filter(function(e){ return e.moodAfter>0; });
+    if(moodLogs.length) avgMood=(moodLogs.reduce(function(a,e){ return a+(e.moodAfter||0); },0)/moodLogs.length).toFixed(1);
+    var summary='Meditation: '+Math.round(weekSec/60)+'min this week, '+streak+'-day streak, '+monthCount+' sessions this month'+(avgMood>0?', avg mood after: '+avgMood+'/5':'');
+    var detail=days.map(function(dk){
+      var daySess=log.filter(function(e){ return e.date===dk; });
+      if(!daySess.length) return null;
+      var sec=daySess.reduce(function(a,e){ return a+(e.duration||0); },0);
+      var tracks=daySess.map(function(e){ return e.trackTitle||'Breathe'; }).join(', ');
+      return dk+': '+Math.round(sec/60)+'min — '+tracks;
+    }).filter(Boolean).join('\n');
+    return { summary:summary, detail:detail?('Meditation log:\n'+detail):'' };
+  }
+
+  function domFocus(){
+    var sessions = ls('goals_focus_sessions') || [];
+    var days = lastDays(7);
+    var todaySec = sessions.filter(function(s){ return s.date===days[0]; }).reduce(function(a,s){ return a+s.dur; },0);
+    var weekSec  = sessions.filter(function(s){ return days.indexOf(s.date)>=0; }).reduce(function(a,s){ return a+s.dur; },0);
+    var todayH = Math.floor(todaySec/3600), todayM = Math.floor((todaySec%3600)/60);
+    var weekH  = Math.floor(weekSec/3600),  weekM  = Math.floor((weekSec%3600)/60);
+    // streak: consecutive days with >=1 session
+    var streak = 0;
+    for (var i=0; i<days.length; i++){
+      if (sessions.some(function(s){ return s.date===days[i]; })) streak++;
+      else break;
+    }
+    var todaySessions = sessions.filter(function(s){ return s.date===days[0]; });
+    var summary = 'Focus/Deep work: today '+todayH+'h '+todayM+'m ('+todaySessions.length+' sessions), week '+weekH+'h '+weekM+'m vs 15h target, streak '+streak+' days';
+    var detail = 'Focus sessions last 7 days:\n'+days.map(function(dk){
+      var daySessions = sessions.filter(function(s){ return s.date===dk; });
+      if (!daySessions.length) return dk+': no sessions';
+      var sec = daySessions.reduce(function(a,s){ return a+s.dur; },0);
+      var h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
+      var tasks = daySessions.map(function(s){ return s.task||'(unlabelled)'; }).filter(function(t,i,a){ return a.indexOf(t)===i; }).join(', ');
+      return dk+': '+h+'h '+m+'m — '+tasks;
+    }).join('\n');
+    return { summary:summary, detail:detail };
+  }
+
+  function domReading(){
+    var books = ls('po_books_v1') || [];
+    var log   = ls('po_reading_log_v1') || [];
+    var hl    = ls('po_highlights_v1') || [];
+    var days  = lastDays(WINDOW);
+    var current = books.find(function(b){ return b.status==='reading'; });
+    var doneYear = books.filter(function(b){
+      return b.status==='done' && b.finishDate && b.finishDate.startsWith(new Date().getFullYear()+'');
+    }).length;
+    var weekPages = log.filter(function(e){ return lastDays(7).indexOf(e.date)>=0; }).reduce(function(a,e){ return a+e.pages; },0);
+    var todayPages = log.filter(function(e){ return e.date===days[0]; }).reduce(function(a,e){ return a+e.pages; },0);
+    // streak
+    var streak = 0;
+    for (var i=0; i<days.length; i++){
+      if (log.some(function(e){ return e.date===days[i]; })) streak++;
+      else break;
+    }
+    var curStr = current ? ('"'+current.title+'" by '+current.author+' ('+current.currentPage+'/'+current.totalPages+' pages, '+Math.round(current.currentPage/current.totalPages*100)+'%)') : 'none';
+    var summary = 'Reading: current book '+curStr+', today '+todayPages+'p, week '+weekPages+'p, '+doneYear+' books done this year, '+streak+'-day streak, '+hl.length+' highlights logged';
+    var detail = 'Reading log last '+WINDOW+' days:\n'+days.map(function(dk){
+      var entries = log.filter(function(e){ return e.date===dk; });
+      if (!entries.length) return null;
+      return dk+': '+entries.reduce(function(a,e){ return a+e.pages; },0)+' pages';
+    }).filter(Boolean).join('\n');
+    if (hl.length) detail += '\nRecent highlights:\n'+hl.slice(-3).reverse().map(function(h){ return '"'+String(h.text).slice(0,100)+'" — '+h.book; }).join('\n');
+    return { summary:summary, detail:detail };
+  }
+
+  function domRelationships(){
+    var contacts   = ls('po_relationships_v1') || [];
+    var log        = ls('po_rel_log_v1') || [];
+    var FREQ_DAYS  = { weekly:7, monthly:30, quarterly:90 };
+    var tod        = todayKey();
+    var now        = Date.now();
+    function daysSince(d){ return d ? Math.floor((now - new Date(d).getTime())/86400000) : 999; }
+    function urgency(c){
+      var fd = FREQ_DAYS[c.freq]||30, ds = daysSince(c.lastContact);
+      return ds >= fd ? 'overdue' : ds >= fd*0.7 ? 'soon' : 'ok';
+    }
+    var overdue = contacts.filter(function(c){ return urgency(c)==='overdue'; })
+      .sort(function(a,b){ return daysSince(a.lastContact)-daysSince(b.lastContact); })
+      .map(function(c){ return c.name+' ('+daysSince(c.lastContact)+'d ago)'; });
+    var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    var monthLog = log.filter(function(e){ return new Date(e.date).getTime()>=monthStart.getTime(); });
+    var maintained = new Set(monthLog.map(function(e){ return e.contactId; })).size;
+    var summary = 'Relationships: '+contacts.length+' contacts, '+overdue.length+' overdue check-ins ('+overdue.slice(0,3).join(', ')+(overdue.length>3?'...':'')+'), '+maintained+' maintained this month';
+    var detail = contacts.length ? ('All contacts:\n'+contacts.map(function(c){
+      return c.name+' ['+c.type+', '+c.freq+']: last contact '+daysSince(c.lastContact)+'d ago — '+urgency(c);
+    }).join('\n')) : '';
+    return { summary:summary, detail:detail };
+  }
+
+  function domDating(){
+    var pipeline  = ls('po_dating_pipeline_v1') || [];
+    var approaches = ls('po_approaches_v1') || [];
+    var STAGES = ['Matched','Talking','Number','Date Planned','Met'];
+    var now = Date.now();
+    // stale = no message in 7+ days
+    var stale = pipeline.filter(function(p){ return p.lastMsg && (now-p.lastMsg)>7*86400000; });
+    var amber = pipeline.filter(function(p){ return p.lastMsg && (now-p.lastMsg)>3*86400000 && (now-p.lastMsg)<=7*86400000; });
+    // this week's approaches (Sun-start)
+    var weekStart = new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay()); weekStart.setHours(0,0,0,0);
+    var weekApproaches = approaches.filter(function(a){ return new Date(a.date).getTime()>=weekStart.getTime(); });
+    var weekGreat = weekApproaches.filter(function(a){ return a.outcome==='great'; }).length;
+    // streak
+    var streak = 0;
+    for (var wk=0; wk<52; wk++){
+      var wkStart = new Date(weekStart); wkStart.setDate(wkStart.getDate()-wk*7);
+      var wkEnd   = new Date(wkStart); wkEnd.setDate(wkEnd.getDate()+7);
+      if (approaches.some(function(a){ var t=new Date(a.date).getTime(); return t>=wkStart.getTime()&&t<wkEnd.getTime(); })) streak++;
+      else break;
+    }
+    var stageBreakdown = STAGES.map(function(s){
+      var n=pipeline.filter(function(p){return p.stage===s;}).length; return n?s+'('+n+')':null;
+    }).filter(Boolean).join(', ');
+    var summary = 'Dating pipeline: '+pipeline.length+' matches — '+stageBreakdown+'; '+stale.length+' stale (7d+), '+amber.length+' going cold (3-7d). Approaches this week: '+weekApproaches.length+'/3 ('+weekGreat+' great), '+streak+'-wk streak';
+    var detail  = pipeline.length ? ('Pipeline:\n'+pipeline.map(function(p){
+      var age = p.lastMsg ? Math.floor((now-p.lastMsg)/86400000)+'d ago' : 'never';
+      return p.name+' ['+p.app+'] → '+p.stage+', last msg '+age;
+    }).join('\n')) : 'No active pipeline.';
+    if (approaches.length) detail += '\nRecent approaches:\n'+approaches.slice(-5).reverse().map(function(a){
+      return a.date+': '+a.outcome+' — '+(a.note||a.context||'');
+    }).join('\n');
+    return { summary:summary, detail:detail };
+  }
+
   // domain registry with keyword triggers for "smart detail"
   var DOMAINS = [
-    { fn:domOura,       keys:['readiness','sleep','hrv','recovery','rested','tired','oura','health'] },
-    { fn:domNutrition,  keys:['eat','ate','food','meal','protein','calorie','kcal','carb','fat','nutrition','diet','breakfast','lunch','dinner'] },
-    { fn:domWater,      keys:['water','hydrat','drink','thirsty'] },
-    { fn:domStimulants, keys:['caffeine','coffee','alcohol','drink','meds','supplement','nicotine','stimulant'] },
-    { fn:domFlags,      keys:['sick','ill','sunlight','sun'] },
-    { fn:domEnergy,     keys:['energy','peak','focus','dip','alert'] },
-    { fn:domGym,        keys:['gym','workout','train','lift','exercise','weight','muscle','strength','pr','overload','squat','bench','deadlift'] },
-    { fn:domGoals,      keys:['goal','task','todo','commit','productiv','done','priorit'] },
-    { fn:domJournal,    keys:['journal','reflect','wrote','feeling','bottleneck','experience'] },
-    { fn:domFinance,    keys:['money','spend','spent','expense','income','net worth','networth','save','saving','budget','sub','subscription','wishlist','buy','afford','finance','cash','order','drip'] }
+    { fn:domOura,          keys:['readiness','sleep','hrv','recovery','rested','tired','oura','health'] },
+    { fn:domNutrition,     keys:['eat','ate','food','meal','protein','calorie','kcal','carb','fat','nutrition','diet','breakfast','lunch','dinner'] },
+    { fn:domWater,         keys:['water','hydrat','drink','thirsty'] },
+    { fn:domStimulants,    keys:['caffeine','coffee','alcohol','drink','meds','supplement','nicotine','stimulant'] },
+    { fn:domFlags,         keys:['sick','ill','sunlight','sun'] },
+    { fn:domEnergy,        keys:['energy','peak','focus','dip','alert'] },
+    { fn:domGym,           keys:['gym','workout','train','lift','exercise','weight','muscle','strength','pr','overload','squat','bench','deadlift'] },
+    { fn:domGoals,         keys:['goal','task','todo','commit','productiv','done','priorit'] },
+    { fn:domMeditation,    keys:['meditat','mindful','breathe','calm','headspace','anxiety','stress','relax','zen'] },
+    { fn:domFocus,         keys:['focus','deep work','session','block','concentrate','distract','productive','flow'] },
+    { fn:domReading,       keys:['read','book','page','learn','study','highlight','kindle','chapter'] },
+    { fn:domRelationships, keys:['contact','friend','family','relationship','check.in','birthday','mentor','colleague','reach out','social'] },
+    { fn:domDating,        keys:['date','dating','match','hinge','bumble','approach','pipeline','girl','guy','talking','number'] },
+    { fn:domJournal,       keys:['journal','reflect','wrote','feeling','bottleneck','experience'] },
+    { fn:domFinance,       keys:['money','spend','spent','expense','income','net worth','networth','save','saving','budget','sub','subscription','wishlist','buy','afford','finance','cash','order','drip'] }
   ];
 
   // ---------- public collector ----------
@@ -29338,7 +30120,7 @@ function switchTab(tab) {
     txt.textContent='Generating your full-life weekly debrief, sir…';
     try {
       var ctx=(typeof window.getJarvisContext==='function')?window.getJarvisContext('weekly review everything','full'):'';
-      var prompt='You are JARVIS. Write a 6-line weekly LIFE-ARC debrief for sir spanning ALL domains. Use the data below.\n\n'+ctx+'\n\nFormat: exactly 6 short lines, no bullets/numbering. L1 overall week. L2 health/recovery. L3 training+nutrition. L4 goals/productivity. L5 finance (spend vs income, savings). L6 one cross-domain pattern + a specific recommendation. Address as sir. Plain text only.';
+      var prompt='You are JARVIS. Write a 6-line weekly LIFE-ARC debrief for sir spanning ALL domains. Use the data below.\n\n'+ctx+'\n\nFormat: exactly 6 short lines, no bullets/numbering. L1 overall week summary. L2 health/recovery (sleep, HRV, readiness). L3 training+nutrition+deep work focus sessions. L4 goals/productivity + reading progress. L5 finance (spend vs income, savings). L6 relationships/social (overdue contacts, dating pipeline, approaches) + one cross-domain insight + specific recommendation. Address as sir. Plain text only.';
       var reply=await window.gemini(prompt);
       var t=reply&&reply.trim()?reply.trim():'Unable to generate debrief, sir.';
       localStorage.setItem(JVDEBRIEF_KEY+wk, JSON.stringify({text:t}));
@@ -29361,9 +30143,12 @@ function switchTab(tab) {
     if(typeof window._jvRenderMarkets==='function') window._jvRenderMarkets();            // markets strip now lives here
     if(typeof window._jvShowSmartAlarm==='function') window._jvShowSmartAlarm();           // smart alarm now lives here
     renderJvNudges();
+    renderJvWisdom(false);     // shows cached wisdom if present, generates if not
     renderJvPatterns(false);   // shows cached patterns if present
     renderJvDebrief(false);    // shows cached debrief if present
     // wire the refresh/speak buttons once
+    var wr=document.getElementById('jvWisdomNext');
+    if(wr && !wr._wired){ wr._wired=true; wr.addEventListener('click', function(e){ e.stopPropagation(); localStorage.removeItem(WISDOM_KEY+todayKey()); renderJvWisdom(true); }); }
     var pr=document.getElementById('jvPatternsRefresh');
     if(pr && !pr._wired){ pr._wired=true; pr.addEventListener('click', function(){ renderJvPatterns(true); }); }
     var dr=document.getElementById('jvDebriefRefresh');
@@ -29386,10 +30171,78 @@ function switchTab(tab) {
       if(typeof window._jvRenderMarkets==='function') window._jvRenderMarkets();
       if(typeof window._jvShowSmartAlarm==='function') window._jvShowSmartAlarm();
       renderJvNudges();
+      renderJvWisdom(false);
       renderJvPatterns(false);
       renderJvDebrief(false);
     } catch(e){}
   };
+
+  // ---------- Daily Wisdom ----------
+  var WISDOM_KEY = 'goals_jv_wisdom_';
+  var _wisdomFlight = false;
+
+  async function renderJvWisdom(force){
+    var card = document.getElementById('jvWisdomCard');
+    var quoteEl = document.getElementById('jvWisdomQuote');
+    var authorEl = document.getElementById('jvWisdomAuthor');
+    var ctxEl = document.getElementById('jvWisdomContext');
+    if (!card || !quoteEl) return;
+
+    var dk = todayKey();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(WISDOM_KEY + dk)); } catch(e){}
+    if (cached && cached.quote && !force) {
+      quoteEl.textContent = cached.quote;
+      authorEl.textContent = '— ' + cached.author;
+      ctxEl.textContent = cached.context;
+      card.style.display = '';
+      return;
+    }
+    if (_wisdomFlight && !force) return;
+    _wisdomFlight = true;
+
+    quoteEl.textContent = 'Selecting wisdom for today, sir…';
+    authorEl.textContent = '';
+    ctxEl.textContent = '';
+    card.style.display = '';
+
+    try {
+      var snapshot = (typeof window.getJarvisContext === 'function') ? window.getJarvisContext('', 'summary') : '';
+      var prompt = 'You are JARVIS. Based on the life snapshot below, choose ONE powerful quote that is most relevant to what sir needs to hear today — from philosophers, strategists, or modern thinkers (Marcus Aurelius, Seneca, Epictetus, Stoics, Alex Hormozi, Naval Ravikant, David Goggins, Sun Tzu, Nietzsche, Socrates, Bruce Lee, or others of equal calibre).\n\n' +
+        snapshot + '\n\n' +
+        'Rules:\n' +
+        '- Pick the quote that cuts deepest given the actual data (e.g. broken streak → consistency quote; sleep debt → rest/recovery quote; overdue contacts → connection quote; goal behind → discipline quote; strong readiness → ambition quote).\n' +
+        '- Return ONLY valid JSON, no markdown, no code block:\n' +
+        '{"quote":"the exact quote","author":"Name, Source (e.g. Meditations IV.3)","context":"One sentence from JARVIS explaining why this quote applies to sir today, grounded in the actual data. Address as sir."}\n' +
+        '- The quote must be a real, accurate quote. Do not fabricate or paraphrase.\n' +
+        '- context must reference a specific number or fact from the data (e.g. "Your gym streak broke at 4 days, sir" or "Sleep debt is at 1h 20m").';
+
+      var raw = await window.gemini(prompt);
+      // strip markdown code fences if model wraps in them
+      var cleaned = raw.replace(/^```[a-z]*\n?/,'').replace(/```$/,'').trim();
+      var parsed = JSON.parse(cleaned);
+      if (!parsed.quote) throw new Error('no quote');
+
+      localStorage.setItem(WISDOM_KEY + dk, JSON.stringify(parsed));
+      quoteEl.textContent = parsed.quote;
+      authorEl.textContent = '— ' + parsed.author;
+      ctxEl.textContent = parsed.context;
+
+      // wire tap-to-speak
+      card.style.cursor = 'pointer';
+      card.onclick = function(){
+        if (typeof window._jarvisSpeak === 'function')
+          window._jarvisSpeak(parsed.quote + '. ' + parsed.context);
+      };
+    } catch(e) {
+      quoteEl.textContent = 'You have power over your mind, not outside events. Realise this, and you will find strength.';
+      authorEl.textContent = '— Marcus Aurelius, Meditations';
+      ctxEl.textContent = 'Data unavailable, sir. The principle holds regardless.';
+    } finally {
+      _wisdomFlight = false;
+    }
+  }
+  window._jvRenderWisdom = renderJvWisdom;
 
   // ---------- DASHBOARD "Insight" card: one daily cross-domain correlation ----------
   var INSIGHT_KEY = 'goals_jv_insight_';   // goals_ prefix → syncs; per-day cache
