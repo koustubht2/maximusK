@@ -7970,6 +7970,42 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background:rgba(199,154,78,0.12); border:1px solid rgba(199,154,78,0.28); flex-shrink:0;
   color:rgba(230,201,138,0.9); font-size:11px;
 }
+/* Netflix-style horizontal session shelf */
+.med-shelf { margin-bottom:18px; }
+.med-shelf-label {
+  font-family:var(--font-mono); font-size:8px; letter-spacing:0.14em; text-transform:uppercase;
+  color:rgba(199,154,78,0.5); margin-bottom:8px; padding:0 2px;
+}
+.med-shelf-track {
+  display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+.med-shelf-track::-webkit-scrollbar { display:none; }
+.med-shelf-card {
+  flex-shrink:0; width:96px; padding:10px 10px 8px;
+  background:rgba(199,154,78,0.04); border:1px solid rgba(199,154,78,0.10);
+  border-radius:14px; cursor:pointer; transition:all 0.2s; position:relative;
+}
+.med-shelf-card:hover {
+  background:rgba(199,154,78,0.10); border-color:rgba(199,154,78,0.28);
+  transform:translateY(-2px);
+}
+.med-shelf-card.done::after {
+  content:'✓'; position:absolute; top:6px; right:8px;
+  font-size:8px; color:rgba(199,154,78,0.5);
+}
+.med-shelf-dur {
+  font-family:var(--font-mono); font-size:9px; color:rgba(199,154,78,0.6);
+  margin-bottom:5px; letter-spacing:0.04em;
+}
+.med-shelf-title {
+  font-size:11px; color:rgba(239,231,216,0.85); line-height:1.35;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.med-shelf-play {
+  margin-top:8px; font-size:10px; color:rgba(199,154,78,0.5); transition:color 0.2s;
+}
+.med-shelf-card:hover .med-shelf-play { color:rgba(230,201,138,0.9); }
 .med-mood-btn {
   background:none; border:none; font-size:18px; cursor:pointer; opacity:0.4;
   transition:opacity 0.2s, transform 0.2s; padding:2px 4px; border-radius:8px;
@@ -8511,13 +8547,11 @@ window.canonicalJson = function(obj) {
     <div id="medPackRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none"></div>
   </div>
 
-  <!-- Mandala card — always visible -->
-  <div class="wc-card" style="padding:0;overflow:hidden;background:rgba(255,255,255,0.035) !important;border-color:rgba(199,154,78,0.12) !important">
-    <div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px 16px;position:relative">
-      <canvas id="medMandala" width="480" height="480" style="display:block;width:360px;height:360px"></canvas>
-      <div id="medBreathCue" style="margin-top:14px;font-family:var(--pk-serif,Georgia,serif);font-size:20px;color:rgba(239,231,216,0.9);letter-spacing:0.03em;text-align:center;min-height:28px;transition:opacity 0.5s">Breathe in</div>
-      <div id="medBreathSub" style="font-family:var(--font-mono);font-size:9px;color:rgba(199,154,78,0.55);letter-spacing:0.14em;text-transform:uppercase;margin-top:4px;min-height:14px;text-align:center"></div>
-    </div>
+  <!-- Mandala — no card, floats on background -->
+  <div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 4px;position:relative">
+    <canvas id="medMandala" width="480" height="480" style="display:block;width:360px;height:360px"></canvas>
+    <div id="medBreathCue" style="margin-top:14px;font-family:var(--pk-serif,Georgia,serif);font-size:20px;color:rgba(239,231,216,0.9);letter-spacing:0.03em;text-align:center;min-height:28px;transition:opacity 0.5s">Breathe in</div>
+    <div id="medBreathSub" style="font-family:var(--font-mono);font-size:9px;color:rgba(199,154,78,0.55);letter-spacing:0.14em;text-transform:uppercase;margin-top:4px;min-height:14px;text-align:center"></div>
   </div>
 
   <!-- Active player controls — shown only when session running -->
@@ -29309,37 +29343,37 @@ function switchTab(tab) {
     else pack=lib.packs.find(function(p){ return p.id===_activePack; })||lib.packs[0];
     if(!pack){ list.innerHTML=''; return; }
     if(label) label.textContent=pack.label;
-    if(status) status.textContent = B2_BASE ? '' : 'Preview mode — configure B2 for audio';
+    if(status) status.textContent = B2_BASE ? '' : 'Preview mode';
     var log=loadLog();
-    // group sessions by sub-category
+    // group by sub-category
     var groups=[]; var groupMap={};
     pack.sessions.forEach(function(s){
       var key=s.sub||'';
       if(!groupMap[key]){ groupMap[key]=[]; groups.push({sub:key,sessions:groupMap[key]}); }
       groupMap[key].push(s);
     });
+    // render as horizontal shelves
     var html='';
     groups.forEach(function(g){
-      if(g.sub){
-        html+='<div style="padding:8px 4px 4px;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:'+pack.color+';opacity:0.8">'+g.sub+'</div>';
-      }
+      html+='<div class="med-shelf">';
+      if(g.sub) html+='<div class="med-shelf-label">'+g.sub+'</div>';
+      html+='<div class="med-shelf-track">';
       g.sessions.forEach(function(s){
         var done=log.some(function(e){ return e.trackId===s.id; });
-        html+='<div class="med-session-row" data-sid="'+s.id+'" data-pack="'+pack.id+'" data-color="'+pack.color+'">'
-          +'<div class="med-session-play" style="border-color:'+pack.color+'44;color:'+pack.color+'">▶</div>'
-          +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+s.title+'</div>'
-          +'<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">'+fmtDur(s.duration)+(done?' · ✓ done':'')+'</div>'
-          +'</div>'
+        html+='<div class="med-shelf-card'+(done?' done':'')+'" data-sid="'+s.id+'" data-pack="'+pack.id+'">'
+          +'<div class="med-shelf-dur">'+fmtDur(s.duration)+'</div>'
+          +'<div class="med-shelf-title">'+s.title+'</div>'
+          +'<div class="med-shelf-play">▶</div>'
           +'</div>';
       });
+      html+='</div></div>';
     });
     list.innerHTML=html;
-    list.querySelectorAll('.med-session-row').forEach(function(row){
-      row.addEventListener('click',function(){
-        var sid=row.dataset.sid;
-        var packId=row.dataset.pack;
-        var p = packId==='singles'?{sessions:lib.singles,label:'Singles',color:'#94a3b8'}:lib.packs.find(function(x){ return x.id===packId; });
+    list.querySelectorAll('.med-shelf-card').forEach(function(card){
+      card.addEventListener('click',function(){
+        var sid=card.dataset.sid;
+        var packId=card.dataset.pack;
+        var p=packId==='singles'?{sessions:lib.singles,label:'Singles',color:'#94a3b8'}:lib.packs.find(function(x){ return x.id===packId; });
         var s=p.sessions.find(function(x){ return x.id===sid; });
         if(s) startSession(s,p);
       });
