@@ -8594,14 +8594,20 @@ window.canonicalJson = function(obj) {
 
 <!-- ========== NOFAP SECTION ========== -->
 <div id="nofapSection" style="max-width:720px;margin:0 auto;padding:0 16px 20px">
-  <div class="wc-card" style="margin-bottom:12px">
-    <!-- Header row -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <span style="font-family:var(--pk-serif,Georgia,serif);font-size:17px;color:var(--text-primary)">NoFap Tracker</span>
-      <div style="display:flex;gap:8px">
+  <div class="gs-rel-wrap" style="margin-bottom:12px">
+    <!-- Collapsible header -->
+    <div class="gs-rel-header" id="nofapCollapseHeader" style="cursor:pointer;user-select:none" onclick="(function(){var b=document.getElementById('nofapCollapseBody');var c=document.getElementById('nofapCollapseChev');var open=b.style.display!=='none';b.style.display=open?'none':'';c.style.transform=open?'rotate(0deg)':'rotate(180deg)';})()">
+      <span style="font-size:14px">🔒</span>
+      <span style="font-family:var(--pk-serif,Georgia,serif);font-size:15px;color:var(--text-primary)">NoF Tracker</span>
+      <svg id="nofapCollapseChev" style="margin-left:auto;transition:transform 0.2s;transform:rotate(0deg)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <!-- Collapsible body — hidden by default -->
+    <div id="nofapCollapseBody" style="display:none">
+  <div class="wc-card" style="margin-bottom:0;border-radius:0 0 16px 16px;border-top:none">
+    <!-- Action buttons row -->
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px">
         <button id="nofapUrgeBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(99,200,130,0.8);background:rgba(99,200,130,0.07);border:1px solid rgba(99,200,130,0.22);border-radius:20px;padding:5px 12px;cursor:pointer">✦ Resisted</button>
         <button id="nofapRelapseBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(239,68,68,0.8);background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.22);border-radius:20px;padding:5px 12px;cursor:pointer">Log Relapse</button>
-      </div>
     </div>
     <!-- Streak stats row -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px" id="nofapStatsRow">
@@ -8643,6 +8649,8 @@ window.canonicalJson = function(obj) {
       <div id="nofapStreakHistory" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
   </div>
+    </div><!-- /nofapCollapseBody -->
+  </div><!-- /gs-rel-wrap -->
 </div>
 
 <!-- ========== MEDITATION SECTION ========== -->
@@ -26180,7 +26188,7 @@ function switchTab(tab) {
         (wxStr ? wxStr + '. ' : '') +
         'Biometrics: readiness=' + readiness + ', sleep_score=' + sleepScore + ', HRV_balance=' + hrv + ', ' + debtText + '. ' +
         (function(){ try { var fs=JSON.parse(localStorage.getItem('goals_focus_sessions')||'[]'); var td=new Date().toISOString().slice(0,10); var wk=0; for(var wi=0;wi<7;wi++){var wd=new Date();wd.setDate(wd.getDate()-wi);var wds=wd.toISOString().slice(0,10);wk+=fs.filter(function(s){return s.date===wds;}).reduce(function(a,s){return a+s.dur;},0);} var wh=Math.floor(wk/3600),wm=Math.floor((wk%3600)/60); return 'Deep work this week: '+wh+'h '+wm+'m against a 15h target. '; } catch(e){ return ''; } })() +
-        'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + (function(){ try{ var nfd=JSON.parse(localStorage.getItem('goals_nofap_v1')||'{}'); var nfr=nfd.relapses||[]; if(!nfr.length) return ', nofap_streak=no_data'; var last=nfr.map(function(r){return r.date;}).sort().reverse()[0]; var days=Math.floor((new Date()-new Date(last+'T12:00:00'))/86400000); return ', nofap_streak='+days+'_days'; }catch(e){return '';} })() + '. ' +
+        'Schedule: peak_focus_window=' + bestWin + ', gym=' + _gymB + _wtB + (alcB>0?', alcohol_last_night='+alcB+'_units':'') + (function(){ try{ var nfd=JSON.parse(localStorage.getItem('goals_nofap_v1')||'{}'); var nfr=nfd.relapses||[]; if(!nfr.length) return ', nofap_streak=no_data'; var last=nfr.map(function(r){return r.date;}).sort().reverse()[0]; var days=Math.floor((new Date()-new Date(last+'T12:00:00'))/86400000); return ', nofap_streak='+days+'_days'; }catch(e){return '';} })() + (function(){ try{ var jd=JSON.parse(localStorage.getItem('goals_jobs_v1')||'{}'); var cards=(jd.cards||[]); var ACTIVE=['Applied','Inbound Call','Scheduled','Technical','Managerial','HR Round','Offer','BGV','Hired']; var active=cards.filter(function(c){return ACTIVE.indexOf(c.stage)>=0;}); var interviews=active.filter(function(c){return ['Technical','Managerial','HR Round','Scheduled'].indexOf(c.stage)>=0;}); var offers=active.filter(function(c){return c.stage==='Offer'||c.stage==='BGV'||c.stage==='Hired';}); var tom=(function(){var d=new Date();d.setDate(d.getDate()+1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})(); var intTom=active.filter(function(c){return c.interviewDate===tom;}); var s=', jobs_pipeline='+active.length+'_active('+interviews.length+'_interviews,'+offers.length+'_offers)'; if(intTom.length) s+=',interview_tomorrow='+intTom.map(function(c){return c.company;}).join('+'); return s; }catch(e){return '';} })() + '. ' +
         (newsStr ? newsStr + '. ' : '') +
         (lifeCtx ? ('\nFULL LIFE SNAPSHOT (for line 5):\n' + lifeCtx + '\n') : '') +
         'Format your response as exactly 5 lines separated by newlines (no bullets, no dashes, no numbering): ' +
@@ -26191,7 +26199,7 @@ function switchTab(tab) {
         'Line 2: Biometric status — readiness, sleep, HRV in one sentence. ' +
         'Line 3: Training and focus window recommendation based on gym history and readiness. ' +
         'Line 4: One news headline woven into a market/world context sentence. ' +
-        'Line 5: ONE actionable note from the rest of his life today — pending goals/tasks, spending vs budget, savings, or meditation streak/mindfulness — whichever is most urgent or most likely to be skipped today, in one sentence. ' +
+        'Line 5: ONE actionable note from the rest of his life today — pending goals/tasks, spending vs budget, savings, meditation streak, job pipeline (interview prep, follow-ups due, applications target), or nofap streak encouragement — whichever is most urgent or most likely to be skipped today, in one sentence. ' +
         'Be specific, concise, and speak exactly as JARVIS would. No markdown, no emojis.';
 
       var reply = await gemini(prompt);
@@ -31643,6 +31651,66 @@ window.drawMandala = function(progress, phase, phaseT){
     return { summary:summary, detail:detail };
   }
 
+  function domJobs(){
+    try {
+      var data = ls('goals_jobs_v1') || {};
+      var cards = data.cards || [];
+      var ACTIVE = ['Applied','Inbound Call','Scheduled','Technical','Managerial','HR Round','Offer','BGV','Hired'];
+      var active = cards.filter(function(c){ return ACTIVE.indexOf(c.stage) >= 0; });
+      var interviews = active.filter(function(c){ return ['Technical','Managerial','HR Round','Scheduled'].indexOf(c.stage) >= 0; });
+      var offers = active.filter(function(c){ return c.stage === 'Offer' || c.stage === 'BGV' || c.stage === 'Hired'; });
+      var rejected = cards.filter(function(c){ return c.stage === 'Rejected' || c.stage === 'Ghosted'; });
+      var tod = todayKey();
+      var tom = (function(){ var d=new Date(); d.setDate(d.getDate()+1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+      var interviewTomorrow = active.filter(function(c){ return c.interviewDate === tom; });
+      var offerExpiring = offers.filter(function(c){ return c.offerExpiry && c.offerExpiry <= tom; });
+      var overdueFU = active.filter(function(c){ return c.followUpDate && c.followUpDate < tod && ['Applied','Inbound Call','Scheduled'].indexOf(c.stage) >= 0; });
+      var cfg = data.config || {};
+      var daily = (cfg.dailyLog && cfg.dailyLog[tod]) || {};
+      var summary = 'Jobs: '+active.length+' active ('+interviews.length+' in interviews, '+offers.length+' offers/BGV/hired), '+rejected.length+' rejected/ghosted. Applied today: '+(daily.applied||0)+', follow-ups: '+(daily.follows||0)+'.';
+      if (interviewTomorrow.length) summary += ' ⚡ Interview tomorrow: '+interviewTomorrow.map(function(c){return c.company;}).join(', ')+'.';
+      if (offerExpiring.length) summary += ' ⚠ Offer expiring: '+offerExpiring.map(function(c){return c.company;}).join(', ')+'.';
+      if (overdueFU.length) summary += ' 📅 Overdue follow-ups: '+overdueFU.map(function(c){return c.company;}).join(', ')+'.';
+      var detail = active.length ? ('Job pipeline:\n'+active.map(function(c){
+        var hr = (c.hrName ? ' | HR: '+c.hrName+(c.hrPhone?' ('+c.hrPhone+')':'') : '');
+        var fu = c.followUpDate ? ' | follow-up: '+c.followUpDate : '';
+        var int = c.interviewDate ? ' | interview: '+c.interviewDate : '';
+        var ctc = c.ctcOffered ? ' | offered: '+c.ctcOffered : '';
+        return c.company+(c.role?' — '+c.role:'')+' ['+c.stage+']'+hr+fu+int+ctc;
+      }).join('\n')) : 'No active jobs in pipeline.';
+      return { summary: summary, detail: detail };
+    } catch(e) { return null; }
+  }
+
+  function domNofap(){
+    try {
+      var data = ls('goals_nofap_v1') || {};
+      var relapses = data.relapses || [];
+      var urges = data.urges || [];
+      var tod = todayKey();
+      var streak = 0;
+      if (!relapses.length) {
+        streak = 0;
+      } else {
+        var lastRelapse = relapses.map(function(r){ return r.date; }).sort().reverse()[0];
+        streak = Math.floor((new Date() - new Date(lastRelapse+'T12:00:00')) / 86400000);
+      }
+      var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+      var monthRelapses = relapses.filter(function(r){ return new Date(r.date+'T12:00:00') >= monthStart; });
+      var monthUrgesResisted = urges.filter(function(u){ return new Date(u.date+'T12:00:00') >= monthStart; }).length;
+      var todayRelapses = relapses.filter(function(r){ return r.date === tod; });
+      var slotCounts = { Morning:0, Afternoon:0, Evening:0, Night:0 };
+      relapses.forEach(function(r){ if(slotCounts[r.slot]!==undefined) slotCounts[r.slot]++; });
+      var triggerCounts = {};
+      relapses.forEach(function(r){ (r.triggers||[]).forEach(function(t){ triggerCounts[t]=(triggerCounts[t]||0)+1; }); });
+      var topTrigger = Object.keys(triggerCounts).sort(function(a,b){ return triggerCounts[b]-triggerCounts[a]; })[0] || 'none';
+      var summary = 'NoFap: current streak='+streak+' days, relapses this month='+monthRelapses.length+', urges resisted this month='+monthUrgesResisted+', top trigger='+topTrigger+'.';
+      if (todayRelapses.length) summary += ' ⚠ Relapsed today ('+todayRelapses.length+'×).';
+      var detail = 'NoFap streak: '+streak+' days.\nTime-of-day pattern: Morning='+slotCounts.Morning+', Afternoon='+slotCounts.Afternoon+', Evening='+slotCounts.Evening+', Night='+slotCounts.Night+'.\nTop trigger: '+topTrigger+'.\nThis month: '+monthRelapses.length+' relapses, '+monthUrgesResisted+' urges resisted.';
+      return { summary: summary, detail: detail };
+    } catch(e) { return null; }
+  }
+
   // domain registry with keyword triggers for "smart detail"
   var DOMAINS = [
     { fn:domOura,          keys:['readiness','sleep','hrv','recovery','rested','tired','oura','health'] },
@@ -31659,7 +31727,9 @@ window.drawMandala = function(progress, phase, phaseT){
     { fn:domRelationships, keys:['contact','friend','family','relationship','check.in','birthday','mentor','colleague','reach out','social'] },
     { fn:domDating,        keys:['date','dating','match','hinge','bumble','approach','pipeline','girl','guy','talking','number'] },
     { fn:domJournal,       keys:['journal','reflect','wrote','feeling','bottleneck','experience'] },
-    { fn:domFinance,       keys:['money','spend','spent','expense','income','net worth','networth','save','saving','budget','sub','subscription','wishlist','buy','afford','finance','cash','order','drip'] }
+    { fn:domFinance,       keys:['money','spend','spent','expense','income','net worth','networth','save','saving','budget','sub','subscription','wishlist','buy','afford','finance','cash','order','drip'] },
+    { fn:domJobs,          keys:['job','jobs','apply','applied','interview','offer','hiring','recruiter','hr','pipeline','rejection','ghosted','salary','ctc','career','resume','cv','naukri','linkedin','placement'] },
+    { fn:domNofap,         keys:['nofap','no fap','streak','relapse','urge','pmo','pornography','abstain','reboot','discipline','trigger','dopamine'] }
   ];
 
   // ---------- public collector ----------
