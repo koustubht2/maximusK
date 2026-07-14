@@ -9118,7 +9118,6 @@ window.canonicalJson = function(obj) {
             <button id="datingActivityCfgBtn" onclick="window._showActivityConfigModal&&window._showActivityConfigModal()" style="background:none;border:none;cursor:pointer;color:rgba(245,200,66,0.5);font-size:16px;padding:6px 10px;border-radius:8px;transition:color 0.2s;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center" title="Configure actions">⚙</button>
           </div>
           <div id="datingActivityPills" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-          <div id="datingActivityHistory" style="margin-top:10px"></div>
         </div>
 
         <!-- Dating pipeline sub-section -->
@@ -9141,6 +9140,7 @@ window.canonicalJson = function(obj) {
             <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#6EE7B7" id="relStatInteractions">—</div><div style="font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary)">Interactions logged</div></div>
           </div>
         </div>
+        <div id="datingActivityHistory" style="margin-top:10px"></div>
 
       </div>
     </div>
@@ -9155,6 +9155,10 @@ window.canonicalJson = function(obj) {
       <div class="gs-rel-body" id="jobTrackerBody" style="display:none">
 
         <!-- Daily goals pills -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span class="gs-rel-sub-label" style="margin:0">Daily Goals</span>
+          <button id="jobGoalsCfgBtn" style="background:none;border:none;cursor:pointer;color:rgba(245,200,66,0.45);font-size:16px;padding:6px 10px;border-radius:8px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center" title="Configure targets">⚙</button>
+        </div>
         <div id="jobGoalsRow" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
 
         <!-- Funnel summary -->
@@ -33291,9 +33295,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var follows= daily.follows;
     wrap.style.cssText='display:flex;flex-direction:column;gap:0;margin-bottom:12px';
     wrap.innerHTML = '';
+  var JOB_GOAL_SVG = {
+    'applied': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.4 2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.29 6.29l.97-.88a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    'follows':  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  };
     [
-      {cnt:applied, tgt:applyT,  lbl:'Applied',    icon:'📨', key:'applied'},
-      {cnt:follows,  tgt:followT, lbl:'Follow-ups', icon:'📞', key:'follows'}
+      {cnt:applied, tgt:applyT,  lbl:'Applied',    svg:JOB_GOAL_SVG.applied, key:'applied'},
+      {cnt:follows,  tgt:followT, lbl:'Follow-ups', svg:JOB_GOAL_SVG.follows,  key:'follows'}
     ].forEach(function(p, idx, arr){
       var done=p.cnt>=p.tgt;
       var pct=Math.min(100,Math.round((p.cnt/p.tgt)*100));
@@ -33301,7 +33309,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var el=document.createElement('div');
       el.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 2px;'+(isLast?'':'border-bottom:1px solid rgba(255,255,255,0.05);');
       el.innerHTML=
-        '<span style="font-size:15px;flex-shrink:0;line-height:1">'+p.icon+'</span>'+
+        '<span style="flex-shrink:0;line-height:0;color:'+(done?'#F5C842':'rgba(255,255,255,0.45)')+'">'+p.svg+'</span>'+
         '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.10em;text-transform:uppercase;color:'+(done?'#F5C842':'rgba(255,255,255,0.38)')+';flex-shrink:0;min-width:64px">'+p.lbl+'</span>'+
         '<div style="flex:1;height:2px;border-radius:1px;background:rgba(255,255,255,0.07);overflow:hidden">'+
           '<div style="height:100%;width:'+pct+'%;background:'+(done?'#F5C842':'rgba(245,200,66,0.45)')+';border-radius:1px;transition:width 0.35s"></div>'+
@@ -33320,13 +33328,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       wrap.appendChild(el);
     });
-    // Config gear
-    var gear=document.createElement('button');
-    gear.textContent='⚙';
-    gear.title='Configure targets';
-    gear.style.cssText='background:none;border:none;cursor:pointer;color:rgba(245,200,66,0.4);font-size:16px;padding:6px 10px;border-radius:8px;align-self:center;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center';
-    gear.addEventListener('click', showGoalsConfigModal);
-    wrap.appendChild(gear);
   }
 
   // Funnel
@@ -33740,6 +33741,9 @@ document.addEventListener('DOMContentLoaded', function() {
       body.style.display=open?'none':'';
       if(chev) chev.style.transform=open?'':'rotate(180deg)';
     });
+    // Goals config gear
+    var goalsCfgBtn=document.getElementById('jobGoalsCfgBtn');
+    if(goalsCfgBtn) goalsCfgBtn.addEventListener('click', showGoalsConfigModal);
     // Add button
     var addBtn=document.getElementById('jobAddBtn');
     if(addBtn) addBtn.addEventListener('click', showAddJobModal);
@@ -34295,6 +34299,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ── Daily Activity Tracker ───────────────────────────────────────────────────
   var ACTIVITY_KEY = 'goals_dating_activity_v1';
+  // SVG icon library for pills (16×16 viewBox, stroke-only line icons)
+  var ACT_SVG = {
+    'likes':    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    'connects': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    'followup': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+    'default':  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M18.66 5.34l1.41-1.41"/></svg>',
+  };
+  function actSvg(id) { return ACT_SVG[id] || ACT_SVG['default']; }
   var ACTIVITY_DEFAULTS = [
     { id: 'likes',    label: 'Likes Sent',  icon: '❤',  target: 10 },
     { id: 'connects', label: 'Connects',    icon: '💬', target: 3  },
@@ -34343,7 +34355,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var pillEl = document.createElement('div');
       pillEl.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 2px;' + (isLast ? '' : 'border-bottom:1px solid rgba(255,255,255,0.05);');
       pillEl.innerHTML =
-        '<span style="font-size:15px;flex-shrink:0;line-height:1">' + pill.icon + '</span>' +
+        '<span style="flex-shrink:0;line-height:0;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.45)') + '">' + actSvg(pill.id) + '</span>' +
         '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.10em;text-transform:uppercase;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.38)') + ';flex-shrink:0;min-width:64px">' + _esc(pill.label) + '</span>' +
         '<div style="flex:1;height:2px;border-radius:1px;background:rgba(255,255,255,0.07);overflow:hidden">' +
           '<div style="height:100%;width:' + bar + '%;background:' + (done ? '#F5C842' : 'rgba(245,200,66,0.45)') + ';border-radius:1px;transition:width 0.35s"></div>' +
@@ -34381,7 +34393,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var headerCells = '<th style="text-align:left;padding:3px 6px;font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;color:rgba(255,255,255,0.3);font-weight:400">Date</th>';
     cfg.forEach(function(p) {
-      headerCells += '<th style="text-align:center;padding:3px 6px;font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;color:rgba(255,255,255,0.3);font-weight:400">' + p.icon + ' ' + _esc(p.label) + '</th>';
+      headerCells += '<th style="text-align:center;padding:3px 6px;font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;color:rgba(255,255,255,0.3);font-weight:400"><span style="display:inline-flex;align-items:center;gap:3px;vertical-align:middle">' + actSvg(p.id) + ' ' + _esc(p.label) + '</span></th>';
     });
 
     var rows = '';
