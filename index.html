@@ -8906,12 +8906,14 @@ window.canonicalJson = function(obj) {
     <div class="wotd-card" id="wotdCard">
       <div class="wotd-top">
         <span class="wotd-eyebrow">Mot du jour</span>
-        <button class="wotd-speak-btn" id="wotdSpeakBtn" title="Hear it" aria-label="Pronounce word">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        </button>
-        <button class="wotd-speak-btn" id="wotdRefreshBtn" title="New word" aria-label="Regenerate word" style="margin-left:4px">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button class="wotd-speak-btn" id="wotdSpeakBtn" title="Hear it" aria-label="Pronounce word">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+          <button class="wotd-speak-btn" id="wotdRefreshBtn" title="New word" aria-label="Regenerate word">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+        </div>
       </div>
       <div class="wotd-word-row">
         <span class="wotd-word" id="wotdWord">…</span>
@@ -11386,7 +11388,7 @@ const GS_GEMINI_KEY = '';
 
   // Tap to pause / resume
   document.addEventListener('click', (e) => {
-    if (e.target.closest('#wotdCard') && !e.target.closest('#wotdSpeakBtn')) {
+    if (e.target.closest('#wotdCard') && !e.target.closest('#wotdSpeakBtn') && !e.target.closest('#wotdRefreshBtn')) {
       wotdPaused = !wotdPaused;
     }
   });
@@ -11404,10 +11406,12 @@ const GS_GEMINI_KEY = '';
     window.speechSynthesis.speak(utt);
   });
 
-  // Refresh button — clears today's cache and fetches a new word
+  // Refresh button — clears all wotd cache keys and fetches a new word
   document.getElementById('wotdRefreshBtn')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    localStorage.removeItem(todayKey());
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(WOTD_KEY_PREFIX))
+      .forEach(k => localStorage.removeItem(k));
     const word = document.getElementById('wotdWord');
     if (word) word.textContent = '…';
     fetchWord();
@@ -33604,6 +33608,8 @@ document.addEventListener('DOMContentLoaded', function() {
             '</select></div>'+
           '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">APPLIED DATE</div><input id="jmApplied" class="gs-modal-input" type="date" value="'+esc(card.appliedDate||'')+'" style="color-scheme:dark"></div>'+
           '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">FOLLOW-UP DATE</div><input id="jmFollowUp" class="gs-modal-input" type="date" value="'+esc(card.followUpDate||'')+'" style="color-scheme:dark"></div>'+
+          '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">HR NAME</div><input id="jmHrName" class="gs-modal-input" value="'+esc(card.hrName||'')+'" placeholder="Recruiter name"></div>'+
+          '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">HR NUMBER</div><input id="jmHrPhone" class="gs-modal-input" type="tel" value="'+esc(card.hrPhone||'')+'" placeholder="+91 98765 43210"></div>'+
           (inInterview?'<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">INTERVIEW DATE</div><input id="jmInterview" class="gs-modal-input" type="date" value="'+esc(card.interviewDate||'')+'" style="color-scheme:dark"></div>':'')+
           '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">LOCATION</div><input id="jmLocation" class="gs-modal-input" value="'+esc(card.location||'')+'" placeholder="City / Remote"></div>'+
         '</div>'+
@@ -33654,6 +33660,8 @@ document.addEventListener('DOMContentLoaded', function() {
         d.cards[idx].appliedDate= box.querySelector('#jmApplied').value;
         d.cards[idx].followUpDate=box.querySelector('#jmFollowUp').value;
         d.cards[idx].location   = box.querySelector('#jmLocation').value.trim();
+        d.cards[idx].hrName     = box.querySelector('#jmHrName').value.trim();
+        d.cards[idx].hrPhone    = box.querySelector('#jmHrPhone').value.trim();
         d.cards[idx].notes      = box.querySelector('#jmNotes').value.trim();
         var intEl=box.querySelector('#jmInterview'); if(intEl) d.cards[idx].interviewDate=intEl.value;
         var ctcCurEl=box.querySelector('#jmCtcCurrent'); if(ctcCurEl) d.cards[idx].ctcCurrent=ctcCurEl.value.trim();
@@ -33693,6 +33701,8 @@ document.addEventListener('DOMContentLoaded', function() {
         '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">WORK MODE</div>'+
           '<select id="jaWorkMode" class="gs-modal-input" style="padding:8px"><option value="">—</option>'+WORK_MODES.map(function(m){ return '<option>'+m+'</option>'; }).join('')+'</select></div>'+
         '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">APPLIED DATE</div><input id="jaApplied" class="gs-modal-input" type="date" value="'+todayStr()+'" style="color-scheme:dark"></div>'+
+        '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">HR NAME</div><input id="jaHrName" class="gs-modal-input" placeholder="Recruiter name"></div>'+
+        '<div><div style="font-family:var(--font-mono);font-size:7px;color:rgba(255,255,255,0.25);margin-bottom:3px">HR NUMBER</div><input id="jaHrPhone" class="gs-modal-input" type="tel" placeholder="+91 98765 43210"></div>'+
       '</div>'+
       '<div style="display:flex;gap:8px;margin-top:4px">'+
         '<button id="jaSave" style="flex:1;padding:9px;border-radius:12px;border:none;background:rgba(245,200,66,0.15);color:#F5C842;font-family:var(--font-mono);font-size:10px;cursor:pointer;letter-spacing:0.08em">Add</button>'+
@@ -33706,6 +33716,7 @@ document.addEventListener('DOMContentLoaded', function() {
         id:uid(), company:company, role:box.querySelector('#jaRole').value.trim(),
         source:box.querySelector('#jaSource').value, stage:box.querySelector('#jaStage').value,
         workMode:box.querySelector('#jaWorkMode').value, appliedDate:box.querySelector('#jaApplied').value,
+        hrName:box.querySelector('#jaHrName').value.trim(), hrPhone:box.querySelector('#jaHrPhone').value.trim(),
         history:[{stage:box.querySelector('#jaStage').value,date:todayStr()}], ts:Date.now()
       };
       d.cards.push(card);
