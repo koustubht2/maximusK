@@ -8597,7 +8597,6 @@ window.canonicalJson = function(obj) {
   <div class="gs-rel-wrap" style="margin-bottom:12px">
     <!-- Collapsible header -->
     <div class="gs-rel-header" id="nofapCollapseHeader" style="cursor:pointer;user-select:none" onclick="(function(){var b=document.getElementById('nofapCollapseBody');var c=document.getElementById('nofapCollapseChev');var open=b.style.display!=='none';b.style.display=open?'none':'';c.style.transform=open?'rotate(0deg)':'rotate(180deg)';})()">
-      <span style="font-size:14px">🔒</span>
       <span style="font-family:var(--pk-serif,Georgia,serif);font-size:15px;color:var(--text-primary)">NoF Tracker</span>
       <svg id="nofapCollapseChev" style="margin-left:auto;transition:transform 0.2s;transform:rotate(0deg)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
@@ -30010,33 +30009,37 @@ function switchTab(tab) {
   function showRelapseModal(){
     var overlay = document.createElement('div');
     overlay.className = 'gs-modal-overlay';
-    var box = document.createElement('div');
-    box.className = 'gs-modal';
-    box.style.cssText = 'max-width:340px;width:92%';
-
     var today = todayStr();
     var selTriggers = [];
 
-    box.innerHTML =
-      '<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(239,68,68,0.8);margin-bottom:14px">Log Relapse</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em">DATE</div>' +
-        '<input id="nfDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark"></div>' +
-        '<div><div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em">COUNT</div>' +
-        '<input id="nfCount" type="number" class="gs-modal-input" value="1" min="1" max="20" style="text-align:center"></div>' +
-      '</div>' +
-      '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em">TIME OF DAY</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px" id="nfSlots">' +
-        SLOTS.map(function(s){ return '<button data-slot="'+s+'" style="font-family:var(--font-mono);font-size:9px;padding:7px 4px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.2s">'+s+'</button>'; }).join('') +
-      '</div>' +
-      '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em">TRIGGERS (optional)</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="nfTriggers">' +
-        TRIGGERS.map(function(t){ return '<button data-trigger="'+esc(t)+'" style="font-family:var(--font-mono);font-size:9px;padding:5px 10px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);cursor:pointer;transition:all 0.2s">'+esc(t)+'</button>'; }).join('') +
-      '</div>' +
-      '<div style="display:flex;gap:8px">' +
-        '<button id="nfSave" style="flex:1;padding:9px;border-radius:12px;border:none;background:rgba(239,68,68,0.15);color:#EF4444;font-family:var(--font-mono);font-size:10px;cursor:pointer;letter-spacing:0.08em">Save</button>' +
-        '<button id="nfCancel" style="flex:1;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);font-family:var(--font-mono);font-size:10px;cursor:pointer">Cancel</button>' +
+    overlay.innerHTML =
+      '<div class="gs-modal-box" style="max-width:340px">' +
+        '<div class="gs-modal-title" style="color:#EF4444">Log Relapse</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<div><div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Date</div>' +
+          '<input id="nfDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark"></div>' +
+          '<div><div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Count</div>' +
+          '<input id="nfCount" type="number" class="gs-modal-input" value="1" min="1" max="20" style="text-align:center"></div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase">Time of day</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="nfSlots">' +
+            SLOTS.map(function(s){ return '<button data-slot="'+s+'" class="gs-modal-btn cancel" style="font-size:10px;padding:8px 4px">'+s+'</button>'; }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase">Triggers (optional)</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px" id="nfTriggers">' +
+            TRIGGERS.map(function(t){ return '<button data-trigger="'+esc(t)+'" style="font-family:var(--font-mono);font-size:10px;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer">'+esc(t)+'</button>'; }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div class="gs-modal-row">' +
+          '<button id="nfSave" class="gs-modal-btn primary" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.25);color:#EF4444">Save</button>' +
+          '<button id="nfCancel" class="gs-modal-btn cancel">Cancel</button>' +
+        '</div>' +
       '</div>';
+
+    var box = overlay.querySelector('.gs-modal-box');
 
     var selectedSlot = null;
 
@@ -30085,8 +30088,6 @@ function switchTab(tab) {
     });
     box.querySelector('#nfCancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
     overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
-
-    overlay.appendChild(box);
     document.body.appendChild(overlay);
   }
 
@@ -30095,26 +30096,29 @@ function switchTab(tab) {
   function showUrgeModal(){
     var overlay = document.createElement('div');
     overlay.className = 'gs-modal-overlay';
-    var box = document.createElement('div');
-    box.className = 'gs-modal';
-    box.style.cssText = 'max-width:320px;width:92%';
     var today = todayStr();
 
-    box.innerHTML =
-      '<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(99,200,130,0.8);margin-bottom:14px">Urge Resisted ✦</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-        '<div><div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em">DATE</div>' +
-        '<input id="nuDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark"></div>' +
-        '<div style="display:flex;align-items:flex-end"><div style="font-family:var(--font-mono);font-size:10px;color:rgba(99,200,130,0.7);padding-bottom:8px">Every win counts.</div></div>' +
-      '</div>' +
-      '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em">TIME OF DAY</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px" id="nuSlots">' +
-        SLOTS.map(function(s){ return '<button data-slot="'+s+'" style="font-family:var(--font-mono);font-size:9px;padding:7px 4px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.2s">'+s+'</button>'; }).join('') +
-      '</div>' +
-      '<div style="display:flex;gap:8px">' +
-        '<button id="nuSave" style="flex:1;padding:9px;border-radius:12px;border:none;background:rgba(99,200,130,0.12);color:rgba(99,200,130,0.9);font-family:var(--font-mono);font-size:10px;cursor:pointer;letter-spacing:0.08em">Save</button>' +
-        '<button id="nuCancel" style="flex:1;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);font-family:var(--font-mono);font-size:10px;cursor:pointer">Cancel</button>' +
+    overlay.innerHTML =
+      '<div class="gs-modal-box" style="max-width:320px">' +
+        '<div class="gs-modal-title" style="color:rgba(99,200,130,0.9)">✦ Urge Resisted</div>' +
+        '<div style="font-family:var(--font-mono);font-size:10px;color:rgba(99,200,130,0.6);margin-top:-4px">Every win counts.</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Date</div>' +
+          '<input id="nuDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark">' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase">Time of day</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="nuSlots">' +
+            SLOTS.map(function(s){ return '<button data-slot="'+s+'" class="gs-modal-btn cancel" style="font-size:10px;padding:8px 4px">'+s+'</button>'; }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div class="gs-modal-row">' +
+          '<button id="nuSave" class="gs-modal-btn primary" style="background:rgba(99,200,130,0.12);border-color:rgba(99,200,130,0.25);color:rgba(99,200,130,0.9)">Save</button>' +
+          '<button id="nuCancel" class="gs-modal-btn cancel">Cancel</button>' +
+        '</div>' +
       '</div>';
+
+    var box = overlay.querySelector('.gs-modal-box');
 
     var selectedSlot = null;
     box.querySelectorAll('#nuSlots button').forEach(function(btn){
@@ -30138,8 +30142,6 @@ function switchTab(tab) {
     });
     box.querySelector('#nuCancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
     overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
-
-    overlay.appendChild(box);
     document.body.appendChild(overlay);
   }
 
@@ -33809,20 +33811,24 @@ document.addEventListener('DOMContentLoaded', function() {
   function showGoalsConfigModal(){
     var overlay=document.createElement('div');
     overlay.className='gs-modal-overlay';
-    var box=document.createElement('div');
-    box.className='gs-modal';
-    box.style.cssText='max-width:300px;width:92%';
     var d=load();
-    box.innerHTML=
-      '<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(245,200,66,0.7);margin-bottom:12px">Daily Targets</div>'+
-      '<div style="margin-bottom:8px"><div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px">Applications per day</div>'+
-        '<input id="gcApply" class="gs-modal-input" type="number" value="'+(d.config.dailyApplyTarget||5)+'" min="1"></div>'+
-      '<div style="margin-bottom:14px"><div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px">Follow-ups per day</div>'+
-        '<input id="gcFollow" class="gs-modal-input" type="number" value="'+(d.config.dailyFollowTarget||3)+'" min="1"></div>'+
-      '<div style="display:flex;gap:8px">'+
-        '<button id="gcSave" style="flex:1;padding:9px;border-radius:12px;border:none;background:rgba(245,200,66,0.15);color:#F5C842;font-family:var(--font-mono);font-size:10px;cursor:pointer">Save</button>'+
-        '<button id="gcCancel" style="flex:1;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);font-family:var(--font-mono);font-size:10px;cursor:pointer">Cancel</button>'+
+    overlay.innerHTML=
+      '<div class="gs-modal-box" style="max-width:300px">'+
+        '<div class="gs-modal-title">Daily Targets</div>'+
+        '<div>'+
+          '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Applications per day</div>'+
+          '<input id="gcApply" class="gs-modal-input" type="number" value="'+(d.config.dailyApplyTarget||5)+'" min="1">'+
+        '</div>'+
+        '<div>'+
+          '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Follow-ups per day</div>'+
+          '<input id="gcFollow" class="gs-modal-input" type="number" value="'+(d.config.dailyFollowTarget||3)+'" min="1">'+
+        '</div>'+
+        '<div class="gs-modal-row">'+
+          '<button id="gcSave" class="gs-modal-btn primary">Save</button>'+
+          '<button id="gcCancel" class="gs-modal-btn cancel">Cancel</button>'+
+        '</div>'+
       '</div>';
+    var box=overlay.querySelector('.gs-modal-box');
     box.querySelector('#gcSave').addEventListener('click', function(){
       d.config.dailyApplyTarget=parseInt(box.querySelector('#gcApply').value)||5;
       d.config.dailyFollowTarget=parseInt(box.querySelector('#gcFollow').value)||3;
@@ -33830,7 +33836,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     box.querySelector('#gcCancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
     overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
-    overlay.appendChild(box);
     document.body.appendChild(overlay);
   }
 
@@ -34531,30 +34536,29 @@ document.addEventListener('DOMContentLoaded', function() {
     var cfg  = activityGetConfig(data);
     var overlay = document.createElement('div');
     overlay.className = 'gs-modal-overlay';
-    var box = document.createElement('div');
-    box.className = 'gs-modal';
-    box.style.cssText = 'max-width:360px;width:92%';
+    overlay.innerHTML = '<div class="gs-modal-box" style="max-width:360px"></div>';
+    var box = overlay.querySelector('.gs-modal-box');
 
     function buildRows() {
       return cfg.map(function(p, i) {
-        return '<div class="act-cfg-row" data-idx="' + i + '" style="display:grid;grid-template-columns:32px 1fr 60px 28px;gap:6px;align-items:center;margin-bottom:6px">' +
-          '<input class="gs-modal-input act-icon" value="' + _esc(p.icon) + '" style="padding:4px;text-align:center;font-size:14px" maxlength="2" />' +
-          '<input class="gs-modal-input act-label" value="' + _esc(p.label) + '" placeholder="Label" style="padding:4px 8px" />' +
-          '<input class="gs-modal-input act-target" type="number" value="' + p.target + '" min="1" max="999" style="padding:4px 8px;text-align:center" />' +
-          '<button class="act-del" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);border-radius:8px;color:#EF4444;cursor:pointer;font-size:13px;padding:2px 6px">×</button>' +
+        return '<div class="act-cfg-row" data-idx="' + i + '" style="display:grid;grid-template-columns:36px 1fr 60px 32px;gap:6px;align-items:center">' +
+          '<input class="gs-modal-input act-icon" value="' + _esc(p.icon) + '" style="padding:6px 4px;text-align:center;font-size:14px" maxlength="2" />' +
+          '<input class="gs-modal-input act-label" value="' + _esc(p.label) + '" placeholder="Label" />' +
+          '<input class="gs-modal-input act-target" type="number" value="' + p.target + '" min="1" max="999" style="text-align:center" />' +
+          '<button class="act-del" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);border-radius:8px;color:#EF4444;cursor:pointer;font-size:14px;padding:4px 8px;height:100%">×</button>' +
         '</div>';
       }).join('');
     }
 
     function render() {
       box.innerHTML =
-        '<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(245,200,66,0.7);margin-bottom:12px">Configure Daily Actions</div>' +
-        '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.3);margin-bottom:8px;display:grid;grid-template-columns:32px 1fr 60px 28px;gap:6px"><span>Icon</span><span>Label</span><span style="text-align:center">Target</span><span></span></div>' +
-        '<div id="actCfgRows">' + buildRows() + '</div>' +
-        '<button id="actCfgAdd" style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.15);border-radius:10px;color:rgba(245,200,66,0.7);cursor:pointer;font-family:var(--font-mono);font-size:10px;padding:6px 12px;width:100%;margin-top:4px">+ Add action</button>' +
-        '<div style="display:flex;gap:8px;margin-top:14px">' +
-          '<button id="actCfgSave" style="flex:1;padding:9px;border-radius:12px;border:none;background:rgba(245,200,66,0.15);color:#F5C842;font-family:var(--font-mono);font-size:10px;cursor:pointer;letter-spacing:0.08em">Save</button>' +
-          '<button id="actCfgCancel" style="flex:1;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);font-family:var(--font-mono);font-size:10px;cursor:pointer">Cancel</button>' +
+        '<div class="gs-modal-title">Configure Daily Actions</div>' +
+        '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.3);display:grid;grid-template-columns:36px 1fr 60px 32px;gap:6px"><span>Icon</span><span>Label</span><span style="text-align:center">Target</span><span></span></div>' +
+        '<div id="actCfgRows" style="display:flex;flex-direction:column;gap:6px">' + buildRows() + '</div>' +
+        '<button id="actCfgAdd" class="gs-modal-btn cancel" style="width:100%">+ Add action</button>' +
+        '<div class="gs-modal-row">' +
+          '<button id="actCfgSave" class="gs-modal-btn primary">Save</button>' +
+          '<button id="actCfgCancel" class="gs-modal-btn cancel">Cancel</button>' +
         '</div>';
 
       box.querySelectorAll('.act-del').forEach(function(btn) {
@@ -34592,7 +34596,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     render();
-    overlay.appendChild(box);
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
   }
