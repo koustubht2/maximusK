@@ -8596,16 +8596,17 @@ window.canonicalJson = function(obj) {
 <div id="nofapSection" style="max-width:720px;margin:0 auto;padding:0 16px 20px">
   <div class="wc-card">
     <!-- Header row — tappable, collapses body -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;cursor:pointer;user-select:none" id="nofapCollapseHeader" onclick="(function(){var b=document.getElementById('nofapCollapseBody');var c=document.getElementById('nofapCollapseChev');var open=b.style.display!=='none';b.style.display=open?'none':'';c.style.transform=open?'rotate(0deg)':'rotate(180deg)';})()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;cursor:pointer;user-select:none" id="nofapCollapseHeader" onclick="(function(){var b=document.getElementById('nofapCollapseBody');var c=document.getElementById('nofapCollapseChev');var open=b.style.display!=='none';b.style.display=open?'none':'';c.style.transform=open?'rotate(0deg)':'rotate(180deg)';})()">
       <span style="font-family:var(--pk-serif,Georgia,serif);font-size:17px;color:var(--text-primary)">NoF Tracker</span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button id="nofapUrgeBtn" onclick="event.stopPropagation()" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(99,200,130,0.8);background:rgba(99,200,130,0.07);border:1px solid rgba(99,200,130,0.22);border-radius:20px;padding:5px 12px;cursor:pointer">✦ Resisted</button>
-        <button id="nofapRelapseBtn" onclick="event.stopPropagation()" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(239,68,68,0.8);background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.22);border-radius:20px;padding:5px 12px;cursor:pointer">Log Relapse</button>
-        <svg id="nofapCollapseChev" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(0deg);color:var(--text-tertiary)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+      <svg id="nofapCollapseChev" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(0deg);color:var(--text-tertiary)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <!-- Collapsible body — hidden by default -->
     <div id="nofapCollapseBody" style="display:none">
+      <!-- Action buttons row -->
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:14px;margin-bottom:14px">
+        <button id="nofapUrgeBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(99,200,130,0.8);background:rgba(99,200,130,0.07);border:1px solid rgba(99,200,130,0.22);border-radius:20px;padding:5px 12px;cursor:pointer">✦ Resisted</button>
+        <button id="nofapRelapseBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(239,68,68,0.8);background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.22);border-radius:20px;padding:5px 12px;cursor:pointer">Log Relapse</button>
+      </div>
       <!-- Streak stats — same tile style as Meditation -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px" id="nofapStatsRow">
         <div style="background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.12);border-radius:14px;padding:10px 8px;text-align:center">
@@ -30014,7 +30015,7 @@ function switchTab(tab) {
         '<div class="gs-modal-title" style="color:#EF4444">Log Relapse</div>' +
         '<div>' +
           '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Date</div>' +
-          '<input id="nfDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark">' +
+          '<input id="nfDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark;width:100%;box-sizing:border-box;min-width:0">' +
         '</div>' +
         '<div>' +
           '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Count</div>' +
@@ -30103,7 +30104,7 @@ function switchTab(tab) {
         '<div style="font-family:var(--font-mono);font-size:10px;color:rgba(99,200,130,0.6);margin-top:-4px">Every win counts.</div>' +
         '<div style="width:100%">' +
           '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase">Date</div>' +
-          '<input id="nuDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark;width:100%;box-sizing:border-box">' +
+          '<input id="nuDate" type="date" class="gs-modal-input" value="'+today+'" style="color-scheme:dark;width:100%;box-sizing:border-box;min-width:0">' +
         '</div>' +
         '<div>' +
           '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase">Time of day</div>' +
