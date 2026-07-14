@@ -9115,7 +9115,7 @@ window.canonicalJson = function(obj) {
         <div id="datingActivityWrap" style="margin-bottom:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <span class="gs-rel-sub-label" style="margin:0">Daily Activity</span>
-            <button id="datingActivityCfgBtn" style="background:none;border:none;cursor:pointer;color:rgba(245,200,66,0.5);font-size:14px;padding:2px 6px;border-radius:6px;transition:color 0.2s" title="Configure actions">⚙</button>
+            <button id="datingActivityCfgBtn" onclick="window._showActivityConfigModal&&window._showActivityConfigModal()" style="background:none;border:none;cursor:pointer;color:rgba(245,200,66,0.5);font-size:16px;padding:6px 10px;border-radius:8px;transition:color 0.2s;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center" title="Configure actions">⚙</button>
           </div>
           <div id="datingActivityPills" style="display:flex;flex-wrap:wrap;gap:8px"></div>
           <div id="datingActivityHistory" style="margin-top:10px"></div>
@@ -33279,14 +33279,14 @@ document.addEventListener('DOMContentLoaded', function() {
       var done=cnt>=tgt;
       var pct=Math.min(100,Math.round((cnt/tgt)*100));
       var el=document.createElement('div');
-      el.style.cssText='background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,'+(done?'0.15':'0.07')+');border-radius:14px;padding:8px 12px;min-width:120px;flex:1;max-width:180px';
-      el.innerHTML='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">'+
-        '<span>'+icon+'</span>'+
-        '<span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.07em;text-transform:uppercase;color:'+(done?'#F5C842':'rgba(255,255,255,0.45)')+'">'+lbl+'</span>'+
+      el.style.cssText='display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px 7px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid '+(done?'rgba(245,200,66,0.30)':'rgba(255,255,255,0.07)')+';position:relative;min-width:0';
+      el.innerHTML='<div style="display:flex;align-items:center;gap:4px">'+
+        '<span style="font-size:12px;line-height:1">'+icon+'</span>'+
+        '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.09em;text-transform:uppercase;color:'+(done?'#F5C842':'rgba(255,255,255,0.4)')+';white-space:nowrap">'+lbl+'</span>'+
         '</div>'+
-        '<div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:'+(done?'#F5C842':'rgba(255,255,255,0.8)')+'">'+cnt+'<span style="font-size:10px;opacity:0.4">/'+tgt+'</span></div>'+
-        '<div style="margin-top:5px;height:3px;border-radius:2px;background:rgba(255,255,255,0.07)">'+
-          '<div style="height:100%;width:'+pct+'%;background:'+(done?'#F5C842':'rgba(245,200,66,0.4)')+';border-radius:2px;transition:width 0.3s"></div>'+
+        '<div style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:'+(done?'#F5C842':'rgba(255,255,255,0.92)')+';line-height:1">'+cnt+'<span style="font-size:9px;color:rgba(255,255,255,0.28);font-weight:400">/'+tgt+'</span></div>'+
+        '<div style="position:absolute;bottom:0;left:12%;right:12%;height:2px;border-radius:1px;background:rgba(255,255,255,0.06);overflow:hidden">'+
+          '<div style="height:100%;width:'+pct+'%;background:'+(done?'#F5C842':'rgba(245,200,66,0.45)')+';border-radius:1px;transition:width 0.3s"></div>'+
         '</div>';
       wrap.appendChild(el);
     });
@@ -33335,7 +33335,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var stageCards=cards.filter(function(c){ return c.stage===stage; });
       var col=document.createElement('div');
       col.dataset.stage=stage;
-      col.style.cssText='flex-shrink:0;min-width:130px;max-width:150px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:8px;';
+      col.style.cssText='flex-shrink:0;min-width:82px;max-width:105px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:8px;';
 
       // Column header with count
       var hdr=document.createElement('div');
@@ -34309,20 +34309,20 @@ document.addEventListener('DOMContentLoaded', function() {
       var done   = count >= pill.target;
       var bar    = Math.round(pct * 100);
       var pillEl = document.createElement('div');
-      pillEl.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:8px 10px;min-width:110px;flex:1;max-width:160px;' + (done ? 'border-color:rgba(245,200,66,0.35);' : '');
+      pillEl.style.cssText = 'display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:8px 14px 7px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid ' + (done ? 'rgba(245,200,66,0.30)' : 'rgba(255,255,255,0.07)') + ';position:relative;min-width:0';
       pillEl.innerHTML =
-        '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">' +
-          '<span style="font-size:13px">' + pill.icon + '</span>' +
-          '<span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.5)') + '">' + _esc(pill.label) + '</span>' +
+        '<div style="display:flex;align-items:center;gap:4px">' +
+          '<span style="font-size:12px;line-height:1">' + pill.icon + '</span>' +
+          '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.09em;text-transform:uppercase;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.4)') + ';white-space:nowrap">' + _esc(pill.label) + '</span>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
-          '<button data-id="' + pill.id + '" data-delta="-1" style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">−</button>' +
-          '<span style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.9)') + ';min-width:28px;text-align:center">' + count + '</span>' +
-          '<button data-id="' + pill.id + '" data-delta="1"  style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">+</button>' +
-          '<span style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.3)">/ ' + pill.target + '</span>' +
+        '<div style="display:flex;align-items:center;gap:5px">' +
+          '<button data-id="' + pill.id + '" data-delta="-1" style="width:18px;height:18px;border-radius:50%;border:none;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">−</button>' +
+          '<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.92)') + ';min-width:20px;text-align:center;line-height:1">' + count + '</span>' +
+          '<button data-id="' + pill.id + '" data-delta="1"  style="width:18px;height:18px;border-radius:50%;border:none;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">+</button>' +
         '</div>' +
-        '<div style="height:3px;border-radius:2px;background:rgba(255,255,255,0.07);overflow:hidden">' +
-          '<div style="height:100%;width:' + bar + '%;background:' + (done ? '#F5C842' : 'rgba(245,200,66,0.4)') + ';border-radius:2px;transition:width 0.3s"></div>' +
+        '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.25);line-height:1">/ ' + pill.target + '</div>' +
+        '<div style="position:absolute;bottom:0;left:12%;right:12%;height:2px;border-radius:1px;background:rgba(255,255,255,0.06);overflow:hidden">' +
+          '<div style="height:100%;width:' + bar + '%;background:' + (done ? '#F5C842' : 'rgba(245,200,66,0.45)') + ';border-radius:1px;transition:width 0.3s"></div>' +
         '</div>';
       pillEl.querySelectorAll('button[data-id]').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -34475,6 +34475,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   window._relRender = render;
   window._renderActivityPills = renderActivityPills;
+  window._showActivityConfigModal = showActivityConfigModal;
 })();
 </script>
 
