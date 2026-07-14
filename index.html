@@ -30803,7 +30803,7 @@ function switchTab(tab) {
         var DPR = Math.min(window.devicePixelRatio||1, 2);
         renderer.setPixelRatio(DPR);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.60;
+        renderer.toneMappingExposure = 2.20;
 
         // iOS Safari reclaims WebGL context on pinch-zoom — catch it so the page
         // doesn't crash. On restore, reinitialise the whole Three.js engine.
