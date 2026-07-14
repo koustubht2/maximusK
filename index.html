@@ -33264,37 +33264,67 @@ document.addEventListener('DOMContentLoaded', function() {
     renderNoticePeriod(data);
   }
 
-  // Daily goals pills
+  // Daily goals pills — manual +/- counters stored in data.config.dailyLog
+  function jobDailyLog(data){
+    var t=todayStr();
+    var log=(data.config&&data.config.dailyLog)||{};
+    return log[t]||{applied:0,follows:0};
+  }
+  function jobSetDaily(data,key,delta){
+    var t=todayStr();
+    if(!data.config) data.config={dailyApplyTarget:5,dailyFollowTarget:3};
+    if(!data.config.dailyLog) data.config.dailyLog={};
+    var day=data.config.dailyLog[t]||{applied:0,follows:0};
+    day[key]=Math.max(0,( day[key]||0)+delta);
+    data.config.dailyLog[t]=day;
+    save(data);
+    render();
+  }
   function renderGoalsPills(data){
     var wrap = document.getElementById('jobGoalsRow');
     if(!wrap) return;
     var cfg    = data.config || {};
     var applyT = cfg.dailyApplyTarget || 5;
     var followT= cfg.dailyFollowTarget|| 3;
-    var applied= todayApplied(data);
-    var follows= todayFollowUps(data);
+    var daily  = jobDailyLog(data);
+    var applied= daily.applied;
+    var follows= daily.follows;
     wrap.innerHTML = '';
-    [[applied,applyT,'Applied today','📨'],[follows,followT,'Follow-ups due','📞']].forEach(function(p){
-      var cnt=p[0],tgt=p[1],lbl=p[2],icon=p[3];
-      var done=cnt>=tgt;
-      var pct=Math.min(100,Math.round((cnt/tgt)*100));
+    [
+      {cnt:applied, tgt:applyT,  lbl:'Applied',    icon:'📨', key:'applied'},
+      {cnt:follows,  tgt:followT, lbl:'Follow-ups', icon:'📞', key:'follows'}
+    ].forEach(function(p){
+      var done=p.cnt>=p.tgt;
+      var pct=Math.min(100,Math.round((p.cnt/p.tgt)*100));
       var el=document.createElement('div');
       el.style.cssText='display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px 7px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid '+(done?'rgba(245,200,66,0.30)':'rgba(255,255,255,0.07)')+';position:relative;min-width:0';
-      el.innerHTML='<div style="display:flex;align-items:center;gap:4px">'+
-        '<span style="font-size:12px;line-height:1">'+icon+'</span>'+
-        '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.09em;text-transform:uppercase;color:'+(done?'#F5C842':'rgba(255,255,255,0.4)')+';white-space:nowrap">'+lbl+'</span>'+
+      el.innerHTML=
+        '<div style="display:flex;align-items:center;gap:4px">'+
+          '<span style="font-size:12px;line-height:1">'+p.icon+'</span>'+
+          '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.09em;text-transform:uppercase;color:'+(done?'#F5C842':'rgba(255,255,255,0.4)')+';white-space:nowrap">'+p.lbl+'</span>'+
         '</div>'+
-        '<div style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:'+(done?'#F5C842':'rgba(255,255,255,0.92)')+';line-height:1">'+cnt+'<span style="font-size:9px;color:rgba(255,255,255,0.28);font-weight:400">/'+tgt+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+          '<button data-key="'+p.key+'" data-delta="-1" style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">−</button>'+
+          '<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:'+(done?'#F5C842':'rgba(255,255,255,0.92)')+';min-width:20px;text-align:center;line-height:1">'+p.cnt+'</span>'+
+          '<button data-key="'+p.key+'" data-delta="1"  style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">+</button>'+
+        '</div>'+
+        '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.25);line-height:1">/ '+p.tgt+'</div>'+
         '<div style="position:absolute;bottom:0;left:12%;right:12%;height:2px;border-radius:1px;background:rgba(255,255,255,0.06);overflow:hidden">'+
           '<div style="height:100%;width:'+pct+'%;background:'+(done?'#F5C842':'rgba(245,200,66,0.45)')+';border-radius:1px;transition:width 0.3s"></div>'+
         '</div>';
+      el.querySelectorAll('button[data-key]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var d=load();
+          jobSetDaily(d,btn.dataset.key,parseInt(btn.dataset.delta));
+        });
+      });
       wrap.appendChild(el);
     });
     // Config gear
     var gear=document.createElement('button');
     gear.textContent='⚙';
     gear.title='Configure targets';
-    gear.style.cssText='background:none;border:none;cursor:pointer;color:rgba(245,200,66,0.4);font-size:14px;padding:4px 8px;border-radius:8px;align-self:center';
+    gear.style.cssText='background:none;border:none;cursor:pointer;color:rgba(245,200,66,0.4);font-size:16px;padding:6px 10px;border-radius:8px;align-self:center;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center';
     gear.addEventListener('click', showGoalsConfigModal);
     wrap.appendChild(gear);
   }
@@ -34316,9 +34346,9 @@ document.addEventListener('DOMContentLoaded', function() {
           '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.09em;text-transform:uppercase;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.4)') + ';white-space:nowrap">' + _esc(pill.label) + '</span>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:5px">' +
-          '<button data-id="' + pill.id + '" data-delta="-1" style="width:18px;height:18px;border-radius:50%;border:none;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">−</button>' +
+          '<button data-id="' + pill.id + '" data-delta="-1" style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">−</button>' +
           '<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.92)') + ';min-width:20px;text-align:center;line-height:1">' + count + '</span>' +
-          '<button data-id="' + pill.id + '" data-delta="1"  style="width:18px;height:18px;border-radius:50%;border:none;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">+</button>' +
+          '<button data-id="' + pill.id + '" data-delta="1"  style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">+</button>' +
         '</div>' +
         '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.25);line-height:1">/ ' + pill.target + '</div>' +
         '<div style="position:absolute;bottom:0;left:12%;right:12%;height:2px;border-radius:1px;background:rgba(255,255,255,0.06);overflow:hidden">' +
@@ -34418,12 +34448,11 @@ document.addEventListener('DOMContentLoaded', function() {
           render();
         });
       });
-      document.getElementById('actCfgAdd').addEventListener('click', function() {
+      box.querySelector('#actCfgAdd').addEventListener('click', function() {
         cfg.push({ id: 'act_' + Date.now(), label: '', icon: '★', target: 5 });
         render();
       });
-      document.getElementById('actCfgSave').addEventListener('click', function() {
-        // Read back all row values
+      box.querySelector('#actCfgSave').addEventListener('click', function() {
         var rows = box.querySelectorAll('.act-cfg-row');
         var newCfg = [];
         rows.forEach(function(row, i) {
@@ -34441,7 +34470,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderActivityPills();
         renderActivityHistory();
       });
-      document.getElementById('actCfgCancel').addEventListener('click', function() {
+      box.querySelector('#actCfgCancel').addEventListener('click', function() {
         document.body.removeChild(overlay);
       });
     }
