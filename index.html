@@ -1700,6 +1700,8 @@ body::after {
   box-shadow: 0 12px 40px rgba(0,0,0,0.45);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  height: 72px;
+  overflow: hidden;
 }
 .gs-insight-top { display: contents; }
 .gs-insight-icon { font-size: 16px; flex-shrink: 0; }
@@ -1711,6 +1713,7 @@ body::after {
 .gs-insight-text {
   font-size: 12px; font-weight: 500; color: var(--text-secondary); line-height: 1.55;
   transition: opacity 0.3s ease;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .gs-insight-text.fading { opacity: 0; }
 .gs-insight-dots { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; align-self: center; }
@@ -8906,6 +8909,9 @@ window.canonicalJson = function(obj) {
         <button class="wotd-speak-btn" id="wotdSpeakBtn" title="Hear it" aria-label="Pronounce word">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
         </button>
+        <button class="wotd-speak-btn" id="wotdRefreshBtn" title="New word" aria-label="Regenerate word" style="margin-left:4px">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
       </div>
       <div class="wotd-word-row">
         <span class="wotd-word" id="wotdWord">…</span>
@@ -11327,7 +11333,10 @@ const GS_GEMINI_KEY = '';
   let wotdPaused = false;
 
   function todayKey() {
-    return WOTD_KEY_PREFIX + new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    return WOTD_KEY_PREFIX + d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
   }
 
   function render(data) {
@@ -11393,6 +11402,15 @@ const GS_GEMINI_KEY = '';
     if (frVoice) utt.voice = frVoice;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utt);
+  });
+
+  // Refresh button — clears today's cache and fetches a new word
+  document.getElementById('wotdRefreshBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    localStorage.removeItem(todayKey());
+    const word = document.getElementById('wotdWord');
+    if (word) word.textContent = '…';
+    fetchWord();
   });
 
   async function fetchWord() {
