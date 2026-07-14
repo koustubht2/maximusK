@@ -31069,14 +31069,14 @@ function switchTab(tab) {
               var dist  = Math.abs(homeR[i] - front);
               if(dist < 0.30) ripple = 1.0 + (1.0 - dist/0.30) * 2.0;
             }
-            var a = brightArr[i]*shim*dbright*0.85*ripple;
+            var a = brightArr[i]*shim*dbright*1.20*ripple;
             pCol[i*3]=col[0]*a; pCol[i*3+1]=col[1]*a; pCol[i*3+2]=col[2]*a;
             var baseSize = layerArr[i]<=1 ? .175
                          : layerArr[i]<=3 ? .145
                          : layerArr[i]<=5 ? .122
                          : layerArr[i]<=6 ? .105
                          : .082;
-            pSz[i] = baseSize*(isBig[i]?1.85:1)*(.65+.55*depth);
+            pSz[i] = baseSize*(isBig[i]?1.85:1)*(.85+.35*depth);
           }
           pGeo.attributes.position.needsUpdate=true;
           pGeo.attributes.color.needsUpdate=true;
