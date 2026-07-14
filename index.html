@@ -16659,28 +16659,46 @@ setInterval(updateDayBar, 60 * 1000);
     { name: 'Chaga', dose: '1–2g', window: 'morning', note: 'Antioxidant and immune', icon: '🍄', aliases: ['chaga'] },
   ];
 
-  let todayKey = `stack:taken:${getActiveDate()}`;
+  // one-time migration from old stack: keys to goals_ prefix
+  (function migrateStackKeys() {
+    if (localStorage.getItem('goals_stack_migrated')) return;
+    const oldItems = localStorage.getItem('stack:items');
+    const oldLow   = localStorage.getItem('stack:low');
+    const oldVer   = localStorage.getItem('stack:version');
+    if (oldItems) localStorage.setItem('goals_stack_items', oldItems);
+    if (oldLow)   localStorage.setItem('goals_stack_low',   oldLow);
+    if (oldVer)   localStorage.setItem('goals_stack_version', oldVer);
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('stack:taken:'))
+      .forEach(k => {
+        const newK = 'goals_stack_taken:' + k.slice('stack:taken:'.length);
+        localStorage.setItem(newK, localStorage.getItem(k));
+      });
+    localStorage.setItem('goals_stack_migrated', '1');
+  })();
+
+  let todayKey = `goals_stack_taken:${getActiveDate()}`;
 
   function getViewKey() {
-    return window.getViewDate ? `stack:taken:${window.getViewDate()}` : todayKey;
+    return window.getViewDate ? `goals_stack_taken:${window.getViewDate()}` : todayKey;
   }
 
   function getItems() {
-    const storedVersion = storeGet('stack:version');
-    const stored = storeGet('stack:items');
+    const storedVersion = storeGet('goals_stack_version');
+    const stored = storeGet('goals_stack_items');
     if (!stored || !Array.isArray(stored) || !stored.length || storedVersion !== TEMPLATE_VERSION) {
       const fresh = JSON.parse(JSON.stringify(STACK_DEFAULTS));
-      storeSet('stack:items', fresh);
-      storeSet('stack:version', TEMPLATE_VERSION);
+      storeSet('goals_stack_items', fresh);
+      storeSet('goals_stack_version', TEMPLATE_VERSION);
       return fresh;
     }
     return stored;
   }
-  function setItems(items) { storeSet('stack:items', items); }
+  function setItems(items) { storeSet('goals_stack_items', items); }
   function getTaken() { return storeGet(getViewKey()) || {}; }
   function setTaken(map) { if (window.isViewingToday && !window.isViewingToday()) return; storeSet(todayKey, map); }
-  function getLow() { return storeGet('stack:low') || []; }
-  function setLow(arr) { storeSet('stack:low', arr); }
+  function getLow() { return storeGet('goals_stack_low') || []; }
+  function setLow(arr) { storeSet('goals_stack_low', arr); }
 
   function toggleTaken(id) {
     const taken = getTaken();
@@ -17058,7 +17076,7 @@ setInterval(updateDayBar, 60 * 1000);
   });
 
   setInterval(() => {
-    const newKey = `stack:taken:${getActiveDate()}`;
+    const newKey = `goals_stack_taken:${getActiveDate()}`;
     if (newKey !== todayKey) todayKey = newKey;
     render();
   }, 60 * 1000);
@@ -19334,9 +19352,9 @@ Rules: zone=peak if readiness≥90, zone=good if ≥70, zone=watch if ≥50, els
   }
   function getStackProgress() {
     let items = [];
-    try { items = JSON.parse(localStorage.getItem('stack:items')) || []; } catch(e) {}
+    try { items = JSON.parse(localStorage.getItem('goals_stack_items')) || []; } catch(e) {}
     let taken = {};
-    try { taken = JSON.parse(localStorage.getItem('stack:taken:' + activeDateKey())) || {}; } catch(e) {}
+    try { taken = JSON.parse(localStorage.getItem('goals_stack_taken:' + activeDateKey())) || {}; } catch(e) {}
     const total = Array.isArray(items) ? items.length : 0;
     const done = total ? items.filter(i => i && taken[i.id]).length : 0;
     return { done, total };
@@ -25358,7 +25376,7 @@ function switchTab(tab) {
   function _focusMarkInterrupted() {
     if (!_focusActive) return;
     // Save the current running session immediately as interrupted
-    var elapsed = Math.round((Date.now() - _focusStartTs) / 1000);
+    var elapsed = Math.round((Date.now() - _focusStartTs - _focusPausedTotal) / 1000);
     if (elapsed >= 5) {
       var sessions = _focusLoadSessions();
       var dateStr = new Date(_focusStartTs).toISOString().slice(0,10);
@@ -25731,7 +25749,9 @@ function switchTab(tab) {
       if (!_focusActive) return;
       if (_focusPaused) {
         // Resume
-        _focusEnd += (Date.now() - _focusPausedAt);
+        var pausedMs = Date.now() - _focusPausedAt;
+        _focusEnd += pausedMs;
+        _focusPausedTotal += pausedMs;
         _focusPaused = false;
         pauseBtn.textContent = '❚❚ Pause';
         pauseBtn.style.color = '#F5C842';
@@ -25741,7 +25761,7 @@ function switchTab(tab) {
         // Pause
         _focusPaused = true;
         _focusPausedAt = Date.now();
-        _focusPausedTotal += 0;
+        _focusPausedTotal += 0; // accumulated on resume below
         if (_focusRaf) cancelAnimationFrame(_focusRaf);
         pauseBtn.textContent = '▶ Resume';
         pauseBtn.style.color = '#6EE7B7';
@@ -25753,7 +25773,7 @@ function switchTab(tab) {
     var endBtn = document.getElementById('peakFocusEndBtn');
     if (endBtn) endBtn.addEventListener('click', function() {
       if (!_focusActive) return;
-      var elapsed = Math.round((Date.now() - _focusStartTs) / 1000);
+      var elapsed = Math.round((Date.now() - _focusStartTs - _focusPausedTotal) / 1000);
       if (elapsed >= 5) { _focusSaveSession(_focusStartTs, Date.now(), elapsed); _focusMarkTaskDone(_focusCurrentTask); }
       _focusActive = false;
       _focusPaused = false;
@@ -25775,7 +25795,7 @@ function switchTab(tab) {
   function _tickFocus(totalMin) {
     if (!_focusActive || _focusPaused) return;
     var rem = Math.max(0, (_focusEnd - Date.now()) / 1000);
-    var elapsed = Math.round((Date.now() - _focusStartTs) / 1000);
+    var elapsed = Math.round((Date.now() - _focusStartTs - _focusPausedTotal) / 1000);
     var em = Math.floor(elapsed / 60), es = elapsed % 60;
     var rm = Math.floor(rem / 60), rs = Math.floor(rem % 60);
 
@@ -31390,7 +31410,14 @@ window.drawMandala = function(progress, phase, phaseT){
     var meds = (typeof loadMedLogs==='function') ? loadMedLogs(todayKey()) : [];
     var cmg = sum(caff,function(c){return c.mg||0;});
     var au  = sum(alc,function(a){return a.units||0;});
-    var summary = 'Stimulants today: caffeine '+round(cmg)+'mg ('+caff.length+' drinks), alcohol '+au+' units, meds/supps '+(meds.length?meds.map(function(m){return m.name;}).join(', '):'none');
+    // supplement stack taken status
+    var stackItems = [], stackTaken = {};
+    try { stackItems = JSON.parse(localStorage.getItem('goals_stack_items')) || []; } catch(e) {}
+    try { stackTaken = JSON.parse(localStorage.getItem('goals_stack_taken:'+todayKey())) || {}; } catch(e) {}
+    var stackTotal = stackItems.length;
+    var stackDone  = stackItems.filter(function(i){ return i && stackTaken[i.id]; }).length;
+    var stackStr   = stackTotal ? stackDone+'/'+stackTotal+' supplements taken' : 'no supplements configured';
+    var summary = 'Stimulants today: caffeine '+round(cmg)+'mg ('+caff.length+' drinks), alcohol '+au+' units, meds/supps '+(meds.length?meds.map(function(m){return m.name;}).join(', '):'none')+', '+stackStr;
     // 14-day alcohol + caffeine for correlation
     var days=lastDays(WINDOW);
     var detail = days.map(function(dk){
