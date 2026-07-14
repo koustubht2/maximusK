@@ -31195,7 +31195,7 @@ function switchTab(tab) {
           var pulse=.88+.12*Math.sin(t*1.5);
           updateCore(t, _bs, pulse);
 
-          var nebAmp = (_bs - 0.72) / 0.28;
+          var nebAmp = Math.max(0.40, (_bs - 0.72) / 0.28);
           updateNebula(t, nebAmp, pulse);
           nebMat.opacity = nebAmp * (0.32 + 0.18 * pulse);
           nebSprite.scale.setScalar(0.55 + nebAmp * (0.25 + 0.15 * pulse));
