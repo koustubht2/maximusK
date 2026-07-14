@@ -1583,6 +1583,7 @@ body::after {
   margin-bottom: 10px;
   position: relative;
   overflow: hidden;
+  height: 178px;
 }
 .wotd-card::before {
   content: ''; position: absolute;
@@ -1623,7 +1624,8 @@ body::after {
   margin-bottom: 12px; letter-spacing: -0.01em;
 }
 .wotd-sentence-wrap {
-  min-height: 42px;
+  height: 52px;
+  overflow: hidden;
   animation: wotd-fade-in 0.4s ease;
 }
 @keyframes wotd-fade-in {
@@ -8910,7 +8912,7 @@ window.canonicalJson = function(obj) {
           <button class="wotd-speak-btn" id="wotdSpeakBtn" title="Hear it" aria-label="Pronounce word">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
           </button>
-          <button class="wotd-speak-btn" id="wotdRefreshBtn" title="New word" aria-label="Regenerate word">
+          <button class="wotd-speak-btn" id="wotdRefreshBtn" onclick="window._wotdRefresh&&window._wotdRefresh()" title="New word" aria-label="Regenerate word">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           </button>
         </div>
@@ -11406,15 +11408,18 @@ const GS_GEMINI_KEY = '';
     window.speechSynthesis.speak(utt);
   });
 
-  // Refresh button — clears all wotd cache keys and fetches a new word
-  document.getElementById('wotdRefreshBtn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
+  // Refresh — exposed as global so onclick attr always reaches it
+  window._wotdRefresh = function() {
     Object.keys(localStorage)
       .filter(k => k.startsWith(WOTD_KEY_PREFIX))
       .forEach(k => localStorage.removeItem(k));
     const word = document.getElementById('wotdWord');
     if (word) word.textContent = '…';
     fetchWord();
+  };
+  document.getElementById('wotdRefreshBtn')?.addEventListener('click', function(e) {
+    e.stopPropagation();
+    window._wotdRefresh();
   });
 
   async function fetchWord() {
