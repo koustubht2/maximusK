@@ -33289,28 +33289,28 @@ document.addEventListener('DOMContentLoaded', function() {
     var daily  = jobDailyLog(data);
     var applied= daily.applied;
     var follows= daily.follows;
+    wrap.style.cssText='display:flex;flex-direction:column;gap:0;margin-bottom:12px';
     wrap.innerHTML = '';
     [
       {cnt:applied, tgt:applyT,  lbl:'Applied',    icon:'📨', key:'applied'},
       {cnt:follows,  tgt:followT, lbl:'Follow-ups', icon:'📞', key:'follows'}
-    ].forEach(function(p){
+    ].forEach(function(p, idx, arr){
       var done=p.cnt>=p.tgt;
       var pct=Math.min(100,Math.round((p.cnt/p.tgt)*100));
+      var isLast=idx===arr.length-1;
       var el=document.createElement('div');
-      el.style.cssText='display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px 7px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid '+(done?'rgba(245,200,66,0.30)':'rgba(255,255,255,0.07)')+';position:relative;min-width:0';
+      el.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 2px;'+(isLast?'':'border-bottom:1px solid rgba(255,255,255,0.05);');
       el.innerHTML=
-        '<div style="display:flex;align-items:center;gap:4px">'+
-          '<span style="font-size:12px;line-height:1">'+p.icon+'</span>'+
-          '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.09em;text-transform:uppercase;color:'+(done?'#F5C842':'rgba(255,255,255,0.4)')+';white-space:nowrap">'+p.lbl+'</span>'+
+        '<span style="font-size:15px;flex-shrink:0;line-height:1">'+p.icon+'</span>'+
+        '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.10em;text-transform:uppercase;color:'+(done?'#F5C842':'rgba(255,255,255,0.38)')+';flex-shrink:0;min-width:64px">'+p.lbl+'</span>'+
+        '<div style="flex:1;height:2px;border-radius:1px;background:rgba(255,255,255,0.07);overflow:hidden">'+
+          '<div style="height:100%;width:'+pct+'%;background:'+(done?'#F5C842':'rgba(245,200,66,0.45)')+';border-radius:1px;transition:width 0.35s"></div>'+
         '</div>'+
-        '<div style="display:flex;align-items:center;gap:5px">'+
-          '<button data-key="'+p.key+'" data-delta="-1" style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">−</button>'+
-          '<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:'+(done?'#F5C842':'rgba(255,255,255,0.92)')+';min-width:20px;text-align:center;line-height:1">'+p.cnt+'</span>'+
-          '<button data-key="'+p.key+'" data-delta="1"  style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">+</button>'+
-        '</div>'+
-        '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.25);line-height:1">/ '+p.tgt+'</div>'+
-        '<div style="position:absolute;bottom:0;left:12%;right:12%;height:2px;border-radius:1px;background:rgba(255,255,255,0.06);overflow:hidden">'+
-          '<div style="height:100%;width:'+pct+'%;background:'+(done?'#F5C842':'rgba(245,200,66,0.45)')+';border-radius:1px;transition:width 0.3s"></div>'+
+        '<div style="display:flex;align-items:center;gap:7px;flex-shrink:0">'+
+          '<button data-key="'+p.key+'" data-delta="-1" style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">−</button>'+
+          '<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:'+(done?'#F5C842':'rgba(255,255,255,0.92)')+';min-width:22px;text-align:center">'+p.cnt+'</span>'+
+          '<button data-key="'+p.key+'" data-delta="1" style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">+</button>'+
+          '<span style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.22);flex-shrink:0">/'+p.tgt+'</span>'+
         '</div>';
       el.querySelectorAll('button[data-key]').forEach(function(btn){
         btn.addEventListener('click',function(){
@@ -34332,27 +34332,27 @@ document.addEventListener('DOMContentLoaded', function() {
     var cfg  = activityGetConfig(data);
     var dateStr = today();
     var log  = activityGetLog(data, dateStr);
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:0';
     wrap.innerHTML = '';
-    cfg.forEach(function(pill) {
+    cfg.forEach(function(pill, idx) {
       var count  = log[pill.id] || 0;
       var pct    = Math.min(1, pill.target > 0 ? count / pill.target : 0);
       var done   = count >= pill.target;
       var bar    = Math.round(pct * 100);
+      var isLast = idx === cfg.length - 1;
       var pillEl = document.createElement('div');
-      pillEl.style.cssText = 'display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:8px 14px 7px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid ' + (done ? 'rgba(245,200,66,0.30)' : 'rgba(255,255,255,0.07)') + ';position:relative;min-width:0';
+      pillEl.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 2px;' + (isLast ? '' : 'border-bottom:1px solid rgba(255,255,255,0.05);');
       pillEl.innerHTML =
-        '<div style="display:flex;align-items:center;gap:4px">' +
-          '<span style="font-size:12px;line-height:1">' + pill.icon + '</span>' +
-          '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.09em;text-transform:uppercase;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.4)') + ';white-space:nowrap">' + _esc(pill.label) + '</span>' +
+        '<span style="font-size:15px;flex-shrink:0;line-height:1">' + pill.icon + '</span>' +
+        '<span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.10em;text-transform:uppercase;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.38)') + ';flex-shrink:0;min-width:64px">' + _esc(pill.label) + '</span>' +
+        '<div style="flex:1;height:2px;border-radius:1px;background:rgba(255,255,255,0.07);overflow:hidden">' +
+          '<div style="height:100%;width:' + bar + '%;background:' + (done ? '#F5C842' : 'rgba(245,200,66,0.45)') + ';border-radius:1px;transition:width 0.35s"></div>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:5px">' +
-          '<button data-id="' + pill.id + '" data-delta="-1" style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">−</button>' +
-          '<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.92)') + ';min-width:20px;text-align:center;line-height:1">' + count + '</span>' +
-          '<button data-id="' + pill.id + '" data-delta="1"  style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">+</button>' +
-        '</div>' +
-        '<div style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.25);line-height:1">/ ' + pill.target + '</div>' +
-        '<div style="position:absolute;bottom:0;left:12%;right:12%;height:2px;border-radius:1px;background:rgba(255,255,255,0.06);overflow:hidden">' +
-          '<div style="height:100%;width:' + bar + '%;background:' + (done ? '#F5C842' : 'rgba(245,200,66,0.45)') + ';border-radius:1px;transition:width 0.3s"></div>' +
+        '<div style="display:flex;align-items:center;gap:7px;flex-shrink:0">' +
+          '<button data-id="' + pill.id + '" data-delta="-1" style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">−</button>' +
+          '<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:' + (done ? '#F5C842' : 'rgba(255,255,255,0.92)') + ';min-width:22px;text-align:center">' + count + '</span>' +
+          '<button data-id="' + pill.id + '" data-delta="1" style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">+</button>' +
+          '<span style="font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.22);flex-shrink:0">/' + pill.target + '</span>' +
         '</div>';
       pillEl.querySelectorAll('button[data-id]').forEach(function(btn) {
         btn.addEventListener('click', function() {
