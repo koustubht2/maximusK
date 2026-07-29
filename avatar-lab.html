@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Lab — The Royal Court Hall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --gold:#c79a4e; --gold-soft:#e6c98a; --gold-bright:#F5C842; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; min-height:100vh; overflow:hidden; background:#050403; color:#efe7d8; font-family:'JetBrains Mono',monospace; }
+  .stage{ position:relative; height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:grab; }
+  .stage:active{ cursor:grabbing; }
+  .stage canvas{ position:absolute; inset:0; display:block; }
+  .hero-core{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; pointer-events:none; text-align:center; }
+  .hero-title{ font-family:'Fraunces',Georgia,serif; font-weight:300; font-size:clamp(34px,7vw,80px); line-height:1; color:#f5f1ea; text-shadow:0 0 50px rgba(0,0,0,0.85), 0 0 90px rgba(0,0,0,0.6); }
+  .hero-title .gold{ background:linear-gradient(120deg,var(--gold-soft),var(--gold-bright) 45%,var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .hero-role{ margin-top:18px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.28em; text-transform:uppercase; color:var(--gold-soft); text-shadow:0 0 20px rgba(0,0,0,0.9); }
+
+  .panel{ position:fixed; top:0; right:0; width:300px; height:100vh; overflow-y:auto; z-index:10;
+    background:rgba(6,4,2,0.92); border-left:1px solid rgba(199,154,78,0.2); padding:22px 20px 60px; backdrop-filter:blur(10px); font-size:11.5px; }
+  .panel h2{ font-family:'Fraunces',serif; font-size:18px; margin:0 0 4px; color:#efe7d8; font-weight:400; }
+  .panel .sub{ color:rgba(239,231,216,0.4); font-size:10px; margin-bottom:18px; line-height:1.5; }
+  .panel label{ display:block; margin:13px 0 4px; color:var(--gold-soft); font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase; }
+  .panel input[type=range]{ width:100%; }
+  .panel .val{ float:right; color:rgba(239,231,216,0.5); }
+  .presets{ display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
+  .presets button{ flex:1; min-width:120px; padding:9px 6px; background:rgba(199,154,78,0.08); border:1px solid rgba(199,154,78,0.25);
+    color:var(--gold-soft); font-family:inherit; font-size:10px; border-radius:8px; cursor:pointer; }
+  .presets button:hover{ background:rgba(199,154,78,0.18); }
+  .hint{ margin-top:20px; padding-top:14px; border-top:1px solid rgba(239,231,216,0.08); color:rgba(239,231,216,0.35); font-size:10px; line-height:1.6; }
+  .fps{ position:fixed; bottom:16px; left:16px; z-index:10; font-size:10px; color:rgba(239,231,216,0.3); }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="hero-core">
+    <h1 class="hero-title">KOUSTUBH <span class="gold">THABAJ</span></h1>
+    <div class="hero-role">Emperor · Builder · Wanderer</div>
+  </div>
+</div>
+<div class="fps" id="fps"></div>
+
+<div class="panel">
+  <h2>The Royal Court</h2>
+  <div class="sub">A colonnaded hall receding into gold light — pillars, light shafts, floating dust, a distant glow at the throne. Drag to look around, click for a pulse of light.</div>
+
+  <label>Column Pairs <span class="val" id="vCols">5</span></label>
+  <input type="range" id="cCols" min="3" max="8" step="1" value="5">
+
+  <label>Hall Depth <span class="val" id="vDepth">14</span></label>
+  <input type="range" id="cDepth" min="8" max="26" step="1" value="14">
+
+  <label>Hall Width <span class="val" id="vWidth">5.2</span></label>
+  <input type="range" id="cWidth" min="3" max="8" step="0.2" value="5.2">
+
+  <label>Light Shaft Strength <span class="val" id="vShaft">0.9</span></label>
+  <input type="range" id="cShaft" min="0" max="2" step="0.05" value="0.9">
+
+  <label>Dust Particle Density <span class="val" id="vDust">7000</span></label>
+  <input type="range" id="cDust" min="500" max="16000" step="500" value="7000">
+
+  <label>Throne Glow <span class="val" id="vThrone">1.2</span></label>
+  <input type="range" id="cThrone" min="0" max="2.4" step="0.05" value="1.2">
+
+  <label>Floor Sheen <span class="val" id="vFloor">0.8</span></label>
+  <input type="range" id="cFloor" min="0" max="1.6" step="0.05" value="0.8">
+
+  <label>Camera Drift Speed <span class="val" id="vDrift">0.06</span></label>
+  <input type="range" id="cDrift" min="0" max="0.3" step="0.01" value="0.06">
+
+  <label>Bloom Strength <span class="val" id="vBloom">1.3</span></label>
+  <input type="range" id="cBloom" min="0" max="3" step="0.05" value="1.3">
+
+  <div class="presets">
+    <button data-p="grand">Grand Hall</button>
+    <button data-p="intimate">Intimate Chapel</button>
+    <button data-p="dramatic">Dramatic Shafts</button>
+  </div>
+
+  <div class="hint">Standalone lab — biohack.html untouched. Drag to orbit/look, scroll not needed. Click the stage for a pulse of light down the hall.</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const stage = document.getElementById('stage');
+const fpsEl = document.getElementById('fps');
+
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setClearColor(0x050403, 1);
+const DPR = Math.min(2, window.devicePixelRatio||1);
+renderer.setPixelRatio(DPR);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.9;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0a0704, 0.012);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 160);
+
+// Real-looking metal/stone needs something to REFLECT — a flat MeshStandardMaterial
+// with no environment map always looks like painted plastic, no matter the lighting.
+// A PMREM-processed room environment gives the gold capitals real specular highlights
+// and gives the stone a believable soft sheen instead of a flat matte fill.
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environment = envTex;
+
+const BLOOM_LAYER = 1;
+const bloomLayerMask = new THREE.Layers(); bloomLayerMask.set(BLOOM_LAYER);
+camera.layers.enableAll();
+
+const hallGroup = new THREE.Group();
+scene.add(hallGroup);
+
+// Scale the ENTIRE hall up so the columns genuinely tower overhead like a real
+// colonnade, rather than reading as tabletop-scale models. Everything (columns,
+// floor/ceiling, entablature, dust) is built at the original human-scale unit
+// system and then this single group scale blows it up — much safer than
+// re-deriving every hardcoded dimension by hand, and keeps proportions correct.
+const HALL_SCALE = 3.7;
+hallGroup.scale.setScalar(HALL_SCALE);
+
+// Stand the camera on the (now-scaled) floor at real human eye height, well
+// back from the throne end so the full colonnade recedes ahead of you.
+const FLOOR_Y_LOCAL = -1.15; // floor's Y in the hall's own unit space, before scaling
+const EYE_HEIGHT = 1.65; // metres-equivalent, standing eye height
+const CAM_EYE_Y = FLOOR_Y_LOCAL*HALL_SCALE + EYE_HEIGHT;
+camera.position.set(0, CAM_EYE_Y, 8.5);
+
+/* ================= textures ================= */
+function radial(stops, size){
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  stops.forEach(s=>grd.addColorStop(s[0],s[1]));
+  g.fillStyle = grd; g.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c);
+}
+function linearVert(stops, size){
+  const c = document.createElement('canvas'); c.width = 8; c.height = size;
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0,0,0,size);
+  stops.forEach(s=>grd.addColorStop(s[0],s[1]));
+  g.fillStyle = grd; g.fillRect(0,0,8,size);
+  return new THREE.CanvasTexture(c);
+}
+// Procedural marble-ish stone texture: subtle warm-grey veining + speckle noise,
+// so the columns read as quarried stone rather than a flat plastic colour fill.
+function buildMarbleTexture(){
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = '#e7ddc8'; g.fillRect(0,0,size,size);
+  // soft blotchy base tone variation
+  for(let i=0;i<90;i++){
+    const x = Math.random()*size, y = Math.random()*size, r = 20+Math.random()*70;
+    const grd = g.createRadialGradient(x,y,0,x,y,r);
+    const shade = Math.random()<0.5 ? 'rgba(200,188,160,0.10)' : 'rgba(255,250,235,0.14)';
+    grd.addColorStop(0, shade); grd.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0,0,size,size);
+  }
+  // veining strokes
+  g.strokeStyle = 'rgba(150,135,105,0.16)';
+  for(let i=0;i<26;i++){
+    g.lineWidth = 0.6+Math.random()*1.4;
+    g.beginPath();
+    let x = Math.random()*size, y = Math.random()*size;
+    g.moveTo(x,y);
+    for(let s=0;s<6;s++){
+      x += (Math.random()-0.5)*90; y += (Math.random()-0.5)*90;
+      g.lineTo(x,y);
+    }
+    g.stroke();
+  }
+  // fine speckle grain
+  for(let i=0;i<3000;i++){
+    const x = Math.random()*size, y = Math.random()*size;
+    g.fillStyle = Math.random()<0.5 ? 'rgba(120,105,80,0.05)' : 'rgba(255,255,255,0.06)';
+    g.fillRect(x,y,1,1);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2,2);
+  return tex;
+}
+const marbleTex = buildMarbleTexture();
+
+// Matching roughness-variation map (same noise, greyscale) so the specular
+// highlight breaks up across the surface instead of one uniform sheen band —
+// this is the single biggest "plastic vs real" tell on a lit curved surface.
+function buildRoughnessTexture(){
+  const size = 256;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = '#bfbfbf'; g.fillRect(0,0,size,size);
+  for(let i=0;i<400;i++){
+    const x = Math.random()*size, y = Math.random()*size, r = 4+Math.random()*14;
+    const grd = g.createRadialGradient(x,y,0,x,y,r);
+    const v = Math.random()<0.5 ? 40 : 210;
+    grd.addColorStop(0, `rgba(${v},${v},${v},0.35)`); grd.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0,0,size,size);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2,2);
+  return tex;
+}
+const roughTex = buildRoughnessTexture();
+
+const dotTex = radial([
+  [0,'rgba(255,255,255,1)'],
+  [0.25,'rgba(255,244,215,0.9)'],
+  [0.6,'rgba(230,201,138,0.25)'],
+  [1,'rgba(199,154,78,0)']
+], 64);
+const glowTex = radial([
+  [0,'rgba(255,250,235,1)'],
+  [0.16,'rgba(255,232,175,0.92)'],
+  [0.4,'rgba(245,196,100,0.45)'],
+  [0.7,'rgba(199,154,78,0.14)'],
+  [1,'rgba(199,154,78,0)']
+], 256);
+// Soft volumetric "god ray" texture: fades to zero on ALL four edges (not just
+// top/bottom like a flat rectangle gradient) so the beam has no hard geometric
+// border, plus a few soft wavy density streaks running down its length so it
+// reads as diffused, slightly uneven dusty sunlight rather than a clean shape.
+function buildGodRayTexture(){
+  const w = 160, h = 512;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  for(let y=0;y<h;y++){
+    const v = y/h;
+    const vertFade = Math.pow(1-v, 0.55); // brighter near the top, fading toward the floor
+    // horizontal profile: soft bright core narrowing slightly, fading fully to 0 at both edges
+    const wobble = Math.sin(v*9.0)*6 + Math.sin(v*3.3+1.5)*4; // gentle wavy drift down the beam
+    const cx = w/2 + wobble;
+    const grd = g.createLinearGradient(cx-w*0.5,0,cx+w*0.5,0);
+    grd.addColorStop(0.0,'rgba(255,236,190,0)');
+    grd.addColorStop(0.32,`rgba(255,236,190,${(0.45*vertFade).toFixed(3)})`);
+    grd.addColorStop(0.5, `rgba(255,244,215,${(0.9*vertFade).toFixed(3)})`);
+    grd.addColorStop(0.68,`rgba(255,236,190,${(0.45*vertFade).toFixed(3)})`);
+    grd.addColorStop(1.0,'rgba(255,236,190,0)');
+    g.fillStyle = grd;
+    g.fillRect(0,y,w,1);
+  }
+  return new THREE.CanvasTexture(c);
+}
+const shaftTex = buildGodRayTexture();
+
+/* ================= floor ================= */
+const HALL = { cols:5, depth:14, width:5.2 };
+let floorMesh, ceilMesh;
+function buildFloorCeil(){
+  if(floorMesh) hallGroup.remove(floorMesh);
+  if(ceilMesh) hallGroup.remove(ceilMesh);
+  const floorGeo = new THREE.PlaneGeometry(HALL.width*2.4, HALL.depth*2.2, 1, 40);
+  const floorMat = new THREE.MeshStandardMaterial({ color:0x241a0e, roughness:0.28, metalness:0.65, envMapIntensity:0.9, emissive:0x180f06, emissiveIntensity:0.1 });
+  floorMesh = new THREE.Mesh(floorGeo, floorMat);
+  floorMesh.rotation.x = -Math.PI/2;
+  floorMesh.position.set(0,-1.15,-HALL.depth*0.35);
+  hallGroup.add(floorMesh);
+
+  const ceilGeo = new THREE.PlaneGeometry(HALL.width*2.4, HALL.depth*2.2, 1, 1);
+  const ceilMat = new THREE.MeshStandardMaterial({ color:0x0a0806, roughness:0.9, metalness:0.05 });
+  ceilMesh = new THREE.Mesh(ceilGeo, ceilMat);
+  ceilMesh.rotation.x = Math.PI/2;
+  ceilMesh.position.set(0, 3.1, -HALL.depth*0.35);
+  hallGroup.add(ceilMesh);
+}
+
+/* ================= columns (classical Ionic — crisp fluted shaft, volute capital, stepped square base) ================= */
+
+// Fluted shaft built as INDEXED geometry with vertices shared within each
+// flute's curve (so the concave groove itself renders smooth, catching light
+// like real carved stone) while the arris — the ridge line between adjacent
+// flutes — keeps a natural crease because the groove profile's slope reverses
+// sign right at that shared vertex (matches how a real fluted column reads:
+// smooth channel, sharp ridge). A fully-faceted non-indexed mesh (tried
+// earlier) has no smoothing at all and reads as hard plastic facets instead
+// of a carved curve — this is the fix. UVs are added for the marble texture.
+function buildFlutedShaftGeometry(rBottom, rTop, height, flutes, pointsPerFlute, heightSegs, grooveDepthFrac){
+  const vertsPerRing = flutes * (pointsPerFlute - 1); // shared boundary point per flute pair
+  const positions = [], uvs = [];
+  for(let h=0; h<=heightSegs; h++){
+    const v = h/heightSegs;
+    const y = -height/2 + v*height;
+    const baseR = rBottom + (rTop-rBottom)*v;
+    const grooveDepth = baseR * grooveDepthFrac;
+    for(let f=0; f<flutes; f++){
+      for(let p=0; p<pointsPerFlute-1; p++){
+        const t = p/(pointsPerFlute-1);
+        const angle = (f + t) / flutes * Math.PI*2;
+        const depth = Math.sin(t*Math.PI) * grooveDepth;
+        const r = baseR - depth;
+        positions.push(Math.cos(angle)*r, y, Math.sin(angle)*r);
+        uvs.push((f + t)/flutes, v);
+      }
+    }
+  }
+  const indices = [];
+  function wrap(i){ return (i + vertsPerRing) % vertsPerRing; }
+  for(let h=0; h<heightSegs; h++){
+    const ringA = h*vertsPerRing, ringB = (h+1)*vertsPerRing;
+    for(let i=0; i<vertsPerRing; i++){
+      const a = ringA+i, b = ringA+wrap(i+1), c = ringB+wrap(i+1), d = ringB+i;
+      indices.push(a,b,c, a,c,d);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(uvs), 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Ionic volute capital: necking ring -> curved echinus cushion -> a horizontal
+// bolster with a coiled scroll (torus, face-on) at each end -> square abacus.
+// This is the recognisable "ancient Greek/Roman" silhouette from the reference.
+function buildEchinusGeometry(neckR, topR, height, segs){
+  const pts = [];
+  const STEPS = 10;
+  for(let s=0;s<=STEPS;s++){
+    const t = s/STEPS;
+    const r = neckR + (topR-neckR) * Math.sin(t*Math.PI/2);
+    pts.push(new THREE.Vector2(r, t*height));
+  }
+  return new THREE.LatheGeometry(pts, segs);
+}
+
+let columnMeshes = [];
+let CAPITAL_TOP_Y = 1.3; // recomputed in buildColumns(), used by buildEntablature()
+function buildColumns(){
+  columnMeshes.forEach(m=>hallGroup.remove(m));
+  columnMeshes = [];
+
+  const SHAFT_H = 2.1, R_BOTTOM = 0.19, R_TOP = 0.155, FLUTES = 24;
+  const shaftGeo = buildFlutedShaftGeometry(R_BOTTOM, R_TOP, SHAFT_H, FLUTES, 5, 10, 0.34);
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color:0xffffff, map:marbleTex, roughnessMap:roughTex, roughness:0.62, metalness:0.02,
+    envMapIntensity:0.5
+  });
+  const goldMat = new THREE.MeshStandardMaterial({
+    color:0xd8ac5c, roughness:0.22, roughnessMap:roughTex, metalness:0.95,
+    envMapIntensity:1.6, emissive:0x2a1c08, emissiveIntensity:0.12
+  });
+  const stoneGoldMat = new THREE.MeshStandardMaterial({
+    color:0xc9a875, roughness:0.38, roughnessMap:roughTex, metalness:0.55,
+    envMapIntensity:1.0, emissive:0x1c1206, emissiveIntensity:0.08
+  });
+
+  // Stepped square plinth base (three decreasing square slabs), matching the reference
+  const plinthBotGeo = new THREE.BoxGeometry(0.60, 0.12, 0.60);
+  const plinthMidGeo = new THREE.BoxGeometry(0.48, 0.10, 0.48);
+  const plinthTopGeo = new THREE.BoxGeometry(0.38, 0.08, 0.38);
+  const necklGeo = new THREE.CylinderGeometry(R_BOTTOM, 0.19, 0.05, FLUTES);
+
+  // Ionic capital pieces
+  const cNeckGeo = new THREE.CylinderGeometry(R_TOP+0.01, R_TOP, 0.05, FLUTES);
+  const echinusGeo = buildEchinusGeometry(R_TOP+0.01, 0.24, 0.11, FLUTES);
+  const bolsterGeo = new THREE.CapsuleGeometry(0.09, 0.42, 6, 12);
+  const voluteGeo = new THREE.TorusGeometry(0.085, 0.024, 8, 18);
+  const abacusGeo = new THREE.BoxGeometry(0.64, 0.07, 0.5);
+
+  const shaftBottomY = -SHAFT_H/2;
+  const shaftTopY = SHAFT_H/2;
+  const baseStackH = 0.12+0.10+0.08;
+  const plinthBotY = shaftBottomY - baseStackH + 0.06;
+  const plinthMidY = shaftBottomY - baseStackH + 0.12 + 0.05;
+  const plinthTopY = shaftBottomY - baseStackH + 0.12 + 0.10 + 0.04;
+  const neckY = shaftBottomY - 0.025;
+
+  const cNeckY = shaftTopY + 0.025;
+  const echinusY = shaftTopY + 0.05;
+  const bolsterY = shaftTopY + 0.05 + 0.11 + 0.05;
+  const abacusY = bolsterY + 0.09 + 0.035;
+  CAPITAL_TOP_Y = abacusY + 0.035;
+
+  const spacing = HALL.depth / HALL.cols;
+  for(let i=0;i<HALL.cols;i++){
+    const z = -1.5 - i*spacing;
+    [-1,1].forEach(side=>{
+      const grp = new THREE.Group();
+
+      const plinthBot = new THREE.Mesh(plinthBotGeo, stoneMat); plinthBot.position.y = plinthBotY;
+      const plinthMid = new THREE.Mesh(plinthMidGeo, stoneGoldMat); plinthMid.position.y = plinthMidY;
+      const plinthTop = new THREE.Mesh(plinthTopGeo, stoneMat); plinthTop.position.y = plinthTopY;
+      const neck = new THREE.Mesh(necklGeo, stoneMat); neck.position.y = neckY;
+
+      const shaft = new THREE.Mesh(shaftGeo, stoneMat);
+
+      const cNeck = new THREE.Mesh(cNeckGeo, stoneMat); cNeck.position.y = cNeckY;
+      const echinus = new THREE.Mesh(echinusGeo, stoneGoldMat); echinus.position.y = echinusY;
+      const bolster = new THREE.Mesh(bolsterGeo, goldMat);
+      bolster.rotation.z = Math.PI/2; bolster.position.y = bolsterY;
+      const voluteL = new THREE.Mesh(voluteGeo, goldMat);
+      voluteL.rotation.y = Math.PI/2; voluteL.position.set(-0.24, bolsterY, 0);
+      const voluteR = new THREE.Mesh(voluteGeo, goldMat);
+      voluteR.rotation.y = Math.PI/2; voluteR.position.set(0.24, bolsterY, 0);
+      const abacus = new THREE.Mesh(abacusGeo, goldMat); abacus.position.y = abacusY;
+
+      grp.add(plinthBot, plinthMid, plinthTop, neck, shaft, cNeck, echinus, bolster, voluteL, voluteR, abacus);
+      grp.position.set(side*HALL.width*0.5, 0, z);
+      hallGroup.add(grp);
+      columnMeshes.push(grp);
+    });
+  }
+}
+
+/* ================= entablature (architrave beam running along the tops of each column row) ================= */
+let entablatureMeshes = [];
+function buildEntablature(){
+  entablatureMeshes.forEach(m=>hallGroup.remove(m));
+  entablatureMeshes = [];
+  const beamMat = new THREE.MeshStandardMaterial({ color:0xc9a875, map:marbleTex, roughnessMap:roughTex, roughness:0.4, metalness:0.5, envMapIntensity:1.0, emissive:0x1c1206, emissiveIntensity:0.08 });
+  const trimMat = new THREE.MeshStandardMaterial({ color:0xd8ac5c, roughness:0.2, roughnessMap:roughTex, metalness:0.95, envMapIntensity:1.6, emissive:0x2a1c08, emissiveIntensity:0.12 });
+  const totalLen = HALL.depth + 2.0;
+  const topY = CAPITAL_TOP_Y; // just above the abacus, computed in buildColumns()
+  const architraveGeo = new THREE.BoxGeometry(0.66, 0.22, totalLen);
+  const trimGeo = new THREE.BoxGeometry(0.7, 0.05, totalLen);
+  [-1,1].forEach(side=>{
+    const architrave = new THREE.Mesh(architraveGeo, beamMat);
+    architrave.position.set(side*HALL.width*0.5, topY+0.11, -1.5-HALL.depth/2+0.5);
+    const trimTop = new THREE.Mesh(trimGeo, trimMat);
+    trimTop.position.set(side*HALL.width*0.5, topY+0.24, -1.5-HALL.depth/2+0.5);
+    hallGroup.add(architrave, trimTop);
+    entablatureMeshes.push(architrave, trimTop);
+  });
+}
+
+/* ================= light shafts — diffused "god rays", not flat rectangles (bloom layer) =================
+   Each beam is TWO crossed planes (like real god-ray/volumetric-light tricks in
+   games) so it never looks like a single flat card from any angle, tapered
+   wider at the bottom than the top (light cones out as it falls, it doesn't
+   stay a uniform-width bar), and uses the radial-falloff god-ray texture so
+   every edge fades to nothing instead of having a visible geometric border. */
+let shaftMeshes = [];
+function buildShafts(strength){
+  shaftMeshes.forEach(m=>hallGroup.remove(m));
+  shaftMeshes = [];
+  const spacing = HALL.depth / HALL.cols;
+  // trapezoid shape: narrower at top (y=+1) than bottom (y=-1) — a real light
+  // cone, not a uniform-width bar
+  const shaftShape = new THREE.Shape();
+  shaftShape.moveTo(-0.35, 2.1);
+  shaftShape.lineTo(0.35, 2.1);
+  shaftShape.lineTo(1.05, -2.3);
+  shaftShape.lineTo(-1.05, -2.3);
+  shaftShape.closePath();
+  const shaftGeo = new THREE.ShapeGeometry(shaftShape);
+  // ShapeGeometry's default UVs are just raw XY coords — remap to 0..1 so the
+  // god-ray texture (built to span 0..1 across its own gradient) maps cleanly.
+  const uv = shaftGeo.attributes.uv;
+  for(let i=0;i<uv.count;i++){
+    uv.setXY(i, (uv.getX(i)+1.05)/2.1, (uv.getY(i)+2.3)/4.4);
+  }
+
+  for(let i=0;i<HALL.cols;i++){
+    const z = -1.5 - i*spacing - spacing*0.5;
+    [-1,1].forEach(side=>{
+      const mat = new THREE.MeshBasicMaterial({ map:shaftTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, opacity:0.5*strength, side:THREE.DoubleSide });
+      const grp = new THREE.Group();
+      const planeA = new THREE.Mesh(shaftGeo, mat);
+      const planeB = new THREE.Mesh(shaftGeo, mat.clone());
+      planeB.rotation.y = Math.PI/2.1; // cross the two planes so the beam reads volumetric from any angle
+      grp.add(planeA, planeB);
+      grp.position.set(side*HALL.width*0.5*0.72, 0.9, z);
+      grp.rotation.z = side * 0.1;
+      grp.rotation.y = 0.22;
+      grp.layers.set(BLOOM_LAYER);
+      planeA.layers.set(BLOOM_LAYER); planeB.layers.set(BLOOM_LAYER);
+      hallGroup.add(grp);
+      shaftMeshes.push(grp);
+    });
+  }
+}
+
+/* ================= throne glow (far end, bloom layer) ================= */
+const throneGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false }));
+throneGlow.scale.set(3.4, 2.6, 1);
+throneGlow.layers.set(BLOOM_LAYER);
+let throneZ = -1.5 - HALL.depth - 1.0;
+throneGlow.position.set(0, 0.2, throneZ);
+hallGroup.add(throneGlow);
+
+const throneHot = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false }));
+throneHot.scale.set(1.1, 1.6, 1);
+throneHot.layers.set(BLOOM_LAYER);
+throneHot.position.set(0, -0.1, throneZ+0.05);
+hallGroup.add(throneHot);
+
+/* ================= floating dust particles ================= */
+let dustPoints = null;
+function buildDust(count){
+  if(dustPoints){ hallGroup.remove(dustPoints); dustPoints.geometry.dispose(); dustPoints.material.dispose(); }
+  const pos = new Float32Array(count*3), col = new Float32Array(count*3), sizes = new Float32Array(count), phase = new Float32Array(count);
+  const warm = new THREE.Color('#f5d9a0'), dim = new THREE.Color('#8a6a3a');
+  for(let i=0;i<count;i++){
+    const x = (Math.random()-0.5)*HALL.width*1.6;
+    const y = -1.0 + Math.random()*3.6;
+    const z = -0.5 - Math.random()*(HALL.depth+2);
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    const nearBeam = Math.abs(Math.abs(x)-HALL.width*0.5*0.72) < 0.5;
+    const c = nearBeam ? warm.clone().lerp(warm,0) : dim;
+    const boost = nearBeam ? (0.7+Math.random()*0.6) : (0.15+Math.random()*0.2);
+    col[i*3]=c.r*boost; col[i*3+1]=c.g*boost; col[i*3+2]=c.b*boost;
+    sizes[i] = 0.18+Math.random()*0.28;
+    phase[i] = Math.random();
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('aBase', new THREE.BufferAttribute(pos.slice(),3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  geo.setAttribute('aSize', new THREE.BufferAttribute(sizes,1));
+  geo.setAttribute('aPhase', new THREE.BufferAttribute(phase,1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms:{ uTex:{value:dotTex}, uTime:{value:0}, uScale:{value:120.0} },
+    vertexShader:`
+      attribute float aSize; attribute vec3 aBase; attribute float aPhase;
+      varying vec3 vColor;
+      uniform float uTime, uScale;
+      void main(){
+        vColor = color;
+        vec3 p = aBase;
+        p.y += sin(uTime*0.25 + aPhase*6.2831) * 0.25;
+        p.x += cos(uTime*0.18 + aPhase*6.2831) * 0.12;
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = aSize * uScale / -mv.z;
+      }`,
+    fragmentShader:`
+      uniform sampler2D uTex; varying vec3 vColor;
+      void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(vColor,1.0)*t; }`,
+    vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending
+  });
+  dustPoints = new THREE.Points(geo, mat);
+  hallGroup.add(dustPoints);
+}
+
+/* ================= lighting =================
+   NOTE: lights live directly in `scene`, not `hallGroup`, so their `distance`
+   falloff (which does NOT get multiplied by a parent's scale — only position
+   does) still needs to be scaled by hand to match the enlarged hall. */
+const ambient = new THREE.AmbientLight(0xcdb98a, 1.6);
+scene.add(ambient);
+const hemi = new THREE.HemisphereLight(0xfff2d8, 0x2a1c10, 1.1);
+scene.add(hemi);
+const keyLight = new THREE.PointLight(0xffe8c2, 9.0, 24*HALL_SCALE, 1.6);
+keyLight.position.set(0, 1.8*HALL_SCALE, 2.5*HALL_SCALE);
+scene.add(keyLight);
+const keyLight2 = new THREE.PointLight(0xffe8c2, 6.0, 22*HALL_SCALE, 1.6);
+keyLight2.position.set(0, 1.6*HALL_SCALE, -7*HALL_SCALE);
+scene.add(keyLight2);
+const throneLight = new THREE.PointLight(0xffcf8a, 7.0, 26*HALL_SCALE, 1.8);
+scene.add(throneLight);
+
+function rebuildAll(){
+  buildFloorCeil();
+  buildColumns();
+  buildEntablature();
+  buildShafts(shaftStrength);
+  throneZ = -1.5 - HALL.depth - 1.0;
+  throneGlow.position.z = throneZ;
+  throneHot.position.z = throneZ+0.05;
+  throneLight.position.set(0, 0.4*HALL_SCALE, (throneZ+1.5)*HALL_SCALE);
+}
+let shaftStrength = 0.9;
+rebuildAll();
+buildDust(7000);
+
+/* ================= selective bloom pipeline ================= */
+const renderScene = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 1.3, 0.7, 0.1);
+const bloomComposer = new EffectComposer(renderer);
+bloomComposer.renderToScreen = false;
+bloomComposer.addPass(renderScene);
+bloomComposer.addPass(bloomPass);
+
+const finalPass = new ShaderPass(new THREE.ShaderMaterial({
+  uniforms:{ baseTexture:{value:null}, bloomTexture:{value:bloomComposer.renderTarget2.texture} },
+  vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+  fragmentShader:'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main(){ gl_FragColor = texture2D(baseTexture,vUv) + vec4(texture2D(bloomTexture,vUv).rgb, 0.0); }'
+}), 'baseTexture');
+finalPass.needsSwap = true;
+
+const finalComposer = new EffectComposer(renderer);
+finalComposer.addPass(renderScene);
+finalComposer.addPass(finalPass);
+
+const _hidden = [];
+function isBloomObj(o){ return o.layers.test(bloomLayerMask); }
+function hideNonBloom(o){ if((o.isMesh||o.isPoints||o.isLine||o.isSprite) && !isBloomObj(o) && o.visible){ o.visible=false; _hidden.push(o); } }
+function restoreVis(){ for(let i=0;i<_hidden.length;i++) _hidden[i].visible = true; _hidden.length = 0; }
+
+/* ================= interaction (look around) ================= */
+let lookX = 0, lookY = 0, dragLookX=0, dragLookY=0, isDragging=false, lastX=0, lastY=0, pulseStrength=0;
+stage.addEventListener('pointerdown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+window.addEventListener('pointerup', ()=>{ isDragging=false; });
+window.addEventListener('pointermove', e=>{
+  if(!isDragging) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+  dragLookX += dx*0.0025;
+  dragLookY = Math.max(-0.3, Math.min(0.3, dragLookY - dy*0.002));
+});
+stage.addEventListener('click', ()=>{ pulseStrength = 1.0; });
+
+function resize(){
+  const w=stage.clientWidth, h=stage.clientHeight;
+  renderer.setSize(w,h); bloomComposer.setSize(w,h); finalComposer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize); resize();
+
+/* ================= animate ================= */
+const ctrl = { drift:0.06 };
+let t0=performance.now(), lastFrame=t0, frames=0, fpsAccum=0;
+function animate(){
+  const now = performance.now(); const dt=(now-lastFrame)/1000; lastFrame=now;
+  frames++; fpsAccum+=dt;
+  if(fpsAccum>0.5){ fpsEl.textContent = Math.round(frames/fpsAccum)+' fps · '+(dustPoints?dustPoints.geometry.attributes.position.count:0)+' dust'; frames=0; fpsAccum=0; }
+  const t=(now-t0)/1000;
+
+  const autoDrift = Math.sin(t*ctrl.drift*Math.PI*0.5)*0.12;
+  camera.rotation.y = autoDrift + dragLookX;
+  camera.rotation.x = dragLookY;
+  camera.position.y = CAM_EYE_Y + Math.sin(t*0.3)*0.03;
+
+  pulseStrength *= 0.94;
+  const throneBreath = 1 + Math.sin(t*0.4)*0.08 + pulseStrength*0.5;
+  throneGlow.scale.set(3.4*throneBreath, 2.6*throneBreath, 1);
+  throneHot.scale.set(1.1*throneBreath, 1.6*throneBreath, 1);
+  throneLight.intensity = 4.0*(0.9+0.15*Math.sin(t*0.4)) + pulseStrength*3;
+
+  shaftMeshes.forEach((grp,i)=>{
+    const op = (0.5+0.06*Math.sin(t*0.5+i)) * shaftStrength * (1+pulseStrength*0.3);
+    grp.children.forEach(mesh=>{ mesh.material.opacity = op; });
+  });
+
+  if(dustPoints) dustPoints.material.uniforms.uTime.value = t;
+
+  scene.traverse(hideNonBloom);
+  bloomComposer.render();
+  restoreVis();
+  finalComposer.render();
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ================= UI wiring ================= */
+function bind(id, valId, apply, fmt){
+  const el=document.getElementById(id), out=document.getElementById(valId);
+  el.addEventListener('input', ()=>{ const v=parseFloat(el.value); out.textContent=fmt?fmt(v):v; apply(v); });
+}
+bind('cCols','vCols', v=>{ HALL.cols=Math.round(v); rebuildAll(); }, Math.round);
+bind('cDepth','vDepth', v=>{ HALL.depth=Math.round(v); rebuildAll(); }, Math.round);
+bind('cWidth','vWidth', v=>{ HALL.width=v; rebuildAll(); });
+bind('cShaft','vShaft', v=>{ shaftStrength=v; buildShafts(v); });
+bind('cDust','vDust', v=>{ buildDust(Math.round(v)); }, Math.round);
+bind('cThrone','vThrone', v=>{ throneLight.intensity = 4.0*v; });
+bind('cFloor','vFloor', v=>{ floorMesh.material.metalness = Math.min(1,v); floorMesh.material.needsUpdate=true; });
+bind('cDrift','vDrift', v=>{ ctrl.drift=v; });
+bind('cBloom','vBloom', v=>{ bloomPass.strength=v; });
+
+const PRESETS = {
+  grand:     { cols:5, depth:14, width:5.2, shaft:0.9, dust:7000, throne:1.2 },
+  intimate:  { cols:3, depth:8,  width:3.6, shaft:0.6, dust:4000, throne:1.5 },
+  dramatic:  { cols:6, depth:18, width:5.8, shaft:1.4, dust:11000, throne:1.8 }
+};
+const MAP = { cols:['cCols','vCols'], depth:['cDepth','vDepth'], width:['cWidth','vWidth'], shaft:['cShaft','vShaft'], dust:['cDust','vDust'], throne:['cThrone','vThrone'] };
+document.querySelectorAll('.presets button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const p = PRESETS[btn.dataset.p];
+    Object.keys(p).forEach(k=>{
+      const [inputId,valId] = MAP[k];
+      document.getElementById(inputId).value = p[k];
+      document.getElementById(valId).textContent = p[k];
+      document.getElementById(inputId).dispatchEvent(new Event('input'));
+    });
+  });
+});
+</script>
+</body>
+</html>
