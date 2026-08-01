@@ -8,7 +8,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Runic&display=swap" rel="stylesheet">
 
 <style>
 :root{
@@ -105,49 +105,122 @@ section{ position:relative; z-index:2; }
 .reveal.in{ opacity:1; transform:translateY(0); }
 .reveal-d1{ transition-delay:0.08s; } .reveal-d2{ transition-delay:0.16s; } .reveal-d3{ transition-delay:0.24s; } .reveal-d4{ transition-delay:0.32s; }
 
-/* ============ HERO ============ */
-.hero{
-  min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  text-align:center; position:relative; padding:40px 20px; overflow:hidden;
-}
-.hero-arc-wrap{ position:relative; width:min(78vw,560px); height:min(78vw,560px); margin-bottom:-40px; }
-.hero-arc-wrap svg{ width:100%; height:100%; }
-.hero-arc-track{ fill:none; stroke:rgba(239,231,216,0.06); stroke-width:1; }
-.hero-arc-fill{
-  fill:none; stroke:var(--gold); stroke-width:1.4; stroke-linecap:round;
-  stroke-dasharray:880; stroke-dashoffset:880;
-  filter:drop-shadow(0 0 8px rgba(199,154,78,0.55)) drop-shadow(0 0 20px rgba(199,154,78,0.25));
-  animation:heroArcDraw 2.6s cubic-bezier(0.16,1,0.3,1) 0.3s forwards;
-}
-@keyframes heroArcDraw{ to{ stroke-dashoffset:120; } }
+/* ============ HERO — cinematic scroll sequence ============ */
+/* Helmet -> Eye -> Royal Court -> Throne Explosion -> Archives, one continuous
+   WebGL scene rendered into #heroStage's canvas, driven by scroll progress
+   through #heroScrollSpacer. See the module script near the end of body. */
+/* 2000vh total = the same absolute scroll distance as the old 1300vh for
+   every beat through tExplode (helmet/eye/hall/walk, unchanged), plus a
+   700vh tail for the explosion-fly-out + merged Archives reveal/cycle —
+   sized to match transparent-explosion-lab.html's own dedicated 700vh
+   exactly, so the approved pacing carries over unchanged. beats/timelineCfg
+   below were rescaled by 1300/2000 so every pre-explosion beat still lands
+   at its original absolute vh; only tExplode..tFlyEnd's window grew (from
+   the old cramped 52vh to the full 700vh archives need). This replaces the
+   old separate #galleryOuter section (its own 400vh) entirely. */
+.hero-scroll-spacer{ height:2000vh; position:relative; }
+/* position:fixed (manually toggled to `absolute` by JS once the sequence
+   completes), NOT position:sticky. A sticky element needs roughly one
+   extra viewport-height of real physical scroll before it fully releases
+   and whatever's below it becomes visible — that unavoidable release lag
+   was the actual cause of two "Archives" layouts appearing to overlap
+   (the placeholder card riding along as the stage slid away while the
+   real section slid in from below, simultaneously). With `fixed`, JS
+   flips `.hero-stage` to `position:absolute; top:<spacer height>` at the
+   exact scroll frame the sequence finishes, so the real Archives section
+   appears immediately after with zero dead-zone. See the module script's
+   updateFrame()/pin-toggle logic near the end of body. */
+.hero-stage{ position:fixed; top:0; left:0; width:100%; height:100vh; overflow:hidden; background:#050302; z-index:1; }
+.hero-stage.hero-stage-unpinned{ position:absolute; }
+/* Scoped to .hero-webgl-canvas specifically (NOT a bare "canvas" tag
+   selector) — a bare selector also matched #heroTitleCanvas, forcing it to
+   position:absolute;inset:0 and stretch to fill the whole stage from the
+   top-left corner instead of sizing to its own content. */
+.hero-webgl-canvas{ position:absolute; inset:0; display:block; }
 
 .hero-core{
-  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  padding-top:9vh; z-index:2;
 }
-.hero-crown{ width:34px; height:34px; margin-bottom:18px; opacity:0; animation:heroFadeUp 1s ease 1.6s forwards; }
-.hero-crown svg{ width:100%; height:100%; stroke:var(--gold-soft); }
-.hero-title{
-  font-family:var(--font-serif); font-weight:300; letter-spacing:0.02em;
-  font-size:clamp(34px,7.4vw,84px); line-height:1; color:var(--text-1);
-  display:flex; flex-wrap:wrap; justify-content:center; gap:0.02em;
+@media(max-width:700px){ .hero-core{ padding-top:6vh; } }
+.hero-crown{ width:100px; height:28px; margin-bottom:22px; opacity:0; animation:heroFadeUp 1s ease 1.6s forwards; }
+.hero-crown svg{ width:100%; height:100%; }
+/* Title is rendered onto a <canvas> (#heroTitleCanvas) instead of live DOM
+   text — a true shape-morph (signed-distance-field blend between the rune
+   glyph and the English glyph, re-thresholded into a solid shape every
+   frame) needs pixel-level control CSS animations can't give. See the
+   module script near the end of body for the render loop. .hero-title-fallback
+   holds real text for SEO/no-JS/screen-readers, visually hidden once canvas
+   is up and drawing. */
+/* No wrapper-level fade — each letter handles its own entrance (alpha ramp +
+   rise + blur-in) inside the canvas render loop, keyed off L.enterDelay. */
+#heroTitleCanvas{ display:block; }
+.hero-title-fallback{
+  position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap;
+  /* Noto Sans Runic is only ever referenced via canvas ctx.font elsewhere,
+     which unreliably triggers an actual font download in some browsers
+     (canvas text doesn't participate in the normal CSS font-loading
+     pipeline the way real DOM text does). Applying it here — on real,
+     always-rendered text — forces a normal, reliable font request the
+     browser is guaranteed to track in document.fonts. */
+  font-family:'Noto Sans Runic', sans-serif;
 }
-.hero-title .ch{ display:inline-block; opacity:0; transform:translateY(24px); filter:blur(6px);
-  animation:heroLetterIn 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
-.hero-title .sp{ width:0.28em; display:inline-block; }
-@keyframes heroLetterIn{ to{ opacity:1; transform:translateY(0); filter:blur(0); } }
-.hero-title .gold{ background:linear-gradient(120deg,var(--gold-soft),var(--gold-bright) 45%,var(--gold));
-  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
 
+/* Subtitle sits BELOW the helmet, independent of the title block pinned to
+   the top of the frame — positioned relative to the bottom half of the
+   stage instead of stacked directly under .hero-title. */
 .hero-role{
-  margin-top:22px; height:22px; overflow:hidden; opacity:0; animation:heroFadeUp 1s ease 2.1s forwards;
+  position:absolute; left:0; right:0; bottom:16vh; z-index:2;
+  min-height:22px; opacity:0;
+  padding:0 20px; max-width:680px; margin-left:auto; margin-right:auto;
+  text-align:center;
+  /* No CSS animation here (unlike .hero-crown) — a `forwards`-filled
+     animation holds its final keyframe value on this property forever,
+     which silently overrides any later JS-driven opacity on the same
+     element. The equivalent delayed entrance is instead computed in the
+     module script's updateFrame(), blended with the scroll-driven fade so
+     both the one-time intro AND the scroll fade-out apply correctly. */
 }
-.hero-role-inner{ font-family:var(--font-mono); font-size:12px; letter-spacing:0.28em; text-transform:uppercase; color:var(--gold-soft); }
+@media(max-width:700px){ .hero-role{ bottom:13vh; } }
+.hero-role-inner{ font-family:var(--font-mono); font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold-soft); line-height:1.6; transition:opacity 0.4s;
+  text-shadow:0 0 20px rgba(0,0,0,0.9); }
+@media(max-width:600px){ .hero-role-inner{ font-size:10px; letter-spacing:0.12em; } }
 @keyframes heroFadeUp{ to{ opacity:1; } }
 
+/* Sound toggle — sits just above .hero-role. Pulses/glows while muted (the
+   default state, since browsers block autoplay-with-sound) to draw the
+   visitor's eye toward it; the pulse stops the moment sound is turned on. */
+.hero-sound{
+  position:absolute; left:0; right:0; bottom:calc(16vh + 46px); z-index:2;
+  display:flex; justify-content:center; opacity:0; animation:heroFadeUp 1s ease 2.3s forwards;
+}
+@media(max-width:700px){ .hero-sound{ bottom:calc(13vh + 42px); } }
+.hero-sound-btn{
+  position:relative; width:38px; height:38px; border-radius:50%; cursor:pointer;
+  background:rgba(199,154,78,0.08); border:1px solid rgba(199,154,78,0.3);
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.25s, border-color 0.25s, transform 0.2s;
+}
+.hero-sound-btn:hover{ background:rgba(199,154,78,0.16); border-color:rgba(245,200,66,0.55); }
+.hero-sound-btn:active{ transform:scale(0.94); }
+.hero-sound-btn svg{ width:16px; height:16px; stroke:var(--gold-soft); position:relative; z-index:1; }
+.hero-sound-ring{
+  position:absolute; inset:-8px; border-radius:50%; border:1px solid rgba(199,154,78,0.35);
+  animation:sealPulse 2s ease-in-out infinite; pointer-events:none;
+}
+.hero-sound-ring2{
+  position:absolute; inset:-8px; border-radius:50%; border:1px solid rgba(245,200,66,0.25);
+  animation:sealPulse 2s ease-in-out 0.5s infinite; pointer-events:none;
+}
+/* Once unmuted, the rings stop pulsing and fade out — the eye no longer
+   needs to be drawn to it once the visitor has already interacted. */
+.hero-sound-btn.is-on .hero-sound-ring, .hero-sound-btn.is-on .hero-sound-ring2{
+  animation:none; opacity:0; transition:opacity 0.5s;
+}
+
 .hero-scroll-cue{
-  position:absolute; bottom:38px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:38px; left:50%; transform:translateX(-50%); z-index:2;
   display:flex; flex-direction:column; align-items:center; gap:10px;
-  opacity:0; animation:heroFadeUp 1s ease 2.6s forwards;
 }
 .hero-scroll-cue span{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.28em; text-transform:uppercase; color:var(--text-3); }
 .hero-scroll-line{ width:1px; height:34px; background:linear-gradient(180deg,var(--gold),transparent); position:relative; overflow:hidden; }
@@ -156,43 +229,61 @@ section{ position:relative; z-index:2; }
 @keyframes scrollDrip{ 0%{ top:-100%; } 100%{ top:100%; } }
 
 .hero-vignette{ position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(circle at 50% 45%, transparent 30%, rgba(8,6,4,0.55) 100%); z-index:0; }
+  background:radial-gradient(circle at 50% 45%, transparent 30%, rgba(8,6,4,0.55) 100%); z-index:1; }
 
-/* ============ GALLERY (scroll-jacked) ============ */
-.gallery-outer{ position:relative; }
-.gallery-sticky{ position:sticky; top:0; height:100vh; overflow:hidden; display:flex; align-items:center; }
-.gallery-head{
-  position:absolute; top:64px; left:0; right:0; z-index:3; text-align:center; pointer-events:none;
+.hero-loading{ position:absolute; inset:0; z-index:5; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold-soft);
+  background:rgba(6,4,2,0.6); transition:opacity 0.4s; }
+.hero-loading.hide{ opacity:0; pointer-events:none; }
+
+/* ============ ARCHIVES — merged into the hero explosion sequence ============
+   Ported from the approved transparent-explosion-lab.html. The 4 cards sit
+   BEHIND the hero's WebGL canvas (z-index 0, canvas paints above them) and
+   stay invisible (opacity 0) until the explosion phase — the render
+   pipeline's clear color/shaders now carry real alpha (see the module
+   script) so once the canvas has nothing left to paint over a given pixel,
+   these cards show through it instead of the old opaque black. This
+   replaces the old separate #galleryOuter horizontal-scroll-jack section
+   entirely — one continuous scroll now drives helmet -> hall -> explosion
+   -> card cycling, all within .hero-stage, with no second section, gap, or
+   re-scroll needed. Cards slide via translateX (.active/.exit-left),
+   driven by updateFrame()'s cardsCfg window; once a card becomes active it
+   holds (no fade-out) until the next one slides in. */
+.hero-archives-behind{
+  position:absolute; inset:0; z-index:0; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none;
 }
-.gallery-track{ display:flex; height:100%; align-items:center; will-change:transform; }
-.gallery-slide{
-  flex:0 0 100vw; height:100%; display:flex; align-items:center; justify-content:center; padding:0 6vw;
-}
-.gallery-card{
-  position:relative; width:min(74vw,760px); height:min(72vh,620px); border-radius:22px; overflow:hidden;
+.hero-archives-kicker{ position:absolute; top:64px; left:0; right:0; z-index:3; text-align:center; }
+.hero-archives-card-stack{ position:relative; width:min(74vw,760px); height:min(72vh,620px); }
+.hero-archives-card{
+  position:absolute; inset:0; overflow:hidden; border-radius:22px;
   border:1px solid var(--border);
   box-shadow:0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(199,154,78,0.06);
   background:linear-gradient(145deg, rgba(199,154,78,0.16), rgba(60,40,20,0.5) 55%, #0c0805 100%);
+  transform:translateX(100vw); transition:transform 0.5s cubic-bezier(0.65,0,0.35,1);
 }
-.gallery-card::before{ content:''; position:absolute; inset:0; opacity:0.5;
+.hero-archives-card.active{ transform:translateX(0); }
+.hero-archives-card.exit-left{ transform:translateX(-100vw); }
+.hero-archives-card::before{ content:''; position:absolute; inset:0; opacity:0.5;
   background-image:
     repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 26px);
 }
-.gallery-card-icon{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0.22; }
-.gallery-card-icon svg{ width:120px; height:120px; stroke:var(--gold-soft); }
-.gallery-caption{
+.hero-archives-card-icon{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0.22; }
+.hero-archives-card-icon svg{ width:120px; height:120px; stroke:var(--gold-soft); }
+.hero-archives-caption{
   position:absolute; left:0; right:0; bottom:0; padding:34px 32px;
   background:linear-gradient(180deg,transparent, rgba(4,3,2,0.85) 70%);
 }
-.gallery-loc{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.24em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; }
-.gallery-title{ font-family:var(--font-serif); font-size:26px; color:var(--text-1); margin:0 0 6px; }
-.gallery-desc{ font-family:var(--font-mono); font-size:12px; color:var(--text-2); max-width:440px; line-height:1.6; }
-.gallery-index{
+.hero-archives-loc{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.24em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; }
+.hero-archives-title{ font-family:var(--font-serif); font-size:26px; color:var(--text-1); margin:0 0 6px; }
+.hero-archives-desc{ font-family:var(--font-mono); font-size:12px; color:var(--text-2); max-width:440px; line-height:1.6; }
+.hero-archives-index{
   position:absolute; top:24px; right:28px; font-family:var(--font-serif); font-style:italic; font-size:15px; color:var(--gold-soft); opacity:0.8;
 }
-.gallery-dots{ position:absolute; bottom:26px; left:0; right:0; display:flex; justify-content:center; gap:9px; z-index:3; }
-.gallery-dot{ width:6px; height:6px; border-radius:50%; background:rgba(239,231,216,0.2); transition:all 0.3s; }
-.gallery-dot.active{ background:var(--gold-bright); width:20px; border-radius:3px; box-shadow:0 0 8px rgba(245,200,66,0.6); }
+.hero-archives-dots{ position:absolute; bottom:26px; left:0; right:0; display:flex; justify-content:center; gap:9px; z-index:3; }
+.hero-archives-dot{ width:6px; height:6px; border-radius:50%; background:rgba(239,231,216,0.2); transition:all 0.3s; }
+.hero-archives-dot.active{ background:var(--gold-bright); width:20px; border-radius:3px; box-shadow:0 0 8px rgba(245,200,66,0.6); }
 
 /* ============ PASSIONS / DOMAINS ============ */
 .domains{ padding:140px 20px 160px; max-width:1180px; margin:0 auto; }
@@ -460,6 +551,8 @@ footer.court-footer{ text-align:center; padding:60px 20px 80px; font-family:var(
 </head>
 <body>
 
+<audio id="courtTheme" src="./GOW.mp3" loop preload="auto"></audio>
+
 <div class="court-progress"><div class="court-progress-fill" id="progressFill"></div></div>
 <div class="court-crest" id="crest">
   <svg viewBox="0 0 46 46">
@@ -469,102 +562,136 @@ footer.court-footer{ text-align:center; padding:60px 20px 80px; font-family:var(
 </div>
 <div class="court-cursor-glow" id="cursorGlow"></div>
 
-<!-- ================= HERO ================= -->
-<section class="hero" id="hero">
-  <div class="hero-vignette"></div>
-  <div class="hero-arc-wrap">
-    <svg viewBox="0 0 200 200">
-      <circle class="hero-arc-track" cx="100" cy="100" r="94"></circle>
-      <circle class="hero-arc-fill" cx="100" cy="100" r="94" transform="rotate(-90 100 100)"></circle>
-    </svg>
-    <div class="hero-core">
+<!-- ================= HERO (cinematic: Helmet -> Eye -> Royal Court -> Throne Explosion) ================= -->
+<div class="hero-scroll-spacer" id="heroScrollSpacer">
+  <section class="hero-stage" id="heroStage">
+    <div class="hero-vignette"></div>
+    <div class="hero-core" id="heroCore">
       <div class="hero-crown">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 18h18M4 18l1.4-8L9 14l3-9 3 9 3.6-4 1.4 8"/>
+        <svg viewBox="0 0 120 34" fill="none" aria-label="Life Arc seal">
+          <defs>
+            <linearGradient id="heroSealWingL" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+              <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+              <stop offset="100%" stop-color="#f5c842" stop-opacity="1"/>
+            </linearGradient>
+            <linearGradient id="heroSealWingR" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0%" stop-color="#e6c98a" stop-opacity="0"/>
+              <stop offset="22%" stop-color="#e6c98a" stop-opacity=".9"/>
+              <stop offset="100%" stop-color="#f5c842" stop-opacity="1"/>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#heroSealWingL)" stroke-linecap="round">
+            <path d="M2 7 Q40 9 57 16" stroke-width="2.6"/>
+            <path d="M6 12 Q40 13 57 18" stroke-width="2.1"/>
+            <path d="M11 17 Q42 17 57 20" stroke-width="1.6"/>
+            <path d="M18 22 Q44 21 57 22" stroke-width="1.2"/>
+            <path d="M27 27 Q46 25 57 24" stroke-width="0.8"/>
+          </g>
+          <g stroke="url(#heroSealWingR)" stroke-linecap="round">
+            <path d="M118 7 Q80 9 63 16" stroke-width="2.6"/>
+            <path d="M114 12 Q80 13 63 18" stroke-width="2.1"/>
+            <path d="M109 17 Q78 17 63 20" stroke-width="1.6"/>
+            <path d="M102 22 Q76 21 63 22" stroke-width="1.2"/>
+            <path d="M93 27 Q74 25 63 24" stroke-width="0.8"/>
+          </g>
         </svg>
       </div>
-      <h1 class="hero-title" id="heroTitle" aria-label="Koustubh Thabaj"></h1>
-      <div class="hero-role"><div class="hero-role-inner" id="heroRole">Emperor · Builder · Wanderer</div></div>
+      <div class="hero-title-wrap">
+        <canvas id="heroTitleCanvas"></canvas>
+        <h1 class="hero-title-fallback">Koustubh Thabaj</h1>
+      </div>
     </div>
-  </div>
-  <div class="hero-scroll-cue">
-    <span>Enter the Court</span>
-    <div class="hero-scroll-line"></div>
-  </div>
-</section>
-
-<!-- ================= GALLERY ================= -->
-<section class="gallery-outer" id="galleryOuter">
-  <div class="gallery-sticky">
-    <div class="gallery-head">
-      <div class="court-kicker" style="justify-content:center;"><span style="display:none"></span>The Archives</div>
+    <div class="hero-sound">
+      <button class="hero-sound-btn" id="heroSoundBtn" type="button" aria-label="Play sound" aria-pressed="false">
+        <div class="hero-sound-ring"></div>
+        <div class="hero-sound-ring2"></div>
+        <svg id="heroSoundIconOff" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5L6 9H3v6h3l5 4V5z"/>
+          <path d="M16 9l6 6M22 9l-6 6"/>
+        </svg>
+        <svg id="heroSoundIconOn" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+          <path d="M11 5L6 9H3v6h3l5 4V5z"/>
+          <path d="M15.5 8.5a5 5 0 010 7M18.5 6a9 9 0 010 12"/>
+        </svg>
+      </button>
     </div>
-    <div class="gallery-track" id="galleryTrack">
-      <!-- Slide 1 -->
-      <div class="gallery-slide">
-        <div class="gallery-card">
-          <div class="gallery-index">01</div>
-          <div class="gallery-card-icon">
+    <div class="hero-role"><div class="hero-role-inner" id="heroRole">First of His Name, Ruler of the Golden Arc, Warden of the Archives, Protector of the Realm</div></div>
+    <div class="hero-scroll-cue" id="heroScrollCue">
+      <span>Enter the Court</span>
+      <div class="hero-scroll-line"></div>
+    </div>
+    <!-- Archives cards sit behind the hero canvas (z-index 0, below
+         .hero-core/.hero-sound/etc.) and stay hidden until the explosion
+         phase reveals them by fading .hero-archives-behind's opacity in —
+         at that same moment the render pipeline has real transparency
+         (see module script) so these show through. No separate section,
+         no gap: the same continuous scroll that drives the explosion also
+         cycles these 4 cards in place via updateFrame()'s cardsCfg logic. -->
+    <div class="hero-archives-behind" id="heroArchivesBehind">
+      <div class="hero-archives-kicker">
+        <div class="court-kicker" style="justify-content:center;"><span style="display:none"></span>The Archives</div>
+      </div>
+      <div class="hero-archives-card-stack" id="heroArchivesStack">
+        <!-- Card 1 -->
+        <div class="hero-archives-card active" data-idx="0">
+          <div class="hero-archives-index">01</div>
+          <div class="hero-archives-card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><circle cx="9" cy="10" r="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/></svg>
           </div>
-          <div class="gallery-caption">
-            <div class="gallery-loc">Traditional Attire — India</div>
-            <div class="gallery-title">Koustubh, in the colours of home</div>
-            <div class="gallery-desc">Placeholder — swap in the real photograph here. Traditional wear, festival day.</div>
+          <div class="hero-archives-caption">
+            <div class="hero-archives-loc">Traditional Attire — India</div>
+            <div class="hero-archives-title">Koustubh, in the colours of home</div>
+            <div class="hero-archives-desc">Placeholder — swap in the real photograph here. Traditional wear, festival day.</div>
           </div>
         </div>
-      </div>
-      <!-- Slide 2 -->
-      <div class="gallery-slide">
-        <div class="gallery-card">
-          <div class="gallery-index">02</div>
-          <div class="gallery-card-icon">
+        <!-- Card 2 -->
+        <div class="hero-archives-card" data-idx="1">
+          <div class="hero-archives-index">02</div>
+          <div class="hero-archives-card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><circle cx="18" cy="6" r="3"/></svg>
           </div>
-          <div class="gallery-caption">
-            <div class="gallery-loc">Bali, Indonesia</div>
-            <div class="gallery-title">Chasing golden hour</div>
-            <div class="gallery-desc">Placeholder — swap in the real photograph here. Bali trip highlight.</div>
+          <div class="hero-archives-caption">
+            <div class="hero-archives-loc">Bali, Indonesia</div>
+            <div class="hero-archives-title">Chasing golden hour</div>
+            <div class="hero-archives-desc">Placeholder — swap in the real photograph here. Bali trip highlight.</div>
           </div>
         </div>
-      </div>
-      <!-- Slide 3 -->
-      <div class="gallery-slide">
-        <div class="gallery-card">
-          <div class="gallery-index">03</div>
-          <div class="gallery-card-icon">
+        <!-- Card 3 -->
+        <div class="hero-archives-card" data-idx="2">
+          <div class="hero-archives-index">03</div>
+          <div class="hero-archives-card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6-9 6-9-6z"/><path d="M3 10v6l9 6 9-6v-6"/></svg>
           </div>
-          <div class="gallery-caption">
-            <div class="gallery-loc">Goa, India</div>
-            <div class="gallery-title">Sand, sea, and no schedule</div>
-            <div class="gallery-desc">Placeholder — swap in the real photograph here. Goa getaway.</div>
+          <div class="hero-archives-caption">
+            <div class="hero-archives-loc">Goa, India</div>
+            <div class="hero-archives-title">Sand, sea, and no schedule</div>
+            <div class="hero-archives-desc">Placeholder — swap in the real photograph here. Goa getaway.</div>
           </div>
         </div>
-      </div>
-      <!-- Slide 4 -->
-      <div class="gallery-slide">
-        <div class="gallery-card">
-          <div class="gallery-index">04</div>
-          <div class="gallery-card-icon">
+        <!-- Card 4 -->
+        <div class="hero-archives-card" data-idx="3">
+          <div class="hero-archives-index">04</div>
+          <div class="hero-archives-card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 15l4-4 3 3 5-5 4 4"/></svg>
           </div>
-          <div class="gallery-caption">
-            <div class="gallery-loc">Somewhere Else, Someday</div>
-            <div class="gallery-title">More chapters to come</div>
-            <div class="gallery-desc">Placeholder slide — add more photos to the Archives as they happen.</div>
+          <div class="hero-archives-caption">
+            <div class="hero-archives-loc">Somewhere Else, Someday</div>
+            <div class="hero-archives-title">More chapters to come</div>
+            <div class="hero-archives-desc">Placeholder slide — add more photos to the Archives as they happen.</div>
           </div>
         </div>
       </div>
+      <div class="hero-archives-dots" id="heroArchivesDots">
+        <div class="hero-archives-dot active"></div>
+        <div class="hero-archives-dot"></div>
+        <div class="hero-archives-dot"></div>
+        <div class="hero-archives-dot"></div>
+      </div>
     </div>
-    <div class="gallery-dots" id="galleryDots">
-      <div class="gallery-dot active"></div>
-      <div class="gallery-dot"></div>
-      <div class="gallery-dot"></div>
-      <div class="gallery-dot"></div>
-    </div>
-  </div>
-</section>
+    <div class="hero-loading" id="heroLoading">Summoning the helm…</div>
+  </section>
+</div>
 
 <!-- ================= DOMAINS / PASSIONS ================= -->
 <section class="domains" id="domains">
@@ -789,26 +916,281 @@ footer.court-footer{ text-align:center; padding:60px 20px 80px; font-family:var(
 <script>
 (function(){
 
-  /* ---------- Hero title letter reveal ---------- */
-  var title = "KOUSTUBH THABAJ";
-  var titleEl = document.getElementById('heroTitle');
-  var goldFrom = title.indexOf(' ') + 1; // "THABAJ" part gets gold treatment
-  var delay = 0;
-  title.split('').forEach(function(ch, i){
-    var span = document.createElement('span');
-    if(ch === ' '){
-      span.className = 'sp';
+  /* ---------- Court theme sound toggle ----------
+     Browsers block audio with sound from autoplaying without a user
+     gesture, so the track starts muted/paused and the button pulses (via
+     .hero-sound-ring/.hero-sound-ring2) to draw the eye until the visitor
+     clicks it. First click both unmutes AND starts playback (a single user
+     gesture covers both). Clicking again pauses; clicking a third time
+     resumes — a plain play/pause toggle. */
+  var theme = document.getElementById('courtTheme');
+  var soundBtn = document.getElementById('heroSoundBtn');
+  var iconOff = document.getElementById('heroSoundIconOff');
+  var iconOn = document.getElementById('heroSoundIconOn');
+  var THEME_FULL_VOLUME = 0.55;
+  theme.volume = THEME_FULL_VOLUME;
+  // Exposed so the module script's updateFrame() (which already computes
+  // scroll progress every frame for the archives reveal) can fade this out
+  // as the Archives phase is reached, without a second independent rect read.
+  window.__courtTheme = theme;
+  window.__THEME_FULL_VOLUME = THEME_FULL_VOLUME;
+
+  function setSoundUI(isOn){
+    soundBtn.classList.toggle('is-on', isOn);
+    soundBtn.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+    soundBtn.setAttribute('aria-label', isOn ? 'Mute sound' : 'Play sound');
+    iconOff.style.display = isOn ? 'none' : '';
+    iconOn.style.display = isOn ? '' : 'none';
+  }
+
+  soundBtn.addEventListener('click', function(){
+    if(theme.paused){
+      theme.play().then(function(){
+        setSoundUI(true);
+      }).catch(function(){
+        // Autoplay/permissions edge case — leave UI in the muted state so
+        // the pulse keeps drawing the eye rather than falsely claiming success.
+        setSoundUI(false);
+      });
     } else {
-      span.className = 'ch' + (i >= goldFrom ? ' gold' : '');
-      span.textContent = ch;
-      span.style.animationDelay = (0.15 + delay*0.045) + 's';
-      delay++;
+      theme.pause();
+      setSoundUI(false);
     }
-    titleEl.appendChild(span);
   });
 
+  /* ---------- Hero title: true shape-morph, Norse rune -> English serif ----------
+     Ported from name-morph-lab.html technique B (signed-distance-field blend),
+     chosen after comparing 4 candidate techniques. Renders "KOUSTUBH THABAJ"
+     onto a canvas every frame: each letter's outline is blended between its
+     rune-face distance field and its English-face distance field, then
+     re-thresholded into a solid shape — the letterform actually reshapes,
+     it does not fade, scale, or rotate between the two glyphs. */
+  (function(){
+    var WORD = "KOUSTUBH THABAJ";
+    var GOLD_FROM = WORD.indexOf(' ') + 1;
+    // Real Runic Unicode (Elder Futhark block, U+16A0+) — Noto Sans Runic
+    // actually contains these glyphs, unlike Pirata One earlier (which
+    // doesn't, and silently fell back to whatever system font does, which
+    // is why the "flip" version accidentally looked properly runic).
+    var RUNE_MAP = { A:'ᛆ', B:'ᛒ', C:'ᛍ', D:'ᛑ', E:'ᛂ', F:'ᚠ', G:'ᚼ', H:'ᚼ', I:'ᛁ', J:'ᛁ', K:'ᚴ', L:'ᛚ', M:'ᛘ', N:'ᚿ', O:'ᚮ', P:'ᛔ', Q:'ᛩ', R:'ᚱ', S:'ᛋ', T:'ᛐ', U:'ᚢ', V:'ᚡ', W:'ᚥ', X:'ᛪ', Y:'ᚤ', Z:'ᛎ' };
+
+    var canvas = document.getElementById('heroTitleCanvas');
+    var ctx = canvas.getContext('2d');
+
+    var GOLD_STOPS = [
+      { at:0.00, c:[230,201,138] },
+      { at:0.45, c:[245,200,66] },
+      { at:1.00, c:[199,154,78] }
+    ];
+    function goldColorAt(frac){
+      for(var i=0;i<GOLD_STOPS.length-1;i++){
+        var a = GOLD_STOPS[i], b = GOLD_STOPS[i+1];
+        if(frac>=a.at && frac<=b.at){
+          var t = (frac-a.at)/(b.at-a.at);
+          return [ Math.round(a.c[0]+(b.c[0]-a.c[0])*t), Math.round(a.c[1]+(b.c[1]-a.c[1])*t), Math.round(a.c[2]+(b.c[2]-a.c[2])*t) ];
+        }
+      }
+      return GOLD_STOPS[GOLD_STOPS.length-1].c;
+    }
+
+    var letters = null, CELL_W, CELL_H, FIELD_W, FIELD_H, PAD_X, PAD_Y, CANVAS_W, CANVAS_H, DPR;
+
+    function rasterizeAlpha(ch, isRune, w, h){
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      var g = c.getContext('2d');
+      var fontPx = Math.round(h*0.60);
+      g.font = (isRune ? '' : '300 ') + fontPx + 'px ' + (isRune ? "'Noto Sans Runic', sans-serif" : "'Fraunces', Georgia, serif");
+      g.fillStyle = '#fff';
+      g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+      var glyph = isRune ? (RUNE_MAP[ch] || ch) : ch;
+      g.fillText(glyph, w/2, h*0.72);
+      return g.getImageData(0,0,w,h).data;
+    }
+    function alphaToMask(data, w, h){
+      var mask = new Uint8Array(w*h);
+      for(var i=0;i<w*h;i++){ mask[i] = data[i*4+3] > 128 ? 1 : 0; }
+      return mask;
+    }
+    function distanceField(mask, w, h){
+      var INF = 1e9;
+      var distOut = new Float32Array(w*h).fill(INF);
+      var distIn = new Float32Array(w*h).fill(INF);
+      var qOut = [], qIn = [];
+      function idx(x,y){ return y*w+x; }
+      var NB4 = [[1,0],[-1,0],[0,1],[0,-1]];
+      var NB8 = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+      for(var y=0;y<h;y++){
+        for(var x=0;x<w;x++){
+          var i = idx(x,y);
+          var boundary = false;
+          for(var k=0;k<4;k++){
+            var nx=x+NB4[k][0], ny=y+NB4[k][1];
+            if(nx>=0&&nx<w&&ny>=0&&ny<h && mask[idx(nx,ny)] !== mask[i]){ boundary = true; break; }
+          }
+          if(!boundary) continue;
+          if(mask[i]===0){ distOut[i]=0; qOut.push(i); }
+          else{ distIn[i]=0; qIn.push(i); }
+        }
+      }
+      function bfs(dist, queue, allowVal){
+        var head = 0;
+        while(head < queue.length){
+          var i = queue[head++];
+          var x = i % w, y = (i - x) / w | 0;
+          var d = dist[i];
+          for(var k=0;k<8;k++){
+            var nx = x+NB8[k][0], ny = y+NB8[k][1];
+            if(nx<0||nx>=w||ny<0||ny>=h) continue;
+            var ni = idx(nx,ny);
+            if(mask[ni] !== allowVal) continue;
+            var nd = d + ((NB8[k][0]!==0 && NB8[k][1]!==0) ? 1.4142 : 1);
+            if(nd < dist[ni]){ dist[ni] = nd; queue.push(ni); }
+          }
+        }
+      }
+      bfs(distOut, qOut, 0);
+      bfs(distIn, qIn, 1);
+      var signed = new Float32Array(w*h);
+      for(var i=0;i<w*h;i++){
+        signed[i] = mask[i]===1 ? (distIn[i]===INF?0:distIn[i]) : -(distOut[i]===INF?0:distOut[i]);
+      }
+      return signed;
+    }
+
+    function buildLayout(){
+      // Font size mirrors the old .hero-title clamp(34px,7.4vw,84px) rule.
+      var vw = window.innerWidth;
+      var fontPx = Math.max(34, Math.min(84, vw*0.074));
+      CELL_H = Math.round(fontPx * 1.18);
+      CELL_W = Math.round(fontPx * 0.72);
+      var SPACE_W = Math.round(fontPx * 0.34);
+      PAD_X = 4; PAD_Y = Math.round(fontPx*0.12);
+      FIELD_W = CELL_W*2; FIELD_H = CELL_H*2;
+
+      var goldTotal = 0;
+      for(var i=0;i<WORD.length;i++){ if(WORD[i]!==' ' && i>=GOLD_FROM) goldTotal++; }
+
+      var arr = [];
+      var x = PAD_X, gi = 0;
+      for(var i=0;i<WORD.length;i++){
+        var ch = WORD[i];
+        if(ch === ' '){ x += SPACE_W; continue; }
+        var isGold = i >= GOLD_FROM;
+        var color = isGold ? goldColorAt(goldTotal>1 ? gi/(goldTotal-1) : 0) : [239,231,216];
+        var L = { ch:ch, x:x, isGold:isGold, color:color };
+        arr.push(L);
+        if(isGold) gi++;
+        x += CELL_W;
+      }
+      CANVAS_W = x + PAD_X;
+      CANVAS_H = CELL_H + PAD_Y*2;
+
+      arr.forEach(function(L, idx){
+        var maskRuneF = alphaToMask(rasterizeAlpha(L.ch, true, FIELD_W, FIELD_H), FIELD_W, FIELD_H);
+        var maskEngF  = alphaToMask(rasterizeAlpha(L.ch, false, FIELD_W, FIELD_H), FIELD_W, FIELD_H);
+        L.fieldRune = distanceField(maskRuneF, FIELD_W, FIELD_H);
+        L.fieldEng  = distanceField(maskEngF, FIELD_W, FIELD_H);
+        L.fieldTile = document.createElement('canvas'); L.fieldTile.width = FIELD_W; L.fieldTile.height = FIELD_H;
+        L.fieldTileCtx = L.fieldTile.getContext('2d');
+        L.fieldImg = L.fieldTileCtx.createImageData(FIELD_W, FIELD_H);
+        // Entrance stagger, matches the old per-letter reveal timing.
+        L.enterDelay = 0.15 + idx*0.045;
+        L.morphDelay = L.enterDelay + 0.7 + idx*0.03;
+      });
+      letters = arr;
+
+      DPR = Math.min(2, window.devicePixelRatio||1);
+      canvas.width = CANVAS_W*DPR; canvas.height = CANVAS_H*DPR;
+      canvas.style.width = CANVAS_W+'px'; canvas.style.height = CANVAS_H+'px';
+    }
+    // Canvas text has no native web-font-loading wait, unlike DOM text — if
+    // 'Noto Sans Runic' hasn't finished downloading yet when rasterizeAlpha()
+    // first runs, the browser silently falls back to a generic sans-serif
+    // font with no error, and that WRONG shape (real rune characters drawn
+    // in a font that doesn't have those glyphs -> boxes/blanks) gets baked
+    // into the distance field permanently (it never re-renders once the
+    // real font arrives later). document.fonts.ready is unreliable here: it
+    // resolves once the initial page-load font batch settles, which can be
+    // BEFORE a font that's only ever used inside canvas ctx.font gets
+    // requested at all in some browsers. Requesting the font's OWN load
+    // promise directly (backed by the real CSS usage on .hero-title-fallback
+    // above) is what actually guarantees it's loaded before rebuilding.
+    buildLayout();
+    if(document.fonts){
+      document.fonts.load('400 12px "Noto Sans Runic"').then(function(){
+        buildLayout();
+      }).catch(function(){});
+      // Fallback poll in case the Font Loading API's promise never settles
+      // in some browser/environment — re-check up to 4s, cheap no-op once
+      // the font is confirmed (check() returns true instantly after that).
+      var pollTries = 0;
+      var pollId = setInterval(function(){
+        pollTries++;
+        if(document.fonts.check('400 12px "Noto Sans Runic"')){
+          buildLayout();
+          clearInterval(pollId);
+        } else if(pollTries > 20){
+          clearInterval(pollId);
+        }
+      }, 200);
+    }
+    var resizeTimer = null;
+    window.addEventListener('resize', function(){
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(buildLayout, 200);
+    });
+
+    var CYCLE = 4.0;
+    function easeInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+    function kFor(L, tSec){
+      if(tSec < L.enterDelay + 0.7) return 0; // still in rune face during entrance
+      var t2 = tSec - L.morphDelay;
+      var f = ((t2 % CYCLE) + CYCLE) % CYCLE / CYCLE;
+      if(f < 0.125) return 0;
+      if(f < 0.5) return easeInOutCubic((f-0.125)/0.375);
+      if(f < 0.625) return 1;
+      return 1 - easeInOutCubic((f-0.625)/0.375);
+    }
+    function entranceT(L, tSec){
+      var t = (tSec - L.enterDelay) / 0.7;
+      return Math.max(0, Math.min(1, t));
+    }
+
+    var startTime = null;
+    function frame(now){
+      if(startTime === null) startTime = now;
+      var tSec = (now - startTime)/1000;
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      ctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+      letters.forEach(function(L){
+        var eT = entranceT(L, tSec);
+        if(eT <= 0) return;
+        var k = kFor(L, tSec);
+        var buf = L.fieldImg.data;
+        var rC = L.isGold ? goldColorAt(0.5) : L.color;
+        var fr = L.fieldRune, fe = L.fieldEng;
+        var n = FIELD_W*FIELD_H;
+        for(var i=0;i<n;i++){
+          var d = fr[i]*(1-k) + fe[i]*k;
+          var a = Math.max(0, Math.min(1, (d+1.4)/2.8)) * eT;
+          var o = i*4;
+          buf[o]=rC[0]; buf[o+1]=rC[1]; buf[o+2]=rC[2]; buf[o+3]=Math.round(a*255);
+        }
+        L.fieldTileCtx.putImageData(L.fieldImg,0,0);
+        // entrance: rise + blur-in, same feel as the old heroLetterIn keyframe
+        ctx.save();
+        var rise = (1-eT)*24;
+        ctx.filter = 'blur(' + ((1-eT)*6) + 'px)';
+        ctx.drawImage(L.fieldTile, L.x, PAD_Y+rise, CELL_W, CELL_H);
+        ctx.restore();
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
   /* ---------- Cycling role subtitle ---------- */
-  var roles = ["Emperor · Builder · Wanderer","Engineer by trade, dreamer by default","Collector of hobbies, finisher of some","Currently plotting the next chapter"];
+  var roles = ["First of His Name, Ruler of the Golden Arc, Warden of the Archives, Protector of the Realm","Sovereign of the Known Realm","Engineer by Trade, Emperor by Temperament","Emperor · Builder · Conqueror"];
   var roleEl = document.getElementById('heroRole');
   var ri = 0;
   setInterval(function(){
@@ -831,28 +1213,6 @@ footer.court-footer{ text-align:center; padding:60px 20px 80px; font-family:var(
     progressFill.style.width = (pct*100) + '%';
     crestFill.style.strokeDashoffset = (CIRC - pct*CIRC).toFixed(1);
     crest.classList.toggle('show', scrollTop > 80);
-    handleGallery();
-  }
-
-  /* ---------- Gallery scroll-jack ---------- */
-  var galleryOuter = document.getElementById('galleryOuter');
-  var galleryTrack = document.getElementById('galleryTrack');
-  var slides = galleryTrack.children.length;
-  var dots = document.querySelectorAll('.gallery-dot');
-
-  function setGalleryHeight(){
-    galleryOuter.style.height = (slides * 100) + 'vh';
-  }
-
-  function handleGallery(){
-    var rect = galleryOuter.getBoundingClientRect();
-    var total = rect.height - window.innerHeight;
-    var progressed = -rect.top;
-    var frac = Math.min(1, Math.max(0, progressed/total));
-    var maxTranslate = (slides-1) * window.innerWidth;
-    galleryTrack.style.transform = 'translateX(' + (-frac*maxTranslate) + 'px)';
-    var activeIdx = Math.min(slides-1, Math.round(frac*(slides-1)));
-    dots.forEach(function(d,i){ d.classList.toggle('active', i===activeIdx); });
   }
 
   /* ---------- Reveal on scroll (IntersectionObserver) ---------- */
@@ -1229,14 +1589,959 @@ footer.court-footer{ text-align:center; padding:60px 20px 80px; font-family:var(
     }, 700);
   });
 
-  setGalleryHeight();
-  window.addEventListener('resize', setGalleryHeight);
   window.addEventListener('scroll', function(){ onScroll(); handleTreasuryParallax(); handleLineageSpine(); });
   onScroll();
   handleTreasuryParallax();
   handleLineageSpine();
 
 })();
+</script>
+
+<!-- ================= CINEMATIC HERO (Helmet -> Eye -> Royal Court -> Throne Explosion) ================= -->
+<!-- Ported from merge-full-lab.html, locked settings baked in directly (no dev panel/scrub UI in production). -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+const stage = document.getElementById('heroStage');
+const loadingEl = document.getElementById('heroLoading');
+const heroCore = document.getElementById('heroCore');
+const heroRole = document.querySelector('.hero-role');
+const scrollCue = document.getElementById('heroScrollCue');
+const scrollSpacer = document.getElementById('heroScrollSpacer');
+const archivesBehind = document.getElementById('heroArchivesBehind');
+const archivesCards = Array.from(document.querySelectorAll('.hero-archives-card'));
+const archivesDots = Array.from(document.querySelectorAll('.hero-archives-dot'));
+
+// Transparent clear color + alpha:true — once the render pipeline (see
+// PortalShader/finalPass below) has nothing left to paint over a pixel,
+// the real page behind the canvas (here, .hero-archives-behind) shows
+// through instead of opaque black. Ported verbatim from
+// transparent-explosion-lab.html, where this was tested extensively.
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setClearColor(0x000000, 0);
+const DPR = Math.min(2, window.devicePixelRatio||1);
+renderer.setPixelRatio(DPR);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 2.3;
+renderer.domElement.className = 'hero-webgl-canvas';
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0a0704, 0.012);
+const camera = new THREE.PerspectiveCamera(42, 1, 0.02, 160);
+
+const BLOOM_LAYER = 1;
+const bloomLayerMask = new THREE.Layers(); bloomLayerMask.set(BLOOM_LAYER);
+camera.layers.enableAll();
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environment = envTex;
+
+function radial(stops, size){
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  stops.forEach(s=>grd.addColorStop(s[0],s[1]));
+  g.fillStyle = grd; g.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex = radial([
+  [0,'rgba(255,250,235,1)'],[0.2,'rgba(255,232,175,0.9)'],[0.5,'rgba(245,196,100,0.4)'],[1,'rgba(199,154,78,0)']
+], 256);
+const dotTex = radial([
+  [0,'rgba(255,255,255,1)'],[0.2,'rgba(255,248,225,0.95)'],[0.5,'rgba(230,201,138,0.35)'],[1,'rgba(199,154,78,0)']
+], 64);
+
+/* ================================================================
+   HELMET WORLD
+   ================================================================ */
+const helmetLights = [];
+function addHelmetLight(light){ helmetLights.push(light); scene.add(light); }
+addHelmetLight(new THREE.HemisphereLight(0xfff2d8, 0x3a2818, 2.6));
+addHelmetLight(new THREE.AmbientLight(0xcdb98a, 1.6));
+const keyLight = new THREE.DirectionalLight(0xffe8c2, 3.0); keyLight.position.set(2.0, 1.6, 2.2); addHelmetLight(keyLight);
+const fillFrontLight = new THREE.DirectionalLight(0xffe8c2, 2.2); fillFrontLight.position.set(-1.6, 0.6, 2.4); addHelmetLight(fillFrontLight);
+const rimLight = new THREE.DirectionalLight(0x9fc0f5, 1.6); rimLight.position.set(-2.2, 1.2, -2.0); addHelmetLight(rimLight);
+const topFillLight = new THREE.DirectionalLight(0xffe8c2, 1.8); topFillLight.position.set(0, 3.0, 0.5); addHelmetLight(topFillLight);
+const belowFillLight = new THREE.PointLight(0xffcf8a, 1.6, 14, 2); belowFillLight.position.set(0, -1.8, 2.0); addHelmetLight(belowFillLight);
+const helmetLightBaseIntensity = helmetLights.map(l=>l.intensity);
+
+const rimGoldColor = new THREE.Color(0xF5C842);
+const rimBlueColor = new THREE.Color(0x9fc0f5);
+const rimLightL = new THREE.DirectionalLight(0xF5C842, 0);
+rimLightL.position.set(-1.2, 0.5, -2.4);
+scene.add(rimLightL);
+const rimLightR = new THREE.DirectionalLight(0xF5C842, 0);
+rimLightR.position.set(1.2, 0.5, -2.4);
+scene.add(rimLightR);
+const rimCfg = { restDarkness:0.9, intensity:7, color:'blue', angle:-0.16 };
+rimLightL.position.set(-1.2 + rimCfg.angle*0.8, 0.5, -2.4);
+rimLightR.position.set(1.2 + rimCfg.angle*0.8, 0.5, -2.4);
+
+const REST = {
+  rotation: { x:-0.058, y:1.524 },
+  growth: 0.84,
+  cameraPos: new THREE.Vector3(0, 0.167, 5.345)
+};
+const modelRig = new THREE.Group();
+scene.add(modelRig);
+
+function frameHelmetToUnitSize(root){
+  const box = new THREE.Box3().setFromObject(root);
+  const size = new THREE.Vector3(); box.getSize(size);
+  const center = new THREE.Vector3(); box.getCenter(center);
+  const maxDim = Math.max(size.x, size.y, size.z) || 1;
+  const scale = 1.6 / maxDim;
+  root.position.sub(center);
+  root.scale.setScalar(1);
+  const wrapper = new THREE.Group();
+  wrapper.add(root);
+  wrapper.scale.setScalar(scale);
+  return wrapper;
+}
+
+const EYE_LOCAL = new THREE.Vector3(0.175, -0.094, 0.35);
+const eyeGlowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false }));
+eyeGlowSprite.scale.setScalar(0.22);
+eyeGlowSprite.layers.set(BLOOM_LAYER);
+eyeGlowSprite.position.copy(EYE_LOCAL);
+modelRig.add(eyeGlowSprite);
+const eyeLight = new THREE.PointLight(0xffdca0, 0.4, 4, 2);
+eyeLight.position.copy(EYE_LOCAL);
+modelRig.add(eyeLight);
+
+const loader = new GLTFLoader();
+loader.load(encodeURI('./spartan_helmet (1).glb'), (gltf)=>{
+  const wrapped = frameHelmetToUnitSize(gltf.scene);
+  modelRig.add(wrapped);
+  modelRig.rotation.set(REST.rotation.x, REST.rotation.y, 0);
+  modelRig.scale.setScalar(REST.growth);
+  loadingEl.classList.add('hide');
+}, undefined, (err)=>{
+  loadingEl.textContent = 'Could not load the helm.';
+  console.error(err);
+});
+
+/* ================================================================
+   ROYAL COURT HALL WORLD
+   ================================================================ */
+const HALL_SCALE = 3.7;
+const HALL = { cols:8, depth:23, width:6.2 };
+const hallGroup = new THREE.Group();
+scene.add(hallGroup);
+hallGroup.scale.setScalar(HALL_SCALE);
+hallGroup.visible = false;
+
+function buildMarbleTexture(){
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = '#e7ddc8'; g.fillRect(0,0,size,size);
+  for(let i=0;i<90;i++){
+    const x = Math.random()*size, y = Math.random()*size, r = 20+Math.random()*70;
+    const grd = g.createRadialGradient(x,y,0,x,y,r);
+    const shade = Math.random()<0.5 ? 'rgba(200,188,160,0.10)' : 'rgba(255,250,235,0.14)';
+    grd.addColorStop(0, shade); grd.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0,0,size,size);
+  }
+  g.strokeStyle = 'rgba(150,135,105,0.16)';
+  for(let i=0;i<26;i++){
+    g.lineWidth = 0.6+Math.random()*1.4;
+    g.beginPath();
+    let x = Math.random()*size, y = Math.random()*size;
+    g.moveTo(x,y);
+    for(let s=0;s<6;s++){ x += (Math.random()-0.5)*90; y += (Math.random()-0.5)*90; g.lineTo(x,y); }
+    g.stroke();
+  }
+  for(let i=0;i<3000;i++){
+    const x = Math.random()*size, y = Math.random()*size;
+    g.fillStyle = Math.random()<0.5 ? 'rgba(120,105,80,0.05)' : 'rgba(255,255,255,0.06)';
+    g.fillRect(x,y,1,1);
+  }
+  const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(2,2);
+  return tex;
+}
+function buildRoughnessTexture(){
+  const size = 256;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = '#bfbfbf'; g.fillRect(0,0,size,size);
+  for(let i=0;i<400;i++){
+    const x = Math.random()*size, y = Math.random()*size, r = 4+Math.random()*14;
+    const grd = g.createRadialGradient(x,y,0,x,y,r);
+    const v = Math.random()<0.5 ? 40 : 210;
+    grd.addColorStop(0, `rgba(${v},${v},${v},0.35)`); grd.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0,0,size,size);
+  }
+  const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(2,2);
+  return tex;
+}
+const marbleTex = buildMarbleTexture();
+const roughTex = buildRoughnessTexture();
+
+function buildGodRayTexture(){
+  const w = 160, h = 512;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  for(let y=0;y<h;y++){
+    const v = y/h;
+    const vertFade = Math.pow(1-v, 0.55);
+    const wobble = Math.sin(v*9.0)*6 + Math.sin(v*3.3+1.5)*4;
+    const cx = w/2 + wobble;
+    const grd = g.createLinearGradient(cx-w*0.5,0,cx+w*0.5,0);
+    grd.addColorStop(0.0,'rgba(255,236,190,0)');
+    grd.addColorStop(0.32,`rgba(255,236,190,${(0.45*vertFade).toFixed(3)})`);
+    grd.addColorStop(0.5, `rgba(255,244,215,${(0.9*vertFade).toFixed(3)})`);
+    grd.addColorStop(0.68,`rgba(255,236,190,${(0.45*vertFade).toFixed(3)})`);
+    grd.addColorStop(1.0,'rgba(255,236,190,0)');
+    g.fillStyle = grd;
+    g.fillRect(0,y,w,1);
+  }
+  return new THREE.CanvasTexture(c);
+}
+const shaftTex = buildGodRayTexture();
+
+let floorMesh, ceilMesh;
+function buildFloorCeil(){
+  if(floorMesh) hallGroup.remove(floorMesh);
+  if(ceilMesh) hallGroup.remove(ceilMesh);
+  const floorGeo = new THREE.PlaneGeometry(HALL.width*2.4, HALL.depth*2.2, 1, 40);
+  const floorMat = new THREE.MeshStandardMaterial({ color:0x241a0e, roughness:0.28, metalness:1.0, envMapIntensity:0.9, emissive:0x180f06, emissiveIntensity:0.1 });
+  floorMesh = new THREE.Mesh(floorGeo, floorMat);
+  floorMesh.rotation.x = -Math.PI/2;
+  floorMesh.position.set(0,-1.15*1.5,-HALL.depth*0.35);
+  hallGroup.add(floorMesh);
+  const ceilGeo = new THREE.PlaneGeometry(HALL.width*2.4, HALL.depth*2.2, 1, 1);
+  const ceilMat = new THREE.MeshStandardMaterial({ color:0x0a0806, roughness:0.9, metalness:0.05 });
+  ceilMesh = new THREE.Mesh(ceilGeo, ceilMat);
+  ceilMesh.rotation.x = Math.PI/2;
+  ceilMesh.position.set(0, 3.1*1.5, -HALL.depth*0.35);
+  hallGroup.add(ceilMesh);
+}
+
+function buildFlutedShaftGeometry(rBottom, rTop, height, flutes, pointsPerFlute, heightSegs, grooveDepthFrac){
+  const vertsPerRing = flutes * (pointsPerFlute - 1);
+  const positions = [], uvs = [];
+  for(let h=0; h<=heightSegs; h++){
+    const v = h/heightSegs;
+    const y = -height/2 + v*height;
+    const baseR = rBottom + (rTop-rBottom)*v;
+    const grooveDepth = baseR * grooveDepthFrac;
+    for(let f=0; f<flutes; f++){
+      for(let p=0; p<pointsPerFlute-1; p++){
+        const t = p/(pointsPerFlute-1);
+        const angle = (f + t) / flutes * Math.PI*2;
+        const depth = Math.sin(t*Math.PI) * grooveDepth;
+        const r = baseR - depth;
+        positions.push(Math.cos(angle)*r, y, Math.sin(angle)*r);
+        uvs.push((f + t)/flutes, v);
+      }
+    }
+  }
+  const indices = [];
+  function wrap(i){ return (i + vertsPerRing) % vertsPerRing; }
+  for(let h=0; h<heightSegs; h++){
+    const ringA = h*vertsPerRing, ringB = (h+1)*vertsPerRing;
+    for(let i=0; i<vertsPerRing; i++){
+      const a = ringA+i, b = ringA+wrap(i+1), c = ringB+wrap(i+1), d = ringB+i;
+      indices.push(a,b,c, a,c,d);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(uvs), 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+function buildEchinusGeometry(neckR, topR, height, segs){
+  const pts = [];
+  const STEPS = 10;
+  for(let s=0;s<=STEPS;s++){
+    const t = s/STEPS;
+    const r = neckR + (topR-neckR) * Math.sin(t*Math.PI/2);
+    pts.push(new THREE.Vector2(r, t*height));
+  }
+  return new THREE.LatheGeometry(pts, segs);
+}
+
+let columnMeshes = [];
+let CAPITAL_TOP_Y = 1.3;
+function buildColumns(){
+  columnMeshes.forEach(m=>hallGroup.remove(m));
+  columnMeshes = [];
+  const SHAFT_H = 2.1*1.5, R_BOTTOM = 0.19, R_TOP = 0.155, FLUTES = 24;
+  const shaftGeo = buildFlutedShaftGeometry(R_BOTTOM, R_TOP, SHAFT_H, FLUTES, 5, 10, 0.34);
+  const stoneMat = new THREE.MeshStandardMaterial({ color:0xffffff, map:marbleTex, roughnessMap:roughTex, roughness:0.62, metalness:0.02, envMapIntensity:0.5 });
+  const goldMat = new THREE.MeshStandardMaterial({ color:0xd8ac5c, roughness:0.22, roughnessMap:roughTex, metalness:0.95, envMapIntensity:1.6, emissive:0x2a1c08, emissiveIntensity:0.12 });
+  const stoneGoldMat = new THREE.MeshStandardMaterial({ color:0xc9a875, roughness:0.38, roughnessMap:roughTex, metalness:0.55, envMapIntensity:1.0, emissive:0x1c1206, emissiveIntensity:0.08 });
+
+  const plinthBotGeo = new THREE.BoxGeometry(0.60, 0.12, 0.60);
+  const plinthMidGeo = new THREE.BoxGeometry(0.48, 0.10, 0.48);
+  const plinthTopGeo = new THREE.BoxGeometry(0.38, 0.08, 0.38);
+  const necklGeo = new THREE.CylinderGeometry(R_BOTTOM, 0.19, 0.05, FLUTES);
+  const cNeckGeo = new THREE.CylinderGeometry(R_TOP+0.01, R_TOP, 0.05, FLUTES);
+  const echinusGeo = buildEchinusGeometry(R_TOP+0.01, 0.24, 0.11, FLUTES);
+  const bolsterGeo = new THREE.CapsuleGeometry(0.09, 0.42, 6, 12);
+  const voluteGeo = new THREE.TorusGeometry(0.085, 0.024, 8, 18);
+  const abacusGeo = new THREE.BoxGeometry(0.64, 0.07, 0.5);
+
+  const shaftBottomY = -SHAFT_H/2, shaftTopY = SHAFT_H/2;
+  const baseStackH = 0.12+0.10+0.08;
+  const plinthBotY = shaftBottomY - baseStackH + 0.06;
+  const plinthMidY = shaftBottomY - baseStackH + 0.12 + 0.05;
+  const plinthTopY = shaftBottomY - baseStackH + 0.12 + 0.10 + 0.04;
+  const neckY = shaftBottomY - 0.025;
+  const cNeckY = shaftTopY + 0.025;
+  const echinusY = shaftTopY + 0.05;
+  const bolsterY = shaftTopY + 0.05 + 0.11 + 0.05;
+  const abacusY = bolsterY + 0.09 + 0.035;
+  CAPITAL_TOP_Y = abacusY + 0.035;
+
+  const spacing = HALL.depth / HALL.cols;
+  for(let i=0;i<HALL.cols;i++){
+    const z = -1.5 - i*spacing;
+    [-1,1].forEach(side=>{
+      const grp = new THREE.Group();
+      const plinthBot = new THREE.Mesh(plinthBotGeo, stoneMat); plinthBot.position.y = plinthBotY;
+      const plinthMid = new THREE.Mesh(plinthMidGeo, stoneGoldMat); plinthMid.position.y = plinthMidY;
+      const plinthTop = new THREE.Mesh(plinthTopGeo, stoneMat); plinthTop.position.y = plinthTopY;
+      const neck = new THREE.Mesh(necklGeo, stoneMat); neck.position.y = neckY;
+      const shaft = new THREE.Mesh(shaftGeo, stoneMat);
+      const cNeck = new THREE.Mesh(cNeckGeo, stoneMat); cNeck.position.y = cNeckY;
+      const echinus = new THREE.Mesh(echinusGeo, stoneGoldMat); echinus.position.y = echinusY;
+      const bolster = new THREE.Mesh(bolsterGeo, goldMat); bolster.rotation.z = Math.PI/2; bolster.position.y = bolsterY;
+      const voluteL = new THREE.Mesh(voluteGeo, goldMat); voluteL.rotation.y = Math.PI/2; voluteL.position.set(-0.24, bolsterY, 0);
+      const voluteR = new THREE.Mesh(voluteGeo, goldMat); voluteR.rotation.y = Math.PI/2; voluteR.position.set(0.24, bolsterY, 0);
+      const abacus = new THREE.Mesh(abacusGeo, goldMat); abacus.position.y = abacusY;
+      grp.add(plinthBot, plinthMid, plinthTop, neck, shaft, cNeck, echinus, bolster, voluteL, voluteR, abacus);
+      grp.position.set(side*HALL.width*0.5, 0, z);
+      hallGroup.add(grp);
+      columnMeshes.push(grp);
+    });
+  }
+}
+
+let entablatureMeshes = [];
+function buildEntablature(){
+  entablatureMeshes.forEach(m=>hallGroup.remove(m));
+  entablatureMeshes = [];
+  const beamMat = new THREE.MeshStandardMaterial({ color:0xc9a875, map:marbleTex, roughnessMap:roughTex, roughness:0.4, metalness:0.5, envMapIntensity:1.0, emissive:0x1c1206, emissiveIntensity:0.08 });
+  const trimMat = new THREE.MeshStandardMaterial({ color:0xd8ac5c, roughness:0.2, roughnessMap:roughTex, metalness:0.95, envMapIntensity:1.6, emissive:0x2a1c08, emissiveIntensity:0.12 });
+  const totalLen = HALL.depth + 2.0;
+  const topY = CAPITAL_TOP_Y;
+  const architraveGeo = new THREE.BoxGeometry(0.66, 0.22, totalLen);
+  const trimGeo = new THREE.BoxGeometry(0.7, 0.05, totalLen);
+  [-1,1].forEach(side=>{
+    const architrave = new THREE.Mesh(architraveGeo, beamMat);
+    architrave.position.set(side*HALL.width*0.5, topY+0.11, -1.5-HALL.depth/2+0.5);
+    const trimTop = new THREE.Mesh(trimGeo, trimMat);
+    trimTop.position.set(side*HALL.width*0.5, topY+0.24, -1.5-HALL.depth/2+0.5);
+    hallGroup.add(architrave, trimTop);
+    entablatureMeshes.push(architrave, trimTop);
+  });
+}
+
+let shaftMeshes = [];
+function buildShafts(strength){
+  shaftMeshes.forEach(m=>hallGroup.remove(m));
+  shaftMeshes = [];
+  const spacing = HALL.depth / HALL.cols;
+  const shaftShape = new THREE.Shape();
+  shaftShape.moveTo(-0.35, 2.1*1.5);
+  shaftShape.lineTo(0.35, 2.1*1.5);
+  shaftShape.lineTo(1.05, -2.3*1.5);
+  shaftShape.lineTo(-1.05, -2.3*1.5);
+  shaftShape.closePath();
+  const shaftGeo = new THREE.ShapeGeometry(shaftShape);
+  const uv = shaftGeo.attributes.uv;
+  for(let i=0;i<uv.count;i++){
+    uv.setXY(i, (uv.getX(i)+1.05)/2.1, (uv.getY(i)+2.3)/4.4);
+  }
+  for(let i=0;i<HALL.cols;i++){
+    const z = -1.5 - i*spacing - spacing*0.5;
+    [-1,1].forEach(side=>{
+      const mat = new THREE.MeshBasicMaterial({ map:shaftTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, opacity:0.5*strength, side:THREE.DoubleSide });
+      const grp = new THREE.Group();
+      const planeA = new THREE.Mesh(shaftGeo, mat);
+      const planeB = new THREE.Mesh(shaftGeo, mat.clone());
+      planeB.rotation.y = Math.PI/2.1;
+      grp.add(planeA, planeB);
+      grp.position.set(side*HALL.width*0.5*0.72, 0.9*1.5, z);
+      grp.rotation.z = side * 0.1;
+      grp.rotation.y = 0.22;
+      grp.layers.set(BLOOM_LAYER);
+      planeA.layers.set(BLOOM_LAYER); planeB.layers.set(BLOOM_LAYER);
+      hallGroup.add(grp);
+      shaftMeshes.push(grp);
+    });
+  }
+}
+
+let dustPoints = null;
+function buildDust(count){
+  if(dustPoints){ hallGroup.remove(dustPoints); dustPoints.geometry.dispose(); dustPoints.material.dispose(); }
+  const pos = new Float32Array(count*3), col = new Float32Array(count*3), sizes = new Float32Array(count), phase = new Float32Array(count);
+  const warm = new THREE.Color('#f5d9a0'), dim = new THREE.Color('#8a6a3a');
+  for(let i=0;i<count;i++){
+    const x = (Math.random()-0.5)*HALL.width*1.6;
+    const y = -1.0 + Math.random()*3.6;
+    const z = -0.5 - Math.random()*(HALL.depth+2);
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    const nearBeam = Math.abs(Math.abs(x)-HALL.width*0.5*0.72) < 0.5;
+    const c = nearBeam ? warm : dim;
+    const boost = nearBeam ? (0.7+Math.random()*0.6) : (0.15+Math.random()*0.2);
+    col[i*3]=c.r*boost; col[i*3+1]=c.g*boost; col[i*3+2]=c.b*boost;
+    sizes[i] = 0.18+Math.random()*0.28;
+    phase[i] = Math.random();
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('aBase', new THREE.BufferAttribute(pos.slice(),3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  geo.setAttribute('aSize', new THREE.BufferAttribute(sizes,1));
+  geo.setAttribute('aPhase', new THREE.BufferAttribute(phase,1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms:{ uTex:{value:glowTex}, uTime:{value:0}, uScale:{value:120.0} },
+    vertexShader:`
+      attribute float aSize; attribute vec3 aBase; attribute float aPhase;
+      varying vec3 vColor;
+      uniform float uTime, uScale;
+      void main(){
+        vColor = color;
+        vec3 p = aBase;
+        p.y += sin(uTime*0.25 + aPhase*6.2831) * 0.25;
+        p.x += cos(uTime*0.18 + aPhase*6.2831) * 0.12;
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = aSize * uScale / -mv.z;
+      }`,
+    fragmentShader:`
+      uniform sampler2D uTex; varying vec3 vColor;
+      void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(vColor,1.0)*t; }`,
+    vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending
+  });
+  dustPoints = new THREE.Points(geo, mat);
+  hallGroup.add(dustPoints);
+}
+
+/* ================================================================
+   THE THRONE — single sprite, constant true world size (1.4, locked
+   from bloom-morph-lab.html) the whole time. Local scale is pre-divided
+   by HALL_SCALE so re-multiplying by HALL_SCALE anywhere renders at the
+   correct world size — see updateFrame() below.
+   ================================================================ */
+const throneGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false }));
+const THRONE_LOCKED_WORLD_SCALE = 1.4;
+const THRONE_LOCAL_SCALE = THRONE_LOCKED_WORLD_SCALE / HALL_SCALE;
+throneGlow.scale.set(THRONE_LOCAL_SCALE, THRONE_LOCAL_SCALE, 1);
+throneGlow.layers.set(BLOOM_LAYER);
+let throneZ = -1.5 - HALL.depth - 1.0;
+throneGlow.position.set(0, 0.2, throneZ);
+hallGroup.add(throneGlow);
+
+const hallHemi = new THREE.HemisphereLight(0xfff2d8, 0x2a1c10, 0);
+scene.add(hallHemi);
+const hallAmbient = new THREE.AmbientLight(0xcdb98a, 0);
+scene.add(hallAmbient);
+const hallKeyLight = new THREE.PointLight(0xffe8c2, 0, 24*HALL_SCALE, 1.6);
+hallKeyLight.position.set(0, 1.8*1.5*HALL_SCALE, 2.5*HALL_SCALE);
+scene.add(hallKeyLight);
+const hallKeyLight2 = new THREE.PointLight(0xffe8c2, 0, 22*HALL_SCALE, 1.6);
+hallKeyLight2.position.set(0, 1.6*1.5*HALL_SCALE, -7*HALL_SCALE);
+scene.add(hallKeyLight2);
+const throneLight = new THREE.PointLight(0xffcf8a, 0, 26*HALL_SCALE, 1.8);
+scene.add(throneLight);
+const hallLights = [hallHemi, hallAmbient, hallKeyLight, hallKeyLight2];
+const hallLightTargetIntensity = [1.1, 1.6, 9.0, 6.0];
+
+const shaftStrength = 0.05;
+function rebuildHall(){
+  buildFloorCeil();
+  buildColumns();
+  buildEntablature();
+  buildShafts(shaftStrength);
+  throneZ = -1.5 - HALL.depth - 1.0;
+  throneGlow.position.z = throneZ;
+  throneLight.position.set(0, 0.4*HALL_SCALE, (throneZ+1.5)*HALL_SCALE);
+}
+rebuildHall();
+buildDust(5000);
+
+const HALL_ENTRANCE_Z = 8.5;
+const FLOOR_Y_LOCAL = -1.15*1.5;
+const EYE_HEIGHT = 1.65;
+const CAM_EYE_Y = FLOOR_Y_LOCAL*HALL_SCALE + EYE_HEIGHT;
+
+const THRONE_WORLD_Z = throneZ * HALL_SCALE;
+const THRONE_STOP_DISTANCE = 8;
+const DEFAULT_WALK_DISTANCE = HALL_ENTRANCE_Z - (THRONE_WORLD_Z + THRONE_STOP_DISTANCE);
+const THRONE_WORLD_POS = new THREE.Vector3(throneGlow.position.x*HALL_SCALE, throneGlow.position.y*HALL_SCALE, THRONE_WORLD_Z);
+const EXPLOSION_CAM_POS = new THREE.Vector3(THRONE_WORLD_POS.x, THRONE_WORLD_POS.y, THRONE_WORLD_POS.z + THRONE_STOP_DISTANCE);
+
+/* ================================================================
+   PARTICLE EXPLOSION — lives directly in `scene` (world space),
+   anchored at the throne's real world position.
+   ================================================================ */
+let particleSystem = null;
+const particleCount = 2900;
+const particleSizeMul = 0.26;
+const explosionCfg = { spread:6, flyDistance:13, bloomStrength:0.9 };
+const explosionBeats = { m2:0.34 };
+
+function buildParticleSystem(count, spread){
+  const origin = new Float32Array(count*3);
+  const explode = new Float32Array(count*3);
+  const col = new Float32Array(count*3);
+  const sizes = new Float32Array(count);
+  const seeds = new Float32Array(count);
+
+  const goldBright = new THREE.Color('#F5C842');
+  const goldSoft = new THREE.Color('#e6c98a');
+  const goldDeep = new THREE.Color('#8a662f');
+  const basePos = new THREE.Vector3(throneGlow.position.x*HALL_SCALE, throneGlow.position.y*HALL_SCALE, THRONE_WORLD_Z);
+
+  for(let i=0;i<count;i++){
+    const r = Math.pow(Math.random(),0.5) * 0.5;
+    const theta = Math.random()*Math.PI*2, phi = Math.acos(2*Math.random()-1);
+    origin[i*3] = basePos.x + r*Math.sin(phi)*Math.cos(theta);
+    origin[i*3+1] = basePos.y + r*Math.sin(phi)*Math.sin(theta);
+    origin[i*3+2] = basePos.z + r*Math.cos(phi);
+
+    const er = spread * (0.4 + Math.random()*0.6);
+    const eth = Math.random()*Math.PI*2, eph = Math.acos(2*Math.random()-1);
+    explode[i*3] = basePos.x + er*Math.sin(eph)*Math.cos(eth);
+    explode[i*3+1] = basePos.y + er*Math.sin(eph)*Math.sin(eth);
+    explode[i*3+2] = basePos.z + er*Math.cos(eph);
+
+    const t = Math.random();
+    const c = t<0.5 ? goldBright.clone().lerp(goldSoft, t/0.5) : goldSoft.clone().lerp(goldDeep, (t-0.5)/0.5);
+    const boost = Math.random()<0.05 ? 1.8 : 1.0;
+    col[i*3]=c.r*boost; col[i*3+1]=c.g*boost; col[i*3+2]=c.b*boost;
+    sizes[i] = 0.5 + Math.random()*1.2;
+    seeds[i] = Math.random();
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count*3), 3));
+  geo.setAttribute('aOrigin', new THREE.BufferAttribute(origin, 3));
+  geo.setAttribute('aExplode', new THREE.BufferAttribute(explode, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+  geo.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms:{
+      uTex:{ value:dotTex },
+      uTime:{ value:0 },
+      uExplodeT:{ value:0 },
+      uFlyT:{ value:0 },
+      uFrameZ:{ value:camera.position.z },
+      uScale:{ value:220.0 * particleSizeMul },
+      uFadeOut:{ value:0 },
+      uIdleFadeIn:{ value:1 }
+    },
+    vertexShader:`
+      attribute vec3 aOrigin; attribute vec3 aExplode;
+      attribute float aSize; attribute float aSeed;
+      varying vec3 vColor; varying float vAlpha;
+      uniform float uTime, uExplodeT, uFlyT, uFrameZ, uScale, uFadeOut, uIdleFadeIn;
+      void main(){
+        vColor = color;
+        vec3 p1 = mix(aOrigin, aExplode, uExplodeT);
+        vec3 flyTarget = vec3(aExplode.x*1.4, aExplode.y*1.4, uFrameZ);
+        vec3 p = mix(p1, flyTarget, uFlyT);
+
+        float tw = sin(uTime*1.4 + aSeed*6.2831) * 0.02;
+        p += vec3(tw, tw*0.7, 0.0);
+
+        float fadeStart = 0.6 + aSeed*0.4;
+        vAlpha = uIdleFadeIn * (1.0 - smoothstep(fadeStart, 1.0, uFadeOut));
+
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = aSize * uScale / -mv.z;
+      }`,
+    fragmentShader:`
+      uniform sampler2D uTex; varying vec3 vColor; varying float vAlpha;
+      void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(vColor,1.0)*t*vAlpha; }`,
+    vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending
+  });
+
+  particleSystem = new THREE.Points(geo, mat);
+  particleSystem.layers.set(BLOOM_LAYER);
+  particleSystem.visible = false;
+  // position attribute is intentionally all-zero (real position computed
+  // in-shader from aOrigin/aExplode) — disable frustum culling, since
+  // Three's automatic bounding-sphere check (built from `position`) would
+  // otherwise wrongly think this object sits at world origin and cull it,
+  // given the hall/camera sit ~90 units away looking off in another direction.
+  particleSystem.frustumCulled = false;
+  scene.add(particleSystem);
+}
+buildParticleSystem(particleCount, explosionCfg.spread);
+
+/* ================================================================
+   post-processing (selective bloom + portal shader)
+   ================================================================ */
+// Fragment shaders below now carry/boost real alpha instead of hardcoding
+// 1.0 — ported verbatim from transparent-explosion-lab.html so the hero
+// canvas can go transparent once the explosion clears (letting
+// .hero-archives-behind show through) while helmet/hall pixels (which are
+// always covered by actual geometry) remain visually identical to before.
+const PortalShader = {
+  uniforms:{ tDiffuse:{value:null}, uAberration:{value:0.0}, uVignette:{value:0.0}, uFlash:{value:0.0}, uFlashColor:{value:new THREE.Color(0xF5C842)} },
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`
+    uniform sampler2D tDiffuse; uniform float uAberration; uniform float uVignette; uniform float uFlash; uniform vec3 uFlashColor;
+    varying vec2 vUv;
+    void main(){
+      vec2 centered = vUv - 0.5;
+      float dist = length(centered);
+      vec2 dir = normalize(centered + 0.0001);
+      float rOff = uAberration * dist;
+      vec2 uvR = vUv - dir*rOff;
+      vec2 uvB = vUv + dir*rOff;
+      vec4 baseR = texture2D(tDiffuse, uvR);
+      vec4 baseG = texture2D(tDiffuse, vUv);
+      vec4 baseB = texture2D(tDiffuse, uvB);
+      vec3 col = vec3(baseR.r, baseG.g, baseB.b);
+      float vig = 1.0 - uVignette * dist * dist;
+      col *= clamp(vig, 0.0, 1.0);
+      col = mix(col, uFlashColor, clamp(uFlash, 0.0, 1.0));
+      float outAlpha = mix(baseG.a, 1.0, clamp(uFlash, 0.0, 1.0));
+      gl_FragColor = vec4(col, outAlpha);
+    }`
+};
+
+const renderScene = new RenderPass(scene, camera);
+renderScene.clearAlpha = 0;
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 0.55, 0.6, 0.15);
+const bloomComposer = new EffectComposer(renderer);
+bloomComposer.renderToScreen = false;
+bloomComposer.addPass(renderScene);
+bloomComposer.addPass(bloomPass);
+const finalPass = new ShaderPass(new THREE.ShaderMaterial({
+  uniforms:{ baseTexture:{value:null}, bloomTexture:{value:bloomComposer.renderTarget2.texture} },
+  vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+  fragmentShader:'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main(){ vec4 base = texture2D(baseTexture,vUv); vec3 bloomAdd = texture2D(bloomTexture,vUv).rgb; float bloomLum = max(bloomAdd.r, max(bloomAdd.g, bloomAdd.b)); float outAlpha = clamp(base.a + bloomLum, 0.0, 1.0); gl_FragColor = vec4(base.rgb + bloomAdd, outAlpha); }'
+}), 'baseTexture');
+finalPass.needsSwap = true;
+const portalPass = new ShaderPass(new THREE.ShaderMaterial(PortalShader), 'tDiffuse');
+const finalComposer = new EffectComposer(renderer);
+finalComposer.addPass(renderScene);
+finalComposer.addPass(finalPass);
+finalComposer.addPass(portalPass);
+
+const _hidden = [];
+function isBloomObj(o){ return o.layers.test(bloomLayerMask); }
+function hideNonBloom(o){ if((o.isMesh||o.isPoints||o.isLine||o.isSprite) && !isBloomObj(o) && o.visible){ o.visible=false; _hidden.push(o); } }
+function restoreVis(){ for(let i=0;i<_hidden.length;i++) _hidden[i].visible = true; _hidden.length = 0; }
+
+// Declared before resize() (which runs immediately below, not deferred) —
+// `let`/`const` are block-scoped with no hoisted initialization, so
+// referencing stagePinned inside resize() before this line would throw
+// ReferenceError and halt the entire module script.
+let stagePinned = true;
+
+function resize(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w,h); bloomComposer.setSize(w,h); finalComposer.setSize(w,h);
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  // If the window resizes while already unpinned (position:absolute), the
+  // fixed pixel `top` computed at unpin-time (from the OLD window height)
+  // would go stale — recompute it so the stage stays flush against
+  // whatever section follows it (#domains) regardless of when the resize happens.
+  if(!stagePinned) stage.style.top = scrollSpacer.offsetHeight - window.innerHeight + 'px';
+}
+window.addEventListener('resize', resize); resize();
+
+function getRawProgress(){
+  const rect = scrollSpacer.getBoundingClientRect();
+  const total = rect.height - window.innerHeight;
+  const scrolled = -rect.top;
+  return Math.min(1, Math.max(0, total>0 ? scrolled/total : 0));
+}
+function smoothstep(a,b,x){ const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); }
+
+// .hero-stage is position:fixed (covers the viewport the whole time the
+// sequence plays), NOT position:sticky. A sticky element needs roughly one
+// extra viewport-height of real physical scroll before it fully releases
+// and whatever's below it becomes visible — that unavoidable release lag
+// was the actual cause of an earlier duplicate-Archives bug. Instead, JS
+// flips `.hero-stage` to position:absolute at exactly the scroll frame f
+// reaches 1.0, pinned at its current on-screen spot (via `top`) — so it
+// simply stops tracking the viewport and whatever follows it in the
+// document (#domains) is visible immediately, zero dead-zone. The Archives
+// cards themselves are inside .hero-stage (see .hero-archives-behind) and
+// are already fully revealed well before f reaches 1.0.
+function setStagePinned(shouldBePinned){
+  if(shouldBePinned === stagePinned) return;
+  stagePinned = shouldBePinned;
+  if(shouldBePinned){
+    stage.classList.remove('hero-stage-unpinned');
+    stage.style.top = '';
+  } else {
+    // Anchor at the spacer's own height so the stage ends its life sitting
+    // exactly at the bottom of the 2000vh spacer, flush against whatever
+    // comes right after it in the document (#domains) — not wherever
+    // the viewport happened to be mid-scroll.
+    stage.style.top = scrollSpacer.offsetHeight - window.innerHeight + 'px';
+    stage.classList.add('hero-stage-unpinned');
+  }
+}
+
+/* ---- LOCKED settings, 2026-07-31 sweet spot — see project memory before touching. ----
+   beats/tParticles/tExplode below are the ORIGINAL 1300vh-relative values,
+   each multiplied by 1300/2000=0.65 to land at the exact same absolute
+   scroll distance now that .hero-scroll-spacer is 2000vh (the extra 700vh
+   tail is new territory for the merged Archives phase, not a rescale of
+   anything that existed before). archCfg/cardsCfg are ported verbatim from
+   transparent-explosion-lab.html's approved settings — ef below reproduces
+   the same 0..1 sweep over comparable scroll distance as that lab's own
+   dedicated 700vh spacer, so those fractions carry over unchanged. */
+const beats = { b1:0.117, b2:0.3575, b3:0.5525, b4:0.572, b5:0.585, b6:0.64025 };
+const motion = { growPeak:0.9, spinAdd:0.1, faceTurn:-1.5 };
+const eyeCfg = { rest:0, peak:1 };
+const dollyCfg = { approach:0.55, pushThrough:0.18 };
+const portalCfg = { aberrMax:0.009, vigMax:1.3, flashColor:new THREE.Color(0xF5C842), helmetBloom:0.55 };
+const hallCfg = { walkDistance:DEFAULT_WALK_DISTANCE, bloomStrength:0.6, throneMultiplier:2.4, hallFadeStart:0.85 };
+const timelineCfg = { tParticles:0.325, tExplode:0.61425, tFlyEnd:1.0 };
+// LOCKED, approved in transparent-explosion-lab.html — both expressed as
+// fractions of `ef` (0..1 across tExplode..tFlyEnd), not of raw f.
+const archCfg = { fadeInStart:0.30, fadeInEnd:0.50 };
+const cardsCfg = { start:0.77, end:1.0 };
+
+let hasSwapped = false;
+const eyeWorldPos = new THREE.Vector3();
+const camLookAt = new THREE.Vector3();
+const pageLoadTime = performance.now();
+
+function updateFrame(){
+  const f = getRawProgress();
+  // Pin/unpin exactly at f===1 (getRawProgress clamps there once the
+  // spacer's scrollable range is used up) — this is what lets #domains
+  // become visible with zero dead-zone once the sequence finishes, instead
+  // of needing an extra viewport of scroll to release a position:sticky
+  // element.
+  setStagePinned(f < 1);
+
+  const inHold = f <= beats.b1;
+  const inGrow = f > beats.b1 && f <= beats.b2;
+  const inDolly = f > beats.b2 && f <= beats.b3;
+  const inFlashIn = f > beats.b3 && f <= beats.b4;
+  const inFlashOut = f > beats.b4 && f <= beats.b5;
+  const inHallPhase = f >= beats.b4;
+  const inExplosionPhase = f > timelineCfg.tExplode;
+
+  const growT = smoothstep(beats.b1, beats.b2, f);
+  const dollyT = smoothstep(beats.b2, beats.b3, f);
+  const flashUp = smoothstep(beats.b3, beats.b4, f);
+  const flashDown = 1 - smoothstep(beats.b4, beats.b5, f);
+  const uFlash = f <= beats.b4 ? flashUp : flashDown;
+  const walkT = smoothstep(beats.b5, beats.b6, f);
+
+  /* ---- helmet ---- */
+  const growth = REST.growth + growT * (motion.growPeak - REST.growth);
+  modelRig.scale.setScalar(growth);
+  const turnT = smoothstep(0, 1, Math.min(f, beats.b4));
+  modelRig.rotation.y = REST.rotation.y + turnT * motion.faceTurn + (growT + dollyT) * motion.spinAdd * 0.15;
+  modelRig.rotation.x = REST.rotation.x;
+
+  eyeGlowSprite.getWorldPosition(eyeWorldPos);
+  const eyeIntensity = eyeCfg.rest + Math.max(growT, dollyT + flashUp*1.6) * (eyeCfg.peak - eyeCfg.rest);
+  eyeLight.intensity = eyeIntensity * 0.5;
+  eyeGlowSprite.material.opacity = Math.min(1, 0.6 + eyeIntensity*0.08);
+  const pulse = 1 + Math.sin(performance.now()*0.002)*0.05;
+  eyeGlowSprite.scale.setScalar(0.22 * (1 + eyeIntensity*0.12) * pulse);
+
+  const dir = new THREE.Vector3().subVectors(REST.cameraPos, eyeWorldPos).normalize();
+  const approachPos = new THREE.Vector3().copy(eyeWorldPos).addScaledVector(dir, dollyCfg.approach);
+  const throughPos = new THREE.Vector3().copy(eyeWorldPos).addScaledVector(dir, -dollyCfg.pushThrough);
+  const approachT = smoothstep(beats.b1, beats.b3, f);
+
+  if(f >= beats.b4 && !hasSwapped){
+    hasSwapped = true;
+    modelRig.visible = false;
+    hallGroup.visible = true;
+  } else if(f < beats.b4 && hasSwapped){
+    hasSwapped = false;
+    modelRig.visible = true;
+    hallGroup.visible = false;
+  }
+
+  const restLightFloor = 1 - rimCfg.restDarkness;
+  const mainRigT = restLightFloor + (1-restLightFloor)*growT;
+  const helmetLightMul = inHallPhase ? 0 : mainRigT;
+  helmetLights.forEach((l,i)=>{ l.intensity = helmetLightBaseIntensity[i]*helmetLightMul; });
+
+  const rimT = inHallPhase ? 0 : (1 - growT);
+  const rimColorObj = rimCfg.color === 'blue' ? rimBlueColor : rimGoldColor;
+  rimLightL.color.copy(rimColorObj); rimLightR.color.copy(rimColorObj);
+  rimLightL.intensity = rimCfg.intensity * rimT;
+  rimLightR.intensity = rimCfg.intensity * rimT * 0.85;
+
+  const hallEntryT = inHallPhase ? 1 : 0;
+  const hallLateFadeT = smoothstep(hallCfg.hallFadeStart, 1.0, walkT);
+  const hallVisibilityT = hallEntryT * (1 - hallLateFadeT);
+  hallLights.forEach((l,i)=>{ l.intensity = hallLightTargetIntensity[i]*hallVisibilityT; });
+
+  const architectureVisible = hallVisibilityT > 0.04;
+  columnMeshes.forEach(m=>{ m.visible = architectureVisible; });
+  entablatureMeshes.forEach(m=>{ m.visible = architectureVisible; });
+  if(floorMesh) floorMesh.visible = architectureVisible;
+  if(ceilMesh) ceilMesh.visible = architectureVisible;
+  if(dustPoints) dustPoints.visible = architectureVisible;
+
+  const tSec = performance.now()*0.001;
+  const throneBreath = 1 + Math.sin(tSec*0.4)*0.08;
+
+  const throneBaseIntensity = 4.0 * hallCfg.throneMultiplier;
+  throneLight.intensity = inHallPhase ? throneBaseIntensity*(0.9+0.15*Math.sin(tSec*0.4))*hallVisibilityT : 0;
+
+  shaftMeshes.forEach((grp,i)=>{
+    const op = inHallPhase ? (0.5+0.06*Math.sin(tSec*0.5+i)) * shaftStrength * hallVisibilityT : 0;
+    grp.children.forEach(mesh=>{ mesh.material.opacity = op; });
+  });
+
+  /* ---- camera ---- */
+  if(!inHallPhase){
+    let camPos = REST.cameraPos.clone().lerp(approachPos, approachT);
+    if(inFlashIn){ camPos = approachPos.clone().lerp(throughPos, flashUp); }
+    camera.position.copy(camPos);
+    camLookAt.copy(eyeWorldPos);
+    camera.lookAt(camLookAt);
+  } else {
+    const walkClampF = Math.min(f, timelineCfg.tExplode);
+    const walkPosT = smoothstep(beats.b5, beats.b6, walkClampF);
+    const walkPos = new THREE.Vector3(0, CAM_EYE_Y, HALL_ENTRANCE_Z - walkPosT*hallCfg.walkDistance);
+    const toExplodeT = smoothstep(beats.b5, timelineCfg.tExplode, f);
+    const settleT = smoothstep(0.6, 1.0, toExplodeT);
+    camera.position.copy(walkPos).lerp(EXPLOSION_CAM_POS, settleT);
+    camera.rotation.set(0.1 * (1 - settleT), 0, 0);
+  }
+  // once inExplosionPhase, camera HOLDS at its final walk position.
+
+  /* ---- UI fade ---- */
+  const heroTextOpacity = Math.max(0, Math.min(1, 1 - growT - flashUp));
+  heroCore.style.opacity = heroTextOpacity;
+  // .hero-role has no CSS entrance animation of its own (see the CSS
+  // comment on .hero-role) — its one-time delayed appearance on load
+  // (originally a `heroFadeUp 1s ease 2.1s forwards` keyframe) is
+  // replicated here in JS and combined with the same scroll-driven fade
+  // heroCore uses, so both effects apply correctly on the same property.
+  const roleEntranceT = Math.max(0, Math.min(1, (performance.now() - pageLoadTime - 2100) / 1000));
+  heroRole.style.opacity = roleEntranceT * heroTextOpacity;
+  scrollCue.style.opacity = Math.max(0, 1 - f*6);
+
+  /* ---- post-fx ---- */
+  const distortT = f <= beats.b4 ? Math.max(dollyT*0.6, flashUp) : flashDown;
+  portalPass.material.uniforms.uAberration.value = portalCfg.aberrMax * distortT;
+  portalPass.material.uniforms.uVignette.value = portalCfg.vigMax * distortT;
+  portalPass.material.uniforms.uFlash.value = Math.pow(uFlash, 1.4);
+  portalPass.material.uniforms.uFlashColor.value.copy(portalCfg.flashColor);
+
+  if(dustPoints) dustPoints.material.uniforms.uTime.value = tSec;
+
+  if(inExplosionPhase){
+    const ef = smoothstep(timelineCfg.tExplode, timelineCfg.tFlyEnd, f);
+    const explodeT = smoothstep(0, explosionBeats.m2, ef);
+    const flyT = smoothstep(explosionBeats.m2, 1.0, ef);
+
+    const explodeFadeScale = (1 - explodeT*0.5);
+    throneGlow.scale.set(THRONE_LOCAL_SCALE*throneBreath*explodeFadeScale, THRONE_LOCAL_SCALE*throneBreath*explodeFadeScale, 1);
+    throneGlow.material.opacity = 1 - explodeT;
+    throneGlow.visible = explodeT < 1;
+
+    particleSystem.visible = flyT < 1;
+    particleSystem.material.uniforms.uTime.value = performance.now()*0.001;
+    particleSystem.material.uniforms.uExplodeT.value = explodeT;
+    particleSystem.material.uniforms.uFlyT.value = flyT;
+    particleSystem.material.uniforms.uFrameZ.value = camera.position.z;
+    particleSystem.material.uniforms.uFadeOut.value = flyT;
+    particleSystem.material.uniforms.uIdleFadeIn.value = 1;
+
+    // Archives reveal + card cycling — ported verbatim from
+    // transparent-explosion-lab.html, driven by the same `ef` that's
+    // already animating the explosion/fly-out above (no separate section,
+    // no second scroll-progress read). Cards fade in while particles are
+    // still mid-flight (fadeInStart/End sit inside explosionBeats.m2..1.0),
+    // then cycle one at a time via translateX in the back half of `ef`.
+    const archFadeT = smoothstep(archCfg.fadeInStart, archCfg.fadeInEnd, ef);
+    archivesBehind.style.opacity = archFadeT;
+    const cycleT = smoothstep(cardsCfg.start, cardsCfg.end, ef);
+    const activeIdx = Math.min(archivesCards.length-1, Math.floor(cycleT * archivesCards.length));
+    archivesCards.forEach(function(card, i){
+      card.classList.toggle('active', i === activeIdx);
+      card.classList.toggle('exit-left', i < activeIdx);
+    });
+    archivesDots.forEach(function(d, i){ d.classList.toggle('active', i === activeIdx); });
+
+    // Court theme fades out over the same archives fade-in window instead
+    // of a separate #galleryOuter rect read (that section no longer exists).
+    if(window.__courtTheme && !window.__courtTheme.paused){
+      window.__courtTheme.volume = window.__THEME_FULL_VOLUME * (1 - archFadeT);
+    }
+
+    bloomPass.strength = explosionCfg.bloomStrength;
+    bloomPass.radius = 0.65;
+    bloomPass.threshold = 0.1;
+  } else {
+    // Scrolled back above tExplode — archives must hide and reset to card 0
+    // again, and the theme volume return to full, so re-entering the
+    // explosion phase later replays the cycle correctly from the start.
+    archivesBehind.style.opacity = 0;
+    archivesCards.forEach(function(card, i){
+      card.classList.toggle('active', i === 0);
+      card.classList.remove('exit-left');
+    });
+    archivesDots.forEach(function(d, i){ d.classList.toggle('active', i === 0); });
+    if(window.__courtTheme) window.__courtTheme.volume = window.__THEME_FULL_VOLUME;
+
+    throneGlow.scale.set(THRONE_LOCAL_SCALE*throneBreath, THRONE_LOCAL_SCALE*throneBreath, 1);
+    throneGlow.material.opacity = hallEntryT;
+    throneGlow.visible = hallEntryT > 0;
+
+    const clusterFadeInEnd = Math.min(timelineCfg.tParticles + 0.02, timelineCfg.tExplode);
+    const clusterIdleT = inHallPhase ? smoothstep(timelineCfg.tParticles, clusterFadeInEnd, f) : 0;
+    particleSystem.visible = clusterIdleT > 0;
+    particleSystem.material.uniforms.uTime.value = performance.now()*0.001;
+    particleSystem.material.uniforms.uExplodeT.value = 0;
+    particleSystem.material.uniforms.uFlyT.value = 0;
+    particleSystem.material.uniforms.uFrameZ.value = camera.position.z;
+    particleSystem.material.uniforms.uFadeOut.value = 0;
+    particleSystem.material.uniforms.uIdleFadeIn.value = clusterIdleT;
+
+    bloomPass.strength = inHallPhase ? hallCfg.bloomStrength : portalCfg.helmetBloom;
+    bloomPass.radius = 0.6;
+    bloomPass.threshold = 0.15;
+  }
+}
+
+function animate(){
+  updateFrame();
+  scene.traverse(hideNonBloom);
+  bloomComposer.render();
+  restoreVis();
+  finalComposer.render();
+  requestAnimationFrame(animate);
+}
+animate();
 </script>
 </body>
 </html>
