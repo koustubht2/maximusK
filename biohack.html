@@ -2359,7 +2359,7 @@ function updateFrame(){
   /* ---- helmet ---- */
   const growth = REST.growth + growT * (motion.growPeak - REST.growth);
   modelRig.scale.setScalar(growth);
-  const turnT = smoothstep(0, 1, Math.min(f, beats.b4));
+  const turnT = smoothstep(0, beats.b4, f);
   modelRig.rotation.y = REST.rotation.y + turnT * motion.faceTurn + (growT + dollyT) * motion.spinAdd * 0.15;
   modelRig.rotation.x = REST.rotation.x;
 
@@ -2447,7 +2447,9 @@ function updateFrame(){
   // heroCore uses, so both effects apply correctly on the same property.
   const roleEntranceT = Math.max(0, Math.min(1, (performance.now() - pageLoadTime - 2100) / 1000));
   heroRole.style.opacity = roleEntranceT * heroTextOpacity;
-  scrollCue.style.opacity = Math.max(0, 1 - f*6);
+  // 6 / 0.65 rescaled alongside beats/timelineCfg so this fades out at the
+  // same absolute scroll distance as before the 1300vh->2000vh spacer change.
+  scrollCue.style.opacity = Math.max(0, 1 - f*9.2308);
 
   /* ---- post-fx ---- */
   const distortT = f <= beats.b4 ? Math.max(dollyT*0.6, flashUp) : flashDown;
