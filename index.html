@@ -9283,6 +9283,11 @@ window.canonicalJson = function(obj) {
             </div>
           </div>
 
+          <!-- 'Calculated' tag → expands the full arithmetic, so the number is
+               never a black box. Label says 'estimated' when wake/bed is guessed. -->
+          <button id="loopSweepCalcTag" type="button" style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(199,154,78,0.8);background:rgba(199,154,78,0.07);border:1px solid rgba(199,154,78,0.2);border-radius:20px;padding:5px 11px;cursor:pointer;margin-top:9px">calculated ⌄</button>
+          <div id="loopSweepCalcPanel" style="display:none;font-family:var(--font-mono);font-size:9px;line-height:1.75;color:var(--text-tertiary);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:11px 12px;margin-top:8px"></div>
+
           <div id="loopSweepBreak" style="font-family:var(--font-mono);font-size:9px;line-height:1.65;color:var(--text-tertiary);margin-top:9px"></div>
 
           <div id="loopSweepClaimList" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
@@ -30123,6 +30128,32 @@ function switchTab(tab) {
   function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
   function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 
+  // ── Oura sleep lookup ─────────────────────────────────────────────────────
+  // IMPORTANT: `oura_cache_v2.sleep` is the /daily_sleep endpoint — SCORES ONLY.
+  // It has no bedtime_end and no total_sleep_duration. Wake/bed times and sleep
+  // duration live in `detailedSleep` (the /sleep endpoint). Reading them off
+  // .sleep silently yields undefined, which is why the sweep kept falling back
+  // to "assumed 07:00". Mirrors the Health tab (findBestSleepForDate, ~17698)
+  // and Peak (~25165): a day can hold several sessions (naps), so take the one
+  // with the longest total_sleep_duration = the main overnight sleep.
+  function detailedSleepArr(){
+    var oura = ls('oura_cache_v2');
+    if(!oura) return [];
+    var ds = oura.detailedSleep;
+    // cache stores {detailedSleep:{data:[…]}}, but some readers normalise it to
+    // a bare array — accept either rather than assume one
+    if(ds && ds.data && ds.data.length) return ds.data;
+    if(Array.isArray(ds)) return ds;
+    return [];
+  }
+  function bestSleepForDay(dayStr){
+    var m = detailedSleepArr().filter(function(s){ return s.day === dayStr; });
+    if(!m.length) return null;
+    return m.reduce(function(a,b){
+      return (b.total_sleep_duration||0) > (a.total_sleep_duration||0) ? b : a;
+    });
+  }
+
   // ── Body state — auto-filled, no user input ───────────────────────────────
   // Mirrors the maths already used by buildSnapshot() so numbers agree.
   function bodyState(){
@@ -30131,8 +30162,9 @@ function switchTab(tab) {
     try {
       var oura = ls('oura_cache_v2');
       if(oura){
-        var sArr = (oura.sleep && oura.sleep.data) || [];
-        var s = sArr.find(function(x){ return x.day===today; }) || sArr[sArr.length-1];
+        // total_sleep_duration is on detailedSleep (/sleep), NOT on .sleep
+        // (/daily_sleep, scores only) — reading it off .sleep gives undefined.
+        var s = bestSleepForDay(today);
         if(s && s.total_sleep_duration) b.sleep_h = Math.round(s.total_sleep_duration/360)/10;
         var rArr = (oura.readiness && oura.readiness.data) || [];
         var r = rArr.find(function(x){ return x.day===today; }) || rArr[rArr.length-1];
@@ -30259,6 +30291,34 @@ function switchTab(tab) {
     i.type = 'text'; i.className = 'gs-modal-input';
     i.placeholder = placeholder || '';
     return i;
+  }
+  function timeInput(){
+    var i = document.createElement('input');
+    i.type = 'time'; i.className = 'gs-modal-input';
+    // color-scheme:dark so the native picker isn't a white box on a dark modal
+    i.style.cssText = 'color-scheme:dark;-webkit-appearance:none;appearance:none;min-width:0';
+    return i;
+  }
+  // 'HH:MM' → minutes from midnight, or null when unset/malformed
+  function hmToMin(v){
+    if(!v) return null;
+    var p = String(v).split(':');
+    if(p.length < 2) return null;
+    var h = parseInt(p[0],10), m = parseInt(p[1],10);
+    if(isNaN(h) || isNaN(m)) return null;
+    return h*60 + m;
+  }
+  // Length of a from→to slot. A `to` earlier than `from` is read as crossing
+  // midnight (e.g. 23:30 → 00:30) rather than as a negative block.
+  function slotMinutes(from, to){
+    var a = hmToMin(from), b = hmToMin(to);
+    if(a==null || b==null) return null;
+    if(b < a) b += 24*60;
+    return b - a;
+  }
+  function fmtSlot(from, to){
+    if(!from || !to) return '';
+    return from + '–' + to;
   }
 
   // ── The 90-second gate ────────────────────────────────────────────────────
@@ -30519,7 +30579,8 @@ function switchTab(tab) {
   //               RAW — a big number is the honest one. It shrinks by being
   //               claimed (named), never by being massaged.
   // ══════════════════════════════════════════════════════════════════════════
-  var SWEEP_KEY  = 'goals_loop_sweep_v1';   // { 'YYYY-MM-DD': [{id,label,minutes,mts,del}] }
+  var SWEEP_KEY  = 'goals_loop_sweep_v1';   // { 'YYYY-MM-DD': [{id,label,minutes,from?,to?,mts,del}] }
+                                            // from/to are 'HH:MM' and optional — older rows have neither
   var GYM_EST_MIN = 60;   // po_coach_workout_done stores no duration — labelled estimate
   var CLAIM_LABELS = ['Cooking / eating','Commute','Chores','Admin','Errands','Family / friends','Rest','Getting ready','Waiting','Something else'];
 
@@ -30542,44 +30603,67 @@ function switchTab(tab) {
   // For today that's wake → now (the day isn't over). For a past day the day IS
   // over, so it's wake → that night's bedtime, falling back to midnight — using
   // wake→now on a past date would silently invent hours.
+  var WAKE_FALLBACK_H = 7;
   function wakingMinutes(day){
     day = day || todayStr();
     var isToday = (day === todayStr());
     var now = new Date();
-    var wakeH = 7, wakeM = 0, src = 'assumed 07:00 wake';
-    var bedMin = null;   // minutes-from-midnight the day ended, past days only
+    var wakeH = WAKE_FALLBACK_H, wakeM = 0;
+    var wakeSourced = false;      // true = from the ring, false = the 07:00 guess
+    var bedMin = null;            // minutes-from-midnight the day ended
+    var bedSourced = false;
     try {
-      var oura = ls('oura_cache_v2');
-      var sArr = (oura && oura.sleep && oura.sleep.data) || [];
-      // exact day only — falling back to the newest record would attribute
-      // today's wake time to whatever past date is being viewed
-      var s = sArr.filter(function(x){ return x.day === day; })[0];
-      if(!s && isToday) s = sArr[sArr.length-1];
-      if(s && s.bedtime_end){
-        var be = new Date(s.bedtime_end);
+      // Oura tags a sleep period's `day` with the WAKE-UP date, so last night's
+      // sleep is filed under `day` itself. Exact match only — no fallback to the
+      // newest record, which would pin today's wake time onto a past date.
+      var rec = bestSleepForDay(day);
+      if(rec && rec.bedtime_end){
+        var be = new Date(rec.bedtime_end);
         if(!isNaN(be.getTime()) && dayKey(be) === day){
           wakeH = be.getHours(); wakeM = be.getMinutes();
-          src = 'awake since ' + hhmm(wakeH, wakeM);
+          wakeSourced = true;
         }
       }
-      if(!isToday){
-        // the night STARTING on `day` is logged by Oura under the next date
-        var nx = new Date(day + 'T12:00:00'); nx.setDate(nx.getDate()+1);
-        var nextRec = sArr.filter(function(x){ return x.day === dayKey(nx); })[0];
-        if(nextRec && nextRec.bedtime_start){
-          var bs = new Date(nextRec.bedtime_start);
-          if(!isNaN(bs.getTime()) && dayKey(bs) === day){
-            bedMin = bs.getHours()*60 + bs.getMinutes();
-            src += ' · to bed ' + hhmm(bs.getHours(), bs.getMinutes());
-          }
+      // The night that STARTS on `day` is filed under the NEXT date, so that's
+      // where this day's bedtime comes from.
+      var nx = new Date(day + 'T12:00:00'); nx.setDate(nx.getDate()+1);
+      var nextRec = bestSleepForDay(dayKey(nx));
+      if(nextRec && nextRec.bedtime_start){
+        var bs = new Date(nextRec.bedtime_start);
+        if(!isNaN(bs.getTime()) && dayKey(bs) === day){
+          bedMin = bs.getHours()*60 + bs.getMinutes();
+          bedSourced = true;
         }
       }
     } catch(e){}
-    var endMin;
-    if(isToday)          endMin = now.getHours()*60 + now.getMinutes();
-    else if(bedMin!=null) endMin = bedMin;
-    else { endMin = 24*60; src += ' · full day assumed'; }
-    return { minutes: Math.max(0, endMin - (wakeH*60 + wakeM)), source: src };
+
+    var wakeMin = wakeH*60 + wakeM;
+    var endMin, endLabel, endSourced;
+    if(isToday){
+      // the day isn't over — measure to now, not to a bedtime that hasn't happened
+      endMin = now.getHours()*60 + now.getMinutes();
+      endLabel = 'now ' + hhmm(now.getHours(), now.getMinutes());
+      endSourced = true;
+    } else if(bedMin != null){
+      endMin = bedMin;
+      endLabel = 'to bed ' + hhmm(Math.floor(bedMin/60), bedMin%60);
+      endSourced = true;
+    } else {
+      endMin = 24*60;
+      endLabel = 'midnight (assumed)';
+      endSourced = false;
+    }
+
+    var wakeLabel = hhmm(wakeH, wakeM) + (wakeSourced ? '' : ' (assumed)');
+    return {
+      minutes: Math.max(0, endMin - wakeMin),
+      source: (wakeSourced ? 'awake since ' : 'assumed ') + hhmm(wakeH, wakeM) +
+              (isToday ? '' : ' · ' + endLabel),
+      // everything renderSweep needs to show its working
+      wakeLabel: wakeLabel, endLabel: endLabel,
+      wakeSourced: wakeSourced, bedSourced: bedSourced, endSourced: endSourced,
+      fullySourced: wakeSourced && endSourced
+    };
   }
 
   // Everything already provable from logs that exist today. Each line is
@@ -30621,12 +30705,13 @@ function switchTab(tab) {
 
   function claimedToday(day){
     var today = day || todayStr();
-    var mins = 0;
-    live(load().urges).forEach(function(u){ if(u.date === today) mins += (u.minutes || 0); });
+    // split by origin so the working can show where Claimed came from
+    var urgeMin = 0, sweepMin = 0;
+    live(load().urges).forEach(function(u){ if(u.date === today) urgeMin += (u.minutes || 0); });
     var sweep = loadSweep();
     var rows = (sweep[today] || []).filter(function(o){ return o && !o.del; });
-    rows.forEach(function(r){ mins += (r.minutes || 0); });
-    return { minutes: mins, rows: rows };
+    rows.forEach(function(r){ sweepMin += (r.minutes || 0); });
+    return { minutes: urgeMin + sweepMin, rows: rows, urgeMin: urgeMin, sweepMin: sweepMin };
   }
 
   function sweepNumbers(day){
@@ -30638,8 +30723,10 @@ function switchTab(tab) {
     return {
       day: day,
       waking: wake.minutes, wakeSource: wake.source,
+      wake: wake,                       // labels + sourced flags, for the working
       accounted: acc.minutes, accountedParts: acc.parts,
       claimed: clm.minutes, claimRows: clm.rows,
+      claimedUrgeMin: clm.urgeMin, claimedSweepMin: clm.sweepMin,
       unaccounted: Math.max(0, un),
       // if the tracked total exceeds waking minutes something is double-counted
       overflow: un < 0 ? -un : 0
@@ -30660,6 +30747,46 @@ function switchTab(tab) {
     if(meta) meta.textContent = s.wakeSource;
 
     var past = isPastView();
+
+    // ── 'Calculated' tag + the working ──
+    // Unaccounted is a remainder, so it's only trustworthy if you can see what
+    // it was subtracted from. The tag says 'estimated' the moment any input is
+    // a guess, rather than presenting a guess as a measurement.
+    var tag = document.getElementById('loopSweepCalcTag');
+    var pan = document.getElementById('loopSweepCalcPanel');
+    if(tag && pan){
+      var w = s.wake || {};
+      tag.textContent = (w.fullySourced ? 'calculated' : 'estimated') +
+                        (pan.style.display === 'none' ? ' ⌄' : ' ⌃');
+      tag.style.color       = w.fullySourced ? 'rgba(199,154,78,0.8)' : 'rgba(255,255,255,0.4)';
+      tag.style.background  = w.fullySourced ? 'rgba(199,154,78,0.07)' : 'rgba(255,255,255,0.03)';
+      tag.style.borderColor = w.fullySourced ? 'rgba(199,154,78,0.2)'  : 'rgba(255,255,255,0.1)';
+
+      var L = [];
+      L.push('Awake ' + (w.wakeLabel || '—') + ' → ' + (w.endLabel || '—') + '  =  ' + fmtMin(s.waking));
+      L.push('');
+      L.push('− Accounted ' + fmtMin(s.accounted) + (s.accountedParts.length ? ':' : '  (nothing tracked)'));
+      s.accountedParts.forEach(function(p){
+        L.push('    ' + p.label + ' ' + fmtMin(p.minutes) + (p.est ? '  (estimate — no duration recorded)' : ''));
+      });
+      L.push('');
+      L.push('− Claimed ' + fmtMin(s.claimed) + ':');
+      L.push('    urge log ' + fmtMin(s.claimedUrgeMin || 0));
+      L.push('    claimed blocks ' + fmtMin(s.claimedSweepMin || 0));
+      L.push('');
+      L.push('= Unaccounted ' + fmtMin(s.unaccounted));
+      if(s.overflow) L.push('  (tracked exceeds waking by ' + fmtMin(s.overflow) + ' — something is double-counted)');
+      L.push('');
+      // name every assumption explicitly instead of burying it
+      if(!w.wakeSourced) L.push('! Wake time assumed ' + hhmm(WAKE_FALLBACK_H,0) + ' — no Oura sleep record for this day.');
+      else               L.push('✓ Wake time from Oura (bedtime_end).');
+      if(past){
+        if(w.bedSourced) L.push('✓ Bedtime from Oura (bedtime_start of the next night).');
+        else             L.push('! Bedtime unknown — counted to midnight.');
+      }
+      pan.textContent = L.join('\n');
+      pan.style.whiteSpace = 'pre-wrap';
+    }
 
     var brk = document.getElementById('loopSweepBreak');
     if(brk){
@@ -30683,8 +30810,12 @@ function switchTab(tab) {
         s.claimRows.forEach(function(r){
           var row = document.createElement('div');
           row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 11px;background:rgba(199,154,78,0.04);border:1px solid rgba(199,154,78,0.12);border-radius:12px';
+          var slotTxt = fmtSlot(r.from, r.to);
           row.innerHTML =
-            '<div style="flex:1;min-width:0;font-size:12px;color:var(--text-primary)">' + esc(r.label) + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:12px;color:var(--text-primary)">' + esc(r.label) + '</div>' +
+              (slotTxt ? '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">' + esc(slotTxt) + '</div>' : '') +
+            '</div>' +
             '<div style="font-family:var(--font-mono);font-size:10px;color:#c79a4e">' + fmtMin(r.minutes||0) + '</div>';
           if(!past){
             var x = document.createElement('button');
@@ -30723,9 +30854,45 @@ function switchTab(tab) {
     box.appendChild(field('What was it', labelRow.el));
     var freeIn = textInput('Or type it');
     box.appendChild(field('', freeIn));
+
+    // ── When: optional from → to slot ──
+    // Filling both auto-computes minutes, so the usual case is two taps and no
+    // arithmetic. Minutes stays editable for when you only know the duration.
+    var fromIn = timeInput(), toIn = timeInput();
+    var slotRow = document.createElement('div');
+    slotRow.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px';
+    var dash = document.createElement('div');
+    dash.textContent = '→';
+    dash.style.cssText = 'font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)';
+    slotRow.appendChild(fromIn); slotRow.appendChild(dash); slotRow.appendChild(toIn);
+    box.appendChild(field('When (optional)', slotRow));
+
     var minIn = textInput('Minutes');
     minIn.setAttribute('inputmode','numeric');
     box.appendChild(field('How long', minIn));
+
+    // derived-minutes hint, only shown once a full slot is entered
+    var slotNote = document.createElement('div');
+    slotNote.style.cssText = 'font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:6px;display:none';
+    box.appendChild(slotNote);
+
+    var minsTouched = false;   // don't overwrite a number typed by hand
+    minIn.addEventListener('input', function(){ minsTouched = true; });
+    function syncFromSlot(){
+      var sm = slotMinutes(fromIn.value, toIn.value);
+      if(sm == null){ slotNote.style.display = 'none'; return; }
+      slotNote.style.display = '';
+      if(sm === 0){
+        slotNote.textContent = 'Start and end are the same — set an end time.';
+        return;
+      }
+      slotNote.textContent = fmtSlot(fromIn.value, toIn.value) + ' = ' + fmtMin(sm) +
+        (hmToMin(toIn.value) < hmToMin(fromIn.value) ? ' (crosses midnight)' : '');
+      // the slot is the more specific answer, so it wins unless minutes was typed
+      if(!minsTouched) minIn.value = sm;
+    }
+    fromIn.addEventListener('change', syncFromSlot);
+    toIn.addEventListener('change', syncFromSlot);
 
     var err = document.createElement('div');
     err.style.cssText = 'font-family:var(--font-mono);font-size:9px;color:rgba(239,68,68,0.9);margin-top:6px;display:none';
@@ -30742,11 +30909,21 @@ function switchTab(tab) {
     btns.querySelector('#loopClaimSave').addEventListener('click', function(){
       var label = (freeIn.value.trim() || labelRow.get() || '').toString().trim();
       var mins  = parseInt(minIn.value, 10) || 0;
+      var from  = fromIn.value || '', to = toIn.value || '';
+      var slotM = slotMinutes(from, to);
       if(!label){ err.style.display=''; err.textContent = 'Name it first.'; return; }
+      // half a slot is ambiguous — say so instead of silently ignoring it
+      if((from && !to) || (to && !from)){
+        err.style.display=''; err.textContent = 'Set both times, or clear them and just enter minutes.';
+        return;
+      }
+      if(slotM === 0){ err.style.display=''; err.textContent = 'That slot is zero minutes long.'; return; }
       if(mins <= 0){ err.style.display=''; err.textContent = 'How many minutes?'; return; }
       var sw = loadSweep(), day = todayStr();   // always files under today
       if(!Array.isArray(sw[day])) sw[day] = [];
-      sw[day].push({ id:'cl_'+Date.now(), label:label, minutes:mins, ts:Date.now(), mts:Date.now() });
+      var rec = { id:'cl_'+Date.now(), label:label, minutes:mins, ts:Date.now(), mts:Date.now() };
+      if(slotM != null){ rec.from = from; rec.to = to; }
+      sw[day].push(rec);
       saveSweep(sw);
       close();
       render();
@@ -31609,6 +31786,14 @@ function switchTab(tab) {
     // phase 3
     var sBtn = document.getElementById('loopSweepBtn');
     if(sBtn) sBtn.addEventListener('click', showClaimModal);
+
+    var cTag = document.getElementById('loopSweepCalcTag');
+    if(cTag) cTag.addEventListener('click', function(){
+      var p = document.getElementById('loopSweepCalcPanel');
+      if(!p) return;
+      p.style.display = (p.style.display === 'none') ? '' : 'none';
+      try { renderSweep(); } catch(e){}   // repaint so the chevron flips
+    });
 
     // phase 4
     var sec = document.getElementById('loopExpSection');
