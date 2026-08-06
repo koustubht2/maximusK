@@ -9214,6 +9214,183 @@ window.canonicalJson = function(obj) {
       </div>
     </div>
 
+    <!-- ===== LOOP (urges / thoughts / behavioural patterns) ===== -->
+    <div class="gs-rel-wrap" id="loopWrap">
+      <div class="gs-rel-header" id="loopHeader">
+        <span style="font-size:16px">◎</span>
+        <span style="font-family:var(--pk-serif,Georgia,serif);font-size:15px;color:var(--text-primary)">Loop</span>
+        <svg id="loopChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--text-tertiary);transition:transform 0.25s" class=""><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      <div class="gs-rel-body" id="loopBody" style="display:none">
+
+        <!-- 4 stat tiles — label tracks the topbar date selector -->
+        <div class="gs-rel-sub-label" style="margin-bottom:6px" id="loopTodayLabel">Today</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">
+          <div style="background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.12);border-radius:14px;padding:10px 6px;text-align:center">
+            <div id="loopStatUrges" style="font-size:20px;font-weight:800;color:#c79a4e;line-height:1">0</div>
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Urges</div>
+          </div>
+          <div style="background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.12);border-radius:14px;padding:10px 6px;text-align:center">
+            <div id="loopStatResisted" style="font-size:20px;font-weight:800;color:#c79a4e;line-height:1">0</div>
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Resisted</div>
+          </div>
+          <div style="background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.12);border-radius:14px;padding:10px 6px;text-align:center">
+            <div id="loopStatClaimed" style="font-size:20px;font-weight:800;color:#c79a4e;line-height:1">0m</div>
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Claimed</div>
+          </div>
+          <div style="background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.12);border-radius:14px;padding:10px 6px;text-align:center">
+            <div id="loopStatClarity" style="font-size:20px;font-weight:800;color:#c79a4e;line-height:1">0</div>
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:3px">Clarity</div>
+          </div>
+        </div>
+
+        <!-- Morning re-ask: yesterday's give-ins, judged with a clear head -->
+        <div id="loopReaskWrap" style="display:none;margin-bottom:12px;padding:12px;background:rgba(199,154,78,0.05);border:1px solid rgba(199,154,78,0.14);border-radius:14px">
+          <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(199,154,78,0.7);margin-bottom:8px">With a clear head — was it worth it?</div>
+          <div id="loopReaskList" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <!-- Capture buttons — hidden on past days (a log would misfile under today) -->
+        <div id="loopCaptureRow" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button id="loopUrgeBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(239,68,68,0.85);background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.22);border-radius:12px;padding:11px 8px;cursor:pointer">I have an urge</button>
+          <button id="loopThoughtBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(199,154,78,0.85);background:rgba(199,154,78,0.07);border:1px solid rgba(199,154,78,0.22);border-radius:12px;padding:11px 8px;cursor:pointer">Log a thought</button>
+        </div>
+        <div id="loopReadOnlyNote" style="display:none;font-family:var(--font-mono);font-size:9px;line-height:1.6;color:var(--text-tertiary);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:10px 12px">Past day — read only. Tap the date to come back to today and log.</div>
+
+        <!-- Today's event log -->
+        <div class="gs-rel-sub-label" style="margin-top:14px;margin-bottom:6px">Log</div>
+        <div id="loopLogList" style="display:flex;flex-direction:column;gap:6px"></div>
+
+        <!-- ===== EVENING SWEEP (phase 3) — the three numbers ===== -->
+        <div id="loopSweepSection" style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+            <div class="gs-rel-sub-label" style="margin:0">Where the day went</div>
+            <div id="loopSweepMeta" style="font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary);margin-left:auto"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div style="background:rgba(99,200,130,0.06);border:1px solid rgba(99,200,130,0.14);border-radius:14px;padding:11px 9px;text-align:center">
+              <div id="loopSweepAccounted" style="font-size:18px;font-weight:800;color:rgba(99,200,130,0.95);line-height:1">0m</div>
+              <div style="font-family:var(--font-mono);font-size:7.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:5px">Accounted</div>
+            </div>
+            <div style="background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.14);border-radius:14px;padding:11px 9px;text-align:center">
+              <div id="loopSweepClaimed" style="font-size:18px;font-weight:800;color:#c79a4e;line-height:1">0m</div>
+              <div style="font-family:var(--font-mono);font-size:7.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:5px">Claimed</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:11px 9px;text-align:center">
+              <div id="loopSweepUnaccounted" style="font-size:18px;font-weight:800;color:var(--text-secondary);line-height:1">0m</div>
+              <div style="font-family:var(--font-mono);font-size:7.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);margin-top:5px">Unaccounted</div>
+            </div>
+          </div>
+
+          <div id="loopSweepBreak" style="font-family:var(--font-mono);font-size:9px;line-height:1.65;color:var(--text-tertiary);margin-top:9px"></div>
+
+          <div id="loopSweepClaimList" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
+
+          <button id="loopSweepBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(199,154,78,0.85);background:rgba(199,154,78,0.07);border:1px solid rgba(199,154,78,0.22);border-radius:12px;padding:11px 14px;cursor:pointer;width:100%;margin-top:10px">Claim unaccounted time</button>
+        </div>
+
+        <!-- ===== WIRING ENGINE (phase 2) — deterministic pattern analysis ===== -->
+        <div id="loopWiringSection" style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <div class="gs-rel-sub-label" style="margin:0">What it's wired to</div>
+            <div id="loopWiringMeta" style="font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary);margin-left:auto"></div>
+          </div>
+
+          <!-- Confidence / not-enough-data banner -->
+          <div id="loopWiringGate" style="display:none;font-family:var(--font-mono);font-size:9px;line-height:1.6;color:var(--text-tertiary);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:11px 12px;margin-top:8px"></div>
+
+          <!-- The one domino -->
+          <div id="loopDominoCard" style="display:none;margin-top:10px;padding:13px;background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.16);border-radius:14px">
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(199,154,78,0.7);margin-bottom:6px">The one domino</div>
+            <div id="loopDominoText" style="font-size:13px;line-height:1.5;color:var(--text-primary)"></div>
+            <div id="loopDominoStat" style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:7px"></div>
+          </div>
+
+          <!-- Ranked triggers, cost-weighted -->
+          <div id="loopTriggerWrap" style="display:none;margin-top:12px">
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:7px">Triggers by cost</div>
+            <div id="loopTriggerList" style="display:flex;flex-direction:column;gap:7px"></div>
+          </div>
+
+          <!-- Chains: cue → urge → outcome sequences that repeat -->
+          <div id="loopChainWrap" style="display:none;margin-top:14px">
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:7px">Repeating chains</div>
+            <div id="loopChainList" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+
+          <!-- Preconditions: body state that loads the gun -->
+          <div id="loopPrecondWrap" style="display:none;margin-top:14px">
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:7px">Loads the gun</div>
+            <div id="loopPrecondList" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+
+          <!-- Thought → urge coupling -->
+          <div id="loopCoupleWrap" style="display:none;margin-top:14px">
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:7px">Thoughts that become urges</div>
+            <div id="loopCoupleList" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+
+          <!-- Leak ledger: time + regret by urge -->
+          <div id="loopLeakWrap" style="display:none;margin-top:14px">
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:7px">Leak ledger — 30 days</div>
+            <div id="loopLeakList" style="display:flex;flex-direction:column;gap:6px"></div>
+            <div id="loopLeakTotal" style="font-family:var(--font-mono);font-size:9px;color:rgba(199,154,78,0.8);margin-top:9px;text-align:right"></div>
+          </div>
+
+          <!-- Narration (Gemini reads the computed numbers, never invents them) -->
+          <div id="loopNarrateWrap" style="display:none;margin-top:14px">
+            <button id="loopNarrateBtn" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(199,154,78,0.85);background:rgba(199,154,78,0.07);border:1px solid rgba(199,154,78,0.22);border-radius:12px;padding:10px 14px;cursor:pointer;width:100%">↻ Read the wiring</button>
+            <div id="loopNarrateOut" style="display:none;font-size:12.5px;line-height:1.65;color:var(--text-secondary);background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:13px;margin-top:9px;white-space:pre-wrap"></div>
+          </div>
+        </div>
+
+        <!-- ===== EXPERIMENT (phase 4) — one hypothesis, 14 days, a verdict ===== -->
+        <div id="loopExpSection" style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)">
+          <div class="gs-rel-sub-label" style="margin:0 0 9px">The experiment</div>
+
+          <!-- no active experiment: the proposal, derived from the one domino -->
+          <div id="loopExpProposal" style="display:none">
+            <div id="loopExpProposalText" style="font-size:12.5px;line-height:1.55;color:var(--text-secondary);background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:13px"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px">
+              <button id="loopExpAccept" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(99,200,130,0.9);background:rgba(99,200,130,0.08);border:1px solid rgba(99,200,130,0.25);border-radius:12px;padding:11px 8px;cursor:pointer">Run it 14 days</button>
+              <button id="loopExpReject" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:11px 8px;cursor:pointer">Not this one</button>
+            </div>
+          </div>
+
+          <!-- active experiment -->
+          <div id="loopExpActive" style="display:none;padding:13px;background:rgba(199,154,78,0.06);border:1px solid rgba(199,154,78,0.16);border-radius:14px">
+            <div id="loopExpActiveText" style="font-size:13px;line-height:1.5;color:var(--text-primary)"></div>
+            <div id="loopExpActiveMeta" style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:7px"></div>
+            <div id="loopExpProgress" style="height:4px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;margin-top:9px">
+              <div id="loopExpProgressBar" style="height:100%;width:0%;background:rgba(199,154,78,0.6)"></div>
+            </div>
+            <div id="loopExpLive" style="font-family:var(--font-mono);font-size:9px;line-height:1.6;color:var(--text-tertiary);margin-top:9px"></div>
+            <button id="loopExpAbandon" style="font-family:var(--font-mono);font-size:8.5px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,138,138,0.6);background:transparent;border:1px solid rgba(239,68,68,0.18);border-radius:10px;padding:7px 12px;cursor:pointer;margin-top:10px">Abandon</button>
+          </div>
+
+          <!-- verdict at day 14 -->
+          <div id="loopExpVerdict" style="display:none;padding:13px;border-radius:14px">
+            <div id="loopExpVerdictText" style="font-size:13px;line-height:1.55;color:var(--text-primary)"></div>
+            <div id="loopExpVerdictStat" style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:7px"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+              <button id="loopExpGraduate" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(99,200,130,0.9);background:rgba(99,200,130,0.08);border:1px solid rgba(99,200,130,0.25);border-radius:12px;padding:11px 8px;cursor:pointer">Keep it</button>
+              <button id="loopExpDrop" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:11px 8px;cursor:pointer">Drop it</button>
+            </div>
+          </div>
+
+          <!-- graduated / dropped history -->
+          <div id="loopExpPastWrap" style="display:none;margin-top:12px">
+            <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:7px">Verdicts</div>
+            <div id="loopExpPastList" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+
+          <div id="loopExpEmpty" style="display:none;font-family:var(--font-mono);font-size:9px;line-height:1.6;color:var(--text-tertiary)"></div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <!-- ===== THIS WEEK TAB ===== -->
@@ -14505,6 +14682,9 @@ setInterval(updateDayBar, 60 * 1000);
     // Re-render the JARVIS tab from cache if it's the active tab, so synced
     // patterns/debrief/chat from another device replace the stale local copy.
     try { if (typeof window._jvRepaintFromCache === 'function') window._jvRepaintFromCache(); } catch(e) {}
+    // LOOP (urges/thoughts, Evening Sweep, Wiring, Experiment) — without this the
+    // merged data sits in localStorage while the card keeps showing stale numbers.
+    try { if (typeof window._loopRender === 'function') window._loopRender(); } catch(e) {}
   }
 
   // Keys that hold a per-day ARRAY of id'd items → merge by id, not whole-key LWW.
@@ -14530,6 +14710,51 @@ setInterval(updateDayBar, 60 * 1000);
     remoteArr.forEach(add);
     localArr.forEach(add);
     return order.map(function(id){ return byId[id]; });
+  }
+
+  // Keys holding an OBJECT whose properties are each an array of id'd items
+  // (e.g. goals_loop_v1 = {urges:[…], thoughts:[…]}). Whole-key LWW would let a
+  // urge logged on the phone lose to a thought logged on the laptop, so merge
+  // each sub-array by item id instead.
+  // goals_loop_v1       = {urges:[…], thoughts:[…]}
+  // goals_loop_sweep_v1 = {'YYYY-MM-DD':[…claims]} — same shape, day-keyed
+  function _isIdArrayObjKey(k) {
+    return k === 'goals_loop_v1' || k === 'goals_loop_sweep_v1';
+  }
+  // Merge {prop: [{id,..}]} objects by unioning each array by item id.
+  // Item-level conflicts resolve by the item's own `mts` (modified stamp) so an
+  // edit or a soft-delete made on one device wins over the other's stale copy.
+  // Returns null if the shapes aren't usable (caller falls back to LWW).
+  function _mergeIdArrayObj(localJson, remoteVal) {
+    var localObj;
+    try { localObj = JSON.parse(localJson); } catch(e) { return null; }
+    if (!localObj || typeof localObj !== 'object' || Array.isArray(localObj)) return null;
+    if (!remoteVal || typeof remoteVal !== 'object' || Array.isArray(remoteVal)) return null;
+    var out = {}, props = {};
+    Object.keys(localObj).forEach(function(p){ props[p] = 1; });
+    Object.keys(remoteVal).forEach(function(p){ props[p] = 1; });
+    Object.keys(props).forEach(function(p){
+      var lv = localObj[p], rv = remoteVal[p];
+      if (Array.isArray(lv) || Array.isArray(rv)) {
+        var byId = {}, order = [];
+        function add(item) {
+          if (!item || typeof item !== 'object') return;
+          var id = item.id != null ? item.id : JSON.stringify(item);
+          if (!(id in byId)) { order.push(id); byId[id] = item; return; }
+          // same id on both sides — keep whichever was modified later
+          var prev = byId[id];
+          var pm = prev.mts || prev.ts || 0, im = item.mts || item.ts || 0;
+          if (im >= pm) byId[id] = item;
+        }
+        (Array.isArray(rv) ? rv : []).forEach(add);
+        (Array.isArray(lv) ? lv : []).forEach(add);
+        out[p] = order.map(function(id){ return byId[id]; });
+      } else {
+        // non-array property (e.g. config) — prefer local, fall back to remote
+        out[p] = (lv !== undefined) ? lv : rv;
+      }
+    });
+    return out;
   }
 
   function applyRemote(remote) {
@@ -14573,6 +14798,18 @@ setInterval(updateDayBar, 60 * 1000);
             // adopt the newer of the two timestamps so future merges stay correct
             const newTs = Math.max(theirTs, sMeta.ts[k] || 0);
             if (newTs > (sMeta.ts[k] || 0)) { sMeta.ts[k] = newTs; delete sMeta.del[k]; metaChanged = true; }
+            continue;
+          }
+        }
+        // Loop store holds {urges:[…], thoughts:[…]} under one key. Same problem
+        // as above but nested one level, so merge each sub-array by item id.
+        if (_isIdArrayObjKey(k) && haveLocal) {
+          const mergedObj = _mergeIdArrayObj(localStorage.getItem(k), rKeys[k]);
+          if (mergedObj != null) {
+            const mergedJson = JSON.stringify(mergedObj);
+            if (localStorage.getItem(k) !== mergedJson) { origSet(k, mergedJson); changed = true; }
+            const newTs2 = Math.max(theirTs, sMeta.ts[k] || 0);
+            if (newTs2 > (sMeta.ts[k] || 0)) { sMeta.ts[k] = newTs2; delete sMeta.del[k]; metaChanged = true; }
             continue;
           }
         }
@@ -29823,6 +30060,1590 @@ function switchTab(tab) {
       statePinAuth(pinHash);
     }
   })();
+})();
+</script>
+
+<!-- ========== LOOP ENGINE (urges / thoughts / behavioural patterns) ========== -->
+<script>
+(function(){
+  // Single blob, goals_ prefix → auto-synced by the po-goals engine.
+  // Whole-key LWW (not in _isIdArrayKey) — same trade-off as goals_nofap_v1.
+  var LOOP_KEY = 'goals_loop_v1';
+
+  var URGES      = ['Movie','Series','Download','Website','Scroll','Snack','Shop','Game','Message someone','Abandon task','Rabbit hole'];
+  var CUE_EXT    = ['At my desk','In bed','Phone in hand','Laptop open','Notification','Someone said something','Alone','Just got home'];
+  var CUE_INT    = ['Bored','Anxious','Lonely','Ashamed','Tired','Understimulated','Overwhelmed','Just finished something hard'];
+  var CUE_PRE    = ['Checking the time','Finished a task','Between tasks','Eating','Waiting for something','Woke up','Reading messages','Nothing / idle'];
+  var PAYOFFS    = ['Relief','Numbness','Stimulation','Escape','Connection','Avoidance'];
+  var COSTS      = ['Time','Sleep','Task undone','Streak broken','Money','Mood'];
+  var DISTORTION = ['Catastrophizing','All-or-nothing','Mind-reading','Comparison','Discounting wins','Time scarcity'];
+  var OUTCOMES   = ['Resisted','Delayed','Partial','Gave in'];
+
+  function load(){
+    try {
+      var d = JSON.parse(localStorage.getItem(LOOP_KEY)) || {};
+      if(!Array.isArray(d.urges))    d.urges = [];
+      if(!Array.isArray(d.thoughts)) d.thoughts = [];
+      return d;
+    } catch(e){ return { urges:[], thoughts:[] }; }
+  }
+  // Cross-device merge (_mergeIdArrayObj in the po-goals engine) unions urges and
+  // thoughts by item id, so a HARD delete on one device gets resurrected by the
+  // other's stale copy. Records are therefore soft-deleted (`del:1`) and every
+  // write stamps `mts` so the merge can tell which side edited last. Tombstones
+  // are pruned once they're older than the sync horizon.
+  var TOMB_KEEP_DAYS = 90;
+  function save(d){
+    var cutoff = Date.now() - TOMB_KEEP_DAYS*86400000;
+    function prune(arr){
+      return (arr||[]).filter(function(o){ return !(o.del && (o.mts||o.ts||0) < cutoff); });
+    }
+    d.urges    = prune(d.urges);
+    d.thoughts = prune(d.thoughts);
+    localStorage.setItem(LOOP_KEY, JSON.stringify(d));
+  }
+  // Visible records only — everything that reads the store goes through this.
+  function live(arr){
+    return (arr||[]).filter(function(o){ return o && !o.del; });
+  }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function dayKey(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+  // ── Topbar date selector ──────────────────────────────────────────────────
+  // The ‹ › arrows in the topbar set an app-wide view date and fire
+  // 'viewdate-changed'. Day-scoped reads use viewDay() so pressing ‹ shows that
+  // day's log instead of today's. Past days are READ-ONLY app-wide, matching
+  // Gym/Stack/Health/Water — so capture and delete are suppressed there, and a
+  // write can never be misfiled under today while a past day is on screen.
+  function viewDay(){
+    try { if(typeof window.getViewDate === 'function') return window.getViewDate() || todayStr(); } catch(e){}
+    return todayStr();
+  }
+  function isPastView(){ return viewDay() !== todayStr(); }
+  function hhmm(h,m){ return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+  function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+  function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+
+  // ── Body state — auto-filled, no user input ───────────────────────────────
+  // Mirrors the maths already used by buildSnapshot() so numbers agree.
+  function bodyState(){
+    var b = {}, today = todayStr();
+    // sleep + readiness from the Oura cache
+    try {
+      var oura = ls('oura_cache_v2');
+      if(oura){
+        var sArr = (oura.sleep && oura.sleep.data) || [];
+        var s = sArr.find(function(x){ return x.day===today; }) || sArr[sArr.length-1];
+        if(s && s.total_sleep_duration) b.sleep_h = Math.round(s.total_sleep_duration/360)/10;
+        var rArr = (oura.readiness && oura.readiness.data) || [];
+        var r = rArr.find(function(x){ return x.day===today; }) || rArr[rArr.length-1];
+        if(r){
+          if(r.score!=null) b.readiness = r.score;
+          if(r.contributors && r.contributors.hrv_balance!=null) b.hrv_balance = r.contributors.hrv_balance;
+        }
+      }
+    } catch(e){}
+    // active caffeine (t½ = 5.5h, timeHour decimal) — same as buildSnapshot
+    try {
+      var logs = ls('goals_caffeine_'+today) || [];
+      if(logs.length){
+        var nowMs = Date.now(), base = new Date(); base.setHours(0,0,0,0);
+        b.caffeine_mg = Math.round(logs.reduce(function(sum,l){
+          var t = l.timeHour!=null ? base.getTime()+l.timeHour*3600000 : (l.ts||0);
+          return sum + (l.mg||0)*Math.pow(0.5, ((nowMs-t)/3600000)/5.5);
+        }, 0));
+      }
+    } catch(e){}
+    // hours since last meal
+    try {
+      var meals = ls('goals_vitality_'+today) || [];
+      var last = 0;
+      meals.forEach(function(m){ if(m.ts && m.ts>last) last = m.ts; });
+      if(last) b.hours_since_meal = Math.round(((Date.now()-last)/3600000)*10)/10;
+      b.meals_logged = meals.length;
+    } catch(e){}
+    // days since training
+    try {
+      var done = ls('po_coach_workout_done') || {};
+      if(done[today]) b.days_since_gym = 0;
+      else {
+        var keys = Object.keys(done).sort().reverse();
+        if(keys.length) b.days_since_gym = Math.floor((Date.now() - new Date(keys[0]+'T12:00:00').getTime())/86400000);
+      }
+    } catch(e){}
+    return b;
+  }
+
+  function slotNow(){
+    var h = new Date().getHours();
+    if(h < 12) return 'Morning';
+    if(h < 17) return 'Afternoon';
+    if(h < 22) return 'Evening';
+    return 'Night';
+  }
+
+  // ── Clarity streak: consecutive days with ANY honest log ──────────────────
+  // Rewards logging, not abstinence — so bad days still get recorded.
+  function clarityStreak(d){
+    var days = {};
+    live(d.urges).forEach(function(u){ if(u.date) days[u.date] = 1; });
+    live(d.thoughts).forEach(function(t){ if(t.date) days[t.date] = 1; });
+    var streak = 0, cur = new Date();
+    // today doesn't break the streak if nothing logged yet
+    if(!days[dayKey(cur)]) cur.setDate(cur.getDate()-1);
+    while(days[dayKey(cur)]){ streak++; cur.setDate(cur.getDate()-1); }
+    return streak;
+  }
+
+  // Thought texts the user has logged before, most frequent first → one-tap chips
+  function recurringThoughts(d, limit){
+    var counts = {};
+    live(d.thoughts).forEach(function(t){
+      var k = (t.text||'').trim();
+      if(k) counts[k] = (counts[k]||0)+1;
+    });
+    return Object.keys(counts)
+      .sort(function(a,b){ return counts[b]-counts[a]; })
+      .slice(0, limit||8)
+      .map(function(k){ return { text:k, n:counts[k] }; });
+  }
+
+  // ── Chip helper: returns {el, get} for a multi- or single-select chip row ──
+  function chipRow(items, opts){
+    opts = opts||{};
+    var multi = !!opts.multi, accent = opts.accent || '199,154,78';
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
+    var sel = [];
+    function paint(btn, on){
+      btn.style.background   = on ? 'rgba('+accent+',0.14)' : 'rgba(255,255,255,0.04)';
+      btn.style.borderColor  = on ? 'rgba('+accent+',0.35)' : 'rgba(255,255,255,0.1)';
+      btn.style.color        = on ? 'rgb('+accent+')'       : 'rgba(255,255,255,0.5)';
+    }
+    items.forEach(function(it){
+      var label = typeof it==='string' ? it : it.label;
+      var value = typeof it==='string' ? it : (it.value!=null?it.value:it.label);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.style.cssText = 'font-family:var(--font-mono);font-size:10px;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer';
+      btn.textContent = label;
+      paint(btn, false);
+      btn.addEventListener('click', function(){
+        if(multi){
+          var i = sel.indexOf(value);
+          if(i>=0){ sel.splice(i,1); paint(btn,false); } else { sel.push(value); paint(btn,true); }
+        } else {
+          sel = [value];
+          Array.prototype.forEach.call(wrap.children, function(c){ paint(c,false); });
+          paint(btn,true);
+        }
+      });
+      wrap.appendChild(btn);
+    });
+    return { el: wrap, get: function(){ return multi ? sel.slice() : (sel[0]!=null?sel[0]:null); } };
+  }
+
+  function fieldLabel(text){
+    var d = document.createElement('div');
+    d.style.cssText = 'font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase';
+    d.textContent = text;
+    return d;
+  }
+  function field(labelText, node){
+    var w = document.createElement('div');
+    w.appendChild(fieldLabel(labelText));
+    w.appendChild(node);
+    return w;
+  }
+  function textInput(placeholder){
+    var i = document.createElement('input');
+    i.type = 'text'; i.className = 'gs-modal-input';
+    i.placeholder = placeholder || '';
+    return i;
+  }
+
+  // ── The 90-second gate ────────────────────────────────────────────────────
+  // Turns the log from a diary into an intervention: breathe, see the last
+  // cost, then decide. Both paths get logged.
+  function showGate(onProceed){
+    var d = load();
+    var lastGaveIn = live(d.urges).filter(function(u){ return u.outcome==='Gave in'; })
+                            .sort(function(a,b){ return (b.ts||0)-(a.ts||0); })[0];
+    var costLine = '';
+    if(lastGaveIn){
+      var days = Math.floor((Date.now()-(lastGaveIn.ts||Date.now()))/86400000);
+      var when = days<=0 ? 'today' : (days===1 ? 'yesterday' : days+' days ago');
+      costLine = 'Last time — ' + when + ' — ' + esc(lastGaveIn.urge||'an urge') +
+                 (lastGaveIn.minutes ? ' cost you ' + lastGaveIn.minutes + ' minutes.' : ' won.');
+      if(lastGaveIn.worthIt === false) costLine += ' You said it wasn’t worth it.';
+    }
+
+    var overlay = document.createElement('div');
+    overlay.className = 'gs-modal-overlay';
+    overlay.innerHTML =
+      '<div class="gs-modal-box" style="max-width:320px;align-items:center;text-align:center">' +
+        '<div class="gs-modal-title" style="color:#c79a4e">Ninety seconds</div>' +
+        '<div style="font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,0.45);margin-top:-4px">Breathe. The urge will crest and fall.</div>' +
+        '<div style="position:relative;width:120px;height:120px;margin:6px 0">' +
+          '<div id="loopGateOrb" style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 40%, rgba(199,154,78,0.45), rgba(199,154,78,0.06) 70%);border:1px solid rgba(199,154,78,0.3);transition:transform 4s ease-in-out"></div>' +
+          '<div id="loopGateNum" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--pk-serif,Georgia,serif);font-size:34px;font-weight:300;color:#e6c98a">90</div>' +
+        '</div>' +
+        (costLine ? '<div style="font-size:11px;color:rgba(255,255,255,0.55);line-height:1.5;padding:0 4px">'+costLine+'</div>' : '') +
+        '<div class="gs-modal-row" style="width:100%;margin-top:4px">' +
+          '<button id="loopGatePassed" class="gs-modal-btn primary" style="background:rgba(99,200,130,0.12);border-color:rgba(99,200,130,0.25);color:rgba(99,200,130,0.9)">It passed</button>' +
+          '<button id="loopGateLog" class="gs-modal-btn cancel">Log it now</button>' +
+        '</div>' +
+        '<button id="loopGateSkip" style="background:none;border:none;color:rgba(255,255,255,0.3);font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;padding:4px">Skip the wait</button>' +
+      '</div>';
+
+    var box  = overlay.querySelector('.gs-modal-box');
+    var numEl= box.querySelector('#loopGateNum');
+    var orb  = box.querySelector('#loopGateOrb');
+    var left = 90, timer = null, breatheTimer = null, big = false;
+
+    function stop(){ if(timer) clearInterval(timer); if(breatheTimer) clearInterval(breatheTimer); }
+    function close(){ stop(); if(overlay.parentNode) document.body.removeChild(overlay); }
+
+    // 4s in / 4s out breath
+    orb.style.transform = 'scale(0.72)';
+    breatheTimer = setInterval(function(){
+      big = !big;
+      orb.style.transform = big ? 'scale(1)' : 'scale(0.72)';
+    }, 4000);
+    setTimeout(function(){ orb.style.transform = 'scale(1)'; big = true; }, 60);
+
+    timer = setInterval(function(){
+      left--;
+      numEl.textContent = left > 0 ? left : '0';
+      if(left <= 0){
+        stop();
+        numEl.style.fontSize = '15px';
+        numEl.textContent = 'Still want it?';
+      }
+    }, 1000);
+
+    box.querySelector('#loopGatePassed').addEventListener('click', function(){
+      // resisted, no full chain needed — one tap and done
+      var data = load();
+      data.urges.push({
+        id:'lp_'+Date.now(), date:todayStr(), slot:slotNow(), ts:Date.now(), mts:Date.now(),
+        outcome:'Resisted', viaGate:true, gateSecondsWaited:90-Math.max(0,left),
+        body:bodyState()
+      });
+      save(data);
+      close();
+      render();
+    });
+    box.querySelector('#loopGateLog').addEventListener('click', function(){ close(); onProceed(); });
+    box.querySelector('#loopGateSkip').addEventListener('click', function(){ close(); onProceed(); });
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) close(); });
+    document.body.appendChild(overlay);
+  }
+
+  // ── Urge chain modal ──────────────────────────────────────────────────────
+  function showUrgeChain(){
+    var overlay = document.createElement('div');
+    overlay.className = 'gs-modal-overlay';
+    var box = document.createElement('div');
+    box.className = 'gs-modal-box';
+    box.style.cssText += 'max-width:360px;max-height:88vh;overflow-y:auto';
+
+    var title = document.createElement('div');
+    title.className = 'gs-modal-title';
+    title.style.color = '#c79a4e';
+    title.textContent = 'The chain';
+    box.appendChild(title);
+
+    var hint = document.createElement('div');
+    hint.style.cssText = 'font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,0.4);margin-top:-4px';
+    hint.textContent = 'Only the first row is required.';
+    box.appendChild(hint);
+
+    var urgeRow = chipRow(URGES, { accent:'239,68,68' });
+    box.appendChild(field('Urge', urgeRow.el));
+
+    var extRow = chipRow(CUE_EXT, { multi:true });
+    box.appendChild(field('Where / what was around', extRow.el));
+
+    var intRow = chipRow(CUE_INT, { multi:true });
+    box.appendChild(field('What you felt', intRow.el));
+
+    var preRow = chipRow(CUE_PRE);
+    box.appendChild(field('What you were doing 5 min before', preRow.el));
+
+    // Free chips + text — no coupling to the task store
+    var avoidRow = chipRow(['A task','A message','A decision','A person','Nothing'], { multi:true });
+    box.appendChild(field('What were you avoiding?', avoidRow.el));
+    var avoidText = textInput('optional — name it');
+    avoidText.style.marginTop = '6px';
+    box.appendChild(avoidText);
+
+    var outRow = chipRow(OUTCOMES, { accent:'239,68,68' });
+    box.appendChild(field('Outcome', outRow.el));
+
+    var minsInput = document.createElement('input');
+    minsInput.type = 'number'; minsInput.className = 'gs-modal-input';
+    minsInput.min = '0'; minsInput.max = '900'; minsInput.placeholder = 'minutes';
+    minsInput.style.textAlign = 'center';
+    box.appendChild(field('Time it cost', minsInput));
+
+    var payRow = chipRow(PAYOFFS, { multi:true });
+    box.appendChild(field('What it gave you', payRow.el));
+
+    var costRow = chipRow(COSTS, { multi:true });
+    box.appendChild(field('What it cost', costRow.el));
+
+    var worthRow = chipRow([{label:'Worth it',value:'yes'},{label:'Not worth it',value:'no'}], { accent:'239,68,68' });
+    box.appendChild(field('Worth it?', worthRow.el));
+
+    var noteInput = textInput('optional note');
+    box.appendChild(field('Note', noteInput));
+
+    var row = document.createElement('div');
+    row.className = 'gs-modal-row';
+    row.innerHTML =
+      '<button id="loopChainSave" class="gs-modal-btn primary">Save</button>' +
+      '<button id="loopChainCancel" class="gs-modal-btn cancel">Cancel</button>';
+    box.appendChild(row);
+
+    box.querySelector('#loopChainSave').addEventListener('click', function(){
+      var urge = urgeRow.get();
+      if(!urge){
+        hint.textContent = 'Pick an urge first.';
+        hint.style.color = 'rgba(239,68,68,0.8)';
+        box.scrollTop = 0;
+        return;
+      }
+      var w = worthRow.get();
+      var data = load();
+      data.urges.push({
+        id:'lp_'+Date.now(), date:todayStr(), slot:slotNow(), ts:Date.now(), mts:Date.now(),
+        urge: urge,
+        cueExternal: extRow.get(),
+        cueInternal: intRow.get(),
+        cuePreceding: preRow.get(),
+        avoiding: avoidRow.get(),
+        avoidingNote: avoidText.value.trim() || null,
+        outcome: outRow.get() || null,
+        minutes: parseInt(minsInput.value,10) || 0,
+        payoff: payRow.get(),
+        cost: costRow.get(),
+        worthIt: w==null ? null : (w==='yes'),
+        note: noteInput.value.trim() || null,
+        body: bodyState()
+      });
+      save(data);
+      document.body.removeChild(overlay);
+      render();
+    });
+    box.querySelector('#loopChainCancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
+
+    overlay.appendChild(box);
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
+    document.body.appendChild(overlay);
+  }
+
+  // ── Thought modal ─────────────────────────────────────────────────────────
+  function showThoughtModal(){
+    var d = load();
+    var recur = recurringThoughts(d, 8);
+
+    var overlay = document.createElement('div');
+    overlay.className = 'gs-modal-overlay';
+    var box = document.createElement('div');
+    box.className = 'gs-modal-box';
+    box.style.cssText += 'max-width:360px;max-height:88vh;overflow-y:auto';
+
+    var title = document.createElement('div');
+    title.className = 'gs-modal-title';
+    title.style.color = '#c79a4e';
+    title.textContent = 'The thought';
+    box.appendChild(title);
+
+    var textIn = textInput('what is running in your head');
+    if(recur.length){
+      var recurRow = chipRow(recur.map(function(r){ return { label: r.text+'  ×'+r.n, value: r.text }; }));
+      box.appendChild(field('Again?', recurRow.el));
+      // tapping a recurring chip fills the text box
+      Array.prototype.forEach.call(recurRow.el.children, function(btn, i){
+        btn.addEventListener('click', function(){ textIn.value = recur[i].text; });
+      });
+    }
+    box.appendChild(field('Thought', textIn));
+
+    var distRow = chipRow(DISTORTION);
+    box.appendChild(field('Shape of it', distRow.el));
+
+    var gripRow = chipRow([1,2,3,4,5].map(function(n){ return { label:String(n), value:n }; }));
+    box.appendChild(field('Grip — how much did it move you?', gripRow.el));
+
+    var urgedRow = chipRow([{label:'Yes',value:'yes'},{label:'No',value:'no'}], { accent:'239,68,68' });
+    box.appendChild(field('Did it push you toward an urge?', urgedRow.el));
+
+    var row = document.createElement('div');
+    row.className = 'gs-modal-row';
+    row.innerHTML =
+      '<button id="loopThSave" class="gs-modal-btn primary">Save</button>' +
+      '<button id="loopThCancel" class="gs-modal-btn cancel">Cancel</button>';
+    box.appendChild(row);
+
+    box.querySelector('#loopThSave').addEventListener('click', function(){
+      var txt = textIn.value.trim();
+      if(!txt){ textIn.style.borderColor = 'rgba(239,68,68,0.5)'; return; }
+      var u = urgedRow.get();
+      var data = load();
+      data.thoughts.push({
+        id:'lt_'+Date.now(), date:todayStr(), slot:slotNow(), ts:Date.now(), mts:Date.now(),
+        text: txt,
+        distortion: distRow.get(),
+        grip: gripRow.get(),
+        ledToUrge: u==null ? null : (u==='yes'),
+        body: bodyState()
+      });
+      save(data);
+      document.body.removeChild(overlay);
+      render();
+    });
+    box.querySelector('#loopThCancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
+
+    overlay.appendChild(box);
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
+    document.body.appendChild(overlay);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // EVENING SWEEP (phase 3) — Accounted / Claimed / Unaccounted
+  // Invest time is already tracked elsewhere, so only the leaks need logging.
+  // ACCOUNTED  = minutes already provable from existing logs
+  // CLAIMED    = minutes you have owned up to in the urge log
+  // UNACCOUNTED = waking minutes so far today minus the two above. Deliberately
+  //               RAW — a big number is the honest one. It shrinks by being
+  //               claimed (named), never by being massaged.
+  // ══════════════════════════════════════════════════════════════════════════
+  var SWEEP_KEY  = 'goals_loop_sweep_v1';   // { 'YYYY-MM-DD': [{id,label,minutes,mts,del}] }
+  var GYM_EST_MIN = 60;   // po_coach_workout_done stores no duration — labelled estimate
+  var CLAIM_LABELS = ['Cooking / eating','Commute','Chores','Admin','Errands','Family / friends','Rest','Getting ready','Waiting','Something else'];
+
+  function loadSweep(){
+    try { return JSON.parse(localStorage.getItem(SWEEP_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveSweep(s){
+    // same soft-delete + prune contract as the loop store, for the same reason
+    var cutoff = Date.now() - TOMB_KEEP_DAYS*86400000;
+    Object.keys(s).forEach(function(day){
+      if(!Array.isArray(s[day])){ delete s[day]; return; }
+      s[day] = s[day].filter(function(o){ return !(o.del && (o.mts||0) < cutoff); });
+      if(!s[day].length) delete s[day];
+    });
+    localStorage.setItem(SWEEP_KEY, JSON.stringify(s));
+  }
+
+  // Waking minutes for the day on screen, from Oura's wake time when available.
+  // For today that's wake → now (the day isn't over). For a past day the day IS
+  // over, so it's wake → that night's bedtime, falling back to midnight — using
+  // wake→now on a past date would silently invent hours.
+  function wakingMinutes(day){
+    day = day || todayStr();
+    var isToday = (day === todayStr());
+    var now = new Date();
+    var wakeH = 7, wakeM = 0, src = 'assumed 07:00 wake';
+    var bedMin = null;   // minutes-from-midnight the day ended, past days only
+    try {
+      var oura = ls('oura_cache_v2');
+      var sArr = (oura && oura.sleep && oura.sleep.data) || [];
+      // exact day only — falling back to the newest record would attribute
+      // today's wake time to whatever past date is being viewed
+      var s = sArr.filter(function(x){ return x.day === day; })[0];
+      if(!s && isToday) s = sArr[sArr.length-1];
+      if(s && s.bedtime_end){
+        var be = new Date(s.bedtime_end);
+        if(!isNaN(be.getTime()) && dayKey(be) === day){
+          wakeH = be.getHours(); wakeM = be.getMinutes();
+          src = 'awake since ' + hhmm(wakeH, wakeM);
+        }
+      }
+      if(!isToday){
+        // the night STARTING on `day` is logged by Oura under the next date
+        var nx = new Date(day + 'T12:00:00'); nx.setDate(nx.getDate()+1);
+        var nextRec = sArr.filter(function(x){ return x.day === dayKey(nx); })[0];
+        if(nextRec && nextRec.bedtime_start){
+          var bs = new Date(nextRec.bedtime_start);
+          if(!isNaN(bs.getTime()) && dayKey(bs) === day){
+            bedMin = bs.getHours()*60 + bs.getMinutes();
+            src += ' · to bed ' + hhmm(bs.getHours(), bs.getMinutes());
+          }
+        }
+      }
+    } catch(e){}
+    var endMin;
+    if(isToday)          endMin = now.getHours()*60 + now.getMinutes();
+    else if(bedMin!=null) endMin = bedMin;
+    else { endMin = 24*60; src += ' · full day assumed'; }
+    return { minutes: Math.max(0, endMin - (wakeH*60 + wakeM)), source: src };
+  }
+
+  // Everything already provable from logs that exist today. Each line is
+  // sourced — nothing here is inferred except the gym block, which says so.
+  function accountedToday(day){
+    var today = day || todayStr(), parts = [], total = 0;
+    function add(label, mins, estimated){
+      if(mins > 0){ parts.push({ label:label, minutes:Math.round(mins), est:!!estimated }); total += Math.round(mins); }
+    }
+    // deep work — .dur is SECONDS
+    try {
+      var fs = ls('goals_focus_sessions') || [];
+      var fsec = 0;
+      fs.forEach(function(s){ if(s.date === today) fsec += (s.dur || 0); });
+      add('Deep work', fsec/60);
+    } catch(e){}
+    // meditation — .duration SECONDS, only streak-credited sessions
+    try {
+      var md = ls('goals_meditation_log_v1') || [];
+      var msec = 0;
+      md.forEach(function(e){ if(e.date === today && e.streakCredit) msec += (e.duration || 0); });
+      add('Meditation', msec/60);
+    } catch(e){}
+    // reading — minutesRead is optional; only count what was actually timed
+    try {
+      var rl = ls('goals_reading_log_v1') || [];
+      var rmin = 0;
+      rl.forEach(function(e){ if(e.date === today) rmin += (e.minutesRead || 0); });
+      add('Reading', rmin);
+    } catch(e){}
+    // gym — po_coach_workout_done records only {dateKey: ISO}, no duration.
+    // Flagged as an estimate rather than passed off as measured.
+    try {
+      var wd = ls('po_coach_workout_done') || {};
+      if(wd[today]) add('Gym', GYM_EST_MIN, true);
+    } catch(e){}
+    return { minutes: total, parts: parts };
+  }
+
+  function claimedToday(day){
+    var today = day || todayStr();
+    var mins = 0;
+    live(load().urges).forEach(function(u){ if(u.date === today) mins += (u.minutes || 0); });
+    var sweep = loadSweep();
+    var rows = (sweep[today] || []).filter(function(o){ return o && !o.del; });
+    rows.forEach(function(r){ mins += (r.minutes || 0); });
+    return { minutes: mins, rows: rows };
+  }
+
+  function sweepNumbers(day){
+    day = day || viewDay();
+    var wake = wakingMinutes(day);
+    var acc  = accountedToday(day);
+    var clm  = claimedToday(day);
+    var un   = wake.minutes - acc.minutes - clm.minutes;
+    return {
+      day: day,
+      waking: wake.minutes, wakeSource: wake.source,
+      accounted: acc.minutes, accountedParts: acc.parts,
+      claimed: clm.minutes, claimRows: clm.rows,
+      unaccounted: Math.max(0, un),
+      // if the tracked total exceeds waking minutes something is double-counted
+      overflow: un < 0 ? -un : 0
+    };
+  }
+  window._loopSweep = sweepNumbers;
+
+  function renderSweep(){
+    var sec = document.getElementById('loopSweepSection');
+    if(!sec) return;
+    var s = sweepNumbers();
+
+    document.getElementById('loopSweepAccounted').textContent   = fmtMin(s.accounted);
+    document.getElementById('loopSweepClaimed').textContent     = fmtMin(s.claimed);
+    document.getElementById('loopSweepUnaccounted').textContent = fmtMin(s.unaccounted);
+
+    var meta = document.getElementById('loopSweepMeta');
+    if(meta) meta.textContent = s.wakeSource;
+
+    var past = isPastView();
+
+    var brk = document.getElementById('loopSweepBreak');
+    if(brk){
+      var bits = s.accountedParts.map(function(p){
+        return p.label + ' ' + fmtMin(p.minutes) + (p.est ? ' (est)' : '');
+      });
+      var line = bits.length ? bits.join(' · ') : (past ? 'Nothing was tracked this day.' : 'Nothing tracked yet today.');
+      if(s.overflow) line += ' · tracked time exceeds waking hours by ' + fmtMin(s.overflow) + ' — something is double-counted';
+      brk.textContent = line;
+    }
+
+    // Past days are read-only — hide the claim button rather than let a click
+    // file the claim under today.
+    var sBtnEl = document.getElementById('loopSweepBtn');
+    if(sBtnEl) sBtnEl.style.display = past ? 'none' : '';
+
+    var cl = document.getElementById('loopSweepClaimList');
+    if(cl){
+      if(s.claimRows.length){
+        cl.innerHTML = '';
+        s.claimRows.forEach(function(r){
+          var row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 11px;background:rgba(199,154,78,0.04);border:1px solid rgba(199,154,78,0.12);border-radius:12px';
+          row.innerHTML =
+            '<div style="flex:1;min-width:0;font-size:12px;color:var(--text-primary)">' + esc(r.label) + '</div>' +
+            '<div style="font-family:var(--font-mono);font-size:10px;color:#c79a4e">' + fmtMin(r.minutes||0) + '</div>';
+          if(!past){
+            var x = document.createElement('button');
+            x.type = 'button';
+            x.textContent = '×';
+            x.style.cssText = 'background:transparent;border:none;color:rgba(255,138,138,0.4);cursor:pointer;font-size:16px;padding:0 4px;line-height:1';
+            x.addEventListener('click', function(){
+              var sw = loadSweep(), day = s.day, arr = sw[day] || [];
+              for(var i=0;i<arr.length;i++){
+                if(arr[i].id === r.id){ arr[i].del = 1; arr[i].mts = Date.now(); break; }
+              }
+              sw[day] = arr; saveSweep(sw); render();
+            });
+            row.appendChild(x);
+          }
+          cl.appendChild(row);
+        });
+      } else cl.innerHTML = '';
+    }
+  }
+
+  // Claim modal — name a block of unaccounted time so the number becomes real
+  function showClaimModal(){
+    if(isPastView()) return;   // read-only; button is hidden too, this is the backstop
+    var s = sweepNumbers();
+    var overlay = document.createElement('div');
+    overlay.className = 'gs-modal-overlay';
+    var box = document.createElement('div');
+    box.className = 'gs-modal-box';
+    box.innerHTML =
+      '<div style="font-family:var(--pk-serif,Georgia,serif);font-size:16px;color:var(--text-primary);margin-bottom:4px">Claim time</div>' +
+      '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-bottom:14px">' +
+        fmtMin(s.unaccounted) + ' unaccounted. Name it — no judgement, just the truth.</div>';
+
+    var labelRow = chipRow(CLAIM_LABELS, { accent:'199,154,78' });
+    box.appendChild(field('What was it', labelRow.el));
+    var freeIn = textInput('Or type it');
+    box.appendChild(field('', freeIn));
+    var minIn = textInput('Minutes');
+    minIn.setAttribute('inputmode','numeric');
+    box.appendChild(field('How long', minIn));
+
+    var err = document.createElement('div');
+    err.style.cssText = 'font-family:var(--font-mono);font-size:9px;color:rgba(239,68,68,0.9);margin-top:6px;display:none';
+    box.appendChild(err);
+
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px';
+    btns.innerHTML =
+      '<button type="button" id="loopClaimSave" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(199,154,78,0.9);background:rgba(199,154,78,0.08);border:1px solid rgba(199,154,78,0.25);border-radius:12px;padding:11px 8px;cursor:pointer">Claim it</button>' +
+      '<button type="button" id="loopClaimCancel" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:11px 8px;cursor:pointer">Cancel</button>';
+    box.appendChild(btns);
+
+    function close(){ if(overlay.parentNode) document.body.removeChild(overlay); }
+    btns.querySelector('#loopClaimSave').addEventListener('click', function(){
+      var label = (freeIn.value.trim() || labelRow.get() || '').toString().trim();
+      var mins  = parseInt(minIn.value, 10) || 0;
+      if(!label){ err.style.display=''; err.textContent = 'Name it first.'; return; }
+      if(mins <= 0){ err.style.display=''; err.textContent = 'How many minutes?'; return; }
+      var sw = loadSweep(), day = todayStr();   // always files under today
+      if(!Array.isArray(sw[day])) sw[day] = [];
+      sw[day].push({ id:'cl_'+Date.now(), label:label, minutes:mins, ts:Date.now(), mts:Date.now() });
+      saveSweep(sw);
+      close();
+      render();
+    });
+    btns.querySelector('#loopClaimCancel').addEventListener('click', close);
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) close(); });
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // WIRING ENGINE (phase 2)
+  // Deterministic FIRST. Every number in this section is computed from the logs
+  // by the code below. Gemini is only ever handed those finished numbers and
+  // asked to narrate them — it is never asked to find a pattern, because an LLM
+  // asked for patterns will invent ones that aren't in the data.
+  // ══════════════════════════════════════════════════════════════════════════
+  var W_DAYS      = 30;   // analysis window
+  var W_MIN_URGES = 8;    // below this the engine stays quiet rather than guess
+  var W_MIN_DAYS  = 5;    // …and wants this many distinct logged days
+  var W_MIN_N     = 2;    // a "pattern" needs at least this many occurrences
+  var W_MIN_SUB   = 3;    // a conditional rate needs this many records
+  var W_MIN_DELTA = 15;   // …and this many percentage points of difference
+
+  // Counter-moves are cue-specific and fixed — the app does not improvise advice.
+  var COUNTER = {
+    'Bored':'Pre-decide one 10-minute task for the boredom window, before it opens.',
+    'Anxious':'Two minutes of breathing before you touch a screen.',
+    'Lonely':'Send one real message instead. The urge is asking for contact.',
+    'Ashamed':'Write the shame down in the thought log. It shrinks on paper.',
+    'Tired':'This is a sleep problem wearing a willpower costume. Go to bed.',
+    'Understimulated':'Stack a hard task next to the dull one, not a screen.',
+    'Overwhelmed':'Write the next single action. Overwhelm is an unmade decision.',
+    'Just finished something hard':'Plan the reward before the work, or the urge picks it.',
+    'In bed':'Charge the phone in another room.',
+    'Phone in hand':'Phone in a drawer during this window, not face-down.',
+    'Laptop open':'Close the laptop when the task ends, not when the urge starts.',
+    'At my desk':'Leave the desk on task-end — the chair is part of the cue.',
+    'Notification':'Notifications off for the window. The cue is external and removable.',
+    'Alone':'Put the window somewhere with people in it.',
+    'Just got home':'Change the first 10 minutes at home — that slot is on autopilot.',
+    'Checking the time':'The clock check is the trigger. Watch instead of phone.',
+    'Finished a task':'Chain the next task start to the last one ending.',
+    'Between tasks':'Never end a task without naming the next one.',
+    'Nothing / idle':'Idle is the cue. Give the gap a default job.'
+  };
+
+  function gaveIn(u){ return u.outcome === 'Gave in'; }
+  function costMin(u){ return u.minutes || 0; }
+  function regretted(u){ return u.worthIt === false || u.worthItNextDay === false; }
+  function topCue(u){
+    if(u.cueInternal && u.cueInternal.length) return u.cueInternal[0];
+    if(u.cueExternal && u.cueExternal.length) return u.cueExternal[0];
+    return u.cuePreceding || null;
+  }
+  function pct(n,d){ return d ? Math.round(100*n/d) : 0; }
+  function fmtMin(m){ return m >= 60 ? (Math.round(m/6)/10)+'h' : m+'m'; }
+  function winFilter(arr){
+    var cut = Date.now() - W_DAYS*86400000;
+    return live(arr).filter(function(o){ return (o.ts||0) >= cut; });
+  }
+
+  // Returns the full computed analysis. Pure function of the log — no I/O,
+  // no AI. Also exposed as window._loopWiring for JARVIS + snapshot wiring.
+  function wiring(){
+    var d = load();
+    var U = winFilter(d.urges), T = winFilter(d.thoughts);
+    var days = {};
+    U.forEach(function(u){ if(u.date) days[u.date] = 1; });
+    T.forEach(function(t){ if(t.date) days[t.date] = 1; });
+
+    var w = {
+      n: U.length, nThoughts: T.length, days: Object.keys(days).length,
+      windowDays: W_DAYS, ready: false,
+      gaveIns: 0, baseline: 0,
+      triggers: [], chains: [], precond: [], couple: [],
+      leaks: [], leakMin: 0, leakRegret: 0,
+      firstUrge: null, domino: null
+    };
+    U.forEach(function(u){ if(gaveIn(u)) w.gaveIns++; });
+    w.baseline = pct(w.gaveIns, U.length);
+    w.ready = (U.length >= W_MIN_URGES && w.days >= W_MIN_DAYS);
+    if(!w.ready) return w;
+
+    // ── Triggers, ranked by the time they actually cost ──────────────────────
+    var tmap = {};
+    function bump(label, u){
+      if(!label) return;
+      var e = tmap[label];
+      if(!e) e = tmap[label] = { label:label, n:0, gave:0, mins:0, regret:0 };
+      e.n++;
+      if(gaveIn(u)) e.gave++;
+      e.mins += costMin(u);
+      if(regretted(u)) e.regret++;
+    }
+    U.forEach(function(u){
+      (u.cueInternal||[]).forEach(function(c){ bump(c,u); });
+      (u.cueExternal||[]).forEach(function(c){ bump(c,u); });
+      bump(u.cuePreceding, u);
+    });
+    w.triggers = Object.keys(tmap).map(function(k){ return tmap[k]; })
+      .filter(function(e){ return e.n >= W_MIN_N; })
+      .sort(function(a,b){ return (b.mins-a.mins) || (b.gave-a.gave) || (b.n-a.n); })
+      .slice(0,5);
+
+    // ── Chains: cue → urge sequences that repeat ─────────────────────────────
+    var cmap = {};
+    U.forEach(function(u){
+      var c = topCue(u);
+      if(!c || !u.urge) return;
+      var k = c + ' → ' + u.urge;
+      var e = cmap[k];
+      if(!e) e = cmap[k] = { label:k, n:0, gave:0, mins:0 };
+      e.n++;
+      if(gaveIn(u)) e.gave++;
+      e.mins += costMin(u);
+    });
+    w.chains = Object.keys(cmap).map(function(k){ return cmap[k]; })
+      .filter(function(e){ return e.n >= W_MIN_N; })
+      .sort(function(a,b){ return (b.n-a.n) || (b.mins-a.mins); })
+      .slice(0,4);
+
+    // ── Preconditions: state that raises or lowers the give-in rate ──────────
+    // Only a conditional rate is claimable here — body state is recorded on
+    // urge records, so there is no data for hours when no urge fired. The
+    // labels say "gave in" and never "urges fire more often".
+    var CONDS = [
+      { label:'Sleep under 6.5h',     f:function(b){ return b.sleep_h!=null && b.sleep_h < 6.5; } },
+      { label:'Sleep 7.5h or more',   f:function(b){ return b.sleep_h!=null && b.sleep_h >= 7.5; } },
+      { label:'Readiness under 70',   f:function(b){ return b.readiness!=null && b.readiness < 70; } },
+      { label:'Readiness 85 or more', f:function(b){ return b.readiness!=null && b.readiness >= 85; } },
+      { label:'HRV balance under 50', f:function(b){ return b.hrv_balance!=null && b.hrv_balance < 50; } },
+      { label:'Caffeine over 200mg',  f:function(b){ return b.caffeine_mg!=null && b.caffeine_mg > 200; } },
+      { label:'5h+ since eating',     f:function(b){ return b.hours_since_meal!=null && b.hours_since_meal >= 5; } },
+      { label:'3+ days since gym',    f:function(b){ return b.days_since_gym!=null && b.days_since_gym >= 3; } }
+    ];
+    var pre = [];
+    CONDS.forEach(function(c){
+      var sub = U.filter(function(u){ return u.body && c.f(u.body); });
+      if(sub.length < W_MIN_SUB) return;
+      var g = 0;
+      sub.forEach(function(u){ if(gaveIn(u)) g++; });
+      var rate = pct(g, sub.length);
+      var delta = rate - w.baseline;
+      if(Math.abs(delta) < W_MIN_DELTA) return;
+      pre.push({ label:c.label, n:sub.length, rate:rate, delta:delta });
+    });
+    ['Morning','Afternoon','Evening','Night'].forEach(function(s){
+      var sub = U.filter(function(u){ return u.slot === s; });
+      if(sub.length < W_MIN_SUB) return;
+      var g = 0;
+      sub.forEach(function(u){ if(gaveIn(u)) g++; });
+      var rate = pct(g, sub.length);
+      var delta = rate - w.baseline;
+      if(Math.abs(delta) < W_MIN_DELTA) return;
+      pre.push({ label:s, n:sub.length, rate:rate, delta:delta });
+    });
+    w.precond = pre.sort(function(a,b){ return Math.abs(b.delta)-Math.abs(a.delta); }).slice(0,5);
+
+    // ── Thought → urge coupling ─────────────────────────────────────────────
+    var dm = {}, txm = {};
+    T.forEach(function(t){
+      if(t.distortion){
+        var e = dm[t.distortion];
+        if(!e) e = dm[t.distortion] = { label:t.distortion, kind:'pattern', n:0, led:0, grip:0 };
+        e.n++;
+        if(t.ledToUrge === true) e.led++;
+        e.grip += (t.grip || 0);
+      }
+      var tx = (t.text||'').trim();
+      if(tx){
+        var e2 = txm[tx];
+        if(!e2) e2 = txm[tx] = { label:tx, kind:'thought', n:0, led:0, grip:0 };
+        e2.n++;
+        if(t.ledToUrge === true) e2.led++;
+        e2.grip += (t.grip || 0);
+      }
+    });
+    function coupleList(map, minN){
+      return Object.keys(map).map(function(k){ return map[k]; })
+        .filter(function(e){ return e.n >= minN; })
+        .map(function(e){
+          e.rate = pct(e.led, e.n);
+          e.avgGrip = e.n ? Math.round(10*e.grip/e.n)/10 : 0;
+          return e;
+        });
+    }
+    w.couple = coupleList(dm, W_MIN_SUB).concat(coupleList(txm, W_MIN_N))
+      .sort(function(a,b){ return (b.rate-a.rate) || (b.n-a.n); })
+      .slice(0,5);
+
+    // ── Leak ledger ─────────────────────────────────────────────────────────
+    var lm = {};
+    U.forEach(function(u){
+      if(!u.urge) return;
+      var e = lm[u.urge];
+      if(!e) e = lm[u.urge] = { label:u.urge, n:0, gave:0, mins:0, regret:0 };
+      e.n++;
+      if(gaveIn(u)) e.gave++;
+      e.mins += costMin(u);
+      if(regretted(u)) e.regret++;
+      w.leakMin += costMin(u);
+      if(regretted(u)) w.leakRegret++;
+    });
+    w.leaks = Object.keys(lm).map(function(k){ return lm[k]; })
+      .sort(function(a,b){ return (b.mins-a.mins) || (b.n-a.n); })
+      .slice(0,6);
+
+    // ── Time to first urge (mean clock time of each day's first urge) ────────
+    var firsts = {};
+    U.forEach(function(u){
+      if(!u.date || !u.ts) return;
+      if(!firsts[u.date] || u.ts < firsts[u.date]) firsts[u.date] = u.ts;
+    });
+    var fk = Object.keys(firsts);
+    if(fk.length >= W_MIN_SUB){
+      var sum = 0;
+      fk.forEach(function(k){
+        var dt = new Date(firsts[k]);
+        sum += dt.getHours() + dt.getMinutes()/60;
+      });
+      var avg = sum/fk.length;
+      var hh = Math.floor(avg), mm = Math.round((avg-hh)*60);
+      if(mm === 60){ hh++; mm = 0; }
+      w.firstUrge = String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+    }
+
+    // ── The one domino: the single highest-cost lever ────────────────────────
+    var t0 = w.triggers[0], p0 = w.precond[0];
+    // A precondition only outranks a trigger when the triggers cost no measured
+    // time (all resisted) but a state shift clearly moves the give-in rate.
+    if(t0 && (t0.mins > 0 || !p0 || p0.delta <= 0)){
+      var chain = null;
+      for(var ci=0; ci<w.chains.length; ci++){
+        if(w.chains[ci].label.indexOf(t0.label + ' → ') === 0){ chain = w.chains[ci]; break; }
+      }
+      w.domino = {
+        kind: 'trigger',
+        text: '"' + t0.label + '" sits in front of ' + t0.n + ' of your ' + U.length +
+              ' urges' + (t0.gave ? ' — you gave in ' + t0.gave + ' of those times' : '') + '.',
+        stat: (t0.mins ? fmtMin(t0.mins) + ' gone' : 'no measured time lost yet') +
+              ' · ' + pct(t0.gave, t0.n) + '% give-in rate vs ' + w.baseline + '% overall' +
+              (chain ? ' · usually becomes ' + chain.label.split(' → ')[1] : ''),
+        move: COUNTER[t0.label] || 'Remove the cue, or pre-decide the replacement before the window opens.'
+      };
+    } else if(p0 && p0.delta > 0){
+      w.domino = {
+        kind: 'precondition',
+        text: 'When ' + p0.label.toLowerCase() + ', you give in ' + p0.rate +
+              '% of the time — against ' + w.baseline + '% overall.',
+        stat: p0.n + ' urges logged in that state · ' + (p0.delta > 0 ? '+' : '') + p0.delta + ' points',
+        move: 'Fix the state, not the willpower. This is upstream of the urge.'
+      };
+    }
+    return w;
+  }
+  window._loopWiring = wiring;
+
+  // ── Wiring render ─────────────────────────────────────────────────────────
+  function bar(fracPct, colour){
+    return '<div style="height:4px;border-radius:3px;background:rgba(255,255,255,0.05);overflow:hidden;margin-top:5px">' +
+             '<div style="height:100%;width:' + Math.max(2, Math.min(100, fracPct)) + '%;background:' + colour + '"></div>' +
+           '</div>';
+  }
+  function rowShell(){
+    return 'padding:9px 11px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px';
+  }
+  function subLine(txt){
+    return '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:3px">' + txt + '</div>';
+  }
+
+  function renderWiring(){
+    var sec = document.getElementById('loopWiringSection');
+    if(!sec) return;
+    var w = wiring();
+
+    var meta = document.getElementById('loopWiringMeta');
+    if(meta) meta.textContent = w.n + ' urges · ' + w.days + 'd logged';
+
+    var gate = document.getElementById('loopWiringGate');
+    var ids = ['loopDominoCard','loopTriggerWrap','loopChainWrap','loopPrecondWrap','loopCoupleWrap','loopLeakWrap','loopNarrateWrap'];
+    if(!w.ready){
+      if(gate){
+        var needU = Math.max(0, W_MIN_URGES - w.n);
+        var needD = Math.max(0, W_MIN_DAYS - w.days);
+        gate.style.display = '';
+        gate.textContent = 'Not enough data to say anything true yet. ' +
+          (needU ? needU + ' more urge log' + (needU===1?'':'s') : 'Enough logs') +
+          (needD ? ' and ' + needD + ' more logged day' + (needD===1?'':'s') : '') +
+          ' — then the wiring shows up. Nothing here will be guessed.';
+      }
+      ids.forEach(function(id){ var e = document.getElementById(id); if(e) e.style.display = 'none'; });
+      return;
+    }
+    if(gate) gate.style.display = 'none';
+
+    // domino
+    var dc = document.getElementById('loopDominoCard');
+    if(dc){
+      if(w.domino){
+        dc.style.display = '';
+        document.getElementById('loopDominoText').innerHTML =
+          esc(w.domino.text) +
+          '<div style="margin-top:7px;color:rgba(230,201,138,0.9);font-size:12px">→ ' + esc(w.domino.move) + '</div>';
+        document.getElementById('loopDominoStat').textContent = w.domino.stat;
+      } else dc.style.display = 'none';
+    }
+
+    // triggers
+    var tw = document.getElementById('loopTriggerWrap');
+    var tl = document.getElementById('loopTriggerList');
+    if(tw && tl){
+      if(w.triggers.length){
+        tw.style.display = '';
+        var maxMin = w.triggers[0].mins || 1;
+        tl.innerHTML = w.triggers.map(function(t){
+          return '<div style="' + rowShell() + '">' +
+            '<div style="display:flex;align-items:baseline;gap:8px">' +
+              '<div style="flex:1;min-width:0;font-size:12.5px;color:var(--text-primary)">' + esc(t.label) + '</div>' +
+              '<div style="font-family:var(--font-mono);font-size:11px;color:#c79a4e">' + (t.mins ? fmtMin(t.mins) : '—') + '</div>' +
+            '</div>' +
+            subLine(t.n + '× · gave in ' + t.gave + ' (' + pct(t.gave,t.n) + '%)' +
+                    (t.regret ? ' · ' + t.regret + ' regretted' : '')) +
+            bar(100*t.mins/maxMin, 'rgba(199,154,78,0.55)') +
+          '</div>';
+        }).join('');
+      } else tw.style.display = 'none';
+    }
+
+    // chains
+    var cw = document.getElementById('loopChainWrap');
+    var cl = document.getElementById('loopChainList');
+    if(cw && cl){
+      if(w.chains.length){
+        cw.style.display = '';
+        cl.innerHTML = w.chains.map(function(c){
+          return '<div style="' + rowShell() + '">' +
+            '<div style="font-size:12.5px;color:var(--text-primary)">' + esc(c.label) + '</div>' +
+            subLine(c.n + '× · gave in ' + c.gave + (c.mins ? ' · ' + fmtMin(c.mins) : '')) +
+          '</div>';
+        }).join('');
+      } else cw.style.display = 'none';
+    }
+
+    // preconditions
+    var pw = document.getElementById('loopPrecondWrap');
+    var pl = document.getElementById('loopPrecondList');
+    if(pw && pl){
+      var rows = w.precond.slice();
+      if(w.firstUrge) rows = rows.concat([{ label:'First urge of the day', rate:null, n:null, note:'usually around ' + w.firstUrge }]);
+      if(rows.length){
+        pw.style.display = '';
+        pl.innerHTML = rows.map(function(p){
+          if(p.rate == null){
+            return '<div style="' + rowShell() + '">' +
+              '<div style="font-size:12.5px;color:var(--text-primary)">' + esc(p.label) + '</div>' +
+              subLine(esc(p.note)) + '</div>';
+          }
+          var up = p.delta > 0;
+          return '<div style="' + rowShell() + '">' +
+            '<div style="display:flex;align-items:baseline;gap:8px">' +
+              '<div style="flex:1;min-width:0;font-size:12.5px;color:var(--text-primary)">' + esc(p.label) + '</div>' +
+              '<div style="font-family:var(--font-mono);font-size:11px;color:' +
+                (up ? 'rgba(239,68,68,0.9)' : 'rgba(99,200,130,0.9)') + '">' +
+                (up ? '+' : '') + p.delta + 'pts</div>' +
+            '</div>' +
+            subLine('gave in ' + p.rate + '% here vs ' + w.baseline + '% overall · ' + p.n + ' urges') +
+          '</div>';
+        }).join('');
+      } else pw.style.display = 'none';
+    }
+
+    // thought → urge coupling
+    var kw = document.getElementById('loopCoupleWrap');
+    var kl = document.getElementById('loopCoupleList');
+    if(kw && kl){
+      if(w.couple.length){
+        kw.style.display = '';
+        kl.innerHTML = w.couple.map(function(c){
+          return '<div style="' + rowShell() + '">' +
+            '<div style="display:flex;align-items:baseline;gap:8px">' +
+              '<div style="flex:1;min-width:0;font-size:12.5px;color:var(--text-primary)">' + esc(c.label) + '</div>' +
+              '<div style="font-family:var(--font-mono);font-size:11px;color:#c79a4e">' + c.rate + '%</div>' +
+            '</div>' +
+            subLine('became an urge ' + c.led + ' of ' + c.n + ' times' +
+                    (c.avgGrip ? ' · grip ' + c.avgGrip + '/5' : '')) +
+          '</div>';
+        }).join('');
+      } else kw.style.display = 'none';
+    }
+
+    // leak ledger
+    var lw = document.getElementById('loopLeakWrap');
+    var ll = document.getElementById('loopLeakList');
+    if(lw && ll){
+      if(w.leaks.length){
+        lw.style.display = '';
+        var lmax = w.leaks[0].mins || 1;
+        ll.innerHTML = w.leaks.map(function(l){
+          return '<div style="' + rowShell() + '">' +
+            '<div style="display:flex;align-items:baseline;gap:8px">' +
+              '<div style="flex:1;min-width:0;font-size:12.5px;color:var(--text-primary)">' + esc(l.label) + '</div>' +
+              '<div style="font-family:var(--font-mono);font-size:11px;color:#c79a4e">' + fmtMin(l.mins) + '</div>' +
+            '</div>' +
+            subLine(l.n + '× · gave in ' + l.gave + (l.regret ? ' · ' + l.regret + ' regretted' : '')) +
+            bar(100*l.mins/lmax, 'rgba(239,68,68,0.45)') +
+          '</div>';
+        }).join('');
+        var lt = document.getElementById('loopLeakTotal');
+        if(lt){
+          lt.textContent = fmtMin(w.leakMin) + ' claimed in ' + W_DAYS + ' days' +
+            (w.leakRegret ? ' · ' + w.leakRegret + ' you called not worth it' : '');
+        }
+      } else lw.style.display = 'none';
+    }
+
+    var nw = document.getElementById('loopNarrateWrap');
+    if(nw) nw.style.display = '';
+  }
+
+  // ── Narration: Gemini gets the finished numbers and nothing else ───────────
+  function wiringFacts(w){
+    var L = [];
+    L.push('WINDOW: last ' + w.windowDays + ' days. ' + w.n + ' urges logged across ' + w.days + ' days. Overall give-in rate ' + w.baseline + '%.');
+    if(w.domino) L.push('TOP LEVER: ' + w.domino.text + ' (' + w.domino.stat + ')');
+    if(w.triggers.length){
+      L.push('TRIGGERS BY TIME COST: ' + w.triggers.map(function(t){
+        return t.label + ' (' + t.n + 'x, gave in ' + t.gave + ', ' + t.mins + ' min)';
+      }).join('; '));
+    }
+    if(w.chains.length){
+      L.push('REPEATING CHAINS: ' + w.chains.map(function(c){
+        return c.label + ' (' + c.n + 'x, gave in ' + c.gave + ')';
+      }).join('; '));
+    }
+    if(w.precond.length){
+      L.push('CONDITIONAL GIVE-IN RATES: ' + w.precond.map(function(p){
+        return p.label + ' = ' + p.rate + '% over ' + p.n + ' urges (' + (p.delta>0?'+':'') + p.delta + ' pts vs baseline)';
+      }).join('; '));
+    }
+    if(w.couple.length){
+      L.push('THOUGHTS THAT BECAME URGES: ' + w.couple.map(function(c){
+        return '"' + c.label + '" ' + c.rate + '% (' + c.led + '/' + c.n + ')';
+      }).join('; '));
+    }
+    if(w.leaks.length){
+      L.push('LEAK LEDGER: ' + w.leaks.map(function(l){
+        return l.label + ' ' + l.mins + ' min over ' + l.n + ' urges';
+      }).join('; ') + '. Total ' + w.leakMin + ' min, ' + w.leakRegret + ' regretted.');
+    }
+    if(w.firstUrge) L.push('FIRST URGE OF THE DAY averages ' + w.firstUrge + '.');
+    return L.join('\n');
+  }
+
+  function narrate(){
+    var out = document.getElementById('loopNarrateOut');
+    var btn = document.getElementById('loopNarrateBtn');
+    if(!out || !btn) return;
+    var w = wiring();
+    if(!w.ready) return;
+    out.style.display = '';
+    out.textContent = 'Reading…';
+    btn.disabled = true;
+
+    var prompt =
+      'You are reading a behavioural log analysis that has ALREADY been computed. ' +
+      'Below are the finished statistics.\n\n' +
+      'HARD RULES:\n' +
+      '1. Use ONLY the numbers below. Do not introduce any pattern, cause, trigger or ' +
+      'statistic that is not written here. If something is not in the data, say the data does not show it.\n' +
+      '2. Do not speculate about psychology, childhood, or diagnoses.\n' +
+      '3. Correlation only. Never write that one thing "causes" another.\n' +
+      '4. Plain, direct, second person. No therapy voice, no praise, no hedging padding.\n' +
+      '5. Maximum 130 words. Three short paragraphs: what the wiring is, what it costs, ' +
+      'the single change with the best odds.\n\n' +
+      'DATA:\n' + wiringFacts(w);
+
+    var go = (typeof window.gemini === 'function') ? window.gemini(prompt) : Promise.reject(new Error('offline'));
+    go.then(function(txt){
+      out.textContent = (txt || '').trim() || 'No reading came back. The numbers above still stand.';
+    }).catch(function(){
+      out.textContent = 'Could not reach the model (this needs the deployed site, not a local file open). The computed numbers above are unaffected — they are calculated on-device.';
+    }).then(function(){ btn.disabled = false; });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // EXPERIMENT (phase 4) — one hypothesis, 14 days, an honest verdict
+  // The one-domino output proposes; you accept or reject. Max one active, so
+  // the result is attributable to a single change. At day 14 the verdict is
+  // COMPUTED by comparing the 14 days before the experiment with the 14 days
+  // during it — the app does not ask whether it felt like it worked.
+  // ══════════════════════════════════════════════════════════════════════════
+  var EXP_KEY  = 'goals_loop_exp_v1';   // { active:{…}|null, past:[{…}] }
+  var EXP_DAYS = 14;
+
+  function loadExp(){
+    try {
+      var e = JSON.parse(localStorage.getItem(EXP_KEY)) || {};
+      if(!Array.isArray(e.past)) e.past = [];
+      if(e.active === undefined) e.active = null;
+      return e;
+    } catch(err){ return { active:null, past:[] }; }
+  }
+  function saveExp(e){ localStorage.setItem(EXP_KEY, JSON.stringify(e)); }
+
+  function daysBetween(aMs, bMs){ return Math.floor((bMs - aMs)/86400000); }
+
+  // Give-in rate for urges matching a trigger label, within a ms window.
+  function rateInWindow(triggerLabel, fromMs, toMs){
+    var U = live(load().urges).filter(function(u){
+      var t = u.ts || 0;
+      if(t < fromMs || t >= toMs) return false;
+      if(!triggerLabel) return true;
+      var all = [].concat(u.cueInternal||[], u.cueExternal||[], u.cuePreceding ? [u.cuePreceding] : []);
+      return all.indexOf(triggerLabel) >= 0;
+    });
+    var g = 0, mins = 0;
+    U.forEach(function(u){ if(gaveIn(u)) g++; mins += costMin(u); });
+    return { n:U.length, gave:g, rate:pct(g, U.length), mins:mins };
+  }
+
+  // Derived from the wiring analysis — never invented.
+  function proposeExperiment(){
+    var w = wiring();
+    if(!w.ready || !w.domino) return null;
+    var t0 = w.triggers[0];
+    return {
+      id: 'ex_' + Date.now(),
+      trigger: (w.domino.kind === 'trigger' && t0) ? t0.label : null,
+      kind: w.domino.kind,
+      move: w.domino.move,
+      because: w.domino.text,
+      baselineRate: (w.domino.kind === 'trigger' && t0) ? pct(t0.gave, t0.n) : w.baseline,
+      overallBaseline: w.baseline
+    };
+  }
+
+  function startExperiment(p){
+    var e = loadExp();
+    if(e.active) return;                     // max one at a time, enforced
+    var now = Date.now();
+    e.active = {
+      id: p.id, trigger: p.trigger, kind: p.kind, move: p.move, because: p.because,
+      baselineRate: p.baselineRate, startTs: now, days: EXP_DAYS,
+      // the pre-period is measured, not remembered
+      pre: rateInWindow(p.trigger, now - EXP_DAYS*86400000, now),
+      mts: now
+    };
+    saveExp(e);
+  }
+
+  function experimentVerdict(a){
+    var now = Date.now();
+    var during = rateInWindow(a.trigger, a.startTs, now);
+    var pre = a.pre || { n:0, gave:0, rate:0, mins:0 };
+    var delta = during.rate - pre.rate;
+    var minsDelta = during.mins - pre.mins;
+    // Not enough events either side to judge — say so instead of ruling.
+    var judgeable = (pre.n >= 3 && during.n >= 3);
+    var worked = judgeable && delta <= -W_MIN_DELTA;
+    var worse  = judgeable && delta >= W_MIN_DELTA;
+    return {
+      pre:pre, during:during, delta:delta, minsDelta:minsDelta,
+      judgeable:judgeable, worked:worked, worse:worse
+    };
+  }
+
+  function renderExperiment(){
+    var sec = document.getElementById('loopExpSection');
+    if(!sec) return;
+    var e = loadExp();
+    var elProp = document.getElementById('loopExpProposal');
+    var elAct  = document.getElementById('loopExpActive');
+    var elVer  = document.getElementById('loopExpVerdict');
+    var elPast = document.getElementById('loopExpPastWrap');
+    var elEmpty= document.getElementById('loopExpEmpty');
+    [elProp, elAct, elVer, elEmpty].forEach(function(x){ if(x) x.style.display = 'none'; });
+
+    // past verdicts
+    if(elPast){
+      var pl = document.getElementById('loopExpPastList');
+      if(e.past.length && pl){
+        elPast.style.display = '';
+        pl.innerHTML = e.past.map(function(p){
+          var kept = p.outcome === 'kept';
+          var col = kept ? '99,200,130' : '255,255,255';
+          return '<div style="padding:9px 11px;background:rgba('+col+',0.04);border:1px solid rgba('+col+',0.12);border-radius:12px">' +
+            '<div style="font-size:12px;color:var(--text-primary)">' + esc(p.move || '') + '</div>' +
+            '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:3px">' +
+              esc((kept ? 'kept' : 'dropped') + (p.summary ? ' · ' + p.summary : '')) +
+            '</div></div>';
+        }).join('');
+      } else elPast.style.display = 'none';
+    }
+
+    if(e.active){
+      var a = e.active;
+      var elapsed = daysBetween(a.startTs, Date.now());
+      var v = experimentVerdict(a);
+
+      if(elapsed >= (a.days || EXP_DAYS)){
+        // ── day 14: verdict ──
+        elVer.style.display = '';
+        var col = v.worked ? '99,200,130' : (v.worse ? '239,68,68' : '199,154,78');
+        elVer.style.background = 'rgba('+col+',0.06)';
+        elVer.style.border = '1px solid rgba('+col+',0.18)';
+        var headline;
+        if(!v.judgeable){
+          headline = 'Not enough logged either side to call this. ' +
+                     v.pre.n + ' urges before, ' + v.during.n + ' during — needs 3 of each.';
+        } else if(v.worked){
+          headline = 'It worked. Give-in rate went from ' + v.pre.rate + '% to ' + v.during.rate + '%.';
+        } else if(v.worse){
+          headline = 'It went the wrong way — ' + v.pre.rate + '% to ' + v.during.rate + '%. Worth dropping.';
+        } else {
+          headline = 'No real change: ' + v.pre.rate + '% to ' + v.during.rate + '%. Under the ' + W_MIN_DELTA + '-point bar, so this counts as noise.';
+        }
+        document.getElementById('loopExpVerdictText').innerHTML =
+          '<div style="font-family:var(--font-mono);font-size:9px;color:rgba('+col+',0.85);margin-bottom:6px">14 DAYS · ' + esc(a.move) + '</div>' +
+          esc(headline);
+        document.getElementById('loopExpVerdictStat').textContent =
+          'before: ' + v.pre.gave + '/' + v.pre.n + ' gave in, ' + fmtMin(v.pre.mins) +
+          '  ·  during: ' + v.during.gave + '/' + v.during.n + ', ' + fmtMin(v.during.mins) +
+          (v.minsDelta ? '  ·  ' + (v.minsDelta>0?'+':'') + fmtMin(Math.abs(v.minsDelta)) + (v.minsDelta>0?' more':' less') + ' lost' : '');
+      } else {
+        // ── mid-flight ──
+        elAct.style.display = '';
+        document.getElementById('loopExpActiveText').textContent = a.move;
+        document.getElementById('loopExpActiveMeta').textContent =
+          'day ' + (elapsed+1) + ' of ' + (a.days||EXP_DAYS) +
+          (a.trigger ? ' · testing against "' + a.trigger + '"' : '');
+        var bar2 = document.getElementById('loopExpProgressBar');
+        if(bar2) bar2.style.width = Math.min(100, Math.round(100*(elapsed+1)/(a.days||EXP_DAYS))) + '%';
+        var lv = document.getElementById('loopExpLive');
+        if(lv){
+          lv.textContent = v.during.n
+            ? 'so far: ' + v.during.gave + '/' + v.during.n + ' gave in (' + v.during.rate + '%) vs ' + v.pre.rate + '% before'
+            : 'no urges logged yet in this trigger since starting';
+        }
+      }
+    } else {
+      // ── nothing running: propose, or explain why not ──
+      var p = proposeExperiment();
+      if(p){
+        // don't re-propose something already tried and dropped
+        var tried = e.past.filter(function(x){ return x.move === p.move; }).length > 0;
+        if(!tried){
+          elProp.style.display = '';
+          document.getElementById('loopExpProposalText').innerHTML =
+            '<div style="color:var(--text-primary);font-size:13px;margin-bottom:6px">' + esc(p.move) + '</div>' +
+            '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);line-height:1.6">' +
+              esc(p.because) + ' Run it 14 days and the app will compare the two periods for you.</div>';
+          sec._pendingProposal = p;
+        } else if(elEmpty){
+          elEmpty.style.display = '';
+          elEmpty.textContent = 'Nothing new to test — the top lever is one you already dropped. Keep logging and another will surface.';
+        }
+      } else if(elEmpty){
+        elEmpty.style.display = '';
+        elEmpty.textContent = 'No experiment yet. The wiring above needs enough data to name a lever first — then it proposes one here.';
+      }
+    }
+  }
+
+  function closeExperiment(outcome){
+    var e = loadExp();
+    if(!e.active) return;
+    var a = e.active, v = experimentVerdict(a);
+    var summary;
+    if(!v.judgeable) summary = 'too few logs to judge';
+    else summary = v.pre.rate + '% → ' + v.during.rate + '%';
+    e.past.unshift({
+      id:a.id, move:a.move, trigger:a.trigger, outcome:outcome,
+      summary:summary, startTs:a.startTs, endTs:Date.now(), mts:Date.now()
+    });
+    e.active = null;
+    saveExp(e);
+    render();
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function render(){
+    // `today` here = the day being VIEWED (topbar ‹ ›), not necessarily the real
+    // date. Wiring and Experiment are deliberately date-independent: one is a
+    // rolling 30-day window, the other a lifecycle — neither is a per-day view.
+    var d = load(), today = viewDay();
+    var past = isPastView();
+    var todayUrges    = live(d.urges).filter(function(u){ return u.date===today; });
+    var todayThoughts = live(d.thoughts).filter(function(t){ return t.date===today; });
+
+    // these three are independent of the log rendering below, and this function
+    // has several early returns — so run them first
+    try { renderSweep(); } catch(e){}
+    try { renderWiring(); } catch(e){}
+    try { renderExperiment(); } catch(e){}
+
+    var elU = document.getElementById('loopStatUrges');
+    var elR = document.getElementById('loopStatResisted');
+    var elC = document.getElementById('loopStatClaimed');
+    var elS = document.getElementById('loopStatClarity');
+    if(!elU) return;
+
+    elU.textContent = todayUrges.length;
+    elR.textContent = todayUrges.filter(function(u){ return u.outcome==='Resisted'; }).length;
+    var mins = todayUrges.reduce(function(s,u){ return s + (u.minutes||0); }, 0);
+    elC.textContent = mins >= 60 ? (Math.round(mins/6)/10)+'h' : mins+'m';
+    // Clarity streak is always counted to the real today — it's a running streak,
+    // not a property of the day on screen.
+    elS.textContent = clarityStreak(d);
+
+    // "Today" / "Mon Aug 3" above the tiles, so the numbers are never ambiguous
+    var tileLbl = document.getElementById('loopTodayLabel');
+    if(tileLbl){
+      if(past){
+        var pd = new Date(today + 'T12:00:00');
+        tileLbl.textContent = isNaN(pd.getTime()) ? today
+          : pd.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      } else tileLbl.textContent = 'Today';
+    }
+
+    // Capture is a now-action; on a past day it would be misfiled under today.
+    var capWrap = document.getElementById('loopCaptureRow');
+    if(capWrap) capWrap.style.display = past ? 'none' : '';
+    var roNote = document.getElementById('loopReadOnlyNote');
+    if(roNote) roNote.style.display = past ? '' : 'none';
+
+    // ── Morning re-ask on yesterday's give-ins ──
+    // Always relative to the REAL today (it's a morning prompt about last night),
+    // and hidden entirely while viewing a past day.
+    var y = new Date(); y.setDate(y.getDate()-1);
+    var yKey = dayKey(y);
+    var pending = live(d.urges).filter(function(u){
+      return u.date===yKey && u.outcome==='Gave in' && u.worthItNextDay===undefined;
+    });
+    var reWrap = document.getElementById('loopReaskWrap');
+    var reList = document.getElementById('loopReaskList');
+    if(reWrap && reList){
+      if(pending.length && !past){
+        reWrap.style.display = '';
+        reList.innerHTML = '';
+        pending.forEach(function(u){
+          var r = document.createElement('div');
+          r.style.cssText = 'display:flex;align-items:center;gap:8px';
+          r.innerHTML =
+            '<div style="flex:1;min-width:0;font-size:12px;color:var(--text-primary)">' +
+              esc(u.urge||'Urge') +
+              (u.minutes ? '<span style="color:var(--text-tertiary);font-size:10px"> · '+u.minutes+'m</span>' : '') +
+            '</div>';
+          ['yes','no'].forEach(function(ans){
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = ans==='yes' ? 'Worth it' : 'Not worth it';
+            b.style.cssText = 'font-family:var(--font-mono);font-size:9px;padding:5px 10px;border-radius:20px;cursor:pointer;border:1px solid ' +
+              (ans==='yes' ? 'rgba(99,200,130,0.25);background:rgba(99,200,130,0.08);color:rgba(99,200,130,0.9)'
+                           : 'rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:rgba(239,68,68,0.9)');
+            b.addEventListener('click', function(){
+              var data = load();
+              var hit = data.urges.filter(function(x){ return x.id===u.id; })[0];
+              if(hit){ hit.worthItNextDay = (ans==='yes'); hit.mts = Date.now(); save(data); }
+              render();
+            });
+            r.appendChild(b);
+          });
+          reList.appendChild(r);
+        });
+      } else {
+        reWrap.style.display = 'none';
+        reList.innerHTML = '';
+      }
+    }
+
+    // ── Today's log ──
+    var list = document.getElementById('loopLogList');
+    if(!list) return;
+    var events = todayUrges.map(function(u){ return { kind:'urge', o:u }; })
+      .concat(todayThoughts.map(function(t){ return { kind:'thought', o:t }; }))
+      .sort(function(a,b){ return (b.o.ts||0)-(a.o.ts||0); });
+
+    if(!events.length){
+      list.innerHTML = '<div style="font-size:12px;color:var(--text-tertiary)">' +
+        (past ? 'Nothing was logged this day.' : 'Nothing logged today.') + '</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    events.forEach(function(ev){
+      var o = ev.o;
+      var isUrge = ev.kind==='urge';
+      var accent = isUrge
+        ? (o.outcome==='Gave in' ? '239,68,68' : (o.outcome==='Resisted' ? '99,200,130' : '199,154,78'))
+        : '199,154,78';
+      var time = o.ts ? new Date(o.ts).toTimeString().slice(0,5) : '';
+
+      var bits = [];
+      if(isUrge){
+        if(o.outcome) bits.push(o.outcome);
+        if(o.minutes) bits.push(o.minutes+'m');
+        var cues = [].concat(o.cueInternal||[], o.cueExternal||[]);
+        if(cues.length) bits.push(cues.slice(0,2).join(', '));
+        if(o.viaGate && o.outcome==='Resisted') bits.push('via the gate');
+      } else {
+        if(o.distortion) bits.push(o.distortion);
+        if(o.grip) bits.push('grip '+o.grip);
+        if(o.ledToUrge) bits.push('→ urge');
+      }
+
+      var item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba('+accent+',0.05);border:1px solid rgba('+accent+',0.15);border-radius:12px';
+      item.innerHTML =
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            (isUrge ? esc(o.urge||'Urge') : esc(o.text)) +
+          '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);margin-top:2px">' +
+            esc(time + (bits.length ? ' · ' + bits.join(' · ') : '')) +
+          '</div>' +
+        '</div>';
+
+      if(!past){
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.textContent = '×';
+        del.style.cssText = 'background:transparent;border:none;color:rgba(255,138,138,0.4);cursor:pointer;font-size:18px;padding:2px 6px;line-height:1';
+        del.addEventListener('click', function(){
+          var data = load();
+          var arr = isUrge ? data.urges : data.thoughts;
+          // soft delete — a hard splice would be undone by the next cross-device merge
+          for(var i=0;i<arr.length;i++){
+            if(arr[i].id===o.id){ arr[i].del = 1; arr[i].mts = Date.now(); break; }
+          }
+          save(data);
+          render();
+        });
+        item.appendChild(del);
+      }
+      list.appendChild(item);
+    });
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function(){
+    var hdr  = document.getElementById('loopHeader');
+    var body = document.getElementById('loopBody');
+    var chev = document.getElementById('loopChevron');
+    if(hdr) hdr.addEventListener('click', function(){
+      var open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : '';
+      if(chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+    });
+
+    var uBtn = document.getElementById('loopUrgeBtn');
+    var tBtn = document.getElementById('loopThoughtBtn');
+    // isPastView() guards are backstops — the row is hidden on past days anyway
+    if(uBtn) uBtn.addEventListener('click', function(){ if(isPastView()) return; showGate(showUrgeChain); });
+    if(tBtn) tBtn.addEventListener('click', function(){ if(isPastView()) return; showThoughtModal(); });
+
+    var nBtn = document.getElementById('loopNarrateBtn');
+    if(nBtn) nBtn.addEventListener('click', narrate);
+
+    // phase 3
+    var sBtn = document.getElementById('loopSweepBtn');
+    if(sBtn) sBtn.addEventListener('click', showClaimModal);
+
+    // phase 4
+    var sec = document.getElementById('loopExpSection');
+    var acc = document.getElementById('loopExpAccept');
+    if(acc) acc.addEventListener('click', function(){
+      var p = sec && sec._pendingProposal;
+      if(!p) return;
+      startExperiment(p);
+      render();
+    });
+    var rej = document.getElementById('loopExpReject');
+    if(rej) rej.addEventListener('click', function(){
+      var p = sec && sec._pendingProposal;
+      if(!p) return;
+      // record the rejection so the same lever isn't offered again
+      var e = loadExp();
+      e.past.unshift({ id:p.id, move:p.move, trigger:p.trigger, outcome:'dropped',
+                       summary:'declined without running', endTs:Date.now(), mts:Date.now() });
+      saveExp(e);
+      render();
+    });
+    var abd = document.getElementById('loopExpAbandon');
+    if(abd) abd.addEventListener('click', function(){ closeExperiment('dropped'); });
+    var grd = document.getElementById('loopExpGraduate');
+    if(grd) grd.addEventListener('click', function(){ closeExperiment('kept'); });
+    var drp = document.getElementById('loopExpDrop');
+    if(drp) drp.addEventListener('click', function(){ closeExperiment('dropped'); });
+
+    render();
+  });
+
+  // Topbar ‹ › — repaint for the newly selected day, same as Gym/Stack/Health/Water.
+  window.addEventListener('viewdate-changed', function(){ try { render(); } catch(e){} });
+
+  window._loopRender = render;
 })();
 </script>
 
